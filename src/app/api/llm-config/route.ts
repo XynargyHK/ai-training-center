@@ -18,20 +18,10 @@ export function getLLMConfig() {
     return runtimeConfig
   }
 
-  // Read from environment variables - Railway must have these set correctly
-  const provider = process.env.LLM_PROVIDER as any
-  const model = process.env.LLM_MODEL
-
-  if (!provider || !model) {
-    console.error('❌ CRITICAL: LLM_PROVIDER or LLM_MODEL not set in environment variables!')
-    console.error('LLM_PROVIDER:', provider)
-    console.error('LLM_MODEL:', model)
-    throw new Error('LLM_PROVIDER and LLM_MODEL must be set in environment variables')
-  }
-
+  // Fallback to environment variables
   return {
-    provider: provider,
-    model: model,
+    provider: (process.env.LLM_PROVIDER as any) || 'anthropic',
+    model: process.env.LLM_MODEL || 'claude-3-haiku-20240307',
     anthropicKey: process.env.ANTHROPIC_API_KEY,
     openaiKey: process.env.OPENAI_API_KEY,
     ollamaUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
