@@ -66,24 +66,29 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for FAQ match first using vector search (fast + smart response)
-    try {
-      const { hybridSearchFAQs } = await import('@/lib/supabase-storage')
-      const faqResults = await hybridSearchFAQs(message, 1) // Get top 1 match
+    // Skip if SUPABASE_SERVICE_ROLE_KEY is not available (optional feature)
+    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const { hybridSearchFAQs } = await import('@/lib/supabase-storage')
+        const faqResults = await hybridSearchFAQs(message, 1) // Get top 1 match
 
-      if (faqResults.length > 0 && faqResults[0].similarity > 0.7) {
-        const faq = faqResults[0]
-        console.log('✅ FAQ vector match found:', faq.question, 'similarity:', faq.similarity)
-        return NextResponse.json({
-          success: true,
-          response: faq.short_answer || faq.answer,
-          context,
-          usedTemplate: true,
-          responseType: 'faq',
-          timestamp: new Date().toISOString()
-        })
+        if (faqResults.length > 0 && faqResults[0].similarity > 0.7) {
+          const faq = faqResults[0]
+          console.log('✅ FAQ vector match found:', faq.question, 'similarity:', faq.similarity)
+          return NextResponse.json({
+            success: true,
+            response: faq.short_answer || faq.answer,
+            context,
+            usedTemplate: true,
+            responseType: 'faq',
+            timestamp: new Date().toISOString()
+          })
+        }
+      } catch (error) {
+        console.log('⚠️ FAQ vector search failed, continuing to AI generation:', error)
       }
-    } catch (error) {
-      console.log('⚠️ FAQ vector search failed, continuing to AI generation:', error)
+    } else {
+      console.log('ℹ️ SUPABASE_SERVICE_ROLE_KEY not set, skipping FAQ vector search')
     }
 
     // Generate AI response using AI model + knowledge base
@@ -143,10 +148,12 @@ async function generateAIResponse(
   if (knowledgeBase.length > 0) {
     let relevantKnowledge = []
 
-    try {
-      // Try vector search first (semantic search)
-      const { hybridSearchKnowledge } = await import('@/lib/supabase-storage')
-      const vectorResults = await hybridSearchKnowledge(message, 10)
+    // Only use vector search if service role key is available
+    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        // Try vector search first (semantic search)
+        const { hybridSearchKnowledge } = await import('@/lib/supabase-storage')
+        const vectorResults = await hybridSearchKnowledge(message, 10)
 
       if (vectorResults.length > 0) {
         relevantKnowledge = vectorResults
@@ -172,9 +179,29 @@ async function generateAIResponse(
             (entry.keywords && entry.keywords.some(keyword => messageLower.includes(keyword.toLowerCase())))
           })
       }
-    } catch (vectorError) {
-      // If vector search fails entirely, use keyword matching
-      console.log('⚠️ Vector search failed, using keyword matching:', vectorError)
+      } catch (vectorError) {
+        // If vector search fails entirely, use keyword matching
+        console.log('⚠️ Vector search failed, using keyword matching:', vectorError)
+        const messageLower = message.toLowerCase()
+        relevantKnowledge = knowledgeBase
+          .filter(entry => {
+            if (!entry.content) return false
+            const contentLower = entry.content.toLowerCase()
+            const categoryLower = entry.category?.toLowerCase() || ''
+            const topicLower = entry.topic?.toLowerCase() || ''
+            const messageWords = messageLower.split(' ').filter(w => w.length > 2)
+
+            return messageWords.some(word =>
+              topicLower.includes(word) ||
+              categoryLower.includes(word) ||
+              contentLower.includes(word)
+            ) ||
+            (entry.keywords && entry.keywords.some(keyword => messageLower.includes(keyword.toLowerCase())))
+          })
+      }
+    } else {
+      // No service role key - use keyword matching only
+      console.log('ℹ️ SUPABASE_SERVICE_ROLE_KEY not set, using keyword matching for knowledge base')
       const messageLower = message.toLowerCase()
       relevantKnowledge = knowledgeBase
         .filter(entry => {
@@ -217,20 +244,42 @@ async function generateAIResponse(
   // Build training examples context using vector search
   let trainingContext = ''
 
-  try {
-    const { vectorSearchTrainingData } = await import('@/lib/supabase-storage')
-    const relevantTraining = await vectorSearchTrainingData(message, 3)
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      const { vectorSearchTrainingData } = await import('@/lib/supabase-storage')
+      const relevantTraining = await vectorSearchTrainingData(message, 3)
 
-    if (relevantTraining.length > 0) {
-      trainingContext = '\n\nTRAINING EXAMPLES:\n' + relevantTraining
-        .map(entry => `Q: ${entry.question}\nA: ${entry.answer} (relevance: ${entry.similarity?.toFixed(2)})`)
-        .join('\n\n')
-      console.log('✅ Vector search found', relevantTraining.length, 'training examples')
+      if (relevantTraining.length > 0) {
+        trainingContext = '\n\nTRAINING EXAMPLES:\n' + relevantTraining
+          .map(entry => `Q: ${entry.question}\nA: ${entry.answer} (relevance: ${entry.similarity?.toFixed(2)})`)
+          .join('\n\n')
+        console.log('✅ Vector search found', relevantTraining.length, 'training examples')
+      }
+    } catch (vectorError) {
+      console.log('⚠️ Training data vector search failed, using fallback:', vectorError)
+
+      // Fallback to keyword matching if vector search fails
+      if (trainingData.length > 0) {
+        const relevantTraining = trainingData
+          .filter(entry => entry.active)
+          .filter(entry => {
+            const messageLower = message.toLowerCase()
+            return entry.keywords.some(keyword => messageLower.includes(keyword.toLowerCase())) ||
+                   messageLower.includes(entry.question.toLowerCase()) ||
+                   entry.variations.some(variation => messageLower.includes(variation.toLowerCase()))
+          })
+          .slice(0, 3)
+
+        if (relevantTraining.length > 0) {
+          trainingContext = '\n\nTRAINING EXAMPLES:\n' + relevantTraining
+            .map(entry => `Q: ${entry.question}\nA: ${entry.answer}`)
+            .join('\n\n')
+        }
+      }
     }
-  } catch (vectorError) {
-    console.log('⚠️ Training data vector search failed, using fallback:', vectorError)
-
-    // Fallback to keyword matching if vector search fails
+  } else {
+    // No service role key - use keyword matching only
+    console.log('ℹ️ SUPABASE_SERVICE_ROLE_KEY not set, using keyword matching for training data')
     if (trainingData.length > 0) {
       const relevantTraining = trainingData
         .filter(entry => entry.active)
@@ -262,26 +311,43 @@ async function generateAIResponse(
   // Build guidelines context using vector search
   let guidelinesContext = ''
 
-  try {
-    const { vectorSearchGuidelines } = await import('@/lib/supabase-storage')
-    const relevantGuidelines = await vectorSearchGuidelines(message, 5)
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      const { vectorSearchGuidelines } = await import('@/lib/supabase-storage')
+      const relevantGuidelines = await vectorSearchGuidelines(message, 5)
 
-    if (relevantGuidelines.length > 0) {
-      guidelinesContext = '\n\n📋 TRAINING GUIDELINES - FOLLOW THESE RULES:\n' + relevantGuidelines
-        .map((g: any) => `**${g.title}**\n${g.content} (relevance: ${g.similarity?.toFixed(2)})`)
-        .join('\n\n')
-      console.log('✅ Vector search found', relevantGuidelines.length, 'relevant guidelines')
+      if (relevantGuidelines.length > 0) {
+        guidelinesContext = '\n\n📋 TRAINING GUIDELINES - FOLLOW THESE RULES:\n' + relevantGuidelines
+          .map((g: any) => `**${g.title}**\n${g.content} (relevance: ${g.similarity?.toFixed(2)})`)
+          .join('\n\n')
+        console.log('✅ Vector search found', relevantGuidelines.length, 'relevant guidelines')
+      }
+    } catch (vectorError) {
+      console.log('⚠️ Guidelines vector search failed, using fallback:', vectorError)
+
+      // Fallback to category filtering if vector search fails
+      if (guidelines.length > 0) {
+        // Use ALL guidelines for chatbot (general applies to everything, others provide specific rules)
+        // FAQ guidelines = how to answer questions
+        // Canned guidelines = message quality standards
+        // Roleplay guidelines = learned from training sessions
+        // General guidelines = always apply
+        const relevantGuidelines = guidelines.filter((g: any) =>
+          g.category === 'general' || g.category === 'faq' || g.category === 'canned' || g.category === 'roleplay'
+        )
+
+        if (relevantGuidelines.length > 0) {
+          guidelinesContext = '\n\n📋 TRAINING GUIDELINES - FOLLOW THESE RULES:\n' + relevantGuidelines
+            .map((g: any) => `**${g.title}**\n${g.content}`)
+            .join('\n\n')
+          console.log('Guidelines applied:', relevantGuidelines.length)
+        }
+      }
     }
-  } catch (vectorError) {
-    console.log('⚠️ Guidelines vector search failed, using fallback:', vectorError)
-
-    // Fallback to category filtering if vector search fails
+  } else {
+    // No service role key - use category filtering only
+    console.log('ℹ️ SUPABASE_SERVICE_ROLE_KEY not set, using category filtering for guidelines')
     if (guidelines.length > 0) {
-      // Use ALL guidelines for chatbot (general applies to everything, others provide specific rules)
-      // FAQ guidelines = how to answer questions
-      // Canned guidelines = message quality standards
-      // Roleplay guidelines = learned from training sessions
-      // General guidelines = always apply
       const relevantGuidelines = guidelines.filter((g: any) =>
         g.category === 'general' || g.category === 'faq' || g.category === 'canned' || g.category === 'roleplay'
       )
