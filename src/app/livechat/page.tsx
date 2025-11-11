@@ -25,7 +25,7 @@ export default function DemoPage() {
         console.log('🔄 Demo Page: Loading AI staff from Supabase...')
 
         // Import Supabase function dynamically
-        const { loadAIStaff } = await import('@/lib/supabase-storage')
+        const { loadAIStaff } = await import('@/lib/supabase')
 
         // Load AI staff from Supabase
         const staff = await loadAIStaff()
