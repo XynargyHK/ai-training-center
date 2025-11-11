@@ -20,8 +20,8 @@ export function getLLMConfig() {
 
   // Fallback to environment variables
   return {
-    provider: (process.env.LLM_PROVIDER as any) || 'anthropic',
-    model: process.env.LLM_MODEL || 'claude-3-haiku-20240307',
+    provider: (process.env.LLM_PROVIDER as any) || 'openai',
+    model: process.env.LLM_MODEL || 'gpt-4o',
     anthropicKey: process.env.ANTHROPIC_API_KEY,
     openaiKey: process.env.OPENAI_API_KEY,
     ollamaUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
