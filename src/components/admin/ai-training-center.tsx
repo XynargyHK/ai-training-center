@@ -1739,23 +1739,23 @@ Format as JSON array:
 
               <div className="space-y-2">
                 {filteredKnowledge.map((entry) => (
-                  <div key={entry.id} className="bg-slate-700 rounded-lg p-3 border border-slate-600 flex justify-between items-center">
-                    <div className="flex flex-col gap-1 flex-1">
-                      <span className="text-slate-300 font-medium">{entry.fileName || entry.topic}</span>
-                      <span className="text-slate-400 text-sm truncate max-w-2xl">
+                  <div key={entry.id} className="bg-slate-700 rounded-lg p-3 border border-slate-600 flex justify-between items-start gap-3">
+                    <div className="flex flex-col gap-1 flex-1 min-w-0">
+                      <span className="text-slate-300 font-medium break-words">{entry.fileName || entry.topic}</span>
+                      <span className="text-slate-400 text-sm break-words line-clamp-2">
                         {entry.content.length > 100 ? entry.content.substring(0, 100) + '...' : entry.content}
                       </span>
                     </div>
-                    <div className="flex gap-2 ml-4">
+                    <div className="flex gap-2 flex-shrink-0">
                       <button
                         onClick={() => setEditingEntry(entry)}
-                        className="text-blue-400 hover:text-blue-300"
+                        className="text-blue-400 hover:text-blue-300 p-1"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => deleteEntry(entry.id, 'knowledge')}
-                        className="text-red-400 hover:text-red-300"
+                        className="text-red-400 hover:text-red-300 p-1"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -2070,30 +2070,30 @@ Format as JSON array:
               <div className="grid gap-4">
                 {filteredTraining.map((entry) => (
                   <div key={entry.id} className="bg-slate-700 rounded-lg p-4 border border-slate-600">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex gap-2 items-center">
-                        <span className="bg-purple-500/20 text-purple-300 px-2 py-1 rounded text-sm">
+                    <div className="flex justify-between items-start mb-3 gap-3">
+                      <div className="flex gap-2 items-center flex-wrap min-w-0">
+                        <span className="bg-purple-500/20 text-purple-300 px-2 py-1 rounded text-sm whitespace-nowrap">
                           {entry.category}
                         </span>
-                        <span className={`px-2 py-1 rounded text-xs ${
+                        <span className={`px-2 py-1 rounded text-xs whitespace-nowrap ${
                           entry.active ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
                         }`}>
                           {entry.active ? 'Active' : 'Inactive'}
                         </span>
-                        <span className="bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded text-xs">
+                        <span className="bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded text-xs whitespace-nowrap">
                           Priority: {entry.priority}
                         </span>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-shrink-0">
                         <button
                           onClick={() => setEditingEntry(entry)}
-                          className="text-blue-400 hover:text-blue-300"
+                          className="text-blue-400 hover:text-blue-300 p-1"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => deleteEntry(entry.id, 'training')}
-                          className="text-red-400 hover:text-red-300"
+                          className="text-red-400 hover:text-red-300 p-1"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -2102,12 +2102,12 @@ Format as JSON array:
 
                     <div className="mb-3">
                       <h4 className="font-semibold text-cyan-300 mb-1">Question:</h4>
-                      <p className="text-slate-300">{entry.question}</p>
+                      <p className="text-slate-300 break-words">{entry.question}</p>
                     </div>
 
                     <div className="mb-3">
                       <h4 className="font-semibold text-green-300 mb-1">Answer:</h4>
-                      <p className="text-slate-300">{entry.answer}</p>
+                      <p className="text-slate-300 break-words">{entry.answer}</p>
                     </div>
 
                     <div className="flex flex-wrap gap-2 mb-2">
@@ -2286,17 +2286,17 @@ Format as JSON array:
               <div className="grid gap-4">
                 {faqs.filter(faq => faq.category === selectedFaqCategory).map((faq) => (
                   <div key={faq.id} className="bg-slate-700 rounded-lg p-4 border border-slate-600">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1">
-                        <span className="bg-cyan-500/20 text-cyan-300 px-2 py-1 rounded text-sm">
+                    <div className="flex justify-between items-start mb-3 gap-3">
+                      <div className="flex-1 min-w-0">
+                        <span className="bg-cyan-500/20 text-cyan-300 px-2 py-1 rounded text-sm whitespace-nowrap inline-block">
                           {faq.category}
                         </span>
-                        <h3 className="text-lg font-semibold mt-2">{faq.question}</h3>
+                        <h3 className="text-lg font-semibold mt-2 break-words">{faq.question}</h3>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-shrink-0">
                         <button
                           onClick={() => setEditingEntry(faq)}
-                          className="text-blue-400 hover:text-blue-300"
+                          className="text-blue-400 hover:text-blue-300 p-1"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
@@ -2308,14 +2308,14 @@ Format as JSON array:
                               setFaqs(updatedFaqs)
                             }
                           }}
-                          className="text-red-400 hover:text-red-300"
+                          className="text-red-400 hover:text-red-300 p-1"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
 
-                    <p className="text-slate-300 mb-3 whitespace-pre-line">{faq.answer}</p>
+                    <p className="text-slate-300 mb-3 whitespace-pre-line break-words">{faq.answer}</p>
 
                     <div className="flex flex-wrap gap-2 mb-2">
                       {faq.keywords.map((keyword, idx) => (
@@ -2789,17 +2789,17 @@ Format as JSON array:
               <div className="grid gap-4">
                 {cannedMsgs.filter(msg => msg.category === selectedCannedCategory).map((msg) => (
                   <div key={msg.id} className="bg-slate-700 rounded-lg p-4 border border-slate-600">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1">
-                        <span className="bg-pink-500/20 text-pink-300 px-2 py-1 rounded text-sm capitalize">
+                    <div className="flex justify-between items-start mb-3 gap-3">
+                      <div className="flex-1 min-w-0">
+                        <span className="bg-pink-500/20 text-pink-300 px-2 py-1 rounded text-sm capitalize whitespace-nowrap inline-block">
                           {msg.category || 'general responses'}
                         </span>
-                        <h3 className="text-lg font-semibold mt-2">{msg.scenario}</h3>
+                        <h3 className="text-lg font-semibold mt-2 break-words">{msg.scenario}</h3>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-shrink-0">
                         <button
                           onClick={() => setEditingEntry(msg)}
-                          className="text-blue-400 hover:text-blue-300"
+                          className="text-blue-400 hover:text-blue-300 p-1"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
@@ -2811,14 +2811,14 @@ Format as JSON array:
                               setCannedMsgs(updated)
                             }
                           }}
-                          className="text-red-400 hover:text-red-300"
+                          className="text-red-400 hover:text-red-300 p-1"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
 
-                    <p className="text-slate-300 mb-3 whitespace-pre-line">{msg.template}</p>
+                    <p className="text-slate-300 mb-3 whitespace-pre-line break-words">{msg.template}</p>
 
                     {msg.variables && msg.variables.length > 0 && (
                       <div className="flex flex-wrap gap-2">
