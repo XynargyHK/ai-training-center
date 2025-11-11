@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Knowledge Base</title>
+</head>
+<body>
+    <h1>Clearing knowledge base...</h1>
+    <script>
+        localStorage.removeItem('ai_training_knowledge');
+        document.body.innerHTML = '<h1 style="color: green;">Knowledge base cleared! You can close this tab.</h1>';
+        setTimeout(() => {
+            window.location.href = '/';
+        }, 2000);
+    </script>
+</body>
+</html>

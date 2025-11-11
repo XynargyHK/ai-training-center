@@ -1,0 +1,1652 @@
+'use client'
+
+import { useState, useEffect, useRef } from 'react'
+import { Brain, Database, MessageSquare, Settings, Plus, Edit, Trash2, Save, TestTube, BarChart3, Book, Sparkles, Users, HelpCircle, Mail, Upload, FileText } from 'lucide-react'
+import RoleplayTraining from './roleplay-training'
+import { FAQ, CannedMessage, faqDatabase, cannedMessages } from '@/lib/faq-library'
+
+interface KnowledgeEntry {
+  id: string
+  category: string
+  topic: string
+  content: string
+  keywords: string[]
+  confidence: number
+  createdAt: Date
+  updatedAt: Date
+}
+
+interface TrainingData {
+  id: string
+  question: string
+  answer: string
+  category: string
+  keywords: string[]
+  variations: string[]
+  tone: 'professional' | 'friendly' | 'expert' | 'casual'
+  priority: number
+  active: boolean
+  createdAt: Date
+}
+
+interface ConversationPattern {
+  id: string
+  pattern: string
+  response: string
+  context: string
+  triggers: string[]
+  followup: string[]
+}
+
+const AITrainingCenter = () => {
+  const [activeTab, setActiveTab] = useState<'knowledge' | 'training' | 'patterns' | 'model' | 'testing' | 'analytics' | 'roleplay' | 'faq' | 'canned'>('knowledge')
+  const [knowledgeEntries, setKnowledgeEntries] = useState<KnowledgeEntry[]>([])
+  const [trainingData, setTrainingData] = useState<TrainingData[]>([])
+  const [conversationPatterns, setConversationPatterns] = useState<ConversationPattern[]>([])
+  const [faqs, setFaqs] = useState<FAQ[]>([])
+  const [cannedMsgs, setCannedMsgs] = useState<CannedMessage[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [editingEntry, setEditingEntry] = useState<KnowledgeEntry | TrainingData | FAQ | CannedMessage | null>(null)
+  const [testQuery, setTestQuery] = useState('')
+  const [testResponse, setTestResponse] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [trainingSession, setTrainingSession] = useState<any>(null)
+  const [modelInfo, setModelInfo] = useState<any>(null)
+  const [trainingProgress, setTrainingProgress] = useState(0)
+  const [validationResults, setValidationResults] = useState<any>(null)
+  const [trainingSessions, setTrainingSessions] = useState<any[]>([])
+  const [trainingMemory, setTrainingMemory] = useState<{[key: string]: string[]}>({})
+  const [completedTrainingSessions, setCompletedTrainingSessions] = useState<any[]>([])
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const categories = [
+    'General Knowledge', 'Product Information', 'Service Information',
+    'Policies & Procedures', 'Technical Support', 'Billing & Pricing',
+    'Account Management', 'Troubleshooting', 'Best Practices',
+    'Features & Benefits', 'FAQs', 'Training & Tutorials'
+  ]
+
+  useEffect(() => {
+    loadData()
+    loadModelInfo()
+    loadTrainingMemoryAndSessions()
+  }, [])
+
+  // Reload training memory when switching to model tab
+  useEffect(() => {
+    if (activeTab === 'model') {
+      loadTrainingMemoryAndSessions()
+    }
+  }, [activeTab])
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout
+    if (trainingSession && trainingSession.status !== 'completed' && trainingSession.status !== 'failed') {
+      interval = setInterval(checkTrainingProgress, 2000)
+    }
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [trainingSession])
+
+  const loadData = async () => {
+    setIsLoading(true)
+    try {
+      // Load from localStorage for demo (in production, this would be from API)
+      const savedKnowledge = localStorage.getItem('ai_training_knowledge')
+      const savedTraining = localStorage.getItem('ai_training_training')
+      const savedPatterns = localStorage.getItem('ai_training_patterns')
+      const savedFaqs = localStorage.getItem('ai_training_faqs')
+      const savedCannedMsgs = localStorage.getItem('ai_training_canned_messages')
+
+      if (savedKnowledge) setKnowledgeEntries(JSON.parse(savedKnowledge))
+      if (savedTraining) setTrainingData(JSON.parse(savedTraining))
+      if (savedPatterns) setConversationPatterns(JSON.parse(savedPatterns))
+
+      // Load FAQs and canned messages from library if not in localStorage
+      if (savedFaqs) {
+        setFaqs(JSON.parse(savedFaqs))
+      } else {
+        setFaqs(faqDatabase)
+      }
+
+      if (savedCannedMsgs) {
+        setCannedMsgs(JSON.parse(savedCannedMsgs))
+      } else {
+        setCannedMsgs(cannedMessages)
+      }
+
+      // Initialize with some default data if empty
+      if (!savedKnowledge) {
+        const defaultKnowledge: KnowledgeEntry[] = [
+          {
+            id: '1',
+            category: 'General Knowledge',
+            topic: 'Getting Started',
+            content: 'Welcome to the AI Training Center. This platform helps you train AI chatbots for your business. Start by adding knowledge entries, training data, and FAQs.',
+            keywords: ['getting started', 'introduction', 'overview', 'welcome'],
+            confidence: 0.95,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
+          {
+            id: '2',
+            category: 'Best Practices',
+            topic: 'Creating Quality Training Data',
+            content: 'Ensure your training data covers common customer questions. Use clear, concise language. Include variations of questions. Update regularly based on actual customer interactions.',
+            keywords: ['training', 'best practices', 'quality', 'data'],
+            confidence: 0.9,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        ]
+        setKnowledgeEntries(defaultKnowledge)
+      }
+
+      if (!savedTraining) {
+        const defaultTraining: TrainingData[] = [
+          {
+            id: '1',
+            question: 'How do I get started?',
+            answer: 'To get started, add your knowledge base content, create training Q&A pairs, and test the AI responses. You can upload files in various formats or enter data manually.',
+            category: 'General Knowledge',
+            keywords: ['getting started', 'help', 'introduction'],
+            variations: ['how to start', 'getting started guide', 'first steps'],
+            tone: 'friendly',
+            priority: 8,
+            active: true,
+            createdAt: new Date()
+          }
+        ]
+        setTrainingData(defaultTraining)
+      }
+    } catch (error) {
+      console.error('Error loading data:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const saveData = async () => {
+    try {
+      localStorage.setItem('ai_training_knowledge', JSON.stringify(knowledgeEntries))
+      localStorage.setItem('ai_training_training', JSON.stringify(trainingData))
+      localStorage.setItem('ai_training_patterns', JSON.stringify(conversationPatterns))
+      localStorage.setItem('ai_training_faqs', JSON.stringify(faqs))
+      localStorage.setItem('ai_training_canned_messages', JSON.stringify(cannedMsgs))
+
+      // In production, this would sync to the database
+      await fetch('/api/admin/ai-training/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          knowledge: knowledgeEntries,
+          training: trainingData,
+          patterns: conversationPatterns
+        })
+      }).catch(() => {}) // Fail silently for now
+    } catch (error) {
+      console.error('Error saving data:', error)
+    }
+  }
+
+  const addKnowledgeEntry = () => {
+    const newEntry: KnowledgeEntry = {
+      id: Date.now().toString(),
+      category: categories[0],
+      topic: '',
+      content: '',
+      keywords: [],
+      confidence: 0.8,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    setKnowledgeEntries(prev => [...prev, newEntry])
+    setEditingEntry(newEntry)
+  }
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (!files || files.length === 0) return
+
+    setIsLoading(true)
+    const newEntries: KnowledgeEntry[] = []
+
+    for (const file of Array.from(files)) {
+      try {
+        const fileType = file.type
+        const fileName = file.name
+        let content = ''
+
+        // Handle different file types
+        if (fileType === 'text/plain' || fileName.endsWith('.txt')) {
+          // Plain text file
+          content = await file.text()
+          const entry: KnowledgeEntry = {
+            id: Date.now().toString() + Math.random(),
+            category: categories[0],
+            topic: fileName.replace('.txt', ''),
+            content: content,
+            keywords: [],
+            confidence: 0.8,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+          newEntries.push(entry)
+
+        } else if (fileType === 'application/json' || fileName.endsWith('.json')) {
+          // JSON file
+          const jsonContent = await file.text()
+          const jsonData = JSON.parse(jsonContent)
+
+          // If it's an array of knowledge entries
+          if (Array.isArray(jsonData)) {
+            jsonData.forEach((item: any) => {
+              const entry: KnowledgeEntry = {
+                id: Date.now().toString() + Math.random(),
+                category: item.category || categories[0],
+                topic: item.topic || item.title || 'Untitled',
+                content: item.content || item.text || JSON.stringify(item),
+                keywords: item.keywords || [],
+                confidence: item.confidence || 0.8,
+                createdAt: new Date(),
+                updatedAt: new Date()
+              }
+              newEntries.push(entry)
+            })
+          } else {
+            // Single JSON object
+            const entry: KnowledgeEntry = {
+              id: Date.now().toString() + Math.random(),
+              category: jsonData.category || categories[0],
+              topic: jsonData.topic || jsonData.title || fileName.replace('.json', ''),
+              content: jsonData.content || jsonData.text || JSON.stringify(jsonData),
+              keywords: jsonData.keywords || [],
+              confidence: jsonData.confidence || 0.8,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }
+            newEntries.push(entry)
+          }
+
+        } else if (fileType === 'text/csv' || fileName.endsWith('.csv')) {
+          // CSV file
+          const csvContent = await file.text()
+          const lines = csvContent.split('\n')
+          const headers = lines[0].split(',').map(h => h.trim())
+
+          for (let i = 1; i < lines.length; i++) {
+            if (!lines[i].trim()) continue
+            const values = lines[i].split(',').map(v => v.trim())
+            const entry: KnowledgeEntry = {
+              id: Date.now().toString() + Math.random(),
+              category: values[headers.indexOf('category')] || categories[0],
+              topic: values[headers.indexOf('topic')] || values[headers.indexOf('title')] || `Entry ${i}`,
+              content: values[headers.indexOf('content')] || values[headers.indexOf('text')] || values.join(' '),
+              keywords: values[headers.indexOf('keywords')]?.split(';') || [],
+              confidence: parseFloat(values[headers.indexOf('confidence')]) || 0.8,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }
+            newEntries.push(entry)
+          }
+
+        } else if (fileType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+                   fileType === 'application/vnd.ms-excel' ||
+                   fileName.endsWith('.xlsx') ||
+                   fileName.endsWith('.xls')) {
+          // Excel file
+          const XLSX = await import('xlsx')
+          const arrayBuffer = await file.arrayBuffer()
+          const workbook = XLSX.read(arrayBuffer, { type: 'array' })
+
+          // Process each sheet
+          workbook.SheetNames.forEach((sheetName) => {
+            const worksheet = workbook.Sheets[sheetName]
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
+
+            if (jsonData.length > 0) {
+              const headers = (jsonData[0] as any[]).map((h: any) => String(h).toLowerCase().trim())
+
+              for (let i = 1; i < jsonData.length; i++) {
+                const row = jsonData[i] as any[]
+                if (row.length === 0) continue
+
+                const entry: KnowledgeEntry = {
+                  id: Date.now().toString() + Math.random(),
+                  category: row[headers.indexOf('category')] || categories[0],
+                  topic: row[headers.indexOf('topic')] || row[headers.indexOf('title')] || `${sheetName} - Row ${i}`,
+                  content: row[headers.indexOf('content')] || row[headers.indexOf('text')] || row.join(' '),
+                  keywords: row[headers.indexOf('keywords')]?.toString().split(';').map((k: string) => k.trim()) || [],
+                  confidence: parseFloat(row[headers.indexOf('confidence')]) || 0.8,
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                }
+                newEntries.push(entry)
+              }
+            }
+          })
+
+        } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || fileName.endsWith('.docx')) {
+          // DOCX file with mammoth.js
+          const mammoth = await import('mammoth')
+          const arrayBuffer = await file.arrayBuffer()
+          const result = await mammoth.extractRawText({ arrayBuffer })
+          const extractedText = result.value
+
+          const entry: KnowledgeEntry = {
+            id: Date.now().toString() + Math.random(),
+            category: categories[0],
+            topic: fileName.replace('.docx', '').replace('.doc', ''),
+            content: extractedText,
+            keywords: [],
+            confidence: 0.8,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+          newEntries.push(entry)
+
+        } else if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
+          // PDF file with pdf.js
+          const pdfjsLib = await import('pdfjs-dist')
+          // Set up PDF.js worker
+          pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
+
+          const arrayBuffer = await file.arrayBuffer()
+          const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer })
+          const pdf = await loadingTask.promise
+
+          let fullText = ''
+          for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum)
+            const textContent = await page.getTextContent()
+            const pageText = textContent.items.map((item: any) => item.str).join(' ')
+            fullText += pageText + '\n\n'
+          }
+
+          const entry: KnowledgeEntry = {
+            id: Date.now().toString() + Math.random(),
+            category: categories[0],
+            topic: fileName.replace('.pdf', ''),
+            content: fullText.trim(),
+            keywords: [],
+            confidence: 0.8,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+          newEntries.push(entry)
+
+        } else {
+          // Unknown file type
+          alert(`Unsupported file type: ${fileType || fileName}`)
+        }
+
+      } catch (error) {
+        console.error(`Error processing file ${file.name}:`, error)
+        alert(`Error processing file ${file.name}`)
+      }
+    }
+
+    if (newEntries.length > 0) {
+      setKnowledgeEntries(prev => [...prev, ...newEntries])
+      alert(`Successfully imported ${newEntries.length} knowledge entries!`)
+    }
+
+    setIsLoading(false)
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const addTrainingData = () => {
+    const newTraining: TrainingData = {
+      id: Date.now().toString(),
+      question: '',
+      answer: '',
+      category: categories[0],
+      keywords: [],
+      variations: [],
+      tone: 'friendly',
+      priority: 5,
+      active: true,
+      createdAt: new Date()
+    }
+    setTrainingData(prev => [...prev, newTraining])
+    setEditingEntry(newTraining)
+  }
+
+  const deleteEntry = (id: string, type: 'knowledge' | 'training') => {
+    if (type === 'knowledge') {
+      setKnowledgeEntries(prev => prev.filter(e => e.id !== id))
+    } else {
+      setTrainingData(prev => prev.filter(e => e.id !== id))
+    }
+  }
+
+  const loadModelInfo = async () => {
+    try {
+      const response = await fetch('/api/admin/ai-training/train?action=model_info')
+      const data = await response.json()
+      if (data.success) {
+        setModelInfo(data.model)
+      }
+    } catch (error) {
+      console.error('Error loading model info:', error)
+    }
+  }
+
+  const checkTrainingProgress = async () => {
+    if (!trainingSession?.id) return
+
+    try {
+      const response = await fetch(`/api/admin/ai-training/train?action=status&sessionId=${trainingSession.id}`)
+      const data = await response.json()
+
+      if (data.success) {
+        setTrainingSession(data.session)
+        setTrainingProgress(data.session.progress)
+
+        if (data.session.status === 'completed') {
+          loadModelInfo() // Refresh model info after training
+        }
+      }
+    } catch (error) {
+      console.error('Error checking progress:', error)
+    }
+  }
+
+  const validateTrainingData = async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/admin/ai-training/train', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'validate_data',
+          data: trainingData
+        })
+      })
+
+      const result = await response.json()
+      setValidationResults(result.validation)
+
+      if (result.success) {
+        alert(`Validation complete:\n✅ Valid: ${result.validation.valid}\n❌ Invalid: ${result.validation.invalid}\n\nRecommend training: ${result.recommendTraining ? 'Yes' : 'No'}`)
+      }
+    } catch (error) {
+      console.error('Validation error:', error)
+      alert('Error validating training data')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const startTraining = async () => {
+    if (trainingData.length < 10) {
+      alert('Need at least 10 training examples to start training')
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/admin/ai-training/train', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'start_training',
+          data: trainingData
+        })
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        setTrainingSession({ id: result.sessionId, status: result.status, progress: 0 })
+        alert('Training started! Monitor progress in the training tab.')
+      }
+    } catch (error) {
+      console.error('Training start error:', error)
+      alert('Error starting training')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const deployModel = async () => {
+    if (!modelInfo) {
+      alert('No trained model available for deployment')
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/admin/ai-training/train', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'deploy_model',
+          data: { version: modelInfo.version }
+        })
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        alert(`Model ${result.version} deployed successfully!`)
+        loadModelInfo()
+      }
+    } catch (error) {
+      console.error('Deployment error:', error)
+      alert('Error deploying model')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const loadTrainingMemoryAndSessions = async () => {
+    try {
+      // Load training memory
+      const savedMemory = localStorage.getItem('ai_training_training_memory')
+      if (savedMemory) {
+        const memory = JSON.parse(savedMemory)
+        setTrainingMemory(memory)
+      }
+
+      // Load completed training sessions
+      const savedSessions = localStorage.getItem('ai_training_training_sessions')
+      if (savedSessions) {
+        const sessions = JSON.parse(savedSessions)
+        setCompletedTrainingSessions(sessions)
+      }
+    } catch (error) {
+      console.error('Error loading training memory and sessions:', error)
+    }
+  }
+
+  const clearTrainingMemory = () => {
+    if (confirm('Are you sure you want to clear all training memory? This action cannot be undone.')) {
+      setTrainingMemory({})
+      localStorage.removeItem('ai_training_training_memory')
+    }
+  }
+
+  const testAI = async () => {
+    if (!testQuery.trim()) return
+
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: testQuery,
+          context: 'admin_test'
+        })
+      })
+
+      const data = await response.json()
+      setTestResponse(data.response || 'No response generated')
+    } catch (error) {
+      setTestResponse('Error testing AI: ' + error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const filteredKnowledge = knowledgeEntries.filter(entry =>
+    entry.topic.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    entry.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    entry.keywords.some(k => k.toLowerCase().includes(searchQuery.toLowerCase()))
+  )
+
+  const filteredTraining = trainingData.filter(entry =>
+    entry.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    entry.answer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    entry.keywords.some(k => k.toLowerCase().includes(searchQuery.toLowerCase()))
+  )
+
+  return (
+    <div className="min-h-screen bg-slate-900 text-white">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Header */}
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent mb-2">
+              AI Training Center
+            </h1>
+            <p className="text-slate-400">Train and manage your AI customer support agent</p>
+          </div>
+          <a
+            href="/demo"
+            className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 hover:from-purple-600 hover:via-pink-600 hover:to-cyan-600 text-white px-6 py-3 rounded-xl font-semibold flex items-center gap-2 transition-all duration-200 hover:shadow-lg hover:scale-105"
+          >
+            <Sparkles className="w-5 h-5" />
+            View Live Demo
+          </a>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="flex flex-wrap space-x-1 bg-slate-800 rounded-xl p-1 mb-8">
+          {[
+            { id: 'knowledge', label: 'Knowledge Base', icon: Book },
+            { id: 'training', label: 'Training Data', icon: Brain },
+            { id: 'patterns', label: 'Conversation Patterns', icon: MessageSquare },
+            { id: 'faq', label: 'FAQ Library', icon: HelpCircle },
+            { id: 'canned', label: 'Canned Messages', icon: Mail },
+            { id: 'roleplay', label: 'Role-Play Training', icon: Users },
+            { id: 'model', label: 'Model Training', icon: Settings },
+            { id: 'testing', label: 'AI Testing', icon: TestTube },
+            { id: 'analytics', label: 'Analytics', icon: BarChart3 }
+          ].map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id as any)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                activeTab === id
+                  ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-700'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Search and Actions */}
+        <div className="flex justify-between items-center mb-6">
+          <input
+            type="text"
+            placeholder="Search entries..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder-slate-400 w-80"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={saveData}
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition-colors"
+            >
+              <Save className="w-4 h-4" />
+              Save All
+            </button>
+
+            {activeTab === 'training' && (
+              <>
+                <button
+                  onClick={validateTrainingData}
+                  disabled={isLoading || trainingData.length === 0}
+                  className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 disabled:bg-slate-600 px-4 py-2 rounded-lg transition-colors"
+                >
+                  <TestTube className="w-4 h-4" />
+                  Validate Data
+                </button>
+                <button
+                  onClick={startTraining}
+                  disabled={isLoading || trainingData.length < 10}
+                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-600 px-4 py-2 rounded-lg transition-colors"
+                >
+                  <Brain className="w-4 h-4" />
+                  Start Training
+                </button>
+              </>
+            )}
+
+            {activeTab === 'model' && modelInfo && (
+              <button
+                onClick={deployModel}
+                disabled={isLoading}
+                className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-600 px-4 py-2 rounded-lg transition-colors"
+              >
+                <Sparkles className="w-4 h-4" />
+                Deploy Model
+              </button>
+            )}
+            {activeTab === 'knowledge' && (
+              <div className="flex gap-2">
+                <button
+                  onClick={addKnowledgeEntry}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Knowledge
+                </button>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isLoading}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-slate-600 px-4 py-2 rounded-lg transition-colors"
+                  title="Upload files: TXT, JSON, CSV, PDF, DOCX"
+                >
+                  <Upload className="w-4 h-4" />
+                  Upload Files
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept=".txt,.json,.csv,.pdf,.docx,.doc,.xlsx,.xls"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </div>
+            )}
+            {activeTab === 'training' && (
+              <button
+                onClick={addTrainingData}
+                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Add Training
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Content Sections */}
+        <div className="bg-slate-800 rounded-xl p-6">
+
+          {/* Knowledge Base Tab */}
+          {activeTab === 'knowledge' && (
+            <div>
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <Book className="w-6 h-6 text-cyan-400" />
+                Knowledge Base
+              </h2>
+
+              <div className="grid gap-4">
+                {filteredKnowledge.map((entry) => (
+                  <div key={entry.id} className="bg-slate-700 rounded-lg p-4 border border-slate-600">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <span className="bg-cyan-500/20 text-cyan-300 px-2 py-1 rounded text-sm">
+                          {entry.category}
+                        </span>
+                        <h3 className="text-lg font-semibold mt-2">{entry.topic}</h3>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setEditingEntry(entry)}
+                          className="text-blue-400 hover:text-blue-300"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => deleteEntry(entry.id, 'knowledge')}
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <p className="text-slate-300 mb-3">{entry.content}</p>
+
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {entry.keywords.map((keyword, idx) => (
+                        <span key={idx} className="bg-slate-600 text-slate-300 px-2 py-1 rounded-full text-xs">
+                          {keyword}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="flex justify-between items-center text-sm text-slate-400">
+                      <span>Confidence: {(entry.confidence * 100).toFixed(0)}%</span>
+                      <span>Updated: {entry.updatedAt.toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Training Data Tab */}
+          {activeTab === 'training' && (
+            <div>
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <Brain className="w-6 h-6 text-purple-400" />
+                Training Data
+              </h2>
+
+              {/* Training Sessions History */}
+              <div className="mb-8">
+                <h3 className="text-xl font-semibold mb-4 text-white">Completed Training Sessions</h3>
+                {trainingSessions.length === 0 ? (
+                  <div className="bg-slate-700 rounded-lg p-6 text-center">
+                    <p className="text-slate-400">No completed training sessions yet.</p>
+                    <p className="text-slate-500 text-sm mt-2">Complete a roleplay training session to see it here.</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-4">
+                    {trainingSessions.map((session, idx) => (
+                      <div key={session.id || idx} className="bg-slate-700 rounded-lg p-4 border border-slate-600">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <h4 className="font-semibold text-white">{session.scenario?.name || 'Training Session'}</h4>
+                            <p className="text-slate-300 text-sm">{session.customerPersona} Customer</p>
+                          </div>
+                          <div className="text-right">
+                            <span className="bg-green-500/20 text-green-300 px-2 py-1 rounded text-xs">
+                              Score: {session.score || 0}%
+                            </span>
+                            <p className="text-slate-400 text-xs mt-1">
+                              {new Date(session.endTime).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mb-3">
+                          <p className="text-slate-300 text-sm">{session.summary}</p>
+                        </div>
+
+                        <div className="grid md:grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <span className="text-slate-400">Messages:</span>
+                            <span className="text-white ml-1">{session.conversation?.length || 0}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400">Feedback:</span>
+                            <span className="text-white ml-1">{session.feedback?.length || 0}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400">Duration:</span>
+                            <span className="text-white ml-1">
+                              {session.startTime && session.endTime
+                                ? Math.round((new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / 60000) + ' min'
+                                : 'N/A'
+                              }
+                            </span>
+                          </div>
+                        </div>
+
+                        {session.objectives && session.objectives.length > 0 && (
+                          <div className="mt-3">
+                            <p className="text-slate-400 text-xs">Objectives:</p>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {session.objectives.map((obj, objIdx) => (
+                                <span key={objIdx} className="bg-slate-600 text-slate-300 px-2 py-1 rounded text-xs">
+                                  {obj}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="grid gap-4">
+                {filteredTraining.map((entry) => (
+                  <div key={entry.id} className="bg-slate-700 rounded-lg p-4 border border-slate-600">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex gap-2 items-center">
+                        <span className="bg-purple-500/20 text-purple-300 px-2 py-1 rounded text-sm">
+                          {entry.category}
+                        </span>
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          entry.active ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
+                        }`}>
+                          {entry.active ? 'Active' : 'Inactive'}
+                        </span>
+                        <span className="bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded text-xs">
+                          Priority: {entry.priority}
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setEditingEntry(entry)}
+                          className="text-blue-400 hover:text-blue-300"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => deleteEntry(entry.id, 'training')}
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mb-3">
+                      <h4 className="font-semibold text-cyan-300 mb-1">Question:</h4>
+                      <p className="text-slate-300">{entry.question}</p>
+                    </div>
+
+                    <div className="mb-3">
+                      <h4 className="font-semibold text-green-300 mb-1">Answer:</h4>
+                      <p className="text-slate-300">{entry.answer}</p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {entry.keywords.map((keyword, idx) => (
+                        <span key={idx} className="bg-slate-600 text-slate-300 px-2 py-1 rounded-full text-xs">
+                          {keyword}
+                        </span>
+                      ))}
+                    </div>
+
+                    {entry.variations.length > 0 && (
+                      <div className="text-sm text-slate-400">
+                        Variations: {entry.variations.join(', ')}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Model Training Tab */}
+          {activeTab === 'model' && (
+            <div>
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <Settings className="w-6 h-6 text-orange-400" />
+                Model Training & Deployment
+              </h2>
+
+              <div className="space-y-6">
+                {/* Current Model Info */}
+                <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
+                  <h3 className="text-xl font-semibold mb-4">Current Model</h3>
+                  {modelInfo ? (
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-slate-300"><strong>Version:</strong> {modelInfo.version}</p>
+                        <p className="text-slate-300"><strong>Created:</strong> {new Date(modelInfo.createdAt).toLocaleString()}</p>
+                        <p className="text-slate-300"><strong>Training Examples:</strong> {modelInfo.features.trainingPairs}</p>
+                        <p className="text-slate-300"><strong>Categories:</strong> {modelInfo.features.categories}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-300"><strong>Accuracy:</strong> {(modelInfo.metrics.accuracy * 100).toFixed(1)}%</p>
+                        <p className="text-slate-300"><strong>Loss:</strong> {modelInfo.metrics.loss.toFixed(3)}</p>
+                        <p className="text-slate-300"><strong>Validation Score:</strong> {(modelInfo.metrics.validationScore * 100).toFixed(1)}%</p>
+                        <p className="text-slate-300"><strong>Epochs:</strong> {modelInfo.metrics.epochs}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-slate-400">No model currently trained. Start training to create your first AI model.</p>
+                  )}
+                </div>
+
+                {/* Training Session Status */}
+                {trainingSession && (
+                  <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
+                    <h3 className="text-xl font-semibold mb-4">Training Session Status</h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-300">Status:</span>
+                        <span className={`px-3 py-1 rounded-full text-sm ${
+                          trainingSession.status === 'completed' ? 'bg-green-500/20 text-green-300' :
+                          trainingSession.status === 'failed' ? 'bg-red-500/20 text-red-300' :
+                          'bg-yellow-500/20 text-yellow-300'
+                        }`}>
+                          {trainingSession.status.toUpperCase()}
+                        </span>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-300">Progress</span>
+                          <span className="text-slate-300">{trainingSession.progress}%</span>
+                        </div>
+                        <div className="w-full bg-slate-600 rounded-full h-2">
+                          <div
+                            className="bg-gradient-to-r from-purple-500 to-cyan-500 h-2 rounded-full transition-all duration-500"
+                            style={{ width: `${trainingSession.progress}%` }}
+                          ></div>
+                        </div>
+                      </div>
+
+                      {trainingSession.metrics && (
+                        <div className="grid md:grid-cols-4 gap-4 mt-4">
+                          <div className="bg-slate-600 rounded-lg p-3 text-center">
+                            <div className="text-lg font-bold text-green-400">{(trainingSession.metrics.accuracy * 100).toFixed(1)}%</div>
+                            <div className="text-xs text-slate-400">Accuracy</div>
+                          </div>
+                          <div className="bg-slate-600 rounded-lg p-3 text-center">
+                            <div className="text-lg font-bold text-yellow-400">{trainingSession.metrics.loss.toFixed(3)}</div>
+                            <div className="text-xs text-slate-400">Loss</div>
+                          </div>
+                          <div className="bg-slate-600 rounded-lg p-3 text-center">
+                            <div className="text-lg font-bold text-blue-400">{trainingSession.metrics.epochs}</div>
+                            <div className="text-xs text-slate-400">Epochs</div>
+                          </div>
+                          <div className="bg-slate-600 rounded-lg p-3 text-center">
+                            <div className="text-lg font-bold text-purple-400">{(trainingSession.metrics.validationScore * 100).toFixed(1)}%</div>
+                            <div className="text-xs text-slate-400">Validation</div>
+                          </div>
+                        </div>
+                      )}
+
+                      {trainingSession.errors && trainingSession.errors.length > 0 && (
+                        <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-4">
+                          <h4 className="font-semibold text-red-300 mb-2">Training Errors:</h4>
+                          {trainingSession.errors.map((error, idx) => (
+                            <p key={idx} className="text-red-200 text-sm">{error}</p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Training Data Quality */}
+                {validationResults && (
+                  <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
+                    <h3 className="text-xl font-semibold mb-4">Data Quality Report</h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <div className="flex justify-between mb-2">
+                          <span className="text-slate-300">Valid Examples:</span>
+                          <span className="text-green-400 font-semibold">{validationResults.valid}</span>
+                        </div>
+                        <div className="flex justify-between mb-2">
+                          <span className="text-slate-300">Invalid Examples:</span>
+                          <span className="text-red-400 font-semibold">{validationResults.invalid}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-300">Total Examples:</span>
+                          <span className="text-cyan-400 font-semibold">{validationResults.total}</span>
+                        </div>
+                      </div>
+                      <div>
+                        {validationResults.suggestions.length > 0 && (
+                          <div>
+                            <h4 className="font-semibold text-yellow-300 mb-2">Suggestions:</h4>
+                            {validationResults.suggestions.map((suggestion, idx) => (
+                              <p key={idx} className="text-yellow-200 text-sm mb-1">• {suggestion}</p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {validationResults.issues.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="font-semibold text-red-300 mb-2">Issues Found:</h4>
+                        <div className="bg-red-500/10 rounded-lg p-3 max-h-32 overflow-y-auto">
+                          {validationResults.issues.map((issue, idx) => (
+                            <p key={idx} className="text-red-200 text-sm mb-1">• {issue}</p>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Training Memory Section */}
+                <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-semibold text-white">🧠 AI Coach Training Memory</h3>
+                    {Object.keys(trainingMemory).length > 0 && (
+                      <button
+                        onClick={clearTrainingMemory}
+                        className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-white text-sm"
+                      >
+                        Clear Memory
+                      </button>
+                    )}
+                  </div>
+
+                  {Object.keys(trainingMemory).length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="text-6xl mb-4">🧠</div>
+                      <h4 className="text-lg font-semibold text-slate-300 mb-2">No Training Memory Yet</h4>
+                      <p className="text-slate-400 text-sm max-w-md mx-auto">
+                        The AI coach will remember feedback from roleplay training sessions. Start a training session and provide feedback to build the AI's memory.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="grid md:grid-cols-2 gap-4 mb-6">
+                        <div className="bg-purple-900/30 rounded-lg p-4 border border-purple-600">
+                          <h4 className="text-purple-300 font-semibold mb-2">Memory Stats</h4>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-slate-300">Total Scenario Types:</span>
+                              <span className="text-purple-300 font-medium">{Object.keys(trainingMemory).length}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-300">Total Feedback Items:</span>
+                              <span className="text-purple-300 font-medium">
+                                {Object.values(trainingMemory).reduce((sum, items) => sum + items.length, 0)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-300">Most Trained Scenario:</span>
+                              <span className="text-purple-300 font-medium capitalize">
+                                {Object.entries(trainingMemory).reduce((max, [type, items]) =>
+                                  items.length > (trainingMemory[max]?.length || 0) ? type : max,
+                                  Object.keys(trainingMemory)[0] || 'None'
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-blue-900/30 rounded-lg p-4 border border-blue-600">
+                          <h4 className="text-blue-300 font-semibold mb-2">Learning Progress</h4>
+                          <div className="space-y-2">
+                            {Object.entries(trainingMemory).map(([scenarioType, feedbacks]) => (
+                              <div key={scenarioType} className="flex justify-between items-center">
+                                <span className="text-slate-300 capitalize text-sm">{scenarioType}:</span>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-16 bg-slate-600 rounded-full h-2">
+                                    <div
+                                      className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full"
+                                      style={{ width: `${Math.min(100, (feedbacks.length / 10) * 100)}%` }}
+                                    ></div>
+                                  </div>
+                                  <span className="text-blue-300 text-xs w-8">{feedbacks.length}/10</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {Object.entries(trainingMemory).map(([customerType, feedbacks]) => {
+                        // Extract clean learnings from feedback entries
+                        const learnings: string[] = []
+
+                        feedbacks.forEach(feedback => {
+                          // Parse format: [Scenario Name] feedback text (Original response: "...")
+                          const match = feedback.match(/^\[.*?\](.+?)(?:\(Original response:|$)/)
+                          if (match) {
+                            const learning = match[1].trim()
+                            learnings.push(learning)
+                          } else {
+                            // Fallback if format doesn't match
+                            learnings.push(feedback)
+                          }
+                        })
+
+                        // Get emoji for customer type
+                        const customerEmoji = {
+                          angry: '😠',
+                          confused: '😕',
+                          'price-sensitive': '💰',
+                          'tech-savvy': '🤓',
+                          enthusiastic: '😍',
+                          general: '👤'
+                        }[customerType] || '🤖'
+
+                        return (
+                          <div key={customerType} className="bg-slate-600 rounded-lg p-4">
+                            <h4 className="text-white font-medium mb-3 capitalize flex items-center gap-2">
+                              <span className="bg-gradient-to-r from-purple-500 to-cyan-500 text-white px-2 py-1 rounded text-xs">
+                                {customerEmoji} {customerType.replace('-', ' ')}
+                              </span>
+                              <span className="text-slate-300 text-sm">- {learnings.length} Key Learning{learnings.length !== 1 ? 's' : ''}</span>
+                            </h4>
+
+                            {/* Aggregated Learnings List */}
+                            <div className="bg-slate-700 rounded-lg p-3 border border-slate-500">
+                              <div className="space-y-2">
+                                {learnings.map((learning, idx) => (
+                                  <div key={idx} className="flex items-start gap-2 text-sm">
+                                    <span className="text-green-400 font-bold mt-0.5">{idx + 1}.</span>
+                                    <span className="text-slate-200 flex-1">{learning}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Show raw feedback in collapsed section */}
+                            <details className="mt-3">
+                              <summary className="text-xs text-slate-400 cursor-pointer hover:text-slate-300">
+                                View raw feedback entries ({feedbacks.length})
+                              </summary>
+                              <div className="space-y-2 mt-2 max-h-48 overflow-y-auto">
+                                {feedbacks.map((feedback, index) => (
+                                  <div key={index} className="text-xs text-slate-300 bg-slate-700 rounded p-2 border-l-2 border-purple-500">
+                                    <span className="text-purple-400">#{index + 1}:</span> {feedback}
+                                  </div>
+                                ))}
+                              </div>
+                            </details>
+                          </div>
+                        )
+                      })}
+
+                      <div className="mt-6 p-4 bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-lg border border-purple-600">
+                        <h4 className="text-purple-300 font-semibold mb-2">🎯 How Training Memory Works</h4>
+                        <div className="grid md:grid-cols-2 gap-4 text-sm text-slate-300">
+                          <div>
+                            <h5 className="font-medium text-white mb-1">Collection:</h5>
+                            <p>Every time you provide feedback during roleplay training, it's automatically saved and categorized by customer scenario type.</p>
+                          </div>
+                          <div>
+                            <h5 className="font-medium text-white mb-1">Application:</h5>
+                            <p>The AI coach applies relevant memory when responding to similar customer types, avoiding repeated mistakes and improving responses.</p>
+                          </div>
+                          <div>
+                            <h5 className="font-medium text-white mb-1">Management:</h5>
+                            <p>Memory is limited to 10 items per scenario type, keeping only the most recent and relevant feedback for optimal performance.</p>
+                          </div>
+                          <div>
+                            <h5 className="font-medium text-white mb-1">Impact:</h5>
+                            <p>Accumulated feedback creates increasingly sophisticated responses, tailored to handle specific customer personality types effectively.</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* AI Testing Tab */}
+          {activeTab === 'testing' && (
+            <div>
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <TestTube className="w-6 h-6 text-green-400" />
+                AI Testing
+              </h2>
+
+              <div className="bg-slate-700 rounded-lg p-6">
+                <div className="mb-6">
+                  <label className="block text-sm font-medium mb-2">Test Query</label>
+                  <input
+                    type="text"
+                    value={testQuery}
+                    onChange={(e) => setTestQuery(e.target.value)}
+                    placeholder="Ask the AI a question..."
+                    className="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-white"
+                  />
+                  <button
+                    onClick={testAI}
+                    disabled={isLoading || !testQuery.trim()}
+                    className="mt-3 bg-green-600 hover:bg-green-700 disabled:bg-slate-600 px-6 py-2 rounded-lg transition-colors"
+                  >
+                    {isLoading ? 'Testing...' : 'Test AI Response'}
+                  </button>
+                </div>
+
+                {testResponse && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2">AI Response</label>
+                    <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
+                      <p className="text-slate-300 whitespace-pre-wrap">{testResponse}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Role-Play Training Tab */}
+          <div style={{ display: activeTab === 'roleplay' ? 'block' : 'none' }}>
+            <RoleplayTraining onTrainingSessionsUpdate={setTrainingSessions} />
+          </div>
+
+          {/* FAQ Library Tab */}
+          {activeTab === 'faq' && (
+            <div>
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <HelpCircle className="w-6 h-6 text-cyan-400" />
+                FAQ Library
+              </h2>
+
+              <div className="mb-6 flex gap-4">
+                <button
+                  onClick={() => {
+                    const newFaq: FAQ = {
+                      id: `faq-${Date.now()}`,
+                      keywords: [],
+                      question: 'New FAQ Question',
+                      answer: 'Answer here...',
+                      category: 'general',
+                      is_active: true
+                    }
+                    setFaqs([...faqs, newFaq])
+                    setEditingEntry(newFaq)
+                  }}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add FAQ
+                </button>
+              </div>
+
+              <div className="grid gap-4">
+                {faqs.map((faq) => (
+                  <div key={faq.id} className="bg-slate-700 rounded-lg p-4 border border-slate-600">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1">
+                        <span className="bg-cyan-500/20 text-cyan-300 px-2 py-1 rounded text-sm">
+                          {faq.category}
+                        </span>
+                        <h3 className="text-lg font-semibold mt-2">{faq.question}</h3>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setEditingEntry(faq)}
+                          className="text-blue-400 hover:text-blue-300"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm('Delete this FAQ?')) {
+                              setFaqs(faqs.filter(f => f.id !== faq.id))
+                            }
+                          }}
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <p className="text-slate-300 mb-3 whitespace-pre-line">{faq.answer}</p>
+
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {faq.keywords.map((keyword, idx) => (
+                        <span key={idx} className="bg-slate-600 text-slate-300 px-2 py-1 rounded-full text-xs">
+                          {keyword}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className={`px-2 py-1 rounded ${faq.is_active ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
+                        {faq.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {editingEntry && 'question' in editingEntry && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-slate-800 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <h3 className="text-xl font-bold mb-4">Edit FAQ</h3>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Category</label>
+                        <select
+                          value={(editingEntry as FAQ).category}
+                          onChange={(e) => setEditingEntry({ ...editingEntry, category: e.target.value as FAQ['category'] })}
+                          className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
+                        >
+                          <option value="pricing">Pricing</option>
+                          <option value="products">Products</option>
+                          <option value="shipping">Shipping</option>
+                          <option value="returns">Returns</option>
+                          <option value="results">Results</option>
+                          <option value="ingredients">Ingredients</option>
+                          <option value="general">General</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Question</label>
+                        <input
+                          type="text"
+                          value={(editingEntry as FAQ).question}
+                          onChange={(e) => setEditingEntry({ ...editingEntry, question: e.target.value })}
+                          className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Answer</label>
+                        <textarea
+                          value={(editingEntry as FAQ).answer}
+                          onChange={(e) => setEditingEntry({ ...editingEntry, answer: e.target.value })}
+                          rows={6}
+                          className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Keywords (comma-separated)</label>
+                        <input
+                          type="text"
+                          value={(editingEntry as FAQ).keywords.join(', ')}
+                          onChange={(e) => setEditingEntry({
+                            ...editingEntry,
+                            keywords: e.target.value.split(',').map(k => k.trim()).filter(k => k)
+                          })}
+                          className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
+                          placeholder="price, cost, how much"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={(editingEntry as FAQ).is_active ?? true}
+                          onChange={(e) => setEditingEntry({ ...editingEntry, is_active: e.target.checked })}
+                          className="w-4 h-4"
+                        />
+                        <label className="text-sm">Active</label>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 mt-6">
+                      <button
+                        onClick={() => {
+                          setFaqs(faqs.map(f => f.id === (editingEntry as FAQ).id ? editingEntry as FAQ : f))
+                          setEditingEntry(null)
+                        }}
+                        className="flex-1 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setEditingEntry(null)}
+                        className="flex-1 bg-slate-600 hover:bg-slate-700 px-4 py-2 rounded-lg"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Canned Messages Tab */}
+          {activeTab === 'canned' && (
+            <div>
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <Mail className="w-6 h-6 text-pink-400" />
+                Canned Messages
+              </h2>
+
+              <div className="mb-6 flex gap-4">
+                <button
+                  onClick={() => {
+                    const newMsg: CannedMessage = {
+                      id: `canned-${Date.now()}`,
+                      scenario: 'new-scenario',
+                      template: 'Message template here...',
+                      variables: []
+                    }
+                    setCannedMsgs([...cannedMsgs, newMsg])
+                    setEditingEntry(newMsg)
+                  }}
+                  className="flex items-center gap-2 bg-pink-600 hover:bg-pink-700 px-4 py-2 rounded-lg transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Canned Message
+                </button>
+              </div>
+
+              <div className="grid gap-4">
+                {cannedMsgs.map((msg) => (
+                  <div key={msg.id} className="bg-slate-700 rounded-lg p-4 border border-slate-600">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1">
+                        <span className="bg-pink-500/20 text-pink-300 px-2 py-1 rounded text-sm">
+                          {msg.id}
+                        </span>
+                        <h3 className="text-lg font-semibold mt-2">{msg.scenario}</h3>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setEditingEntry(msg)}
+                          className="text-blue-400 hover:text-blue-300"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm('Delete this canned message?')) {
+                              setCannedMsgs(cannedMsgs.filter(m => m.id !== msg.id))
+                            }
+                          }}
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <p className="text-slate-300 mb-3 whitespace-pre-line">{msg.template}</p>
+
+                    {msg.variables && msg.variables.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        <span className="text-sm text-slate-400">Variables:</span>
+                        {msg.variables.map((variable, idx) => (
+                          <span key={idx} className="bg-slate-600 text-slate-300 px-2 py-1 rounded-full text-xs">
+                            {variable}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {editingEntry && 'scenario' in editingEntry && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <div className="bg-slate-800 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <h3 className="text-xl font-bold mb-4">Edit Canned Message</h3>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">ID</label>
+                        <input
+                          type="text"
+                          value={(editingEntry as CannedMessage).id}
+                          onChange={(e) => setEditingEntry({ ...editingEntry, id: e.target.value })}
+                          className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Scenario Description</label>
+                        <input
+                          type="text"
+                          value={(editingEntry as CannedMessage).scenario}
+                          onChange={(e) => setEditingEntry({ ...editingEntry, scenario: e.target.value })}
+                          className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
+                          placeholder="e.g., User says 'too expensive'"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Template</label>
+                        <textarea
+                          value={(editingEntry as CannedMessage).template}
+                          onChange={(e) => setEditingEntry({ ...editingEntry, template: e.target.value })}
+                          rows={8}
+                          className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Variables (comma-separated)</label>
+                        <input
+                          type="text"
+                          value={(editingEntry as CannedMessage).variables?.join(', ') || ''}
+                          onChange={(e) => setEditingEntry({
+                            ...editingEntry,
+                            variables: e.target.value.split(',').map(v => v.trim()).filter(v => v)
+                          })}
+                          className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
+                          placeholder="userName, productName"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 mt-6">
+                      <button
+                        onClick={() => {
+                          setCannedMsgs(cannedMsgs.map(m => m.id === (editingEntry as CannedMessage).id ? editingEntry as CannedMessage : m))
+                          setEditingEntry(null)
+                        }}
+                        className="flex-1 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setEditingEntry(null)}
+                        className="flex-1 bg-slate-600 hover:bg-slate-700 px-4 py-2 rounded-lg"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Analytics Tab */}
+          {activeTab === 'analytics' && (
+            <div>
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <BarChart3 className="w-6 h-6 text-orange-400" />
+                Analytics
+              </h2>
+
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Database className="w-8 h-8 text-cyan-400" />
+                    <div>
+                      <h3 className="font-semibold">Knowledge Entries</h3>
+                      <p className="text-2xl font-bold text-cyan-400">{knowledgeEntries.length}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Brain className="w-8 h-8 text-purple-400" />
+                    <div>
+                      <h3 className="font-semibold">Training Examples</h3>
+                      <p className="text-2xl font-bold text-purple-400">{trainingData.length}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Sparkles className="w-8 h-8 text-green-400" />
+                    <div>
+                      <h3 className="font-semibold">Active Training</h3>
+                      <p className="text-2xl font-bold text-green-400">
+                        {trainingData.filter(t => t.active).length}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default AITrainingCenter

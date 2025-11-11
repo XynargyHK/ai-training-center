@@ -1,0 +1,235 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { matchFAQ, getCannedMessage, determineResponseType } from '@/lib/faq-library'
+
+interface KnowledgeEntry {
+  id: string
+  category: string
+  topic: string
+  content: string
+  keywords: string[]
+  confidence: number
+}
+
+interface TrainingData {
+  id: string
+  question: string
+  answer: string
+  category: string
+  keywords: string[]
+  variations: string[]
+  tone: 'professional' | 'friendly' | 'expert' | 'casual'
+  priority: number
+  active: boolean
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const { message, context = 'general', conversationHistory = [] } = await request.json()
+
+    if (!message || typeof message !== 'string') {
+      return NextResponse.json(
+        { error: 'Message is required' },
+        { status: 400 }
+      )
+    }
+
+    // Determine response type (FAQ, canned message, or AI)
+    const responseType = determineResponseType(message, conversationHistory)
+
+    let response: string
+    let usedTemplate = false
+
+    if (responseType === 'faq') {
+      // Use FAQ template
+      const faq = matchFAQ(message)
+      if (faq) {
+        response = faq.answer
+        usedTemplate = true
+      } else {
+        response = await generateAIResponse(message.toLowerCase(), context)
+      }
+    } else if (responseType === 'canned') {
+      // Use canned message
+      const messageLower = message.toLowerCase()
+
+      // First message - greeting
+      if (conversationHistory.length === 0) {
+        const greeting = getCannedMessage('greeting')
+        response = greeting?.template || await generateAIResponse(message.toLowerCase(), context)
+        usedTemplate = !!greeting
+      }
+      // Price objection
+      else if (messageLower.includes('too expensive') || messageLower.includes('too much') || messageLower.includes('can\'t afford')) {
+        const priceObj = getCannedMessage('price-objection-general')
+        response = priceObj?.template || await generateAIResponse(message.toLowerCase(), context)
+        usedTemplate = !!priceObj
+      }
+      // Amazon/cheaper alternatives
+      else if (messageLower.includes('amazon') || messageLower.includes('cheaper') || messageLower.includes('walmart') || messageLower.includes('target')) {
+        const amazonComp = getCannedMessage('amazon-comparison')
+        response = amazonComp?.template || await generateAIResponse(message.toLowerCase(), context)
+        usedTemplate = !!amazonComp
+      }
+      else {
+        response = await generateAIResponse(message.toLowerCase(), context)
+      }
+    } else {
+      // Use AI generation
+      response = await generateAIResponse(message.toLowerCase(), context)
+    }
+
+    return NextResponse.json({
+      success: true,
+      response,
+      context,
+      usedTemplate,
+      responseType,
+      timestamp: new Date().toISOString()
+    })
+
+  } catch (error) {
+    console.error('AI chat error:', error)
+    return NextResponse.json(
+      { error: 'Failed to generate AI response' },
+      { status: 500 }
+    )
+  }
+}
+
+async function generateAIResponse(message: string, context: string): Promise<string> {
+  // Comprehensive customer service knowledge base
+  const knowledgeBase = {
+    // Basic customer service questions
+    cleanser: "🧴 Choose a gentle cleanser for your skin type: gel cleansers for oily skin, cream cleansers for dry skin, and micellar water for sensitive skin. Cleanse twice daily - morning and evening.",
+
+    moisturizer: "💧 Moisturizer is essential for all skin types! Even oily skin needs hydration. Look for lightweight, oil-free formulas for oily skin, and richer creams for dry skin. Apply to damp skin for better absorption.",
+
+    sunscreen: "☀️ SPF 30+ daily is non-negotiable! Apply 15-30 minutes before sun exposure. Reapply every 2 hours. Physical sunscreens (zinc oxide/titanium dioxide) are best for sensitive skin.",
+
+    // Ingredient-specific responses
+    retinol: "🌙 Start with 0.25-0.5% retinol 2-3x/week at night. Gradually increase frequency. Always use sunscreen during the day. May cause initial dryness - this is normal! Great for anti-aging and acne.",
+
+    "vitamin c": "🍊 Vitamin C serums brighten skin and provide antioxidant protection. Use in the morning under sunscreen. Start with 10-15% concentration. L-ascorbic acid is most potent but can be irritating for sensitive skin.",
+
+    niacinamide: "✨ Niacinamide (Vitamin B3) reduces oil production, minimizes pores, and calms inflammation. Great for oily/acne-prone skin. Can be used AM/PM. Generally well-tolerated by all skin types.",
+
+    hyaluronic: "💦 Hyaluronic acid holds 1000x its weight in water! Apply to damp skin, then seal with moisturizer. Perfect for all skin types. Use morning and evening for maximum hydration boost.",
+
+    salicylic: "🧪 Salicylic acid (BHA) penetrates pores to clear blackheads and whiteheads. Start 2-3x/week. Use sunscreen as it increases photosensitivity. Great for oily/acne-prone skin.",
+
+    // Skin conditions
+    acne: "🎯 For acne: gentle cleanser + salicylic acid or benzoyl peroxide + oil-free moisturizer + sunscreen. Don't over-cleanse! Be patient - results take 6-12 weeks. Consider seeing a dermatologist for severe acne.",
+
+    "dry skin": "🥛 Dry skin needs: gentle cream cleanser + hydrating toner + hyaluronic acid serum + rich moisturizer + gentle exfoliation 1-2x/week. Avoid harsh scrubs and over-washing.",
+
+    "oily skin": "🧽 Oily skin routine: gel cleanser + BHA/salicylic acid + lightweight moisturizer + broad-spectrum SPF. Don't skip moisturizer - dehydrated skin produces more oil!",
+
+    sensitive: "🌸 Sensitive skin needs: fragrance-free, gentle products. Patch test everything! Look for ceramides, niacinamide, and avoid essential oils, alcohol, and harsh actives.",
+
+    // Age-specific advice
+    "anti-aging": "🕰️ Anti-aging essentials: retinol/retinoids, vitamin C, sunscreen, moisturizer with peptides. Start early with prevention! Consistency is key - results take 3-6 months.",
+
+    wrinkles: "📏 For wrinkles: retinol at night, vitamin C in morning, peptide moisturizer, daily SPF. Consider professional treatments like Botox or dermal fillers for deeper lines.",
+
+    // Product recommendations
+    drugstore: "🏪 Great drugstore options: CeraVe (moisturizers), The Ordinary (serums), Neutrogena (sunscreen), Paula's Choice (BHA). You don't need expensive products for great skin!",
+
+    korean: "🇰🇷 K-beauty favorites: double cleansing, essences, sheet masks, snail mucin (healing), centella asiatica (soothing). Focus on hydration and gentle ingredients.",
+
+    // Routine building
+    routine: "📋 Basic routine: AM - cleanser, vitamin C serum, moisturizer, SPF. PM - cleanser, treatment (retinol/acid), moisturizer. Add products slowly and patch test!",
+
+    order: "1️⃣ Product order: cleanser → toner → serum (thinnest to thickest) → moisturizer → sunscreen (AM only). Wait 10-15 minutes between active ingredients.",
+
+    // Seasonal/climate advice
+    winter: "❄️ Winter customer service: switch to cream cleansers, add face oil, use humidifier, don't skip SPF. Cold air and indoor heating can severely dehydrate skin.",
+
+    summer: "🌞 Summer adjustments: lightweight products, extra SPF protection, oil-free formulas, antioxidant serums for pollution protection. Reapply sunscreen frequently!",
+
+    humid: "🌿 Humid climate: gel cleansers, lightweight serums, oil-free moisturizers, waterproof sunscreen. Focus on oil control and frequent cleansing after sweating.",
+
+    // Common mistakes
+    mistakes: "❌ Common mistakes: over-cleansing, skipping moisturizer on oily skin, not using SPF daily, introducing too many products at once, not patch testing, expecting overnight results.",
+
+    // Professional advice
+    dermatologist: "👩‍⚕️ See a dermatologist for: persistent acne, suspicious moles, severe skin conditions, prescription treatments, or if over-the-counter products aren't working after 3 months.",
+  }
+
+  // Advanced pattern matching for more natural responses
+  const message_lower = message.toLowerCase()
+
+  // Direct keyword matches
+  for (const [keyword, response] of Object.entries(knowledgeBase)) {
+    if (message_lower.includes(keyword)) {
+      return response
+    }
+  }
+
+  // Pattern matching for common question structures
+  if (message_lower.includes('routine') || message_lower.includes('order')) {
+    return knowledgeBase.routine
+  }
+
+  if (message_lower.includes('price') || message_lower.includes('cost') || message_lower.includes('plan')) {
+    return "💰 Our personalized plans: Essential ($29/month), Pro ($49/month), Concierge ($89/month). All include custom formulations, AI analysis, and ongoing support. 30-day money-back guarantee!"
+  }
+
+  if (message_lower.includes('ingredient') && (message_lower.includes('safe') || message_lower.includes('avoid'))) {
+    return "⚠️ Generally avoid: harsh alcohols, fragrances (if sensitive), essential oils (can irritate), and don't mix retinol with AHA/BHA. Always patch test new ingredients!"
+  }
+
+  if (message_lower.includes('pregnant') || message_lower.includes('pregnancy')) {
+    return "🤰 During pregnancy avoid: retinoids, salicylic acid >2%, hydroquinone, and chemical sunscreens. Safe options: vitamin C, niacinamide, hyaluronic acid, mineral SPF. Consult your doctor!"
+  }
+
+  if (message_lower.includes('age') || message_lower.includes('start')) {
+    return "📅 Start anti-aging in your 20s with SPF and basic routine. Add vitamin C in late 20s, retinol in early 30s. It's never too late to start! Consistency matters more than age."
+  }
+
+  if (message_lower.includes('purge') || message_lower.includes('worse')) {
+    return "🌋 Skin purging is normal with active ingredients like retinol/acids. Existing clogs come to surface faster. Lasts 4-6 weeks. If beyond 8 weeks or very irritated, reduce frequency."
+  }
+
+  if (message_lower.includes('natural') || message_lower.includes('organic')) {
+    return "🌱 Natural doesn't always mean better! Some effective ingredients are synthetic. Focus on ingredients that work for your skin type rather than 'natural' labels. Patch test everything!"
+  }
+
+  // Fallback responses based on general categories
+  if (message_lower.includes('help') || message_lower.includes('advice') || message_lower.includes('recommend')) {
+    return "🎯 I'm here to help with customer service advice! Ask me about ingredients, routines, products, skin concerns, or our personalized plans. What specific skin goal are you working on?"
+  }
+
+  if (message_lower.includes('product') || message_lower.includes('buy')) {
+    return "🛍️ For product recommendations, I need to know your skin type, main concerns, and budget. Our quiz can create a personalized routine just for you! What's your biggest skin concern?"
+  }
+
+  // Default helpful response
+  return "🌟 I'd love to help with your customer service question! Could you be more specific about what you're looking for? I can provide advice on ingredients, routines, products, skin concerns, or our personalized plans."
+}
+
+// Helper function to calculate response relevance (for future ML integration)
+function calculateRelevance(query: string, knowledge: any): number {
+  // Simple keyword matching for now
+  // In production, this would use more sophisticated NLP
+  const queryWords = query.toLowerCase().split(' ')
+  const knowledgeText = JSON.stringify(knowledge).toLowerCase()
+
+  let matches = 0
+  queryWords.forEach(word => {
+    if (knowledgeText.includes(word)) matches++
+  })
+
+  return matches / queryWords.length
+}
+
+// GET handler for API status check
+export async function GET() {
+  return NextResponse.json({
+    status: 'ready',
+    message: 'AI Chat API is operational',
+    endpoints: {
+      POST: 'Send a chat message',
+    },
+    version: '1.0.0'
+  })
+}

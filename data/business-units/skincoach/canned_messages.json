@@ -1,0 +1,216 @@
+[
+  {
+    "id": "canned-gen-1762332845754-0",
+    "scenario": "Body Lift Booster Tip",
+    "template": "Reveal visibly lifted, smoother, more confident skin in just 7 days with our Sculpt Lift Booster. Formulated with peppermint, palmarosa, green tea, and coconut to firm, tone, and hydrate for a youthful, radiant look.",
+    "variables": []
+  },
+  {
+    "id": "canned-gen-1762332845754-1",
+    "scenario": "Caviar Glow Booster Tip",
+    "template": "Revive dull, tired skin and hair with our Caviar Glow Booster. Infused with nourishing caviar extract, vitamin B5, and hyaluronic acid, it deeply hydrates and restores a luminous, youthful glow.",
+    "variables": []
+  },
+  {
+    "id": "canned-gen-1762332845754-2",
+    "scenario": "Detox & Drain Booster Tip",
+    "template": "Smooth, drain, and define with our Detox & Drain Booster. Powered by caffeine, green tea, and arnica, it visibly reduces cellulite and body puffiness for a more toned, sculpted look.",
+    "variables": []
+  },
+  {
+    "id": "canned-gen-1762332845754-3",
+    "scenario": "Lift+ Booster Tip",
+    "template": "Experience an instant lifting and firming effect with our Lift+ Booster. Formulated with DMAE, it naturally tightens and tones facial muscles for a youthful, lifted complexion.",
+    "variables": []
+  },
+  {
+    "id": "canned-gen-1762332845754-4",
+    "scenario": "Bright+ Booster Tip",
+    "template": "Renew and brighten your complexion with our Bright+ Booster. Containing a gentle exfoliating blend of glycolic acid, lactic acid, and licorice, it gently resurfaces to reveal a luminous, even-toned glow.",
+    "variables": []
+  },
+  {
+    "id": "canned-gen-1762332845754-5",
+    "scenario": "C-Radiance Booster Tip",
+    "template": "Illuminate, smooth, and renew your skin with our C-Radiance Booster. Powered by stabilized vitamin C, it brightens, firms, and protects against visible signs of aging for a radiant, youthful complexion.",
+    "variables": []
+  },
+  {
+    "id": "canned-gen-1762332845754-6",
+    "scenario": "AcneDefense Booster Tip",
+    "template": "Calm the chaos and reveal clarity with our AcneDefense Booster. Formulated with purifying tea tree oil, it fights acne, controls oil, and soothes inflammation for a fresh, healthy complexion.",
+    "variables": []
+  },
+  {
+    "id": "canned-gen-1762332845754-7",
+    "scenario": "B3 Barrier Booster Tip",
+    "template": "Soothe irritation and revive radiance with our B3 Barrier Booster. Powered by niacinamide, it strengthens your skin's barrier, evens tone, and calms breakouts for a clearer, healthier glow.",
+    "variables": []
+  },
+  {
+    "id": "canned-gen-1762332845754-8",
+    "scenario": "AgeDefense Booster Tip",
+    "template": "Defend your youth daily with our AgeDefense Booster. Containing resveratrol and pomegranate seed oil, it brightens, firms, and shields your skin from UV and blue-light stress for a more youthful, radiant complexion.",
+    "variables": []
+  },
+  {
+    "id": "canned-gen-1762332845754-9",
+    "scenario": "DermaRepair Booster Tip",
+    "template": "Heal, calm, and renew your skin with our DermaRepair Booster. Infused with soothing curcumin, aloe vera, and rosehip oil, it accelerates recovery, reduces redness, and rebuilds your skin's barrier for a smoother, healthier glow.",
+    "variables": []
+  },
+  {
+    "id": "canned-gen-1762333929042-0",
+    "scenario": "Body Lift Booster",
+    "template": "Our Body Lift Booster firms, tones, and hydrates to reveal visibly lifted, smoother, more confident skin in just 7 days. Formulated with peppermint, palmarosa, green tea, and coconut, it enhances skin elasticity and density for a sculpted, youthful look.",
+    "variables": [],
+    "category": "skincare advice"
+  },
+  {
+    "id": "canned-gen-1762333929042-1",
+    "scenario": "Caviar Glow Booster",
+    "template": "Revive your skin and hair with our Caviar Glow Booster. Infused with nourishing caviar, vitamin B5, and hyaluronic acid, it deeply hydrates, regenerates, and restores a radiant, youthful glow. Experience smoother, stronger hair and a luminous complexion.",
+    "variables": [],
+    "category": "skincare advice"
+  },
+  {
+    "id": "canned-gen-1762333929042-2",
+    "scenario": "Detox & Drain Booster",
+    "template": "Smooth, drain, and define with our Detox & Drain Booster. Clinically proven to reduce cellulite and body puffiness, this botanical blend with caffeine, green tea, and arnica visibly refines contours and leaves skin silky-soft.",
+    "variables": [],
+    "category": "skincare advice"
+  },
+  {
+    "id": "canned-gen-1762333929042-3",
+    "scenario": "Lift+ Booster",
+    "template": "Instantly lift and firm your complexion with our Lift+ Booster. Powered by a clinically recognized lifting molecule, it tightens facial muscles to provide an instant and long-term lifting effect, minimizing wrinkles and fine lines for a more youthful, defined look.",
+    "variables": [],
+    "category": "skincare advice"
+  },
+  {
+    "id": "canned-gen-1762333929042-4",
+    "scenario": "Bright+ Booster",
+    "template": "Brighten, renew, and refine your skin with our Bright+ Booster. Formulated with a gentle resurfacing complex of glycolic, lactic, and citric acids, it evens out skin tone, reduces dullness, and restores a luminous, healthy glow.",
+    "variables": [],
+    "category": "skincare advice"
+  },
+  {
+    "id": "canned-gen-1762333929042-5",
+    "scenario": "C-Radiance Booster",
+    "template": "Illuminate, smooth, and revive your skin with our C-Radiance Booster. Powered by stabilized vitamin C, this high-performance booster brightens, firms, and protects against visible signs of aging for a radiant, youthful complexion.",
+    "variables": [],
+    "category": "skincare advice"
+  },
+  {
+    "id": "canned-gen-1762333929042-6",
+    "scenario": "AcneDefense Booster",
+    "template": "Calm the chaos and reveal clarity with our AcneDefense Booster. Formulated with purifying tea tree oil, this soothing yet powerful booster fights acne, controls oil, and calms inflammation for a matte, healthy-looking complexion.",
+    "variables": [],
+    "category": "skincare advice"
+  },
+  {
+    "id": "canned-gen-1762333929042-7",
+    "scenario": "B3 Barrier Booster",
+    "template": "Revive radiance and soothe irritation with our B3 Barrier Booster. Enriched with niacinamide, this booster rebuilds your skin's barrier, evens tone, and calms acne and redness for a visibly calmer, brighter, and healthier glow.",
+    "variables": [],
+    "category": "skincare advice"
+  },
+  {
+    "id": "canned-gen-1762333929042-8",
+    "scenario": "AgeDefense Booster",
+    "template": "Defend your youth daily with our AgeDefense Booster. Powered by resveratrol and pomegranate seed oil, this booster brightens, firms, and protects your skin from UV and blue-light stress, revealing a more youthful, radiant complexion.",
+    "variables": [],
+    "category": "skincare advice"
+  },
+  {
+    "id": "canned-gen-1762333929042-9",
+    "scenario": "DermaRepair Booster",
+    "template": "Heal, calm, and renew your skin with our DermaRepair Booster. Infused with soothing curcumin, aloe vera, and rosehip oil, this restorative booster accelerates recovery, reduces redness, and rebuilds the skin barrier for smoother, healthier, and more resilient skin.",
+    "variables": [],
+    "category": "skincare advice"
+  },
+  {
+    "id": "canned-gen-1762339784652-0",
+    "scenario": "Skin-Brightening Secrets: How To Glow From Within",
+    "template": "Tired of looking in the mirror and seeing a dull, lifeless complexion? You're not alone. Many women struggle with skin that looks tired and lackluster by mid-day, no matter how much highlighter they pile on. \n\nThe culprit? Years of environmental damage, stress, and poor lifestyle habits can zap your skin's natural radiance. But what if you could recapture that youthful, luminous glow - without spending hours on a complicated skincare routine?\n\nAt [Company Name], we've unlocked the secret to skin-brightening that goes beyond surface-level fixes. Our advanced Vitamin C + Niacinamide complex is clinically proven to boost collagen production, fade discoloration, and reveal a healthy, luminous complexion from within.\n\nUnlike harsh exfoliants or heavy makeup, our formula gently yet effectively brightens dull skin by targeting the root causes. You'll notice a difference in just 7 days - your skin will appear more even-toned, fine lines will be diminished, and you'll have a noticeable, lit-from-within glow.\n\nGet ready to wake up to a radiant, refreshed complexion every single morning. Rediscover your glow with our skin-brightening superstar - learn more on our landing page! ✨",
+    "variables": [],
+    "category": "beauty tips"
+  },
+  {
+    "id": "canned-gen-1762339784652-1",
+    "scenario": "The Nighttime Routine That Transforms Skin Overnight",
+    "template": "Do you dread your nighttime skincare routine? Between the cleansing, serums, creams, and masks, it can feel like a chore - especially when you don't see the results you want.\n\nBut what if we told you that your nighttime routine could be the key to transforming your skin overnight? With the right products and techniques, you can wake up looking refreshed, radiant, and years younger.\n\nAt [Company Name], our clinically-proven Retinol + Peptide Complex is designed to work overnight to smooth, firm, and brighten your complexion. Unlike harsh retinols that cause irritation, our formula uses a gentle time-release system to minimize redness and peeling.\n\nSimply apply a small amount before bed and let the retinol, peptides, and nourishing botanicals get to work. You'll wake up with visibly plumped, more youthful-looking skin - fine lines will be softened, dark spots will fade, and your complexion will have a healthy, dewy glow.\n\nNo more waking up to dull, tired-looking skin. Transform your complexion while you sleep with our potent Retinol + Peptide Complex. Shop now on our landing page! 💤",
+    "variables": [],
+    "category": "beauty tips"
+  },
+  {
+    "id": "canned-gen-1762339784652-2",
+    "scenario": "The Anti-Aging Serum That Erases Years In Just Weeks",
+    "template": "Confession time: how often do you really look at your reflection and love what you see? If you're like most women, signs of aging can leave you feeling self-conscious and wishing you could turn back the clock.\n\nFrom stubborn fine lines and wrinkles to sagging skin and age spots, the visible effects of time and environmental damage can take a serious toll on your confidence. You've probably tried every cream, serum, and injectable under the sun - but the results are often disappointing at best.\n\nBut what if we told you there's a clinically-proven solution that can erase years from your complexion in just a few short weeks? Our advanced Anti-Aging Serum features a powerful blend of retinol, peptides, and botanical extracts that visibly smooth, firm, and brighten skin.\n\nUnlike harsh retinols that leave your skin red and peeling, our time-release formula delivers these age-defying ingredients gently yet effectively. You'll see an immediate plumping effect, with long-term improvements in fine lines, wrinkles, and loss of elasticity.\n\nStop settling for lackluster results and start revealing your most youthful, radiant skin. Discover the transformative power of our Anti-Aging Serum - shop now on our landing page! ✨",
+    "variables": [],
+    "category": "beauty tips"
+  },
+  {
+    "id": "canned-gen-1762340325012-0",
+    "scenario": "Stop Wasting Money on Harsh Acne Treatments - This All-Natural Solution Actually Works",
+    "template": "Tired of wasting money on harsh chemical acne treatments that dry out your skin and cause more breakouts? We understand your frustration - that's why we created our best-selling Clarifying Acne Serum. \n\nOur revolutionary formula is made with 100% natural, clean ingredients that target the root causes of acne without stripping or irritating your complexion. Featuring a powerful blend of salicylic acid, tea tree oil, and vitamin E, this serum deeply cleanses pores, fights bacteria, and calms inflammation - all while restoring your skin's natural balance.\n\nUnlike harsh prescription creams or drying over-the-counter treatments, our Clarifying Acne Serum works with your skin, not against it. You'll start seeing clearer, healthier-looking skin in just 7 days, with reduced redness, fewer breakouts, and a more even, radiant complexion. No more wasting time and money on products that don't deliver real results.\n\nImagine waking up each morning with confidence, knowing your skin looks its best. Our Clarifying Acne Serum makes that dream a reality. Ready to transform your skin for good? Discover the power of our best-selling formula on our landing page now! ✨",
+    "variables": [],
+    "category": "beauty tips"
+  },
+  {
+    "id": "canned-gen-1762340325012-1",
+    "scenario": "Reverse Visible Signs of Aging With This Overnight Renewal Serum",
+    "template": "Are fine lines, wrinkles, and dullness making you look older than you feel? We know how frustrating it can be to see your complexion losing its youthful glow, no matter how many expensive creams and serums you try. \n\nThat's why we created our Overnight Renewal Serum - a nourishing, multi-tasking formula that targets the visible signs of aging while you sleep. Powered by a potent blend of retinol, hyaluronic acid, and vitamin C, this serum works overnight to visibly plump, smooth, and brighten your skin.\n\nYou'll wake up each morning with a more radiant, youthful-looking complexion. Fine lines will appear diminished, dark spots will fade, and your skin will feel baby-soft and hydrated. Our exclusive formula also helps boost collagen production to strengthen the skin's structure and improve elasticity over time.\n\nImagine looking in the mirror and seeing your most youthful, glowing skin staring back at you. That's the power of our Overnight Renewal Serum. Stop wasting money on products that don't deliver real results - shop our bestselling anti-aging formula on our landing page now! 💫",
+    "variables": [],
+    "category": "beauty tips"
+  },
+  {
+    "id": "canned-gen-1762340325012-2",
+    "scenario": "Volumize Thin, Lifeless Hair With This Transformative Thickening Mist",
+    "template": "Do you struggle with fine, limp hair that always falls flat, no matter how much product you use? We know the frustration of trying countless volumizing sprays and mousses that promise big results but deliver disappointment.\n\nThat's why we created our Thickening Hair Mist - an innovative, weightless formula that instantly adds fullness, bounce, and lift to even the thinnest, most lifeless strands. Powered by a unique blend of biotin, caffeine, and strengthening proteins, this transformative mist works to plump up each individual hair fiber, creating the appearance of thicker, more voluminous hair.\n\nJust a few spritzes before styling gives you a bouncy, salon-worthy blowout that lasts all day. Your hair will look and feel fuller, with improved movement and a healthy shine. Over time, the nourishing ingredients in our Thickening Mist also help strengthen and fortify strands, reducing breakage and promoting longer, stronger hair growth.\n\nStop settling for thin, limp locks. Discover the volumizing power of our Thickening Hair Mist and get ready to flaunt your best, most vibrant hair yet. Shop this game-changing formula on our landing page! 💕",
+    "variables": [],
+    "category": "beauty tips"
+  },
+  {
+    "id": "canned-gen-1762340396393-0",
+    "scenario": "Fade Dark Spots & Discoloration Overnight",
+    "template": "Tired of spending your mornings covering up dark spots and discoloration? You deserve a brighter, more even-toned complexion - and we have the solution that can make it happen overnight.\n\nOur KojicClear Booster is a daily radiance-boosting powerhouse that visibly fades dark spots, melasma, and other stubborn discoloration. Infused with the brightening duo of kojic acid and licorice extract, this serum inhibits melanin production to lighten and even out your skin tone. In just 2 weeks, you'll notice a dramatic improvement in clarity, with dark marks and hyperpigmentation dramatically reduced.\n\nBut KojicClear does more than just brighten - it also restores a healthy glow by improving elasticity and hydration. The formula nourishes with vitamin E and fatty acids, leaving your skin feeling softer, smoother, and more radiant than ever. No more waking up to a dull, uneven complexion. With just a few drops of KojicClear, you'll finally achieve the lit-from-within glow you've been dreaming of.\n\nReady to say goodbye to dark spots for good? Discover KojicClear on our landing page and watch your skin transform overnight! ✨",
+    "variables": [],
+    "category": "skincare advice"
+  },
+  {
+    "id": "canned-gen-1762340396393-1",
+    "scenario": "Shrink Pores & Control Oil Instantly",
+    "template": "Struggling with enlarged pores, oily skin, and constant shine? The secret to your smoothest, most matte complexion might be just one drop away.\n\nIntroducing our AcneDefense Booster - a powerful, yet gentle formula that tackles excess oil, breakouts, and enlarged pores from the root. Infused with 96% pure terpinen-4-ol from Australian tea tree oil, this booster delivers an unparalleled antimicrobial and sebum-regulating punch. It targets the acne-causing bacteria and fungi that clog your pores, while also reducing inflammation to calm existing blemishes.\n\nBut AcneDefense is more than just an acne-fighter - it's a skin-balancing powerhouse. The formula utilizes botanical antioxidants to soothe redness and irritation, leaving you with a clear, shine-free complexion that lasts all day. Say goodbye to mid-afternoon shine and hello to a fresh, matte glow.\n\nWhether you struggle with stubborn blackheads, persistent breakouts, or an oily T-zone, AcneDefense Booster is your new skincare superhero. Purify, balance, and mattify your skin with just a few drops - and experience the difference of truly clean, clarified pores. Get your bottle on our landing page now! 💕",
+    "variables": [],
+    "category": "skincare advice"
+  },
+  {
+    "id": "canned-gen-1762340396393-2",
+    "scenario": "Firm, Lift & Sculpt Sagging Skin",
+    "template": "Watching your skin slowly lose its youthful bounce and contours can be disheartening. But what if we told you there's a way to turn back the clock and restore your natural facial structure - no needles or invasive treatments required?\n\nOur Sculpt Lift Booster is a skin-firming powerhouse that visibly lifts, tones, and firms sagging skin in just 7 days. Powered by a blend of peppermint, palmarosa, and green tea oils, this booster stimulates collagen and elastin production to improve elasticity and density. The result? Facial contours that appear sculpted, lifted, and more defined - without any downtime or discomfort.\n\nBut the Sculpt Lift Booster doesn't just firm and tone - it also deeply hydrates for a smooth, supple, and radiant finish. Nourishing ingredients like coconut fruit extract and hydrolyzed soy protein replenish moisture levels, keeping your complexion bouncy and plump. No more dull, tired-looking skin - just a youthful, healthy glow that turns heads.\n\nIf you're ready to defy gravity and reclaim your natural facial structure, discover the power of the Sculpt Lift Booster on our landing page. In just one week, you'll see a visible difference in lift, tone, and firmness. ✨",
+    "variables": [],
+    "category": "skincare advice"
+  },
+  {
+    "id": "canned-gen-1762347972313-0",
+    "scenario": "Dull, Lackluster Skin? Here's Your 2-Minute Skin Refresher",
+    "template": "Tired of your skin looking dull and lifeless by mid-afternoon? We hear you - it's so frustrating when your complexion goes from glowing to blah in just a few hours. \n\nThe culprit is often dehydration, which robs your skin of that healthy, radiant appearance. But you don't have to settle for a dull, lackluster look all day. Our Skin Refresh Mist is the quick pick-me-up your skin craves.\n\nInfused with antioxidant-rich botanical extracts and soothing aloe, our lightweight mist instantly rehydrates and revives tired skin. Just a few spritzes instantly boost your glow, leaving you looking fresh and luminous. \n\nThe best part? It takes just 2 minutes to use - simply mist over clean skin whenever you need a midday refresh. Within seconds, you'll feel your complexion quenched and energized, ready to face the rest of your day with confidence.\n\nExperience the transformative power of our Skin Refresh Mist. Learn more on our landing page and get ready to say goodbye to dull, dehydrated skin for good! ✨",
+    "variables": [],
+    "category": "beauty tips"
+  },
+  {
+    "id": "canned-gen-1762347972313-1",
+    "scenario": "The 'Fountain of Youth' Ingredient Dermatologists Swear By",
+    "template": "If you're serious about keeping your skin looking youthful and radiant, there's one anti-aging powerhouse ingredient you need to know about: retinol.\n\nAlso known as the 'fountain of youth' for skin, retinol is a derivative of vitamin A that's been clinically proven to stimulate collagen production, fade fine lines and wrinkles, and improve skin texture and tone. In fact, dermatologists consistently recommend retinol as one of the most effective actives for reversing signs of aging.\n\nThe only problem? Traditional retinol creams can be harsh and irritating, causing redness, flaking, and sensitivity. That's why we created our Retinol Renewal Serum - it delivers all the skin-transforming benefits of retinol, without the unpleasant side effects.\n\nOur formula uses a gentle, time-released retinol complex that gradually delivers the active to your skin, minimizing irritation. It's also infused with soothing ingredients like vitamin E and green tea to nourish and protect your complexion.\n\nAfter just a few weeks of consistent use, you'll notice a dramatic difference in the appearance of fine lines, wrinkles, and sun damage. Your skin will look smoother, brighter, and years younger.\n\nGet the youthful, radiant glow you deserve with our Retinol Renewal Serum. Learn more on our landing page! 💫",
+    "variables": [],
+    "category": "beauty tips"
+  },
+  {
+    "id": "canned-gen-1762347972313-2",
+    "scenario": "Got Dull, Tired-Looking Skin? Brighten Up With This Glow-Boosting Serum",
+    "template": "Do you ever look in the mirror and feel like your skin just looks...dull and lifeless? Like it's lost that healthy, vibrant glow you used to love?\n\nWe get it - life can really take a toll on your complexion. Stress, lack of sleep, environmental pollutants...it all contributes to a tired, lackluster appearance that makes you feel less than your best.\n\nBut what if we told you there's a simple solution that can revive and refresh your skin in just a few days? Introducing our Brightening Glow Serum - the glow-boosting powerhouse your complexion has been craving.\n\nPacked with a potent blend of natural skin brighteners like vitamin C, licorice root, and tranexamic acid, this serum works quickly to visibly even out your skin tone, fade dark spots and discoloration, and restore your healthy, radiant glow. Think of it as an instant pick-me-up for dull, fatigued skin.\n\nWithin just 1 week of consistent use, you'll notice your complexion looking smoother, brighter, and more luminous. Dullness and uneven texture will be minimized, and your skin will have that coveted, lit-from-within radiance.\n\nReady to get your glow back? Discover the transformative power of our Brightening Glow Serum on our landing page. Your skin will thank you! 💕",
+    "variables": [],
+    "category": "beauty tips"
+  }
+]

@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(cat:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run dev:*)",
+      "Bash(unzip:*)",
+      "Bash(npm install:*)",
+      "Bash(xargs sed:*)",
+      "Bash(xargs sed -i \"s/skincoach/AI assistant/gi\")",
+      "Bash(node update-chat-api.js:*)",
+      "Bash(node:*)",
+      "Bash(taskkill:*)",
+      "Bash(netstat:*)",
+      "Bash(awk:*)",
+      "Bash(xargs -I {} cmd //c \"taskkill //F //PID {}\")",
+      "Bash(powershell.exe -Command \"12504,16860,18528,19776,40868,41500,7312 | ForEach-Object { try { Stop-Process -Id $_ -Force -ErrorAction Stop; Write-Host ''Killed PID ''$_ } catch { Write-Host ''Could not kill PID ''$_ } }\")",
+      "Bash(timeout /t 3)",
+      "Bash(nul)",
+      "Bash(powershell.exe:*)",
+      "Bash(timeout /t 10)",
+      "Bash(curl:*)",
+      "Bash(ollama:*)",
+      "Bash(\"C:\\Users\\Denny\\AppData\\Local\\Programs\\Ollama\\ollama.exe\" list)",
+      "Bash(\"C:\\Users\\Denny\\AppData\\Local\\Programs\\Ollama\\ollama.exe\" run qwen2.5:7b)",
+      "Bash(timeout:*)",
+      "Bash(findstr:*)",
+      "Bash(find:*)",
+      "Bash(npx tsx:*)",
+      "Bash(del \"C:\\Users\\Denny\\ai-training-center\\src\\lib\\storage.ts\")",
+      "Bash(move:*)",
+      "Bash(cmd //c \"move demo livechat\")",
+      "Bash(test:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

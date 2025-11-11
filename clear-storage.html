@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear AI Training Center Storage</title>
+</head>
+<body>
+    <h1>Clear AI Training Center Storage</h1>
+    <button onclick="clearStorage()">Clear All localStorage</button>
+    <div id="result"></div>
+
+    <script>
+        function clearStorage() {
+            // Clear all AI training related items
+            const keys = Object.keys(localStorage);
+            const aiKeys = keys.filter(key =>
+                key.includes('AI assistant') ||
+                key.includes('ai_training') ||
+                key.includes('skincoach')
+            );
+
+            aiKeys.forEach(key => {
+                localStorage.removeItem(key);
+            });
+
+            document.getElementById('result').innerHTML = `
+                <p>Cleared ${aiKeys.length} items:</p>
+                <ul>${aiKeys.map(k => `<li>${k}</li>`).join('')}</ul>
+                <p><strong>Please refresh your main application</strong></p>
+            `;
+        }
+    </script>
+</body>
+</html>

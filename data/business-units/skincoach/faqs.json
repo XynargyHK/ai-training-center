@@ -1,0 +1,690 @@
+[
+  {
+    "id": "faq-gen-1762329445893-0",
+    "question": "How much does the Sculpt Lift Booster cost?",
+    "answer": "The Sculpt Lift Booster costs $10 for the 2ml size and $50 for the 30ml size.",
+    "category": "pricing",
+    "keywords": [
+      "cost",
+      "price",
+      "Sculpt Lift Booster"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762329445893-1",
+    "question": "What are the prices for the Caviar Glow Booster?",
+    "answer": "The Caviar Glow Booster is priced at $10 for the 2ml size and $50 for the 30ml size.",
+    "category": "pricing",
+    "keywords": [
+      "cost",
+      "price",
+      "Caviar Glow Booster"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762329445893-2",
+    "question": "How much does the Detox & Drain Booster cost?",
+    "answer": "The Detox & Drain Booster is $8 for the 2ml size and $40 for the 30ml size.",
+    "category": "pricing",
+    "keywords": [
+      "cost",
+      "price",
+      "Detox & Drain Booster"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762329445893-3",
+    "question": "What is the price of the Lift+ Booster?",
+    "answer": "The Lift+ Booster is priced at $10 for the 2ml size and $50 for the 30ml size.",
+    "category": "pricing",
+    "keywords": [
+      "cost",
+      "price",
+      "Lift+ Booster"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762329445893-4",
+    "question": "How much does the Bright+ Booster cost?",
+    "answer": "The Bright+ Booster is $10 for the 2ml size and $50 for the 30ml size.",
+    "category": "pricing",
+    "keywords": [
+      "cost",
+      "price",
+      "Bright+ Booster"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762329445893-5",
+    "question": "What is the pricing for the C-Radiance Booster?",
+    "answer": "The C-Radiance Booster is priced at $10 for the 2ml size and $50 for the 30ml size.",
+    "category": "pricing",
+    "keywords": [
+      "cost",
+      "price",
+      "C-Radiance Booster"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762329445893-6",
+    "question": "How much does the AcneDefense Booster cost?",
+    "answer": "The AcneDefense Booster is $8 for the 2ml size and $40 for the 30ml size.",
+    "category": "pricing",
+    "keywords": [
+      "cost",
+      "price",
+      "AcneDefense Booster"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762329445893-7",
+    "question": "What are the prices for the B3 Barrier Booster?",
+    "answer": "The B3 Barrier Booster is priced at $8 for the 2ml size and $40 for the 30ml size.",
+    "category": "pricing",
+    "keywords": [
+      "cost",
+      "price",
+      "B3 Barrier Booster"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762329445893-8",
+    "question": "How much does the AgeDefense Booster cost?",
+    "answer": "The AgeDefense Booster is $10 for the 2ml size and $50 for the 30ml size.",
+    "category": "pricing",
+    "keywords": [
+      "cost",
+      "price",
+      "AgeDefense Booster"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762329445893-9",
+    "question": "What is the pricing for the DermaRepair Booster?",
+    "answer": "The DermaRepair Booster costs $8 for the 2ml size and $40 for the 30ml size.",
+    "category": "pricing",
+    "keywords": [
+      "cost",
+      "price",
+      "DermaRepair Booster"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762329494629-0",
+    "question": "What products do you offer?",
+    "answer": "We offer a comprehensive range of high-performance skincare boosters, each designed to target specific concerns and deliver visible results. Our products include the Sculpt Lift Booster, Caviar Glow Booster, Detox & Drain Booster, and several others that nourish, firm, and revitalize the skin.",
+    "category": "products",
+    "keywords": [
+      "products",
+      "skincare",
+      "boosters",
+      "results"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762329494629-1",
+    "question": "What are the key ingredients in your products?",
+    "answer": "Our products feature a blend of carefully selected natural ingredients that are clinically proven to be effective. For example, the Sculpt Lift Booster contains peppermint essential oil, palmarosa essential oil, green tea oil, and coconut fruit extract to firm, tone, and hydrate the skin. The Caviar Glow Booster is infused with caviar extract, vitamin B5, and hyaluronic acid to nourish and revive dull, tired skin.",
+    "category": "products",
+    "keywords": [
+      "ingredients",
+      "natural",
+      "clinical",
+      "effectiveness"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762329494629-2",
+    "question": "What benefits can I expect from using your products?",
+    "answer": "Our products are designed to deliver a wide range of skin benefits. The Sculpt Lift Booster, for instance, firms and tones the skin, enhancing smoothness and suppleness for a more youthful, contoured appearance. The Caviar Glow Booster deeply nourishes and regenerates the skin and hair, reviving a radiant, healthy glow. Each of our boosters targets specific concerns to help you achieve your desired results.",
+    "category": "products",
+    "keywords": [
+      "benefits",
+      "firming",
+      "toning",
+      "nourishing",
+      "radiance"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762329494629-3",
+    "question": "How long does it take to see results from using your products?",
+    "answer": "Our products are formulated to deliver fast-acting results. For example, the Sculpt Lift Booster has been clinically proven to show visibly firmer, smoother skin in just 14 days. The Caviar Glow Booster can reveal smoother, more radiant skin in as little as 7 days. Many of our boosters provide measurable improvements in as little as 1-2 weeks of consistent use.",
+    "category": "products",
+    "keywords": [
+      "results",
+      "timeline",
+      "clinical",
+      "firming",
+      "radiance"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762329494629-4",
+    "question": "Are your products suitable for all skin types?",
+    "answer": "We formulate our products to be suitable for a wide range of skin types. Many of our boosters, like the Bright+ Booster and the B3 Barrier Booster, are specifically designed to be gentle and effective for even the most sensitive skin. We also have targeted options for oily, acne-prone, or aging skin to ensure there is a product that meets your unique needs.",
+    "category": "products",
+    "keywords": [
+      "skin types",
+      "sensitive",
+      "targeted",
+      "effectiveness"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762329494629-5",
+    "question": "Can I use multiple boosters together?",
+    "answer": "Absolutely! We encourage you to layer and combine our boosters to create a personalized skincare regimen that addresses all of your concerns. Many of our customers find great success in using a combination of boosters, such as the Sculpt Lift Booster for firming and the Caviar Glow Booster for nourishment. We recommend consulting our product guides or speaking with our skincare experts to determine the best booster combination for your needs.",
+    "category": "products",
+    "keywords": [
+      "layering",
+      "combination",
+      "personalization",
+      "expertise"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762329494629-6",
+    "question": "Do you offer any sample sizes or travel sizes of your products?",
+    "answer": "We do offer sample sizes and travel-friendly options for many of our boosters. This allows you to try out different products and find the perfect ones for your skin before committing to the full-size versions. Our sample sizes provide 2ml of product, while our travel sizes are 30ml, making them ideal for on-the-go use or shorter trips. You can find these options listed alongside our full-size products on our website.",
+    "category": "products",
+    "keywords": [
+      "samples",
+      "travel size",
+      "trial",
+      "convenience"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762329494629-7",
+    "question": "Are your products cruelty-free and sustainable?",
+    "answer": "Yes, we are committed to developing products that are not only effective but also ethically and environmentally responsible. All of our boosters are cruelty-free and made with sustainable, natural ingredients. We also prioritize eco-friendly packaging and manufacturing processes to minimize our impact on the planet. You can feel good about using our products, knowing they are made with care for both you and the environment.",
+    "category": "products",
+    "keywords": [
+      "cruelty-free",
+      "sustainable",
+      "natural",
+      "eco-friendly"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762329494629-8",
+    "question": "Do you offer any bundled or discounted product sets?",
+    "answer": "We do offer bundled product sets and occasional discounts to help make our high-performance boosters more accessible. For example, our Radiance Ritual Set includes the Caviar Glow Booster and the C-Radiance Booster at a discounted price. We also run limited-time promotions and seasonal offers throughout the year. Be sure to check our website or sign up for our newsletter to stay up-to-date on any current deals or bundled sets.",
+    "category": "products",
+    "keywords": [
+      "bundles",
+      "discounts",
+      "promotions",
+      "value"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762329494629-9",
+    "question": "Can I purchase your products in-store or do you only offer online sales?",
+    "answer": "Currently, we sell our products exclusively through our online store. This allows us to provide a seamless and convenient shopping experience for our customers. However, we are constantly evaluating opportunities to expand our retail presence. If in-store purchasing becomes an option in the future, we will be sure to update our website and communicate this to our customers.",
+    "category": "products",
+    "keywords": [
+      "purchasing",
+      "online",
+      "retail",
+      "availability"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762331895487-0",
+    "question": "How long will it take to receive my order?",
+    "answer": "We ship all orders within 1-2 business days. Delivery times vary depending on your location, but most customers receive their orders within 5-7 business days of placing the order.",
+    "category": "shipping",
+    "keywords": [
+      "delivery time",
+      "shipping speed",
+      "order processing"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762331895487-1",
+    "question": "Do you offer express shipping options?",
+    "answer": "Yes, we have several expedited shipping choices available. You can select 2-day or next-day delivery at checkout for an additional fee. These faster shipping methods ensure your order arrives quickly.",
+    "category": "shipping",
+    "keywords": [
+      "expedited shipping",
+      "fast delivery",
+      "delivery options"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762331895487-2",
+    "question": "Can I track the status of my order?",
+    "answer": "Absolutely, we provide full order tracking capabilities. Once your order ships, you'll receive a tracking number that you can use to monitor the delivery status on our website or with the carrier.",
+    "category": "shipping",
+    "keywords": [
+      "order tracking",
+      "delivery status",
+      "tracking number"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762331895487-3",
+    "question": "Do you ship internationally?",
+    "answer": "Yes, we offer international shipping to over 50 countries worldwide. Delivery times and costs may vary based on your location, but we're happy to provide a quote for shipping to your country.",
+    "category": "shipping",
+    "keywords": [
+      "international shipping",
+      "global delivery",
+      "shipping locations"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762331895487-4",
+    "question": "What shipping carriers do you use?",
+    "answer": "We work with several trusted shipping carriers, including USPS, FedEx, and UPS. The carrier used for your order will depend on your location and the shipping method you select at checkout.",
+    "category": "shipping",
+    "keywords": [
+      "shipping carriers",
+      "delivery services",
+      "shipping providers"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762331895487-5",
+    "question": "Is there a minimum order amount for free shipping?",
+    "answer": "Yes, we offer free standard shipping on all orders over $50. If your order total is less than $50, a small shipping fee will be added at checkout.",
+    "category": "shipping",
+    "keywords": [
+      "free shipping",
+      "minimum order",
+      "shipping costs"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762331895487-6",
+    "question": "Can I choose a specific delivery date?",
+    "answer": "Unfortunately, we do not offer the ability to select a specific delivery date at this time. Delivery times are estimated based on the shipping method you choose, but we cannot guarantee delivery on a particular day.",
+    "category": "shipping",
+    "keywords": [
+      "scheduled delivery",
+      "delivery date selection",
+      "shipping timeframe"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762331895487-7",
+    "question": "Do you ship to PO boxes?",
+    "answer": "Yes, we are able to ship to PO boxes. However, please note that expedited shipping options like next-day or 2-day delivery are not available for PO box addresses. Standard ground shipping is the recommended method for PO box deliveries.",
+    "category": "shipping",
+    "keywords": [
+      "PO box shipping",
+      "delivery locations",
+      "shipping restrictions"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762331895487-8",
+    "question": "How much does shipping cost?",
+    "answer": "Our standard shipping rates start at $5.99 for orders under $50, and shipping is free for all orders over $50. Expedited shipping options like 2-day and next-day delivery are also available for an additional fee.",
+    "category": "shipping",
+    "keywords": [
+      "shipping costs",
+      "shipping fees",
+      "free shipping"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762331895487-9",
+    "question": "Can I cancel or change my shipping method after placing an order?",
+    "answer": "If your order has not yet shipped, you're welcome to contact our customer service team to request a change to your shipping method. However, please note that changes may incur additional fees or affect the delivery timeline.",
+    "category": "shipping",
+    "keywords": [
+      "shipping changes",
+      "order modifications",
+      "shipping method update"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762331994002-0",
+    "question": "Can I return this product if I'm not satisfied?",
+    "answer": "Absolutely, we offer a full refund if you're not completely satisfied with your purchase. Simply return the unused portion within 30 days of delivery for a full refund of the purchase price. We want to ensure you're happy with your order.",
+    "category": "returns",
+    "keywords": [
+      "return",
+      "refund",
+      "satisfaction"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762331994002-1",
+    "question": "How do I go about returning an item?",
+    "answer": "Returning an item is simple. Just reach out to our customer service team and they'll provide you with the return instructions and a prepaid return label. We make the returns process hassle-free so you can get your refund quickly.",
+    "category": "returns",
+    "keywords": [
+      "return",
+      "process",
+      "customer service"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762331994002-2",
+    "question": "What is your returns policy?",
+    "answer": "Our returns policy is designed to provide you with peace of mind. We offer a 30-day return window on all purchases. If for any reason you're not satisfied, you can return the unused portion for a full refund of the purchase price. There are no restocking fees or hidden charges.",
+    "category": "returns",
+    "keywords": [
+      "returns policy",
+      "refund",
+      "satisfaction"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762331994002-3",
+    "question": "Is there a time limit for returns?",
+    "answer": "Yes, we have a 30-day return window. As long as the product is unused and in its original condition, you can return it within 30 days of delivery for a full refund. This gives you plenty of time to try the product and make sure it meets your needs.",
+    "category": "returns",
+    "keywords": [
+      "return window",
+      "time limit",
+      "refund"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762331994002-4",
+    "question": "What if I'm not happy with the product?",
+    "answer": "If you're not completely satisfied with your purchase, we encourage you to return it. We stand behind the quality of our products and want to ensure you're happy. Simply send back the unused portion within 30 days and we'll provide a full refund of the purchase price, no questions asked.",
+    "category": "returns",
+    "keywords": [
+      "return",
+      "refund",
+      "satisfaction"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762331994002-5",
+    "question": "Can I exchange an item if I need a different size or color?",
+    "answer": "Absolutely, we're happy to facilitate exchanges. If you need a different size, color, or variant of the product, just let our customer service team know and they'll help you get the correct item. Exchanges are processed the same as returns, with no additional fees.",
+    "category": "returns",
+    "keywords": [
+      "exchange",
+      "size",
+      "color"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762331994002-6",
+    "question": "How long does it take to process a return?",
+    "answer": "We aim to process all returns within 5-7 business days of receiving the item back. Once we receive your returned product, we'll issue the refund to the original payment method as soon as possible. You'll receive a confirmation email once the refund has been processed.",
+    "category": "returns",
+    "keywords": [
+      "return process",
+      "refund",
+      "timeline"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762331994002-7",
+    "question": "Is there a restocking fee for returns?",
+    "answer": "No, we do not charge any restocking fees for returns. As long as the product is unused and in its original condition, we'll provide a full refund of the purchase price. Our returns process is designed to be hassle-free for our customers.",
+    "category": "returns",
+    "keywords": [
+      "return",
+      "refund",
+      "restocking fee"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762331994002-8",
+    "question": "What if the product is damaged when I receive it?",
+    "answer": "If the product is damaged or defective upon arrival, please let us know right away. We'll work with you to resolve the issue, whether that's a replacement, refund, or repair. Your satisfaction is our top priority, so we'll do whatever it takes to make it right.",
+    "category": "returns",
+    "keywords": [
+      "damaged product",
+      "refund",
+      "replacement"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762331994002-9",
+    "question": "How do I initiate a return?",
+    "answer": "We offer a simple return process. If you are not satisfied with your purchase, you can return the item within 30 days for a full refund. To initiate a return, please contact our customer service team by phone or email. They will provide you with the necessary return instructions and a prepaid shipping label to send the item back to us. We want to ensure you are completely satisfied, so please don't hesitate to reach out if you have any questions about our return policy.",
+    "category": "returns",
+    "keywords": [
+      "return process",
+      "customer service",
+      "instructions"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762348103227-0",
+    "question": "How long will it take for me to see results from using your product?",
+    "answer": "According to our clinical studies, 92% of users saw visibly firmer, smoother skin in just 14 days of consistent use. We formulated this product to deliver faster results compared to standard firming creams.",
+    "category": "product results",
+    "keywords": [
+      "results",
+      "timeline",
+      "clinical studies",
+      "firming"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762348103227-1",
+    "question": "What kind of benefits can I expect to see from your product?",
+    "answer": "Our Sculpt Lift Booster is designed to firm, tone, hydrate, and refresh your skin, revealing a visibly lifted, smoother, and more confident look in just 7 days. The key actives like peppermint oil and green tea work to enhance skin elasticity, density, and barrier function for an all-around rejuvenating effect.",
+    "category": "product results",
+    "keywords": [
+      "benefits",
+      "firming",
+      "toning",
+      "hydrating",
+      "lifting",
+      "confidence"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762348103227-5",
+    "question": "Will your Bright+ Booster help reduce the appearance of my dark spots and pigmentation?",
+    "answer": "Yes, our Bright+ Booster is clinically proven to reduce the intensity of melasma and other pigmentation marks by up to 33% in just 7 days. 90% of users also experienced smoother texture in 1 week, while 85% saw brighter, more even-toned skin within 14 days.",
+    "category": "product results",
+    "keywords": [
+      "brightening",
+      "dark spots",
+      "pigmentation",
+      "smoothness",
+      "even tone"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762360425471-0",
+    "question": "What ingredients are in the Sculpt Lift Booster?",
+    "answer": "The Sculpt Lift Booster contains key ingredients like peppermint essential oil, palmarosa essential oil, green tea oil, coconut fruit extract, and hydrolyzed soy protein. These ingredients firm, tone, hydrate, and refresh the skin, revealing visibly lifted, smoother, and more confident-looking skin in just 7 days.",
+    "category": "ingredients",
+    "keywords": [
+      "sculpt lift booster",
+      "ingredients",
+      "essential oils",
+      "hydrolyzed soy protein"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762360425471-1",
+    "question": "What are the main active ingredients in the Caviar Glow Booster?",
+    "answer": "The Caviar Glow Booster contains caviar extract, which is rich in amino acids, proteins, omega-3s, vitamins, and trace minerals to deeply nourish, regenerate, and hydrate the skin and hair. It also includes D-panthenol (vitamin B5) to strengthen and heal the skin and hair, as well as hyaluronic acid to plump and lock in deep hydration.",
+    "category": "ingredients",
+    "keywords": [
+      "caviar glow booster",
+      "caviar extract",
+      "vitamin b5",
+      "hyaluronic acid"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762360425471-2",
+    "question": "Can you tell me more about the key actives in the Detox & Drain Booster?",
+    "answer": "The Detox & Drain Booster contains caffeine, green tea oil, and arnica montana oil as key actives. Caffeine reduces fat accumulation and improves microcirculation, green tea oil provides antioxidant benefits and enhances fat metabolism, and arnica montana oil has anti-inflammatory and circulation-boosting properties. These ingredients work together to smooth, drain, and tone the skin, reducing the appearance of cellulite and body puffiness.",
+    "category": "ingredients",
+    "keywords": [
+      "detox drain booster",
+      "caffeine",
+      "green tea oil",
+      "arnica montana oil",
+      "cellulite",
+      "puffiness"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762360425471-3",
+    "question": "What are the key actives in the Lift+ Booster?",
+    "answer": "The Lift+ Booster contains dimethylaminoethanol bitartrate (DMAE), which is a clinically recognized lifting molecule derived from fish. DMAE naturally tightens and tones the facial muscles, providing an instant and long-term lifting effect to visibly reduce wrinkles and fine lines while improving skin firmness and muscle tone.",
+    "category": "ingredients",
+    "keywords": [
+      "lift+ booster",
+      "dmae",
+      "lifting",
+      "wrinkles",
+      "fine lines",
+      "firmness"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762360425471-4",
+    "question": "I'd like to know more about the Bright+ Booster ingredients.",
+    "answer": "The Bright+ Booster contains a synergistic complex of glycolic acid, lactic acid, citric acid, licorice extract, and oat oil. This combination of gentle exfoliating acids and soothing botanical ingredients brightens the skin, evens out the tone, and refines the texture while maintaining hydration and comfort, even for sensitive skin types.",
+    "category": "ingredients",
+    "keywords": [
+      "bright+ booster",
+      "glycolic acid",
+      "lactic acid",
+      "citric acid",
+      "licorice extract",
+      "oat oil",
+      "brightening",
+      "exfoliation"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762360425471-5",
+    "question": "What are the key actives in the C-Radiance Booster?",
+    "answer": "The C-Radiance Booster contains a high concentration of ascorbic acid, which is the most active and potent form of vitamin C. Ascorbic acid brightens the skin, firms, and protects by stimulating collagen synthesis, reinforcing skin structure and elasticity, and preventing the formation of new pigmentation.",
+    "category": "ingredients",
+    "keywords": [
+      "c-radiance booster",
+      "vitamin c",
+      "ascorbic acid",
+      "brightening",
+      "firmness",
+      "antioxidant"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762360425471-6",
+    "question": "Can you tell me about the ingredients in the AcneDefense Booster?",
+    "answer": "The AcneDefense Booster contains 96% Terpinen-4-ol, the key active compound from Australian tea tree oil. This powerful antimicrobial and anti-inflammatory ingredient purifies, balances, and clears acne-prone skin while also calming irritation and redness. The booster helps control oil, fight blemish-causing bacteria, and restore a clear, healthy complexion.",
+    "category": "ingredients",
+    "keywords": [
+      "acnedefense booster",
+      "tea tree oil",
+      "terpinen-4-ol",
+      "antimicrobial",
+      "anti-inflammatory",
+      "acne",
+      "oil control"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762360425471-7",
+    "question": "What does the B3 Barrier Booster contain to help rebuild my skin's barrier?",
+    "answer": "The B3 Barrier Booster contains niacinamide, which is vitamin B3. Niacinamide energizes skin cells, reinforces barrier repair, and rebalances oil and inflammation to renew the complexion. It strengthens the skin's barrier, improves hydration and elasticity, and reduces hyperpigmentation and sallowness for a calm, clear, and radiant look.",
+    "category": "ingredients",
+    "keywords": [
+      "b3 barrier booster",
+      "niacinamide",
+      "vitamin b3",
+      "skin barrier",
+      "hydration",
+      "elasticity",
+      "hyperpigmentation"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762360425471-8",
+    "question": "Can you tell me more about the key ingredients in the AgeDefense Booster?",
+    "answer": "The AgeDefense Booster contains trans-resveratrol, a powerful polyphenol antioxidant, and pomegranate seed oil, which is rich in punicic acid and ellagic acid. These ingredients work together to prevent premature skin aging by protecting against photoaging and UV damage, reducing tissue breakdown, and enhancing collagen synthesis and skin elasticity.",
+    "category": "ingredients",
+    "keywords": [
+      "agedefense booster",
+      "resveratrol",
+      "pomegranate seed oil",
+      "antioxidant",
+      "photoaging",
+      "uv protection",
+      "collagen",
+      "elasticity"
+    ],
+    "is_active": true
+  },
+  {
+    "id": "faq-gen-1762360425471-9",
+    "question": "What are the key active ingredients in the DermaRepair Booster?",
+    "answer": "The DermaRepair Booster contains curcumin from turmeric, aloe vera extract, and rosehip oil as key actives. Curcumin is a potent antioxidant and anti-inflammatory that accelerates healing and supports tissue regeneration. Aloe vera hydrates, soothes, and restores the skin barrier, while rosehip oil nourishes and regenerates the skin to fade scars and dark marks.",
+    "category": "ingredients",
+    "keywords": [
+      "dermarepair booster",
+      "curcumin",
+      "turmeric",
+      "aloe vera",
+      "rosehip oil",
+      "healing",
+      "skin barrier",
+      "scar reduction"
+    ],
+    "is_active": true
+  }
+]
