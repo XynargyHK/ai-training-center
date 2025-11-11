@@ -2487,7 +2487,7 @@ Format as JSON array:
                   <Mail className="w-6 h-6 text-pink-400" />
                   Canned Messages
                 </h2>
-                <div className="flex gap-2 items-center">
+                <div className="flex gap-2 items-center flex-wrap">
                   {/* Knowledge Base Selector */}
                   <div className="relative">
                     <button

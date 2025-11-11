@@ -1837,10 +1837,10 @@ Now provide your REVISED response to the customer's question above:`
               <User className="w-4 h-4" />
               AI Role:
             </label>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <button
                 onClick={() => setSelectedRole('coach')}
-                className={`px-4 py-2 rounded-lg transition-colors ${
+                className={`px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base whitespace-nowrap ${
                   selectedRole === 'coach'
                     ? 'bg-blue-600 text-white'
                     : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
@@ -1850,7 +1850,7 @@ Now provide your REVISED response to the customer's question above:`
               </button>
               <button
                 onClick={() => setSelectedRole('sales')}
-                className={`px-4 py-2 rounded-lg transition-colors ${
+                className={`px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base whitespace-nowrap ${
                   selectedRole === 'sales'
                     ? 'bg-green-600 text-white'
                     : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
@@ -1860,7 +1860,7 @@ Now provide your REVISED response to the customer's question above:`
               </button>
               <button
                 onClick={() => setSelectedRole('customer-service')}
-                className={`px-4 py-2 rounded-lg transition-colors ${
+                className={`px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base whitespace-nowrap ${
                   selectedRole === 'customer-service'
                     ? 'bg-purple-600 text-white'
                     : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
@@ -1870,7 +1870,7 @@ Now provide your REVISED response to the customer's question above:`
               </button>
               <button
                 onClick={() => setSelectedRole('scientist')}
-                className={`px-4 py-2 rounded-lg transition-colors ${
+                className={`px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base whitespace-nowrap ${
                   selectedRole === 'scientist'
                     ? 'bg-orange-600 text-white'
                     : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
@@ -1976,7 +1976,7 @@ Now provide your REVISED response to the customer's question above:`
         </div>
 
         {/* Feedback Input Box */}
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 flex gap-2 flex-wrap">
           <input
             type="text"
             placeholder="Comment on AI coach's response for improvement..."
@@ -1984,12 +1984,12 @@ Now provide your REVISED response to the customer's question above:`
             onChange={(e) => setFeedbackMessage(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleFeedback()}
             disabled={isGeneratingResponse}
-            className="flex-1 bg-slate-800 border border-yellow-500 rounded-lg px-3 py-2 text-white placeholder-slate-400"
+            className="flex-1 min-w-[200px] bg-slate-800 border border-yellow-500 rounded-lg px-3 py-2 text-white placeholder-slate-400 text-sm sm:text-base"
           />
           <button
             onClick={handleFeedback}
             disabled={!feedbackMessage.trim() || isGeneratingResponse}
-            className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-slate-600 px-4 py-2 rounded-lg transition-colors text-white"
+            className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-slate-600 px-3 sm:px-4 py-2 rounded-lg transition-colors text-white text-sm sm:text-base whitespace-nowrap"
             title="Provide feedback and get revised response"
           >
             Feedback
@@ -1997,7 +1997,7 @@ Now provide your REVISED response to the customer's question above:`
           <button
             onClick={handleSaveAsGuideline}
             disabled={!feedbackMessage.trim()}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 px-4 py-2 rounded-lg transition-colors text-white whitespace-nowrap"
+            className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 px-3 sm:px-4 py-2 rounded-lg transition-colors text-white whitespace-nowrap text-sm sm:text-base"
             title="Save this feedback as a permanent training guideline"
           >
             💾 Save as Guideline
