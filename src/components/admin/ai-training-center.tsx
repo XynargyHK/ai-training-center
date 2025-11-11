@@ -2514,7 +2514,7 @@ Format as JSON array:
                     </button>
 
                     {showKnowledgeSelector && (
-                      <div className="absolute right-0 mt-2 w-96 max-w-[calc(100vw-2rem)] bg-slate-700 rounded-lg shadow-lg border border-slate-600 z-10 max-h-96 overflow-y-auto">
+                      <div className="absolute right-0 mt-2 w-96 max-w-[90vw] bg-slate-700 rounded-lg shadow-lg border border-slate-600 z-10 max-h-96 overflow-y-auto">
                         <div className="sticky top-0 bg-slate-700 border-b border-slate-600 p-3">
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="font-semibold text-white">Select Knowledge Base Files</h4>
@@ -2625,7 +2625,7 @@ Format as JSON array:
 
                     {/* Research Sources Selector */}
                     {showResearchSources && researchSources.length > 0 && (
-                      <div className="absolute right-0 mt-2 w-[500px] max-w-[calc(100vw-2rem)] bg-slate-700 rounded-lg shadow-lg border border-slate-600 z-10 max-h-96 overflow-y-auto">
+                      <div className="absolute right-0 mt-2 w-[500px] max-w-[90vw] bg-slate-700 rounded-lg shadow-lg border border-slate-600 z-10 max-h-96 overflow-y-auto">
                         <div className="sticky top-0 bg-slate-700 border-b border-slate-600 p-3">
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="font-semibold text-white">Select Expert Sources</h4>
