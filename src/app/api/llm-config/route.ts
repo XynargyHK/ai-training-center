@@ -23,14 +23,15 @@ export function getLLMConfig() {
   const model = process.env.LLM_MODEL
 
   if (!provider || !model) {
-    console.error('❌ LLM_PROVIDER or LLM_MODEL not set in environment variables!')
+    console.error('❌ CRITICAL: LLM_PROVIDER or LLM_MODEL not set in environment variables!')
     console.error('LLM_PROVIDER:', provider)
     console.error('LLM_MODEL:', model)
+    throw new Error('LLM_PROVIDER and LLM_MODEL must be set in environment variables')
   }
 
   return {
-    provider: provider || 'openai',
-    model: model || 'gpt-5-mini',
+    provider: provider,
+    model: model,
     anthropicKey: process.env.ANTHROPIC_API_KEY,
     openaiKey: process.env.OPENAI_API_KEY,
     ollamaUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
