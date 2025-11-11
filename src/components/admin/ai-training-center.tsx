@@ -1483,22 +1483,22 @@ Format as JSON array:
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-3 sm:p-6">
         {/* Header */}
-        <div className="mb-8 flex justify-between items-center">
+        <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent mb-2">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent mb-2">
               AI Training Center
             </h1>
-            <p className="text-slate-400">Train and manage your AI customer support agent</p>
+            <p className="text-slate-400 text-sm sm:text-base">Train and manage your AI customer support agent</p>
           </div>
           <a
             href="/livechat"
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 hover:from-purple-600 hover:via-pink-600 hover:to-cyan-600 text-white px-6 py-3 rounded-xl font-semibold flex items-center gap-2 transition-all duration-200 hover:shadow-lg hover:scale-105"
+            className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 hover:from-purple-600 hover:via-pink-600 hover:to-cyan-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold flex items-center gap-2 transition-all duration-200 hover:shadow-lg hover:scale-105 text-sm sm:text-base w-full sm:w-auto justify-center"
           >
-            <Sparkles className="w-5 h-5" />
+            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
             View Live Chat
           </a>
         </div>
@@ -1607,39 +1607,42 @@ Format as JSON array:
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex flex-wrap space-x-1 bg-slate-800 rounded-xl p-1 mb-8">
-          {[
-            { id: 'knowledge', label: 'Knowledge Base', icon: Book },
-            { id: 'training', label: 'Training Data', icon: Brain },
-            { id: 'faq', label: 'FAQ Library', icon: HelpCircle },
-            { id: 'canned', label: 'Canned Messages', icon: Mail },
-            { id: 'roleplay', label: 'Role-Play Training', icon: Users },
-            { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-            { id: 'aimodel', label: 'AI Model', icon: Settings }
-          ].map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => setActiveTab(id as any)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-                activeTab === id
-                  ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-700'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {label}
-            </button>
-          ))}
+        <div className="overflow-x-auto mb-6 sm:mb-8 -mx-3 sm:mx-0 px-3 sm:px-0">
+          <div className="flex space-x-1 bg-slate-800 rounded-xl p-1 min-w-max sm:min-w-0">
+            {[
+              { id: 'knowledge', label: 'Knowledge Base', icon: Book },
+              { id: 'training', label: 'Training Data', icon: Brain },
+              { id: 'faq', label: 'FAQ Library', icon: HelpCircle },
+              { id: 'canned', label: 'Canned Messages', icon: Mail },
+              { id: 'roleplay', label: 'Role-Play Training', icon: Users },
+              { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+              { id: 'aimodel', label: 'AI Model', icon: Settings }
+            ].map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id as any)}
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all whitespace-nowrap text-sm sm:text-base ${
+                  activeTab === id
+                    ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-700'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="hidden sm:inline">{label}</span>
+                <span className="sm:hidden">{label.split(' ')[0]}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Search and Actions */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center mb-6 gap-3">
           <input
             type="text"
             placeholder="Search entries..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder-slate-400 w-80"
+            className="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder-slate-400 w-full sm:w-80 text-sm sm:text-base"
           />
           <div className="flex gap-2">
             {/* Training tab action buttons removed - guidelines management hidden from UI */}

@@ -1735,15 +1735,15 @@ Now provide your REVISED response to the customer's question above:`
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Users className="w-6 h-6 text-blue-400" />
+          <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
+            <Users className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
             AI Staff Training Center
           </h2>
-          <p className="text-slate-400">Train your AI staff members with different roles through automated dialogue with AI customers</p>
+          <p className="text-slate-400 text-sm sm:text-base">Train your AI staff members with different roles through automated dialogue with AI customers</p>
         </div>
       </div>
 
@@ -1889,22 +1889,22 @@ Now provide your REVISED response to the customer's question above:`
         </div>
 
         {/* Chat Messages */}
-        <div className="bg-slate-800 rounded-lg p-4 h-96 overflow-y-auto">
-          <div className="space-y-3">
+        <div className="bg-slate-800 rounded-lg p-3 sm:p-4 h-64 sm:h-80 md:h-96 overflow-y-auto">
+          <div className="space-y-2 sm:space-y-3">
             {messages.length === 0 && (
-              <div className="text-center py-8 text-slate-400">
-                <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>AI training conversation will appear here</p>
+              <div className="text-center py-6 sm:py-8 text-slate-400">
+                <MessageSquare className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-2 opacity-50" />
+                <p className="text-sm sm:text-base">AI training conversation will appear here</p>
                 <p className="text-xs mt-1">Select a scenario below to begin training</p>
               </div>
             )}
 
             {messages.map((msg, idx) => (
               <div key={idx} className={`flex ${msg.sender === 'customer' ? 'justify-start' : 'justify-end'}`}>
-                <div className={`max-w-[80%] p-3 rounded-lg ${
+                <div className={`max-w-[85%] sm:max-w-[80%] p-2 sm:p-3 rounded-lg text-sm sm:text-base ${
                   msg.sender === 'customer'
-                    ? 'bg-orange-600 text-white mr-4'  // AI Customer - Orange
-                    : 'bg-blue-600 text-white ml-4'    // AI Coach - Blue
+                    ? 'bg-orange-600 text-white mr-2 sm:mr-4'  // AI Customer - Orange
+                    : 'bg-blue-600 text-white ml-2 sm:ml-4'    // AI Coach - Blue
                 }`}>
                   <div className="flex items-center gap-2 mb-1">
                     {msg.sender === 'customer' ? (
@@ -1949,27 +1949,27 @@ Now provide your REVISED response to the customer's question above:`
         </div>
 
         {/* Manual Input Box */}
-        <div className="mt-4 flex gap-2">
+        <div className="mt-3 sm:mt-4 flex gap-2">
           <input
             type="text"
-            placeholder="Type your question as a customer to test the AI coach..."
+            placeholder="Type your question as a customer..."
             value={currentMessage}
             onChange={(e) => setCurrentMessage(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleDirectMessage()}
             disabled={isGeneratingResponse}
-            className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400"
+            className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400 text-sm sm:text-base"
           />
           <button
             onClick={handleDirectMessage}
             disabled={!currentMessage.trim() || isGeneratingResponse}
-            className="bg-green-600 hover:bg-green-700 disabled:bg-slate-600 px-4 py-2 rounded-lg transition-colors text-white"
+            className="bg-green-600 hover:bg-green-700 disabled:bg-slate-600 px-3 sm:px-4 py-2 rounded-lg transition-colors text-white text-sm sm:text-base whitespace-nowrap"
           >
             Send
           </button>
           <button
             onClick={generateCustomerQuestion}
             disabled={isGeneratingResponse}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 px-4 py-2 rounded-lg transition-colors text-white"
+            className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 px-3 sm:px-4 py-2 rounded-lg transition-colors text-white text-sm sm:text-base whitespace-nowrap"
           >
             Auto
           </button>
@@ -2057,9 +2057,9 @@ Now provide your REVISED response to the customer's question above:`
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
           {scenarios && scenarios.length > 0 ? scenarios.map((scenario) => (
-            <div key={scenario.id} className={`bg-slate-700 rounded-lg p-4 border border-slate-600 ${
+            <div key={scenario.id} className={`bg-slate-700 rounded-lg p-3 sm:p-4 border border-slate-600 ${
               selectedScenario?.id === scenario.id ? 'border-blue-500' : ''
             }`}>
               <div className="flex items-center justify-between mb-3">
