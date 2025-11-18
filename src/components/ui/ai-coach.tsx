@@ -301,6 +301,36 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
     }
   }
 
+  // Function to translate text using AI
+  const translateText = async (text: string, targetLanguage: string): Promise<string> => {
+    if (targetLanguage === 'en') return text // No translation needed for English
+
+    try {
+      const languageNames: {[key: string]: string} = {
+        'zh-CN': 'Simplified Chinese',
+        'zh-TW': 'Traditional Chinese',
+        'vi': 'Vietnamese'
+      }
+
+      const response = await fetch('/api/ai/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          targetLanguage: languageNames[targetLanguage] || targetLanguage
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        return data.translation || text
+      }
+    } catch (error) {
+      console.error('Translation failed:', error)
+    }
+    return text // Return original if translation fails
+  }
+
   const handleCategoryClick = async (category: string) => {
     // Load FAQs from Supabase
     try {
@@ -308,13 +338,24 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
       const categoryFaqs = allFaqs.filter((faq: any) => faq.category === category && faq.is_active)
 
       if (categoryFaqs.length > 0) {
-        // Create FAQ message with expandable questions
-        const faqData: FAQ[] = categoryFaqs.map((faq: any) => ({
-          id: faq.id,
-          question: faq.question,
-          answer: faq.answer,
-          isExpanded: false
-        }))
+        // Translate FAQs if language is not English
+        const faqData: FAQ[] = await Promise.all(
+          categoryFaqs.map(async (faq: any) => {
+            const translatedQuestion = selectedLanguage !== 'en'
+              ? await translateText(faq.question, selectedLanguage)
+              : faq.question
+            const translatedAnswer = selectedLanguage !== 'en'
+              ? await translateText(faq.answer, selectedLanguage)
+              : faq.answer
+
+            return {
+              id: faq.id,
+              question: translatedQuestion,
+              answer: translatedAnswer,
+              isExpanded: false
+            }
+          })
+        )
 
         const faqMessage: Message = {
           id: `faq-${Date.now()}`,
