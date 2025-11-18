@@ -341,7 +341,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
 
   return (
     <div className={`fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 ${className}`}>
-      <div className="bg-white/95 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl w-[calc(100vw-2rem)] h-[calc(100vh-2rem)] md:w-[500px] md:h-[600px] max-w-[500px] flex flex-col">
+      <div className="bg-white/95 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl w-[calc(100vw-2rem)] h-[calc(100vh-4rem)] md:w-[500px] md:h-[600px] max-w-[500px] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200/50 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-cyan-500/10">
           <div className="flex items-center gap-2">
