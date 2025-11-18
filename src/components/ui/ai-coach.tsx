@@ -86,6 +86,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
   const [inputValue, setInputValue] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [faqCategories, setFaqCategories] = useState<string[]>([])  // Will load from Supabase
+  const [translatedCategories, setTranslatedCategories] = useState<{[key: string]: string}>({})
 
   // Get translations
   const t = getTranslation(selectedLanguage)
@@ -146,6 +147,30 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
 
     loadCategories()
   }, [businessUnit, isOpen])
+
+  // Translate FAQ categories when language changes
+  useEffect(() => {
+    if (faqCategories.length === 0 || selectedLanguage === 'en') {
+      // Reset to original categories if English
+      const resetTranslations: {[key: string]: string} = {}
+      faqCategories.forEach(cat => resetTranslations[cat] = cat)
+      setTranslatedCategories(resetTranslations)
+      return
+    }
+
+    const translateCategories = async () => {
+      const translations: {[key: string]: string} = {}
+
+      for (const category of faqCategories) {
+        const translated = await translateText(category, selectedLanguage)
+        translations[category] = translated
+      }
+
+      setTranslatedCategories(translations)
+    }
+
+    translateCategories()
+  }, [faqCategories, selectedLanguage])
 
   const generateAIResponse = async (userMessage: string): Promise<string> => {
     try {
@@ -593,7 +618,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
                   className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded-full transition-colors capitalize"
                   disabled={isTyping}
                 >
-                  {category}
+                  {translatedCategories[category] || category}
                 </button>
               ))}
             </div>
