@@ -34,9 +34,8 @@ export default function DemoPage() {
       try {
         console.log('🔄 Demo Page: Loading data for business unit:', businessUnitParam)
 
-        // Import Supabase functions dynamically
-        const { loadAIStaff } = await import('@/lib/supabase-storage')
-        const { loadBusinessUnits } = await import('@/lib/api-client')
+        // Import client-safe API functions
+        const { loadBusinessUnits, loadAIStaff } = await import('@/lib/api-client')
 
         // Load business unit details
         const units = await loadBusinessUnits()
