@@ -55,7 +55,8 @@ export async function POST(request: NextRequest) {
       guidelines = [],
       staffName = 'AI Coach',
       staffRole = 'coach',
-      trainingMemory = {}
+      trainingMemory = {},
+      language = 'en'  // Default to English
     } = await request.json()
 
     if (!message || typeof message !== 'string') {
@@ -101,7 +102,8 @@ export async function POST(request: NextRequest) {
       guidelines,
       staffName,
       staffRole,
-      trainingMemory
+      trainingMemory,
+      language
     )
 
     return NextResponse.json({
@@ -131,7 +133,8 @@ async function generateAIResponse(
   guidelines: any[] = [],
   staffName: string = 'AI Coach',
   staffRole: string = 'coach',
-  trainingMemory: {[key: string]: string[]} = {}
+  trainingMemory: {[key: string]: string[]} = {},
+  language: string = 'en'
 ): Promise<string> {
 
   // Build knowledge context from knowledge base
@@ -373,8 +376,19 @@ async function generateAIResponse(
     console.log('Training memory applied for:', staffName, '- Scenarios:', memoryEntries.length)
   }
 
+  // Map language codes to language names for instruction
+  const languageNames: {[key: string]: string} = {
+    'en': 'English',
+    'zh-CN': 'Simplified Chinese',
+    'zh-TW': 'Traditional Chinese',
+    'vi': 'Vietnamese'
+  }
+  const languageInstruction = language !== 'en'
+    ? `\n\n🌍 LANGUAGE REQUIREMENT: You MUST respond ONLY in ${languageNames[language] || language}. The user may write in any language, but your responses must be in ${languageNames[language] || language}.\n`
+    : ''
+
   // Create system prompt with EXTREMELY STRICT anti-hallucination rules
-  const systemPrompt = `You are ${staffName}, a ${staffRole} for THIS company ONLY.${knowledgeContext}${trainingContext}${guidelinesContext}${trainingMemoryContext}
+  const systemPrompt = `You are ${staffName}, a ${staffRole} for THIS company ONLY.${knowledgeContext}${trainingContext}${guidelinesContext}${trainingMemoryContext}${languageInstruction}
 
 ${conversationContext ? `RECENT CONVERSATION:\n${conversationContext}\n` : ''}
 

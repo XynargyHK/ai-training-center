@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { X, Send, Sparkles, MessageCircle, Loader2, Plus, Minus } from 'lucide-react'
+import { X, Send, Sparkles, MessageCircle, Loader2, Plus, Minus, Globe } from 'lucide-react'
 import { loadFAQCategories, loadFAQs } from '@/lib/api-client'
+import { type Language, getTranslation, languageNames } from '@/lib/translations'
 
 interface FAQ {
   id: string
@@ -36,9 +37,11 @@ interface AICoachProps {
   aiStaffList?: AIStaff[]
 }
 
-// Function to get role-specific greeting
-const getRoleGreeting = (staff: AIStaff | null) => {
-  if (!staff) return "Hi! I'm your AI assistant. How can I help you today?"
+// Function to get role-specific greeting with translation
+const getRoleGreeting = (staff: AIStaff | null, lang: Language) => {
+  const t = getTranslation(lang)
+
+  if (!staff) return t.greeting('AI', '', 'any questions you may have')
 
   const roleEmoji = staff.role === 'coach' ? '🎓' :
                     staff.role === 'sales' ? '💰' :
@@ -47,22 +50,22 @@ const getRoleGreeting = (staff: AIStaff | null) => {
   let tasks = ''
   switch (staff.role) {
     case 'coach':
-      tasks = 'beauty tips, skincare advice, and personalized recommendations'
+      tasks = t.coachTasks
       break
     case 'sales':
-      tasks = 'product information, pricing, promotions, and purchase assistance'
+      tasks = t.salesTasks
       break
     case 'customer-service':
-      tasks = 'order tracking, returns, technical support, and general inquiries'
+      tasks = t.customerServiceTasks
       break
     case 'scientist':
-      tasks = 'advanced skin analysis, ingredient information, and scientific research'
+      tasks = t.scientistTasks
       break
     default:
       tasks = 'any questions you may have'
   }
 
-  return `Hi! I'm ${staff.name} ${roleEmoji} I can help you with ${tasks}. What would you like to know?`
+  return t.greeting(staff.name, roleEmoji, tasks)
 }
 
 const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = false, selectedStaff = null, aiStaffList = [] }: AICoachProps) => {
@@ -70,18 +73,22 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
   const [currentStaff, setCurrentStaff] = useState<AIStaff | null>(
     selectedStaff || (aiStaffList.length > 0 ? aiStaffList[0] : null)
   )
+  const [selectedLanguage, setSelectedLanguage] = useState<Language>('en')
 
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       type: 'ai',
-      content: getRoleGreeting(currentStaff),
+      content: getRoleGreeting(currentStaff, selectedLanguage),
       timestamp: new Date()
     }
   ])
   const [inputValue, setInputValue] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [faqCategories, setFaqCategories] = useState<string[]>([])  // Will load from Supabase
+
+  // Get translations
+  const t = getTranslation(selectedLanguage)
 
   // Open after mount if initialOpen is true (avoids hydration error)
   useEffect(() => {
@@ -90,15 +97,15 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
     }
   }, [initialOpen])
 
-  // Update greeting when current staff changes
+  // Update greeting when current staff or language changes
   useEffect(() => {
     setMessages([{
       id: '1',
       type: 'ai',
-      content: getRoleGreeting(currentStaff),
+      content: getRoleGreeting(currentStaff, selectedLanguage),
       timestamp: new Date()
     }])
-  }, [currentStaff])
+  }, [currentStaff, selectedLanguage])
 
   // Handle staff switch
   const handleStaffSwitch = (staff: AIStaff) => {
@@ -208,7 +215,8 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
         guidelines,
         staffName: currentStaff?.name,
         staffRole: currentStaff?.role,
-        trainingMemory: currentStaff?.trainingMemory || {}
+        trainingMemory: currentStaff?.trainingMemory || {},
+        language: selectedLanguage  // Add selected language
       }
 
       console.log('Sending to API - knowledgeBase entries:', knowledgeBase.length)
@@ -311,7 +319,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
         const faqMessage: Message = {
           id: `faq-${Date.now()}`,
           type: 'ai',
-          content: `Here are our FAQs about ${category}:`,
+          content: t.faqAbout(category),
           timestamp: new Date(),
           faqs: faqData
         }
@@ -321,7 +329,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
         const noFaqMessage: Message = {
           id: `no-faq-${Date.now()}`,
           type: 'ai',
-          content: `I don't have any specific FAQs for ${category} at the moment, but feel free to ask me anything!`,
+          content: t.noFaqAvailable(category),
           timestamp: new Date()
         }
         setMessages(prev => [...prev, noFaqMessage])
@@ -360,7 +368,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
           aria-label="Open AI Chat"
         >
           <Sparkles className="w-5 h-5 md:w-6 md:h-6" />
-          <span className="font-semibold text-base md:text-lg">Chat now</span>
+          <span className="font-semibold text-base md:text-lg">{t.chatNow}</span>
         </button>
       </div>
     )
@@ -377,16 +385,36 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
                 <MessageCircle className="w-4 h-4 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-800">AI Staff</h3>
-                <p className="text-xs text-gray-600">Select a staff member to chat</p>
+                <h3 className="font-semibold text-gray-800">{t.aiStaff}</h3>
+                <p className="text-xs text-gray-600">{t.selectStaffMember}</p>
               </div>
             </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="text-gray-500 hover:text-gray-700 transition-colors p-1"
-            >
-              <X className="w-5 h-5" />
-            </button>
+
+            <div className="flex items-center gap-2">
+              {/* Language Selector */}
+              <div className="relative">
+                <select
+                  value={selectedLanguage}
+                  onChange={(e) => setSelectedLanguage(e.target.value as Language)}
+                  className="appearance-none bg-white border border-gray-300 rounded-lg px-3 py-1.5 pr-8 text-sm text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                  title={t.language}
+                >
+                  {Object.entries(languageNames).map(([code, name]) => (
+                    <option key={code} value={code}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+                <Globe className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+              </div>
+
+              <button
+                onClick={() => setIsOpen(false)}
+                className="text-gray-500 hover:text-gray-700 transition-colors p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           {/* Staff selector buttons */}
@@ -397,6 +425,9 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
                                   staff.role === 'sales' ? '💰' :
                                   staff.role === 'customer-service' ? '🛡️' : '🔬'
                 const isActive = currentStaff?.id === staff.id
+                const roleLabel = staff.role === 'coach' ? t.coach :
+                                 staff.role === 'sales' ? t.sales :
+                                 staff.role === 'customer-service' ? t.customerService : t.scientist
 
                 return (
                   <button
@@ -408,7 +439,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    {roleEmoji} {staff.name} ({staff.role})
+                    {roleEmoji} {staff.name} ({roleLabel})
                   </button>
                 )
               })}
@@ -480,7 +511,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
               <div className="bg-gray-100 text-gray-800 px-3 py-2 rounded-2xl max-w-xs">
                 <div className="flex items-center space-x-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-sm">AI Coach is typing...</span>
+                  <span className="text-sm">{t.aiTyping}</span>
                 </div>
               </div>
             </div>
@@ -497,7 +528,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask about customer service, products, pricing..."
+              placeholder={t.placeholder}
               className="flex-1 px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
               disabled={isTyping}
             />
@@ -505,6 +536,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
               onClick={handleSendMessage}
               disabled={!inputValue.trim() || isTyping}
               className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white p-2 rounded-xl hover:from-cyan-600 hover:to-blue-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              title={t.send}
             >
               <Send className="w-4 h-4" />
             </button>
