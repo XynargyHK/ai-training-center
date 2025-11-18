@@ -96,21 +96,14 @@ export default function DemoPage() {
           </div>
         )}
 
-        {/* Multiple AI Coach buttons - one for each staff member */}
-        {aiStaffList.map((staff, index) => (
+        {/* Single AI Coach with all staff */}
+        {aiStaffList.length > 0 && (
           <AICoach
-            key={staff.id}
             businessUnit={businessUnitParam}
-            selectedStaff={staff}
-            initialOpen={openStaffId === staff.id}
-            className={`
-              ${index === 0 ? 'md:bottom-6 md:right-6' : ''}
-              ${index === 1 ? 'md:bottom-6 md:right-28' : ''}
-              ${index === 2 ? 'md:bottom-6 md:right-50' : ''}
-              ${index === 3 ? 'md:bottom-28 md:right-6' : ''}
-            `}
+            aiStaffList={aiStaffList}
+            initialOpen={false}
           />
-        ))}
+        )}
 
         {/* Welcome Message */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

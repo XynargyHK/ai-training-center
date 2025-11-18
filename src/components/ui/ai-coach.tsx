@@ -33,23 +33,49 @@ interface AICoachProps {
   businessUnit?: string
   initialOpen?: boolean
   selectedStaff?: AIStaff | null
+  aiStaffList?: AIStaff[]
 }
 
-const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = false, selectedStaff = null }: AICoachProps) => {
-  const [isOpen, setIsOpen] = useState(false) // Always start closed to avoid hydration error
+// Function to get role-specific greeting
+const getRoleGreeting = (staff: AIStaff | null) => {
+  if (!staff) return "Hi! I'm your AI assistant. How can I help you today?"
 
-  // Get staff name and role for greeting
-  const staffName = selectedStaff?.name || 'AI Coach'
-  const staffRole = selectedStaff?.role || 'coach'
-  const roleEmoji = staffRole === 'coach' ? '🎓' :
-                    staffRole === 'sales' ? '💰' :
-                    staffRole === 'customer-service' ? '🛡️' : '🔬'
+  const roleEmoji = staff.role === 'coach' ? '🎓' :
+                    staff.role === 'sales' ? '💰' :
+                    staff.role === 'customer-service' ? '🛡️' : '🔬'
+
+  let tasks = ''
+  switch (staff.role) {
+    case 'coach':
+      tasks = 'beauty tips, skincare advice, and personalized recommendations'
+      break
+    case 'sales':
+      tasks = 'product information, pricing, promotions, and purchase assistance'
+      break
+    case 'customer-service':
+      tasks = 'order tracking, returns, technical support, and general inquiries'
+      break
+    case 'scientist':
+      tasks = 'advanced skin analysis, ingredient information, and scientific research'
+      break
+    default:
+      tasks = 'any questions you may have'
+  }
+
+  return `Hi! I'm ${staff.name} ${roleEmoji} I can help you with ${tasks}. What would you like to know?`
+}
+
+const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = false, selectedStaff = null, aiStaffList = [] }: AICoachProps) => {
+  const [isOpen, setIsOpen] = useState(false) // Always start closed to avoid hydration error
+  const [currentStaff, setCurrentStaff] = useState<AIStaff | null>(
+    selectedStaff || (aiStaffList.length > 0 ? aiStaffList[0] : null)
+  )
 
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       type: 'ai',
-      content: `Hi! I'm ${staffName} ${roleEmoji} I can help you with beauty tips, product recommendations, pricing questions, and advanced skin analysis. What would you like to know?`,
+      content: getRoleGreeting(currentStaff),
       timestamp: new Date()
     }
   ])
@@ -64,15 +90,20 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
     }
   }, [initialOpen])
 
-  // Update greeting when selected staff changes
+  // Update greeting when current staff changes
   useEffect(() => {
     setMessages([{
       id: '1',
       type: 'ai',
-      content: `Hi! I'm ${staffName} ${roleEmoji} I can help you with beauty tips, product recommendations, pricing questions, and advanced skin analysis. What would you like to know?`,
+      content: getRoleGreeting(currentStaff),
       timestamp: new Date()
     }])
-  }, [selectedStaff])
+  }, [currentStaff])
+
+  // Handle staff switch
+  const handleStaffSwitch = (staff: AIStaff) => {
+    setCurrentStaff(staff)
+  }
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -155,10 +186,10 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
         console.error('❌ Error loading training data from Supabase:', error)
       }
 
-      // Build training memory context from selected staff
+      // Build training memory context from current staff
       let trainingMemoryContext = ''
-      if (selectedStaff && selectedStaff.trainingMemory) {
-        const memoryEntries = Object.entries(selectedStaff.trainingMemory)
+      if (currentStaff && currentStaff.trainingMemory) {
+        const memoryEntries = Object.entries(currentStaff.trainingMemory)
         if (memoryEntries.length > 0) {
           trainingMemoryContext = '\n\n📝 TRAINING MEMORY (Learned from previous sessions):\n' +
             memoryEntries.map(([scenario, lessons]) =>
@@ -175,16 +206,16 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
         knowledgeBase,
         trainingData,
         guidelines,
-        staffName: selectedStaff?.name,
-        staffRole: selectedStaff?.role,
-        trainingMemory: selectedStaff?.trainingMemory || {}
+        staffName: currentStaff?.name,
+        staffRole: currentStaff?.role,
+        trainingMemory: currentStaff?.trainingMemory || {}
       }
 
       console.log('Sending to API - knowledgeBase entries:', knowledgeBase.length)
       console.log('Sending to API - trainingData entries:', trainingData.length)
       console.log('Sending to API - guidelines entries:', guidelines.length)
-      console.log('Sending to API - Staff:', selectedStaff?.name, '(', selectedStaff?.role, ')')
-      console.log('Sending to API - Training Memory scenarios:', Object.keys(selectedStaff?.trainingMemory || {}).length)
+      console.log('Sending to API - Staff:', currentStaff?.name, '(', currentStaff?.role, ')')
+      console.log('Sending to API - Training Memory scenarios:', Object.keys(currentStaff?.trainingMemory || {}).length)
 
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
@@ -325,16 +356,12 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
       <div className={`fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 ${className}`}>
         <button
           onClick={() => setIsOpen(true)}
-          className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 text-white p-3 md:p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 animate-pulse"
-          aria-label="Open AI Coach"
+          className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 text-white px-6 py-3 md:px-8 md:py-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 animate-pulse flex items-center gap-2"
+          aria-label="Open AI Chat"
         >
-          <Sparkles className="w-6 h-6" />
+          <Sparkles className="w-5 h-5 md:w-6 md:h-6" />
+          <span className="font-semibold text-base md:text-lg">Chat now</span>
         </button>
-
-        {/* Floating tooltip */}
-        <div className="absolute bottom-16 right-0 bg-black/80 text-white text-sm px-3 py-2 rounded-lg whitespace-nowrap opacity-0 hover:opacity-100 transition-opacity pointer-events-none">
-          Ask your AI customer service Coach
-        </div>
       </div>
     )
   }
@@ -343,22 +370,50 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
     <div className={`fixed bottom-4 right-4 top-20 left-4 md:bottom-6 md:right-6 md:top-auto md:left-auto z-50 ${className}`}>
       <div className="bg-white/95 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl w-full h-full md:w-[500px] md:h-[600px] max-w-[500px] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200/50 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-cyan-500/10">
-          <div className="flex items-center gap-2">
-            <div className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 p-2 rounded-full">
-              <Sparkles className="w-4 h-4 text-white" />
+        <div className="border-b border-gray-200/50 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-cyan-500/10">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-2">
+              <div className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 p-2 rounded-full">
+                <MessageCircle className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-800">AI Staff</h3>
+                <p className="text-xs text-gray-600">Select a staff member to chat</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-semibold text-gray-800">AI customer service Coach</h3>
-              <p className="text-xs text-gray-600">Always here to help!</p>
-            </div>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="text-gray-500 hover:text-gray-700 transition-colors p-1"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <button
-            onClick={() => setIsOpen(false)}
-            className="text-gray-500 hover:text-gray-700 transition-colors p-1"
-          >
-            <X className="w-5 h-5" />
-          </button>
+
+          {/* Staff selector buttons */}
+          {aiStaffList.length > 0 && (
+            <div className="px-4 pb-3 flex flex-wrap gap-2">
+              {aiStaffList.map((staff) => {
+                const roleEmoji = staff.role === 'coach' ? '🎓' :
+                                  staff.role === 'sales' ? '💰' :
+                                  staff.role === 'customer-service' ? '🛡️' : '🔬'
+                const isActive = currentStaff?.id === staff.id
+
+                return (
+                  <button
+                    key={staff.id}
+                    onClick={() => handleStaffSwitch(staff)}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                      isActive
+                        ? 'bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {roleEmoji} {staff.name} ({staff.role})
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         {/* Messages */}
