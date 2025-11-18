@@ -162,7 +162,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
       const translations: {[key: string]: string} = {}
 
       for (const category of faqCategories) {
-        const translated = await translateText(category, selectedLanguage)
+        const translated = await translateText(category, selectedLanguage, 'faq_category')
         translations[category] = translated
       }
 
@@ -326,8 +326,8 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
     }
   }
 
-  // Function to translate text using AI
-  const translateText = async (text: string, targetLanguage: string): Promise<string> => {
+  // Function to translate text using AI with context
+  const translateText = async (text: string, targetLanguage: string, context?: string): Promise<string> => {
     if (targetLanguage === 'en') return text // No translation needed for English
 
     try {
@@ -342,7 +342,8 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text,
-          targetLanguage: languageNames[targetLanguage] || targetLanguage
+          targetLanguage: languageNames[targetLanguage] || targetLanguage,
+          context // Pass context for better translation
         })
       })
 
@@ -367,10 +368,10 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
         const faqData: FAQ[] = await Promise.all(
           categoryFaqs.map(async (faq: any) => {
             const translatedQuestion = selectedLanguage !== 'en'
-              ? await translateText(faq.question, selectedLanguage)
+              ? await translateText(faq.question, selectedLanguage, 'faq')
               : faq.question
             const translatedAnswer = selectedLanguage !== 'en'
-              ? await translateText(faq.answer, selectedLanguage)
+              ? await translateText(faq.answer, selectedLanguage, 'faq')
               : faq.answer
 
             return {

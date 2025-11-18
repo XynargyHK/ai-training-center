@@ -23,7 +23,7 @@ function getOpenAIClient() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { text, targetLanguage } = await request.json()
+    const { text, targetLanguage, context } = await request.json()
 
     if (!text || !targetLanguage) {
       return NextResponse.json(
@@ -37,6 +37,16 @@ export async function POST(request: NextRequest) {
 
     let translation = ''
 
+    // Build context-aware prompt
+    let prompt = ''
+    if (context === 'faq_category') {
+      prompt = `Translate the following FAQ category name to ${targetLanguage} in a business/e-commerce context. This is a category label for customer support topics. Only return the translated category name, nothing else.\n\nCategory: ${text}`
+    } else if (context === 'faq') {
+      prompt = `Translate the following FAQ (Frequently Asked Question) to ${targetLanguage} for a customer support chat. Maintain professional tone. Only return the translation, nothing else.\n\nText: ${text}`
+    } else {
+      prompt = `Translate the following text to ${targetLanguage}. Only return the translation, nothing else.\n\nText: ${text}`
+    }
+
     if (config.provider === 'anthropic') {
       // Use Anthropic Claude
       const anthropic = getAnthropicClient()
@@ -46,7 +56,7 @@ export async function POST(request: NextRequest) {
         max_tokens: 1024,
         messages: [{
           role: 'user',
-          content: `Translate the following text to ${targetLanguage}. Only return the translation, nothing else.\n\nText: ${text}`
+          content: prompt
         }]
       })
 
@@ -62,7 +72,7 @@ export async function POST(request: NextRequest) {
         model: config.openaiModel || 'gpt-4o-mini',
         messages: [{
           role: 'user',
-          content: `Translate the following text to ${targetLanguage}. Only return the translation, nothing else.\n\nText: ${text}`
+          content: prompt
         }],
         max_tokens: 1024,
         temperature: 0.3
