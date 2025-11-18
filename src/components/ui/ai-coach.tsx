@@ -148,12 +148,12 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
         content: msg.content
       }))
 
-      // Load knowledge base, training data, and guidelines directly from Supabase storage
+      // Load knowledge base, training data, and guidelines via client-safe API
       console.log('=== AICoach Frontend DEBUG ===')
       console.log('Business Unit:', businessUnit)
 
-      // Import Supabase storage functions dynamically
-      const { loadKnowledge, loadTrainingData, loadGuidelines } = await import('@/lib/supabase-storage')
+      // Import client-safe API functions dynamically
+      const { loadKnowledge, loadTrainingData, loadGuidelines } = await import('@/lib/api-client')
 
       // Load data from Supabase
       let knowledgeBase = []
@@ -163,9 +163,9 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
       try {
         // Load all data in parallel for faster performance
         const [kb, td, gl] = await Promise.all([
-          loadKnowledge(),
-          loadTrainingData(),
-          loadGuidelines()
+          loadKnowledge(businessUnit),
+          loadTrainingData(businessUnit),
+          loadGuidelines(businessUnit)
         ])
 
         knowledgeBase = kb || []
