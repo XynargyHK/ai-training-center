@@ -4,7 +4,7 @@ import {
   loadFAQs, saveFAQ, deleteFAQ,
   loadCannedMessages, saveCannedMessage, deleteCannedMessage,
   loadFAQCategories, loadCannedCategories, saveCategory, deleteCategory,
-  loadGuidelines, saveGuideline, deleteGuideline,
+  loadGuidelines, saveGuideline, deleteGuideline, copyDefaultGuidelines,
   loadTrainingData, saveTrainingData,
   loadBusinessUnits, saveBusinessUnit, deleteBusinessUnit
 } from '@/lib/supabase-storage'
@@ -12,35 +12,36 @@ import {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const action = searchParams.get('action')
+  const businessUnitId = searchParams.get('businessUnitId')
 
   try {
     switch (action) {
       case 'load_knowledge':
-        const knowledge = await loadKnowledge()
+        const knowledge = await loadKnowledge(businessUnitId)
         return NextResponse.json({ data: knowledge })
 
       case 'load_faqs':
-        const faqs = await loadFAQs()
+        const faqs = await loadFAQs(businessUnitId)
         return NextResponse.json({ data: faqs })
 
       case 'load_canned_messages':
-        const messages = await loadCannedMessages()
+        const messages = await loadCannedMessages(businessUnitId)
         return NextResponse.json({ data: messages })
 
       case 'load_faq_categories':
-        const faqCategories = await loadFAQCategories()
+        const faqCategories = await loadFAQCategories(businessUnitId)
         return NextResponse.json({ data: faqCategories })
 
       case 'load_canned_categories':
-        const cannedCategories = await loadCannedCategories()
+        const cannedCategories = await loadCannedCategories(businessUnitId)
         return NextResponse.json({ data: cannedCategories })
 
       case 'load_guidelines':
-        const guidelines = await loadGuidelines()
+        const guidelines = await loadGuidelines(businessUnitId)
         return NextResponse.json({ data: guidelines })
 
       case 'load_training_data':
-        const trainingData = await loadTrainingData()
+        const trainingData = await loadTrainingData(businessUnitId)
         return NextResponse.json({ data: trainingData })
 
       case 'load_business_units':
@@ -57,36 +58,40 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
-  const { action, data } = body
+  const { action, data, businessUnitId } = body
 
   try {
     switch (action) {
       case 'save_knowledge':
-        await saveKnowledge(data)
+        await saveKnowledge(data, businessUnitId)
         return NextResponse.json({ success: true })
 
       case 'save_faq':
-        await saveFAQ(data)
+        await saveFAQ(data, businessUnitId)
         return NextResponse.json({ success: true })
 
       case 'save_canned_message':
-        await saveCannedMessage(data)
+        await saveCannedMessage(data, businessUnitId)
         return NextResponse.json({ success: true })
 
       case 'save_category':
-        await saveCategory(data.name, data.type)
+        await saveCategory(data.name, data.type, businessUnitId)
         return NextResponse.json({ success: true })
 
       case 'save_guideline':
-        await saveGuideline(data)
+        await saveGuideline(data, businessUnitId)
         return NextResponse.json({ success: true })
 
       case 'save_training_data':
-        await saveTrainingData(data)
+        await saveTrainingData(data, businessUnitId)
         return NextResponse.json({ success: true })
 
       case 'save_business_unit':
         await saveBusinessUnit(data)
+        return NextResponse.json({ success: true })
+
+      case 'copy_default_guidelines':
+        await copyDefaultGuidelines(businessUnitId || '')
         return NextResponse.json({ success: true })
 
       default:

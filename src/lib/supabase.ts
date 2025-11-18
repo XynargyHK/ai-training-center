@@ -91,7 +91,8 @@ export async function loadFAQs() {
 
 // AI Staff Functions
 export async function loadAIStaff() {
-  const { data, error } = await supabase
+  // Use admin client to bypass RLS policies
+  const { data, error } = await supabaseAdmin
     .from('ai_staff')
     .select('*')
     .eq('business_unit_id', BUSINESS_UNIT_ID)

@@ -23,9 +23,8 @@ export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   }
 })
 
-// Currently hardcoded to skincoach business unit
-// TODO: Make this dynamic when multi-tenancy is fully implemented
-export const BUSINESS_UNIT_ID = '77313e61-2a19-4f3e-823b-80390dde8bd2' // skincoach
+// Default business unit (skincoach) - used as fallback
+const DEFAULT_BUSINESS_UNIT_ID = '77313e61-2a19-4f3e-823b-80390dde8bd2' // skincoach
 
 // ============================================
 // HELPER FUNCTIONS
@@ -37,6 +36,45 @@ export const BUSINESS_UNIT_ID = '77313e61-2a19-4f3e-823b-80390dde8bd2' // skinco
 function isValidUUID(str: string): boolean {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
   return uuidRegex.test(str)
+}
+
+/**
+ * Get business unit ID from slug or UUID, with fallback to default
+ */
+async function getBusinessUnitId(slugOrId: string | null | undefined): Promise<string> {
+  if (!slugOrId) {
+    console.log('⚠️ No business unit ID provided, using default (skincoach)')
+    return DEFAULT_BUSINESS_UNIT_ID
+  }
+
+  // If it's already a UUID, return it
+  if (isValidUUID(slugOrId)) {
+    console.log(`✓ Using UUID directly: ${slugOrId}`)
+    return slugOrId
+  }
+
+  // Otherwise, it's a slug - look up the UUID from database
+  console.log(`🔍 Looking up business unit by slug: "${slugOrId}"`)
+  const { data, error } = await supabase
+    .from('business_units')
+    .select('id, slug, name')
+    .eq('slug', slugOrId)
+    .single()
+
+  if (error) {
+    console.warn(`⚠️ Error looking up business unit '${slugOrId}':`, error.message)
+    console.warn('⚠️ Falling back to default business unit (skincoach)')
+    return DEFAULT_BUSINESS_UNIT_ID
+  }
+
+  if (!data) {
+    console.warn(`⚠️ Business unit '${slugOrId}' not found in database`)
+    console.warn('⚠️ Falling back to default business unit (skincoach)')
+    return DEFAULT_BUSINESS_UNIT_ID
+  }
+
+  console.log(`✓ Found business unit: ${data.name} (${data.slug}) -> ID: ${data.id}`)
+  return data.id
 }
 
 /**
@@ -53,11 +91,13 @@ function handleSupabaseError(error: any, context: string): void {
 // KNOWLEDGE BASE
 // ============================================
 
-export async function loadKnowledge() {
+export async function loadKnowledge(businessUnitSlugOrId?: string | null) {
+  const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+
   const { data, error } = await supabase
     .from('knowledge_base')
     .select('*')
-    .eq('business_unit_id', BUSINESS_UNIT_ID)
+    .eq('business_unit_id', businessUnitId)
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -80,7 +120,9 @@ export async function loadKnowledge() {
   }))
 }
 
-export async function saveKnowledge(entry: any) {
+export async function saveKnowledge(entry: any, businessUnitSlugOrId?: string | null) {
+  const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+
   // Generate embedding for the knowledge entry
   const { generateKnowledgeEmbedding } = await import('./embeddings')
   const embedding = await generateKnowledgeEmbedding({
@@ -90,7 +132,7 @@ export async function saveKnowledge(entry: any) {
   })
 
   const knowledgeEntry = {
-    business_unit_id: BUSINESS_UNIT_ID,
+    business_unit_id: businessUnitId,
     category: entry.category,
     topic: entry.topic,
     title: entry.topic,
@@ -223,7 +265,9 @@ export async function hybridSearchKnowledge(query: string, limit: number = 10) {
 // FAQs
 // ============================================
 
-export async function loadFAQs() {
+export async function loadFAQs(businessUnitSlugOrId?: string | null) {
+  const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+
   const { data, error } = await supabase
     .from('faq_library')
     .select(`
@@ -235,7 +279,7 @@ export async function loadFAQs() {
         color
       )
     `)
-    .eq('business_unit_id', BUSINESS_UNIT_ID)
+    .eq('business_unit_id', businessUnitId)
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -255,7 +299,9 @@ export async function loadFAQs() {
   }))
 }
 
-export async function saveFAQ(faq: any) {
+export async function saveFAQ(faq: any, businessUnitSlugOrId?: string | null) {
+  const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+
   // Generate embedding for the FAQ
   const { generateEmbedding } = await import('./embeddings')
   const embedding = await generateEmbedding(faq.question + ' ' + faq.answer)
@@ -266,7 +312,7 @@ export async function saveFAQ(faq: any) {
     const { data: categoryData } = await supabase
       .from('categories')
       .select('id')
-      .eq('business_unit_id', BUSINESS_UNIT_ID)
+      .eq('business_unit_id', businessUnitId)
       .eq('name', faq.category)
       .single()
 
@@ -274,7 +320,7 @@ export async function saveFAQ(faq: any) {
   }
 
   const faqEntry = {
-    business_unit_id: BUSINESS_UNIT_ID,
+    business_unit_id: businessUnitId,
     category_id: categoryId,
     question: faq.question,
     answer: faq.answer,
@@ -321,7 +367,9 @@ export async function deleteFAQ(id: string) {
 // CANNED MESSAGES
 // ============================================
 
-export async function loadCannedMessages() {
+export async function loadCannedMessages(businessUnitSlugOrId?: string | null) {
+  const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+
   const { data, error } = await supabase
     .from('canned_messages')
     .select(`
@@ -333,7 +381,7 @@ export async function loadCannedMessages() {
         color
       )
     `)
-    .eq('business_unit_id', BUSINESS_UNIT_ID)
+    .eq('business_unit_id', businessUnitId)
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -356,7 +404,9 @@ export async function loadCannedMessages() {
   }))
 }
 
-export async function saveCannedMessage(msg: any) {
+export async function saveCannedMessage(msg: any, businessUnitSlugOrId?: string | null) {
+  const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+
   // Generate embedding for the canned message
   const { generateEmbedding } = await import('./embeddings')
   const embedding = await generateEmbedding((msg.title || msg.scenario) + ' ' + (msg.message || msg.template))
@@ -367,7 +417,7 @@ export async function saveCannedMessage(msg: any) {
     const { data: categoryData } = await supabase
       .from('categories')
       .select('id')
-      .eq('business_unit_id', BUSINESS_UNIT_ID)
+      .eq('business_unit_id', businessUnitId)
       .eq('name', msg.category)
       .single()
 
@@ -375,7 +425,7 @@ export async function saveCannedMessage(msg: any) {
   }
 
   const cannedEntry = {
-    business_unit_id: BUSINESS_UNIT_ID,
+    business_unit_id: businessUnitId,
     category_id: categoryId,
     title: msg.title || msg.scenario,
     shortcut: msg.shortcut,
@@ -424,14 +474,16 @@ export async function deleteCannedMessage(id: string) {
 // CATEGORIES
 // ============================================
 
-export async function loadFAQCategories() {
+export async function loadFAQCategories(businessUnitSlugOrId?: string | null) {
+  const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+
   // FAQ categories: pricing, products, shipping, returns, product results, ingredients, general
   const faqCategoryNames = ['pricing', 'products', 'shipping', 'returns', 'product results', 'ingredients', 'general']
 
   const { data, error } = await supabase
     .from('categories')
     .select('name')
-    .eq('business_unit_id', BUSINESS_UNIT_ID)
+    .eq('business_unit_id', businessUnitId)
     .in('name', faqCategoryNames)
     .order('sort_order')
 
@@ -443,14 +495,16 @@ export async function loadFAQCategories() {
   return data.map(c => c.name)
 }
 
-export async function loadCannedCategories() {
+export async function loadCannedCategories(businessUnitSlugOrId?: string | null) {
+  const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+
   // Canned message categories: beauty tips, product recommendations, skincare advice, general responses
   const cannedCategoryNames = ['beauty tips', 'product recommendations', 'skincare advice', 'general responses']
 
-  const { data, error } = await supabase
+  const { data, error} = await supabase
     .from('categories')
     .select('name')
-    .eq('business_unit_id', BUSINESS_UNIT_ID)
+    .eq('business_unit_id', businessUnitId)
     .in('name', cannedCategoryNames)
     .order('sort_order')
 
@@ -462,11 +516,13 @@ export async function loadCannedCategories() {
   return data.map(c => c.name)
 }
 
-export async function saveCategory(name: string, type: 'faq' | 'canned') {
+export async function saveCategory(name: string, type: 'faq' | 'canned', businessUnitSlugOrId?: string | null) {
+  const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+
   const { data, error } = await supabase
     .from('categories')
     .insert({
-      business_unit_id: BUSINESS_UNIT_ID,
+      business_unit_id: businessUnitId,
       name: name,
       description: `${type} category for ${name}`,
       icon: '📁',
@@ -478,11 +534,13 @@ export async function saveCategory(name: string, type: 'faq' | 'canned') {
   return data[0]
 }
 
-export async function deleteCategory(name: string) {
+export async function deleteCategory(name: string, businessUnitSlugOrId?: string | null) {
+  const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+
   const { error } = await supabase
     .from('categories')
     .delete()
-    .eq('business_unit_id', BUSINESS_UNIT_ID)
+    .eq('business_unit_id', businessUnitId)
     .eq('name', name)
 
   if (error) throw error
@@ -492,11 +550,13 @@ export async function deleteCategory(name: string) {
 // GUIDELINES (Migrated to Supabase)
 // ============================================
 
-export async function loadGuidelines() {
+export async function loadGuidelines(businessUnitSlugOrId?: string | null) {
+  const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+
   const { data, error } = await supabase
     .from('guidelines')
     .select('*')
-    .eq('business_unit_id', BUSINESS_UNIT_ID)
+    .eq('business_unit_id', businessUnitId)
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -515,7 +575,9 @@ export async function loadGuidelines() {
   }))
 }
 
-export async function saveGuideline(guideline: any) {
+export async function saveGuideline(guideline: any, businessUnitSlugOrId?: string | null) {
+  const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+
   // Generate embedding for the guideline
   const { generateEmbedding } = await import('./embeddings')
   const embedding = await generateEmbedding(guideline.title + ' ' + guideline.content)
@@ -523,7 +585,7 @@ export async function saveGuideline(guideline: any) {
   const { data, error } = await supabase
     .from('guidelines')
     .upsert({
-      business_unit_id: BUSINESS_UNIT_ID,
+      business_unit_id: businessUnitId,
       original_id: guideline.id,
       category: guideline.category,
       title: guideline.title,
@@ -556,18 +618,20 @@ export async function deleteGuideline(id: string) {
   }
 }
 
-export async function saveGuidelines(guidelines: any[]) {
+export async function saveGuidelines(guidelines: any[], businessUnitSlugOrId?: string | null) {
+  const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+
   // Batch save - delete all and re-insert
   await supabase
     .from('guidelines')
     .delete()
-    .eq('business_unit_id', BUSINESS_UNIT_ID)
+    .eq('business_unit_id', businessUnitId)
 
   const { error } = await supabase
     .from('guidelines')
     .insert(
       guidelines.map(g => ({
-        business_unit_id: BUSINESS_UNIT_ID,
+        business_unit_id: businessUnitId,
         original_id: g.id,
         category: g.category,
         title: g.title,
@@ -583,15 +647,68 @@ export async function saveGuidelines(guidelines: any[]) {
   }
 }
 
+/**
+ * Copy default guidelines from SkinCoach template to a new business unit
+ * This is called when creating a new business unit to inherit default training guidelines
+ */
+export async function copyDefaultGuidelines(targetBusinessUnitSlugOrId: string) {
+  const targetBusinessUnitId = await getBusinessUnitId(targetBusinessUnitSlugOrId)
+
+  console.log(`📋 Copying default guidelines to business unit: ${targetBusinessUnitSlugOrId}`)
+
+  // Load guidelines from the default SkinCoach business unit (template)
+  const { data: defaultGuidelines, error: loadError } = await supabase
+    .from('guidelines')
+    .select('*')
+    .eq('business_unit_id', DEFAULT_BUSINESS_UNIT_ID)
+
+  if (loadError) {
+    console.error('Error loading default guidelines:', loadError)
+    handleSupabaseError(loadError, 'Loading default guidelines')
+    return
+  }
+
+  if (!defaultGuidelines || defaultGuidelines.length === 0) {
+    console.log('⚠️ No default guidelines to copy')
+    return
+  }
+
+  // Copy guidelines to the new business unit
+  const guidelinesToInsert = defaultGuidelines.map(g => ({
+    business_unit_id: targetBusinessUnitId,
+    original_id: `guideline-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+    category: g.category,
+    title: g.title,
+    content: g.content,
+    embedding: g.embedding,
+    embedding_model: g.embedding_model,
+    embedded_at: g.embedded_at
+  }))
+
+  const { error: insertError } = await supabase
+    .from('guidelines')
+    .insert(guidelinesToInsert)
+
+  if (insertError) {
+    console.error('Error copying guidelines:', insertError)
+    handleSupabaseError(insertError, 'Copying default guidelines')
+    throw insertError
+  }
+
+  console.log(`✅ Copied ${defaultGuidelines.length} default guidelines to ${targetBusinessUnitSlugOrId}`)
+}
+
 // ============================================
 // TRAINING DATA (Migrated to Supabase)
 // ============================================
 
-export async function loadTrainingData() {
+export async function loadTrainingData(businessUnitSlugOrId?: string | null) {
+  const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+
   const { data, error } = await supabase
     .from('training_data')
     .select('*')
-    .eq('business_unit_id', BUSINESS_UNIT_ID)
+    .eq('business_unit_id', businessUnitId)
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -614,7 +731,9 @@ export async function loadTrainingData() {
   }))
 }
 
-export async function saveTrainingEntry(entry: any) {
+export async function saveTrainingEntry(entry: any, businessUnitSlugOrId?: string | null) {
+  const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+
   // Generate embedding for the training entry
   const { generateEmbedding } = await import('./embeddings')
   const embedding = await generateEmbedding(entry.question + ' ' + entry.answer)
@@ -622,7 +741,7 @@ export async function saveTrainingEntry(entry: any) {
   const { data, error } = await supabase
     .from('training_data')
     .upsert({
-      business_unit_id: BUSINESS_UNIT_ID,
+      business_unit_id: businessUnitId,
       original_id: entry.id,
       question: entry.question,
       answer: entry.answer,
@@ -660,18 +779,20 @@ export async function deleteTrainingEntry(id: string) {
   }
 }
 
-export async function saveTrainingData(training: any[]) {
+export async function saveTrainingData(training: any[], businessUnitSlugOrId?: string | null) {
+  const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+
   // Batch save - delete all and re-insert
   await supabase
     .from('training_data')
     .delete()
-    .eq('business_unit_id', BUSINESS_UNIT_ID)
+    .eq('business_unit_id', businessUnitId)
 
   const { error } = await supabase
     .from('training_data')
     .insert(
       training.map(t => ({
-        business_unit_id: BUSINESS_UNIT_ID,
+        business_unit_id: businessUnitId,
         original_id: t.id,
         question: t.question,
         answer: t.answer,
@@ -716,6 +837,8 @@ export async function loadBusinessUnits() {
 }
 
 export async function saveBusinessUnit(unit: any) {
+  console.log('💾 Saving business unit:', { id: unit.id, name: unit.name, industry: unit.industry })
+
   // Build the data object, only including industry if the column exists
   const data: any = {
     slug: unit.id,
@@ -732,21 +855,41 @@ export async function saveBusinessUnit(unit: any) {
     data.industry = unit.industry
   }
 
-  const { error } = await supabase
+  console.log('💾 Data to save:', data)
+
+  const { data: savedData, error } = await supabase
     .from('business_units')
     .upsert(data, {
       onConflict: 'slug'
     })
+    .select()
 
   if (error) {
-    // Suppress schema errors for optional columns
+    // If industry column doesn't exist, retry without it
     if (error.message?.includes('industry') && error.message?.includes('schema cache')) {
-      console.log('⚠️ Business unit saved without industry field (run migration 007 to add it)')
-      return // Don't throw, just skip the industry field
+      console.log('⚠️ Industry column not found, retrying without it...')
+      delete data.industry
+      const { data: retryData, error: retryError } = await supabase
+        .from('business_units')
+        .upsert(data, {
+          onConflict: 'slug'
+        })
+        .select()
+
+      if (retryError) {
+        console.error('❌ Error saving business unit (retry):', retryError)
+        handleSupabaseError(retryError, 'Saving business unit')
+        throw retryError
+      }
+      console.log('✅ Business unit saved successfully (without industry):', retryData)
+      return
     }
+    console.error('❌ Error saving business unit:', error)
     handleSupabaseError(error, 'Saving business unit')
     throw error
   }
+
+  console.log('✅ Business unit saved successfully:', savedData)
 }
 
 export async function deleteBusinessUnit(slug: string) {
@@ -765,11 +908,13 @@ export async function deleteBusinessUnit(slug: string) {
 // AI STAFF
 // ============================================
 
-export async function loadAIStaff() {
+export async function loadAIStaff(businessUnitSlugOrId?: string | null) {
+  const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+
   const { data, error } = await supabase
     .from('ai_staff')
     .select('*')
-    .eq('business_unit_id', BUSINESS_UNIT_ID)
+    .eq('business_unit_id', businessUnitId)
     .eq('is_active', true)
     .order('created_at', { ascending: true })
 
@@ -788,12 +933,14 @@ export async function loadAIStaff() {
   }))
 }
 
-export async function saveAIStaff(staff: any) {
+export async function saveAIStaff(staff: any, businessUnitSlugOrId?: string | null) {
+  const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+
   // Check if id looks like a UUID
   const isUUID = staff.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(staff.id)
 
   const dataToSave: any = {
-    business_unit_id: BUSINESS_UNIT_ID,
+    business_unit_id: businessUnitId,
     name: staff.name,
     role: staff.role,
     training_memory: staff.trainingMemory || {},
@@ -835,11 +982,13 @@ export async function deleteAIStaff(id: string) {
 // TRAINING SCENARIOS
 // ============================================
 
-export async function loadTrainingScenarios() {
+export async function loadTrainingScenarios(businessUnitSlugOrId?: string | null) {
+  const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+
   const { data, error } = await supabase
     .from('training_scenarios')
     .select('*')
-    .eq('business_unit_id', BUSINESS_UNIT_ID)
+    .eq('business_unit_id', businessUnitId)
     .eq('is_active', true)
     .order('created_at', { ascending: true })
 
@@ -859,12 +1008,14 @@ export async function loadTrainingScenarios() {
   }))
 }
 
-export async function saveTrainingScenario(scenario: any) {
+export async function saveTrainingScenario(scenario: any, businessUnitSlugOrId?: string | null) {
+  const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+
   // Check if id looks like a UUID (has dashes and correct length)
   const isUUID = scenario.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(scenario.id)
 
   const dataToSave: any = {
-    business_unit_id: BUSINESS_UNIT_ID,
+    business_unit_id: businessUnitId,
     name: scenario.name,
     description: scenario.description,
     customer_type: scenario.customerType,
@@ -912,11 +1063,13 @@ export async function deleteTrainingScenario(id: string) {
 // TRAINING SESSIONS
 // ============================================
 
-export async function loadTrainingSessions() {
+export async function loadTrainingSessions(businessUnitSlugOrId?: string | null) {
+  const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+
   const { data, error } = await supabase
     .from('training_sessions')
     .select('*, training_scenarios(name), ai_staff(name)')
-    .eq('business_unit_id', BUSINESS_UNIT_ID)
+    .eq('business_unit_id', businessUnitId)
     .order('completed_at', { ascending: false })
 
   if (error) {
@@ -941,7 +1094,9 @@ export async function loadTrainingSessions() {
   }))
 }
 
-export async function saveTrainingSession(session: any) {
+export async function saveTrainingSession(session: any, businessUnitSlugOrId?: string | null) {
+  const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+
   // Validate scenario_id is a valid UUID
   const scenarioId = session.scenarioId || session.scenario?.id
   if (!scenarioId) {
@@ -960,7 +1115,7 @@ export async function saveTrainingSession(session: any) {
   const { error } = await supabase
     .from('training_sessions')
     .insert({
-      business_unit_id: BUSINESS_UNIT_ID,
+      business_unit_id: businessUnitId,
       scenario_id: scenarioId,
       ai_staff_id: aiStaffId,
       conversation: session.conversation,
@@ -1154,3 +1309,4 @@ export async function vectorSearchTrainingData(query: string, limit: number = 10
     return []
   }
 }
+

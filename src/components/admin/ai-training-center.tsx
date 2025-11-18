@@ -9,7 +9,7 @@ import {
   loadFAQs, saveFAQ, deleteFAQ,
   loadCannedMessages, saveCannedMessage, deleteCannedMessage,
   loadFAQCategories, loadCannedCategories, saveCategory, deleteCategory,
-  loadGuidelines, saveGuidelines, saveGuideline, deleteGuideline,
+  loadGuidelines, saveGuidelines, saveGuideline, deleteGuideline, copyDefaultGuidelines,
   loadTrainingData, saveTrainingData,
   loadBusinessUnits, saveBusinessUnit, deleteBusinessUnit,
   loadAIStaff, saveAIStaff, deleteAIStaff,
@@ -278,14 +278,31 @@ const AITrainingCenter = () => {
   const addBusinessUnit = async () => {
     if (!newBusinessUnitName.trim()) return
 
+    // Generate slug: trim, lowercase, replace spaces with dashes, remove leading/trailing dashes
+    const slug = newBusinessUnitName
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/^-+|-+$/g, '') // Remove leading/trailing dashes
+
     const newUnit: BusinessUnit = {
-      id: newBusinessUnitName.toLowerCase().replace(/\s+/g, '-'),
+      id: slug,
       name: newBusinessUnitName.trim(),
       industry: newBusinessUnitIndustry.trim() || 'General',
       createdAt: new Date()
     }
 
     await saveBusinessUnit(newUnit)
+
+    // Copy default guidelines from SkinCoach template to new business unit
+    try {
+      await copyDefaultGuidelines(newUnit.id)
+      console.log(`✅ Default guidelines copied to ${newUnit.name}`)
+    } catch (error) {
+      console.error('Error copying default guidelines:', error)
+      // Don't fail the whole operation if guideline copy fails
+    }
+
     const updatedUnits = [...businessUnits, newUnit]
     setBusinessUnits(updatedUnits)
     setSelectedBusinessUnit(newUnit.id)
@@ -407,25 +424,25 @@ const AITrainingCenter = () => {
 
     try {
       // Load data from Supabase database
-      console.log('📊 Loading data from Supabase...')
+      console.log(`📊 Loading data from Supabase for business unit: ${selectedBusinessUnit}`)
 
       // Load knowledge base
-      const knowledgeData = await loadKnowledge()
+      const knowledgeData = await loadKnowledge(selectedBusinessUnit)
       setKnowledgeEntries(knowledgeData || [])
       console.log(`✅ Loaded ${knowledgeData?.length || 0} knowledge entries`)
 
       // Load FAQs
-      const faqData = await loadFAQs()
+      const faqData = await loadFAQs(selectedBusinessUnit)
       setFaqs(faqData || [])
       console.log(`✅ Loaded ${faqData?.length || 0} FAQs`)
 
       // Load canned messages
-      const cannedData = await loadCannedMessages()
+      const cannedData = await loadCannedMessages(selectedBusinessUnit)
       setCannedMsgs(cannedData || [])
       console.log(`✅ Loaded ${cannedData?.length || 0} canned messages`)
 
       // Load FAQ categories
-      const faqCategoriesData = await loadFAQCategories()
+      const faqCategoriesData = await loadFAQCategories(selectedBusinessUnit)
       if (faqCategoriesData && faqCategoriesData.length > 0) {
         setFaqCategories(faqCategoriesData)
       } else {
@@ -436,7 +453,7 @@ const AITrainingCenter = () => {
       console.log(`✅ Loaded ${faqCategoriesData?.length || 0} FAQ categories`)
 
       // Load canned message categories
-      const cannedCategoriesData = await loadCannedCategories()
+      const cannedCategoriesData = await loadCannedCategories(selectedBusinessUnit)
       if (cannedCategoriesData && cannedCategoriesData.length > 0) {
         setCannedCategories(cannedCategoriesData)
       } else {
@@ -447,12 +464,12 @@ const AITrainingCenter = () => {
       console.log(`✅ Loaded ${cannedCategoriesData?.length || 0} canned message categories`)
 
       // Load training data from Supabase
-      const trainingDataFile = await loadTrainingData()
+      const trainingDataFile = await loadTrainingData(selectedBusinessUnit)
       setTrainingData(trainingDataFile || [])
       console.log(`✅ Loaded ${trainingDataFile?.length || 0} training data entries from Supabase`)
 
       // Load guidelines from Supabase (no auto-initialization)
-      const guidelinesData = await loadGuidelines()
+      const guidelinesData = await loadGuidelines(selectedBusinessUnit)
       setGuidelines(guidelinesData || [])
       console.log(`✅ Loaded ${guidelinesData?.length || 0} guidelines from Supabase`)
 
@@ -1219,8 +1236,8 @@ Format as JSON array:
       g.id === guideline.id ? { ...guideline, updatedAt: new Date() } : g
     )
     setGuidelines(updated)
-    // Save to Supabase
-    await saveGuidelines(updated)
+    // Save to Supabase with business unit ID
+    await saveGuidelines(updated, selectedBusinessUnit)
     setEditingGuideline(null)
   }
 
@@ -1406,7 +1423,7 @@ Format as JSON array:
 
     try {
       // Load AI staff (which includes training memory)
-      const staff = await loadAIStaff()
+      const staff = await loadAIStaff(selectedBusinessUnit)
       if (staff.length > 0) {
         // Merge all staff training memories into one object
         const mergedMemory = staff.reduce((acc: any, s: any) => {
@@ -1416,7 +1433,7 @@ Format as JSON array:
       }
 
       // Load completed training sessions from Supabase
-      const sessions = await loadTrainingSessions()
+      const sessions = await loadTrainingSessions(selectedBusinessUnit)
       setCompletedTrainingSessions(sessions)
 
       if (sessions.length > 0) {
@@ -1431,9 +1448,9 @@ Format as JSON array:
     if (confirm('Are you sure you want to clear all training memory? This action cannot be undone.')) {
       try {
         // Clear training memory for all AI staff in Supabase
-        const staff = await loadAIStaff()
+        const staff = await loadAIStaff(selectedBusinessUnit)
         for (const s of staff) {
-          await saveAIStaff({ ...s, trainingMemory: {} })
+          await saveAIStaff({ ...s, trainingMemory: {} }, selectedBusinessUnit)
         }
         setTrainingMemory({})
         console.log('✅ Cleared all training memory in Supabase')
@@ -1686,15 +1703,6 @@ Format as JSON array:
                   className="hidden"
                 />
               </div>
-            )}
-            {activeTab === 'training' && (
-              <button
-                onClick={addTrainingData}
-                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                Add Training
-              </button>
             )}
           </div>
         </div>

@@ -322,10 +322,10 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
 
   if (!isOpen) {
     return (
-      <div className={`fixed bottom-6 right-6 z-50 ${className}`}>
+      <div className={`fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 ${className}`}>
         <button
           onClick={() => setIsOpen(true)}
-          className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 animate-pulse"
+          className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 text-white p-3 md:p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 animate-pulse"
           aria-label="Open AI Coach"
         >
           <Sparkles className="w-6 h-6" />
@@ -340,8 +340,8 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
   }
 
   return (
-    <div className={`fixed bottom-6 right-6 z-50 ${className}`}>
-      <div className="bg-white/95 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl w-[500px] h-[600px] flex flex-col">
+    <div className={`fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 ${className}`}>
+      <div className="bg-white/95 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl w-[calc(100vw-2rem)] h-[calc(100vh-2rem)] md:w-[500px] md:h-[600px] max-w-[500px] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200/50 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-cyan-500/10">
           <div className="flex items-center gap-2">

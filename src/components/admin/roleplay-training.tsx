@@ -335,7 +335,7 @@ const RoleplayTraining = ({ onTrainingSessionsUpdate, businessUnit, knowledgeEnt
 
   useEffect(() => {
     initializeData()
-  }, [])
+  }, [businessUnit])
 
   // Selected role is session-specific state (no need to persist)
 
@@ -354,7 +354,7 @@ const RoleplayTraining = ({ onTrainingSessionsUpdate, businessUnit, knowledgeEnt
       trainingMemory: {},
       totalSessions: 0
     }
-    await saveAIStaff(newStaff)
+    await saveAIStaff(newStaff, businessUnit)
     const updatedList = [...aiStaffList, newStaff]
     setAiStaffList(updatedList)
     setSelectedStaff(newStaff)
@@ -397,7 +397,7 @@ const RoleplayTraining = ({ onTrainingSessionsUpdate, businessUnit, knowledgeEnt
         const updatedStaff = aiStaffList.find(s => s.id === editingStaffId)
         if (updatedStaff) {
           const staffToUpdate = { ...updatedStaff, name: newName }
-          await saveAIStaff(staffToUpdate)
+          await saveAIStaff(staffToUpdate, businessUnit)
           const updatedList = aiStaffList.map(s =>
             s.id === editingStaffId ? staffToUpdate : s
           )
@@ -509,7 +509,7 @@ const RoleplayTraining = ({ onTrainingSessionsUpdate, businessUnit, knowledgeEnt
     if (newScenarios.length > 0) {
       // Save each scenario to Supabase
       for (const scenario of newScenarios) {
-        await saveTrainingScenario(scenario)
+        await saveTrainingScenario(scenario, businessUnit)
       }
       const updatedScenarios = [...scenarios, ...newScenarios]
       setScenarios(updatedScenarios)
@@ -531,30 +531,27 @@ const RoleplayTraining = ({ onTrainingSessionsUpdate, businessUnit, knowledgeEnt
 
   const initializeData = async () => {
     try {
+      // Clear state first to prevent showing stale data
+      setAiStaffList([])
+      setSelectedStaff(null)
+      setScenarios([])
+
       // Load AI Staff from Supabase
-      const staff = await loadAIStaff()
+      const staff = await loadAIStaff(businessUnit)
       if (staff && staff.length > 0) {
         setAiStaffList(staff)
         // Select first staff by default
         setSelectedStaff(staff[0])
         setSelectedRole(staff[0].role)
       } else {
-        // Create default AI staff member
-        const defaultStaff: AIStaff = {
-          id: crypto.randomUUID(),
-          name: 'Dr. Sakura',
-          role: 'coach',
-          createdAt: new Date(),
-          trainingMemory: {},
-          totalSessions: 0
-        }
-        await saveAIStaff(defaultStaff)
-        setAiStaffList([defaultStaff])
-        setSelectedStaff(defaultStaff)
+        // Don't create default staff for new business units
+        // Leave the list empty
+        setAiStaffList([])
+        setSelectedStaff(null)
       }
 
       // Load scenarios from Supabase
-      const savedScenarios = await loadTrainingScenarios()
+      const savedScenarios = await loadTrainingScenarios(businessUnit)
       if (savedScenarios && savedScenarios.length > 0) {
         setScenarios(savedScenarios)
       } else {
@@ -563,7 +560,7 @@ const RoleplayTraining = ({ onTrainingSessionsUpdate, businessUnit, knowledgeEnt
         setScenarios(initialScenarios)
         // Save defaults to Supabase
         for (const scenario of initialScenarios) {
-          await saveTrainingScenario(scenario)
+          await saveTrainingScenario(scenario, businessUnit)
         }
       }
 
@@ -1107,11 +1104,11 @@ Respond to the customer's CURRENT message while considering the FULL conversatio
     const loadSessionsAndMemory = async () => {
       try {
         // Load training sessions from Supabase
-        const sessions = await loadTrainingSessions()
+        const sessions = await loadTrainingSessions(businessUnit)
         setCompletedTrainingSessions(sessions)
 
         // Load training memory from AI Staff
-        const staff = await loadAIStaff()
+        const staff = await loadAIStaff(businessUnit)
         if (staff.length > 0) {
           // Merge all staff training memories
           const mergedMemory = staff.reduce((acc: any, s: any) => {
@@ -1306,7 +1303,7 @@ Respond to the customer's CURRENT message while considering the FULL conversatio
 
     // Save to Supabase
     try {
-      await saveTrainingSession(completedSession)
+      await saveTrainingSession(completedSession, businessUnit)
       console.log('✅ Saved training session to Supabase')
 
       // Notify parent component about training sessions update
@@ -1513,7 +1510,7 @@ Now provide your REVISED response to the customer's question above:`
       // Persist training memory to Supabase (update current AI staff)
       try {
         if (selectedStaff) {
-          await saveAIStaff({ ...selectedStaff, trainingMemory: newMemory })
+          await saveAIStaff({ ...selectedStaff, trainingMemory: newMemory }, businessUnit)
           console.log('✅ Saved training memory to Supabase')
         }
       } catch (error) {
@@ -1722,7 +1719,7 @@ Now provide your REVISED response to the customer's question above:`
       difficulty: scenarioData.difficulty || 'Intermediate'
     }
 
-    await saveTrainingScenario(newScenario)
+    await saveTrainingScenario(newScenario, businessUnit)
     const updatedScenarios = [...scenarios, newScenario]
     setScenarios(updatedScenarios)
     setShowCreateScenario(false)
