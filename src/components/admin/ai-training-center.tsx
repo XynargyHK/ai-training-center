@@ -1510,7 +1510,7 @@ Format as JSON array:
             <p className="text-slate-400 text-sm sm:text-base">Train and manage your AI customer support agent</p>
           </div>
           <a
-            href="/livechat"
+            href={`/livechat?businessUnit=${selectedBusinessUnit}`}
             target="_blank"
             rel="noopener noreferrer"
             className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 hover:from-purple-600 hover:via-pink-600 hover:to-cyan-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold flex items-center gap-2 transition-all duration-200 hover:shadow-lg hover:scale-105 text-sm sm:text-base w-full sm:w-auto justify-center"

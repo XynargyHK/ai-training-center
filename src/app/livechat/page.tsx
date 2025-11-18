@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import AICoach from '@/components/ui/ai-coach'
+import { useSearchParams } from 'next/navigation'
 
 interface AIStaff {
   id: string
@@ -12,38 +13,55 @@ interface AIStaff {
   totalSessions: number
 }
 
+interface BusinessUnit {
+  id: string
+  name: string
+  slug: string
+}
+
 export default function DemoPage() {
+  const searchParams = useSearchParams()
+  const businessUnitParam = searchParams.get('businessUnit') || 'skincoach'
+
   const [aiStaffList, setAiStaffList] = useState<AIStaff[]>([])
-  const [selectedStaff, setSelectedStaff] = useState<AIStaff | null>(null)
+  const [openStaffId, setOpenStaffId] = useState<string | null>(null)
   const [isDataLoaded, setIsDataLoaded] = useState(false)
-  const businessUnit = 'skincoach'
+  const [businessUnit, setBusinessUnit] = useState<BusinessUnit | null>(null)
 
   useEffect(() => {
-    // Load AI Staff from Supabase
+    // Load Business Unit and AI Staff from Supabase
     const loadData = async () => {
       try {
-        console.log('🔄 Demo Page: Loading AI staff from Supabase...')
+        console.log('🔄 Demo Page: Loading data for business unit:', businessUnitParam)
 
-        // Import Supabase function dynamically
-        const { loadAIStaff } = await import('@/lib/supabase')
+        // Import Supabase functions dynamically
+        const { loadAIStaff } = await import('@/lib/supabase-storage')
+        const { loadBusinessUnits } = await import('@/lib/api-client')
 
-        // Load AI staff from Supabase
-        const staff = await loadAIStaff()
+        // Load business unit details
+        const units = await loadBusinessUnits()
+        const currentUnit = units.find((u: any) => u.id === businessUnitParam || u.slug === businessUnitParam)
+        if (currentUnit) {
+          setBusinessUnit(currentUnit)
+          console.log('✅ Loaded business unit:', currentUnit.name)
+        }
+
+        // Load AI staff from Supabase for this business unit
+        const staff = await loadAIStaff(businessUnitParam)
         if (staff && staff.length > 0) {
           setAiStaffList(staff)
-          setSelectedStaff(staff[0])
           console.log('✅ Loaded', staff.length, 'AI staff from Supabase')
         }
 
         setIsDataLoaded(true)
       } catch (error) {
-        console.error('❌ Failed to load AI staff:', error)
+        console.error('❌ Failed to load data:', error)
         setIsDataLoaded(true) // Still allow chat even if loading fails
       }
     }
 
     loadData()
-  }, [])
+  }, [businessUnitParam])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
@@ -53,10 +71,10 @@ export default function DemoPage() {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
-                AI Customer Service Coach - Live Chat
+                {businessUnit?.name || 'AI'} - Live Chat Demo
               </h1>
               <p className="text-slate-400 text-sm mt-1">
-                Chat with our trained AI assistant
+                Click on an AI staff icon to start chatting
               </p>
             </div>
             <button
@@ -66,37 +84,6 @@ export default function DemoPage() {
               Close Demo
             </button>
           </div>
-
-          {/* AI Staff Selector */}
-          {aiStaffList.length > 0 && (
-            <div className="mt-4 flex items-center gap-3">
-              <span className="text-slate-300 text-sm font-medium">Select AI Staff:</span>
-              <div className="flex gap-2 flex-wrap">
-                {aiStaffList.map((staff) => (
-                  <button
-                    key={staff.id}
-                    onClick={() => setSelectedStaff(staff)}
-                    className={`px-3 py-1.5 rounded-lg transition-colors text-sm flex items-center gap-2 ${
-                      selectedStaff?.id === staff.id
-                        ? 'bg-cyan-600 text-white border-2 border-cyan-400'
-                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                    }`}
-                  >
-                    <span>{
-                      staff.role === 'coach' ? '🎓' :
-                      staff.role === 'sales' ? '💰' :
-                      staff.role === 'customer-service' ? '🛡️' :
-                      '🔬'
-                    }</span>
-                    <span className="font-medium">{staff.name}</span>
-                    <span className="text-xs opacity-70">
-                      ({staff.totalSessions || 0} sessions)
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -110,12 +97,21 @@ export default function DemoPage() {
           </div>
         )}
 
-        {/* AI Coach - auto-opens on demo page */}
-        <AICoach
-          initialOpen={true}
-          businessUnit={businessUnit}
-          selectedStaff={selectedStaff}
-        />
+        {/* Multiple AI Coach buttons - one for each staff member */}
+        {aiStaffList.map((staff, index) => (
+          <AICoach
+            key={staff.id}
+            businessUnit={businessUnitParam}
+            selectedStaff={staff}
+            initialOpen={openStaffId === staff.id}
+            className={`
+              ${index === 0 ? 'md:bottom-6 md:right-6' : ''}
+              ${index === 1 ? 'md:bottom-6 md:right-28' : ''}
+              ${index === 2 ? 'md:bottom-6 md:right-50' : ''}
+              ${index === 3 ? 'md:bottom-28 md:right-6' : ''}
+            `}
+          />
+        ))}
 
         {/* Welcome Message */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -127,19 +123,29 @@ export default function DemoPage() {
                 </svg>
               </div>
               <h2 className="text-2xl font-bold text-white mb-2">
-                Welcome to AI Demo!
+                Welcome to {businessUnit?.name || 'AI'} Demo!
               </h2>
               <p className="text-slate-300 mb-4">
-                Click the sparkle button (bottom-right) to start chatting with our AI assistant
+                {aiStaffList.length > 0 ? (
+                  <>Click on any sparkle button to chat with our trained AI staff</>
+                ) : (
+                  <>No AI staff available. Please train some AI staff first in the admin panel.</>
+                )}
               </p>
-              <div className="text-sm text-slate-400">
-                Try asking about:
-                <div className="mt-2 space-y-1">
-                  <div className="text-cyan-300">• Products & Ingredients</div>
-                  <div className="text-pink-300">• Pricing & Services</div>
-                  <div className="text-purple-300">• Skincare Advice</div>
+              {aiStaffList.length > 0 && (
+                <div className="text-sm text-slate-400">
+                  Available staff:
+                  <div className="mt-2 space-y-1">
+                    {aiStaffList.map((staff) => (
+                      <div key={staff.id} className="text-cyan-300">
+                        {staff.role === 'coach' ? '🎓' :
+                         staff.role === 'sales' ? '💰' :
+                         staff.role === 'customer-service' ? '🛡️' : '🔬'} {staff.name} ({staff.role})
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
