@@ -47,7 +47,7 @@ export interface Translations {
   clickToChat: string
   noAiStaff: string
   availableStaff: string
-  closeDemo: string
+  close: string
 }
 
 export const translations: Record<Language, Translations> = {
@@ -78,11 +78,11 @@ export const translations: Record<Language, Translations> = {
     noFaqAvailable: (category) => `I don't have any specific FAQs for ${category} at the moment, but feel free to ask me anything!`,
 
     loadingKnowledge: 'Loading knowledge base...',
-    welcomeTo: (name) => `Welcome to ${name} Demo!`,
+    welcomeTo: (name) => `Welcome to ${name}!`,
     clickToChat: 'Click on any sparkle button to chat with our trained AI staff',
     noAiStaff: 'No AI staff available. Please train some AI staff first in the admin panel.',
     availableStaff: 'Available staff:',
-    closeDemo: 'Close Demo',
+    close: 'Close',
   },
 
   'zh-CN': {
@@ -112,11 +112,11 @@ export const translations: Record<Language, Translations> = {
     noFaqAvailable: (category) => `目前还没有关于${category}的常见问题，但欢迎随时向我提问！`,
 
     loadingKnowledge: '正在加载知识库...',
-    welcomeTo: (name) => `欢迎来到${name}演示！`,
+    welcomeTo: (name) => `欢迎来到${name}！`,
     clickToChat: '点击任意按钮与我们训练有素的AI客服对话',
     noAiStaff: '暂无可用的AI客服。请先在管理面板中训练AI客服。',
     availableStaff: '可用客服：',
-    closeDemo: '关闭演示',
+    close: '关闭',
   },
 
   'zh-TW': {
@@ -146,11 +146,11 @@ export const translations: Record<Language, Translations> = {
     noFaqAvailable: (category) => `目前還沒有關於${category}的常見問題，但歡迎隨時向我提問！`,
 
     loadingKnowledge: '正在載入知識庫...',
-    welcomeTo: (name) => `歡迎來到${name}演示！`,
+    welcomeTo: (name) => `歡迎來到${name}！`,
     clickToChat: '點擊任意按鈕與我們訓練有素的AI客服對話',
     noAiStaff: '暫無可用的AI客服。請先在管理面板中訓練AI客服。',
     availableStaff: '可用客服：',
-    closeDemo: '關閉演示',
+    close: '關閉',
   },
 
   'vi': {
@@ -180,11 +180,11 @@ export const translations: Record<Language, Translations> = {
     noFaqAvailable: (category) => `Hiện tại tôi không có câu hỏi thường gặp cụ thể nào về ${category}, nhưng hãy thoải mái hỏi tôi bất cứ điều gì!`,
 
     loadingKnowledge: 'Đang tải cơ sở kiến thức...',
-    welcomeTo: (name) => `Chào mừng đến với Demo ${name}!`,
+    welcomeTo: (name) => `Chào mừng đến với ${name}!`,
     clickToChat: 'Nhấp vào bất kỳ nút nào để trò chuyện với nhân viên AI được đào tạo của chúng tôi',
     noAiStaff: 'Không có nhân viên AI nào. Vui lòng đào tạo nhân viên AI trong bảng quản trị.',
     availableStaff: 'Nhân viên có sẵn:',
-    closeDemo: 'Đóng Demo',
+    close: 'Đóng',
   }
 }
 

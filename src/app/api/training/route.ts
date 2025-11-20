@@ -8,19 +8,20 @@ import {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const action = searchParams.get('action')
+  const businessUnitId = searchParams.get('businessUnitId')
 
   try {
     switch (action) {
       case 'load_ai_staff':
-        const staff = await loadAIStaff()
+        const staff = await loadAIStaff(businessUnitId)
         return NextResponse.json({ data: staff })
 
       case 'load_scenarios':
-        const scenarios = await loadTrainingScenarios()
+        const scenarios = await loadTrainingScenarios(businessUnitId)
         return NextResponse.json({ data: scenarios })
 
       case 'load_sessions':
-        const sessions = await loadTrainingSessions()
+        const sessions = await loadTrainingSessions(businessUnitId)
         return NextResponse.json({ data: sessions })
 
       default:
@@ -33,20 +34,20 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
-  const { action, data } = body
+  const { action, data, businessUnitId } = body
 
   try {
     switch (action) {
       case 'save_ai_staff':
-        await saveAIStaff(data)
+        await saveAIStaff(data, businessUnitId)
         return NextResponse.json({ success: true })
 
       case 'save_scenario':
-        const savedScenario = await saveTrainingScenario(data)
+        const savedScenario = await saveTrainingScenario(data, businessUnitId)
         return NextResponse.json({ success: true, data: savedScenario })
 
       case 'save_session':
-        await saveTrainingSession(data)
+        await saveTrainingSession(data, businessUnitId)
         return NextResponse.json({ success: true })
 
       default:
