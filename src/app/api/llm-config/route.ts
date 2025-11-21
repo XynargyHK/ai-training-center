@@ -4,10 +4,11 @@ import { join } from 'path'
 
 // Store runtime LLM configuration
 let runtimeConfig: {
-  provider: 'anthropic' | 'ollama' | 'openai'
+  provider: 'anthropic' | 'ollama' | 'openai' | 'google'
   model: string
   anthropicKey?: string
   openaiKey?: string
+  googleKey?: string
   ollamaUrl?: string
   temperature?: number
 } | null = null
@@ -20,10 +21,11 @@ export function getLLMConfig() {
 
   // Fallback to environment variables
   return {
-    provider: (process.env.LLM_PROVIDER as any) || 'anthropic',
-    model: process.env.LLM_MODEL || 'claude-3-haiku-20240307',
+    provider: (process.env.LLM_PROVIDER as any) || 'google',
+    model: process.env.LLM_MODEL || 'gemini-2.5-flash',
     anthropicKey: process.env.ANTHROPIC_API_KEY,
     openaiKey: process.env.OPENAI_API_KEY,
+    googleKey: process.env.GOOGLE_GEMINI_API_KEY,
     ollamaUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
     temperature: 0.7
   }
@@ -57,6 +59,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (settings.provider === 'google' && !process.env.GOOGLE_GEMINI_API_KEY) {
+      return NextResponse.json(
+        { error: 'Google Gemini API key not configured in .env.local' },
+        { status: 400 }
+      )
+    }
+
     if (settings.provider === 'ollama' && !settings.ollamaUrl) {
       settings.ollamaUrl = 'http://localhost:11434'
     }
@@ -68,6 +77,7 @@ export async function POST(request: NextRequest) {
       model: settings.model,
       anthropicKey: process.env.ANTHROPIC_API_KEY,
       openaiKey: process.env.OPENAI_API_KEY,
+      googleKey: process.env.GOOGLE_GEMINI_API_KEY,
       ollamaUrl: settings.ollamaUrl || 'http://localhost:11434',
       temperature: settings.temperature ?? 0.7
     }
@@ -139,7 +149,8 @@ export async function GET() {
       temperature: config.temperature,
       // Don't expose API keys
       hasAnthropicKey: !!config.anthropicKey,
-      hasOpenAIKey: !!config.openaiKey
+      hasOpenAIKey: !!config.openaiKey,
+      hasGoogleKey: !!config.googleKey
     }
   })
 }
