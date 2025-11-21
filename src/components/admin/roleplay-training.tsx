@@ -1161,7 +1161,9 @@ Respond to the customer's CURRENT message while considering the FULL conversatio
             message: m.message,
             timestamp: m.timestamp.toISOString()
           })),
-          turn
+          turn,
+          knowledgeBase: knowledgeEntries,
+          guidelines: guidelinesData
         })
       })
 
@@ -1825,64 +1827,6 @@ Now provide your REVISED response to the customer's question above:`
           >
             Complete
           </button>
-        </div>
-
-        {/* Role Selection */}
-        <div className="mb-4 p-4 bg-slate-800 rounded-lg border border-slate-600">
-          <div className="flex items-center gap-4">
-            <label className="text-white font-medium flex items-center gap-2">
-              <User className="w-4 h-4" />
-              AI Role:
-            </label>
-            <div className="flex gap-2 flex-wrap">
-              <button
-                onClick={() => setSelectedRole('coach')}
-                className={`px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base whitespace-nowrap ${
-                  selectedRole === 'coach'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                }`}
-              >
-                🎓 Coach
-              </button>
-              <button
-                onClick={() => setSelectedRole('sales')}
-                className={`px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base whitespace-nowrap ${
-                  selectedRole === 'sales'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                }`}
-              >
-                💰 Sales
-              </button>
-              <button
-                onClick={() => setSelectedRole('customer-service')}
-                className={`px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base whitespace-nowrap ${
-                  selectedRole === 'customer-service'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                }`}
-              >
-                🛡️ Customer Service
-              </button>
-              <button
-                onClick={() => setSelectedRole('scientist')}
-                className={`px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm sm:text-base whitespace-nowrap ${
-                  selectedRole === 'scientist'
-                    ? 'bg-orange-600 text-white'
-                    : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
-                }`}
-              >
-                🔬 Scientist
-              </button>
-            </div>
-          </div>
-          <div className="mt-2 text-xs text-slate-400">
-            {selectedRole === 'coach' && '📚 Educates and guides customers with empathy and expertise'}
-            {selectedRole === 'sales' && '💼 Focuses on closing deals, upselling, and maximizing revenue'}
-            {selectedRole === 'customer-service' && '🤝 Resolves issues, ensures satisfaction, and builds loyalty'}
-            {selectedRole === 'scientist' && '🧪 Provides evidence-based, technical, and research-backed advice'}
-          </div>
         </div>
 
         {/* Chat Messages */}

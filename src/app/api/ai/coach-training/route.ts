@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import OpenAI from 'openai'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import { getLLMConfig } from '@/app/api/llm-config/route'
 
 // Initialize Anthropic client dynamically
@@ -21,6 +22,13 @@ function getOpenAIClient() {
   }
   // Fallback to environment variable
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+}
+
+// Initialize Google Gemini client dynamically
+function getGoogleClient() {
+  const config = getLLMConfig()
+  const apiKey = config.googleKey || process.env.GOOGLE_GEMINI_API_KEY || ''
+  return new GoogleGenerativeAI(apiKey)
 }
 
 interface KnowledgeEntry {
@@ -236,7 +244,30 @@ Generate a professional coach response.`
 Now respond professionally without making up ANY product names.` : ''}`
 
     // Route to appropriate AI provider
-    if (llmConfig.provider === 'openai') {
+    if (llmConfig.provider === 'google') {
+      // Google Gemini API
+      const genAI = getGoogleClient()
+      const model = genAI.getGenerativeModel({ model: llmConfig.model || 'gemini-2.5-flash' })
+
+      const result = await model.generateContent({
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
+          }
+        ],
+        generationConfig: {
+          temperature: llmConfig.temperature ?? 0.7,
+          maxOutputTokens: 2048,
+        }
+      })
+
+      const response = result.response
+      aiCoachResponse = response.text() || ''
+
+      apiResponse = { usage: { input_tokens: 0, output_tokens: 0 } }
+
+    } else if (llmConfig.provider === 'openai') {
       // OpenAI API
       const openai = getOpenAIClient()
 
@@ -308,6 +339,8 @@ Now respond professionally without making up ANY product names.` : ''}`
         tokens: apiResponse?.usage ? (
           llmConfig.provider === 'openai'
             ? (apiResponse.usage.prompt_tokens + apiResponse.usage.completion_tokens)
+            : llmConfig.provider === 'google'
+            ? 0
             : (apiResponse.usage.input_tokens + apiResponse.usage.output_tokens)
         ) : 0,
         timestamp: new Date().toISOString()

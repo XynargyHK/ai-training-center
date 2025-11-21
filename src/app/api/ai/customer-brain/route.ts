@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getLLMConfig } from '@/app/api/llm-config/route'
 import Anthropic from '@anthropic-ai/sdk'
 import OpenAI from 'openai'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
 // Initialize Anthropic client dynamically
 function getAnthropicClient() {
@@ -19,6 +20,13 @@ function getOpenAIClient() {
     return new OpenAI({ apiKey: config.openaiKey })
   }
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+}
+
+// Initialize Google Gemini client dynamically
+function getGoogleClient() {
+  const config = getLLMConfig()
+  const apiKey = config.googleKey || process.env.GOOGLE_GEMINI_API_KEY || ''
+  return new GoogleGenerativeAI(apiKey)
 }
 
 // Ollama helper function
@@ -45,6 +53,14 @@ async function generateOllamaResponse(prompt: string, model: string, baseURL: st
   return ollamaData.response?.trim() || ''
 }
 
+interface KnowledgeEntry {
+  id: string
+  category: string
+  content: string
+  keywords?: string[]
+  topic?: string
+}
+
 interface CustomerBrainRequest {
   scenario: {
     name: string
@@ -59,6 +75,13 @@ interface CustomerBrainRequest {
     timestamp: string
   }>
   turn: number
+  knowledgeBase?: KnowledgeEntry[]
+  guidelines?: Array<{
+    id: string
+    category: string
+    title: string
+    content: string
+  }>
 }
 
 export async function POST(request: NextRequest) {
@@ -67,7 +90,9 @@ export async function POST(request: NextRequest) {
       scenario,
       coachMessage,
       conversationHistory,
-      turn
+      turn,
+      knowledgeBase = [],
+      guidelines = []
     }: CustomerBrainRequest = await request.json()
 
     if (!scenario || !coachMessage) {
@@ -82,6 +107,16 @@ export async function POST(request: NextRequest) {
       .slice(-4) // Last 4 messages for context
       .map(msg => `${msg.sender === 'user' ? 'Coach' : 'Customer'}: ${msg.message}`)
       .join('\n')
+
+    // Build knowledge base context so customer knows what products/services exist
+    let knowledgeContext = ''
+    if (knowledgeBase && knowledgeBase.length > 0) {
+      knowledgeContext = '\n\n📚 AVAILABLE PRODUCTS/SERVICES (use these in your questions):\n' +
+        knowledgeBase
+          .map(entry => `- ${entry.topic || entry.category}: ${entry.content}`)
+          .join('\n') +
+        '\n\nIMPORTANT: When asking about products/services, use REAL names from the list above, NOT placeholders like "[Product/Service]".\n'
+    }
 
     // Create AI Customer personality prompt based on customer type
     const customerPersonalities = {
@@ -102,7 +137,7 @@ export async function POST(request: NextRequest) {
     const systemPrompt = `${customerPersonality}
 
 CURRENT SCENARIO: ${scenario.name}
-SCENARIO CONTEXT: ${scenario.description}
+SCENARIO CONTEXT: ${scenario.description}${knowledgeContext}
 
 CONVERSATION PROGRESS: This is turn ${turn} of the conversation.
 
@@ -123,12 +158,14 @@ INSTRUCTIONS FOR YOUR RESPONSE:
 - Keep responses conversational and realistic (1-3 sentences)
 - Don't be too easy to convince, but don't be impossibly difficult either
 - Use natural customer language, not marketing speak
+${knowledgeContext ? `- When asking about products/services, use REAL product names from the knowledge base above
+- DO NOT use placeholders like "[Product/Service]" or generic terms - be specific!` : ''}
 
 IMPORTANT: You are a CUSTOMER seeking help, NOT a business representative greeting customers.
 
 Generate a realistic customer response that moves the conversation forward naturally.`
 
-    const userPrompt = `As a ${scenario.customerType} customer, how do you respond to the coach's message: "${coachMessage}"`
+    const userPrompt = `As a ${scenario.customerType} customer, how do you respond to the coach's message: "${coachMessage}"${knowledgeContext ? '\n\nRemember: Use real product/service names from the knowledge base, not placeholders!' : ''}`
 
     // Get dynamic LLM configuration
     const llmConfig = getLLMConfig()
@@ -136,7 +173,29 @@ Generate a realistic customer response that moves the conversation forward natur
     let tokensUsed = 0
 
     // Route to appropriate AI provider based on global config
-    if (llmConfig.provider === 'openai') {
+    if (llmConfig.provider === 'google') {
+      // Google Gemini API
+      const genAI = getGoogleClient()
+      const model = genAI.getGenerativeModel({ model: llmConfig.model || 'gemini-2.5-flash' })
+
+      const result = await model.generateContent({
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
+          }
+        ],
+        generationConfig: {
+          temperature: 1.0,
+          maxOutputTokens: 256,
+        }
+      })
+
+      const response = result.response
+      aiCustomerResponse = response.text() || ''
+      tokensUsed = 0
+
+    } else if (llmConfig.provider === 'openai') {
       const openai = getOpenAIClient()
       const isGPT5 = llmConfig.model?.startsWith('gpt-5')
 

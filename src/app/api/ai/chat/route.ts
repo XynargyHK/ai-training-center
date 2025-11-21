@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import OpenAI from 'openai'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import { getLLMConfig } from '@/app/api/llm-config/route'
 
 // Initialize Anthropic client dynamically
@@ -21,6 +22,13 @@ function getOpenAIClient() {
   }
   // Fallback to environment variable
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+}
+
+// Initialize Google Gemini client dynamically
+function getGoogleClient() {
+  const config = getLLMConfig()
+  const apiKey = config.googleKey || process.env.GOOGLE_GEMINI_API_KEY || ''
+  return new GoogleGenerativeAI(apiKey)
 }
 
 interface KnowledgeEntry {
@@ -56,7 +64,8 @@ export async function POST(request: NextRequest) {
       staffName = 'AI Coach',
       staffRole = 'coach',
       trainingMemory = {},
-      language = 'en'  // Default to English
+      language = 'en',  // Default to English
+      image = null  // Image data for vision models
     } = await request.json()
 
     if (!message || typeof message !== 'string') {
@@ -103,7 +112,8 @@ export async function POST(request: NextRequest) {
       staffName,
       staffRole,
       trainingMemory,
-      language
+      language,
+      image
     )
 
     return NextResponse.json({
@@ -134,7 +144,8 @@ async function generateAIResponse(
   staffName: string = 'AI Coach',
   staffRole: string = 'coach',
   trainingMemory: {[key: string]: string[]} = {},
-  language: string = 'en'
+  language: string = 'en',
+  image: string | null = null
 ): Promise<string> {
 
   // Build knowledge context from knowledge base
@@ -145,6 +156,7 @@ async function generateAIResponse(
   console.log('Knowledge Base Entries:', knowledgeBase.length)
   console.log('Guidelines:', guidelines.length)
   console.log('User Message:', message)
+  console.log('📷 Image provided:', image ? 'YES (length: ' + image.length + ')' : 'NO')
 
   // Use vector search if knowledge base has embeddings
   // Falls back to keyword search if vector search fails
@@ -387,8 +399,13 @@ async function generateAIResponse(
     ? `\n\n🌍 LANGUAGE REQUIREMENT: You MUST respond ONLY in ${languageNames[language] || language}. The user may write in any language, but your responses must be in ${languageNames[language] || language}.\n`
     : ''
 
+  // Add vision instruction if image is provided
+  const visionInstruction = image
+    ? `\n\n📷 IMAGE ANALYSIS: The user has provided an image. Carefully analyze the image content and incorporate your observations into your response. Describe what you see, read any text in the image, and provide relevant insights based on the visual information.\n`
+    : ''
+
   // Create system prompt with EXTREMELY STRICT anti-hallucination rules
-  const systemPrompt = `You are ${staffName}, a ${staffRole} for THIS company ONLY.${knowledgeContext}${trainingContext}${guidelinesContext}${trainingMemoryContext}${languageInstruction}
+  const systemPrompt = `You are ${staffName}, a ${staffRole} for THIS company ONLY.${knowledgeContext}${trainingContext}${guidelinesContext}${trainingMemoryContext}${languageInstruction}${visionInstruction}
 
 ${conversationContext ? `RECENT CONVERSATION:\n${conversationContext}\n` : ''}
 
@@ -428,7 +445,73 @@ Keep responses clear and professional (2-4 sentences).`
     let aiResponse = ""
 
     // Route to appropriate AI provider
-    if (llmConfig.provider === 'openai') {
+    if (llmConfig.provider === 'google') {
+      // Google Gemini API
+      const genAI = getGoogleClient()
+      const model = genAI.getGenerativeModel({ model: llmConfig.model || 'gemini-2.5-flash' })
+
+      // Build conversation history for Gemini
+      const geminiContents: any[] = []
+
+      // Add conversation history
+      for (const msg of recentHistory) {
+        const parts: any[] = [{ text: msg.content }]
+
+        // Include image if present in history
+        if (msg.image) {
+          const imageData = msg.image.split(',')[1] // Extract base64 data
+          const mimeType = msg.image.match(/data:([^;]+);/)?.[1] || 'image/jpeg'
+          parts.push({
+            inlineData: {
+              data: imageData,
+              mimeType: mimeType
+            }
+          })
+        }
+
+        geminiContents.push({
+          role: msg.role === 'user' ? 'user' : 'model',
+          parts: parts
+        })
+      }
+
+      // Add current user message with reminder and optional image
+      const currentMessageParts: any[] = [{ text: `${message}
+
+${knowledgeContext ? `
+🚨 REMINDER: ONLY mention products/information EXPLICITLY LISTED in the knowledge base above. DO NOT mention competitor brands or make up information.` : ''}` }]
+
+      // Add image to current message if provided
+      if (image) {
+        const imageData = image.split(',')[1] // Extract base64 data after "data:image/xxx;base64,"
+        const mimeType = image.match(/data:([^;]+);/)?.[1] || 'image/jpeg'
+        currentMessageParts.push({
+          inlineData: {
+            data: imageData,
+            mimeType: mimeType
+          }
+        })
+        console.log('📷 Image included in Gemini request - MIME type:', mimeType)
+      }
+
+      geminiContents.push({
+        role: 'user',
+        parts: currentMessageParts
+      })
+
+      const result = await model.generateContent({
+        contents: geminiContents,
+        systemInstruction: systemPrompt,
+        generationConfig: {
+          temperature: llmConfig.temperature ?? 0.7,
+          maxOutputTokens: 4096,
+        }
+      })
+
+      const response = result.response
+      aiResponse = response.text() || "I'm here to help! Could you please provide more details about your question?"
+
+    } else if (llmConfig.provider === 'openai') {
       // OpenAI API
       const openai = getOpenAIClient()
 

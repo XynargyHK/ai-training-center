@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { X, Send, Sparkles, MessageCircle, Loader2, Plus, Minus, Globe } from 'lucide-react'
+import { X, Send, Sparkles, MessageCircle, Loader2, Plus, Minus, Globe, Camera, Image, Trash2 } from 'lucide-react'
 import { loadFAQCategories, loadFAQs } from '@/lib/api-client'
 import { type Language, getTranslation, languageNames } from '@/lib/translations'
 
@@ -18,6 +18,8 @@ interface Message {
   content: string
   timestamp: Date
   faqs?: FAQ[]
+  image?: string  // Base64 encoded image data
+  imageUrl?: string  // URL for displaying the image
 }
 
 interface AIStaff {
@@ -87,6 +89,12 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
   const [isTyping, setIsTyping] = useState(false)
   const [faqCategories, setFaqCategories] = useState<string[]>([])  // Will load from Supabase
   const [translatedCategories, setTranslatedCategories] = useState<{[key: string]: string}>({})
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [showCamera, setShowCamera] = useState(false)
+  const [chatSessionId, setChatSessionId] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
   // Get translations
   const t = getTranslation(selectedLanguage)
@@ -107,6 +115,118 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
       timestamp: new Date()
     }])
   }, [currentStaff, selectedLanguage])
+
+  // Create chat session when chat opens
+  useEffect(() => {
+    if (isOpen && !chatSessionId) {
+      createChatSession()
+    }
+  }, [isOpen])
+
+  // Create a new chat session in database
+  const createChatSession = async () => {
+    try {
+      // Get business unit ID from businessUnit slug
+      const buResponse = await fetch(`/api/knowledge?action=load_business_units`)
+      const buData = await buResponse.json()
+
+      console.log('Business units loaded:', buData)
+      console.log('Looking for business unit:', businessUnit)
+
+      // API returns { data: [...] }
+      const businessUnits = buData.data || []
+
+      // Try to find by slug, id, or name (case-insensitive)
+      const businessUnitData = businessUnits.find((bu: any) =>
+        bu.slug?.toLowerCase() === businessUnit.toLowerCase() ||
+        bu.id?.toLowerCase() === businessUnit.toLowerCase() ||
+        bu.name?.toLowerCase() === businessUnit.toLowerCase()
+      )
+
+      if (!businessUnitData) {
+        console.error('Business unit not found:', businessUnit)
+        console.error('Available business units:', businessUnits.map((bu: any) => ({ id: bu.id, name: bu.name })))
+
+        // Use first business unit as fallback
+        if (businessUnits.length > 0) {
+          console.warn('Using first available business unit as fallback')
+          const fallbackBU = businessUnits[0]
+
+          const response = await fetch('/api/chat-history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'create_session',
+              businessUnitId: fallbackBU.id,
+              aiStaffId: currentStaff?.id,
+              userIdentifier: `anon-${Date.now()}`,
+              language: selectedLanguage
+            })
+          })
+
+          const data = await response.json()
+          if (data.success && data.sessionId) {
+            setChatSessionId(data.sessionId)
+            console.log('✅ Chat session created (fallback):', data.sessionId)
+          }
+        }
+        return
+      }
+
+      const response = await fetch('/api/chat-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create_session',
+          businessUnitId: businessUnitData.id,
+          aiStaffId: currentStaff?.id,
+          userIdentifier: `anon-${Date.now()}`, // Can be replaced with actual user ID/email
+          language: selectedLanguage
+        })
+      })
+
+      const data = await response.json()
+      if (data.success && data.sessionId) {
+        setChatSessionId(data.sessionId)
+        console.log('✅ Chat session created:', data.sessionId)
+      }
+    } catch (error) {
+      console.error('Failed to create chat session:', error)
+    }
+  }
+
+  // Save message to database
+  const saveMessageToDatabase = async (
+    messageType: 'user' | 'ai',
+    content: string,
+    imageBase64?: string,
+    aiModel?: string,
+    aiProvider?: string
+  ) => {
+    if (!chatSessionId) {
+      console.warn('No chat session ID, skipping message save')
+      return
+    }
+
+    try {
+      await fetch('/api/chat-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'save_message',
+          sessionId: chatSessionId,
+          messageType,
+          content,
+          imageBase64,
+          aiModel,
+          aiProvider
+        })
+      })
+      console.log(`✅ ${messageType} message saved to database`)
+    } catch (error) {
+      console.error('Failed to save message:', error)
+    }
+  }
 
   // Handle staff switch
   const handleStaffSwitch = (staff: AIStaff) => {
@@ -172,12 +292,13 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
     translateCategories()
   }, [faqCategories, selectedLanguage])
 
-  const generateAIResponse = async (userMessage: string): Promise<string> => {
+  const generateAIResponse = async (userMessage: string, imageData?: string): Promise<string> => {
     try {
       // Prepare conversation history for context
       const conversationHistory = messages.map(msg => ({
         role: msg.type === 'user' ? 'user' : 'assistant',
-        content: msg.content
+        content: msg.content,
+        image: msg.imageUrl
       }))
 
       // Load knowledge base, training data, and guidelines via client-safe API
@@ -241,7 +362,8 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
         staffName: currentStaff?.name,
         staffRole: currentStaff?.role,
         trainingMemory: currentStaff?.trainingMemory || {},
-        language: selectedLanguage  // Add selected language
+        language: selectedLanguage,  // Add selected language
+        image: imageData  // Add image data for vision models
       }
 
       console.log('Sending to API - knowledgeBase entries:', knowledgeBase.length)
@@ -280,22 +402,90 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
     }
   }
 
+  // Handle file upload
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const imageData = event.target?.result as string
+      setSelectedImage(imageData)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  // Handle camera capture
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        setShowCamera(true)
+      }
+    } catch (error) {
+      console.error('Camera error:', error)
+      alert('Unable to access camera. Please check permissions.')
+    }
+  }
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current
+      const canvas = canvasRef.current
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        ctx.drawImage(video, 0, 0)
+        const imageData = canvas.toDataURL('image/png')
+        setSelectedImage(imageData)
+        stopCamera()
+      }
+    }
+  }
+
+  const stopCamera = () => {
+    if (videoRef.current?.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream
+      stream.getTracks().forEach(track => track.stop())
+      videoRef.current.srcObject = null
+    }
+    setShowCamera(false)
+  }
+
+  const removeImage = () => {
+    setSelectedImage(null)
+  }
+
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || isTyping) return
+    if ((!inputValue.trim() && !selectedImage) || isTyping) return
 
     const userMessage: Message = {
       id: Date.now().toString(),
       type: 'user',
-      content: inputValue.trim(),
-      timestamp: new Date()
+      content: inputValue.trim() || 'What do you see in this image?',
+      timestamp: new Date(),
+      imageUrl: selectedImage || undefined
     }
 
     setMessages(prev => [...prev, userMessage])
+    const messageText = inputValue.trim()
+    const messageImage = selectedImage
     setInputValue('')
+    setSelectedImage(null)
     setIsTyping(true)
 
+    // Save user message to database
+    saveMessageToDatabase('user', messageText || 'What do you see in this image?', messageImage || undefined)
+
     try {
-      const aiResponse = await generateAIResponse(userMessage.content)
+      const aiResponse = await generateAIResponse(messageText || 'What do you see in this image?', messageImage || undefined)
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -305,6 +495,9 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
       }
 
       setMessages(prev => [...prev, aiMessage])
+
+      // Save AI response to database
+      saveMessageToDatabase('ai', aiResponse, undefined, 'gemini-2.5-flash', 'google')
     } catch (error) {
       console.error('Error generating AI response:', error)
       const errorMessage: Message = {
@@ -528,6 +721,13 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
                     : 'bg-gray-100 text-gray-800'
                 }`}
               >
+                {message.imageUrl && (
+                  <img
+                    src={message.imageUrl}
+                    alt="Uploaded"
+                    className="max-w-full rounded-lg mb-2"
+                  />
+                )}
                 <p className="text-sm whitespace-pre-line">{message.content}</p>
 
                 {/* FAQ List */}
@@ -588,7 +788,77 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
 
         {/* Input */}
         <div className="p-4 border-t border-gray-200/50">
+          {/* Image Preview */}
+          {selectedImage && (
+            <div className="mb-3 relative inline-block">
+              <img src={selectedImage} alt="Preview" className="max-w-xs max-h-40 rounded-lg border border-gray-300" />
+              <button
+                onClick={removeImage}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {/* Camera Modal */}
+          {showCamera && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-lg p-4 max-w-md w-full">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-semibold">Take a Photo</h3>
+                  <button onClick={stopCamera} className="text-gray-500 hover:text-gray-700">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <video ref={videoRef} autoPlay className="w-full rounded-lg mb-4" />
+                <canvas ref={canvasRef} className="hidden" />
+                <div className="flex gap-2">
+                  <button
+                    onClick={capturePhoto}
+                    className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
+                  >
+                    Capture Photo
+                  </button>
+                  <button
+                    onClick={stopCamera}
+                    className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center space-x-2">
+            {/* File Upload Button */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="bg-gray-100 text-gray-600 p-2 rounded-xl hover:bg-gray-200 transition-all duration-200"
+              title="Upload image"
+              disabled={isTyping}
+            >
+              <Image className="w-4 h-4" />
+            </button>
+
+            {/* Camera Button */}
+            <button
+              onClick={startCamera}
+              className="bg-gray-100 text-gray-600 p-2 rounded-xl hover:bg-gray-200 transition-all duration-200"
+              title="Take photo"
+              disabled={isTyping}
+            >
+              <Camera className="w-4 h-4" />
+            </button>
+
             <input
               ref={inputRef}
               type="text"
@@ -601,7 +871,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
             />
             <button
               onClick={handleSendMessage}
-              disabled={!inputValue.trim() || isTyping}
+              disabled={(!inputValue.trim() && !selectedImage) || isTyping}
               className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white p-2 rounded-xl hover:from-cyan-600 hover:to-blue-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               title={t.send}
             >
