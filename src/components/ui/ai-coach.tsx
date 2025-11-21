@@ -92,6 +92,9 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [showCamera, setShowCamera] = useState(false)
   const [chatSessionId, setChatSessionId] = useState<string | null>(null)
+  const [showPreChatForm, setShowPreChatForm] = useState(true)
+  const [userName, setUserName] = useState('')
+  const [userEmail, setUserEmail] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -116,12 +119,12 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
     }])
   }, [currentStaff, selectedLanguage])
 
-  // Create chat session when chat opens
+  // Create chat session when pre-chat form is submitted or skipped
   useEffect(() => {
-    if (isOpen && !chatSessionId) {
+    if (isOpen && !chatSessionId && !showPreChatForm) {
       createChatSession()
     }
-  }, [isOpen])
+  }, [isOpen, showPreChatForm])
 
   // Create a new chat session in database
   const createChatSession = async () => {
@@ -152,6 +155,9 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
           console.warn('Using first available business unit as fallback')
           const fallbackBU = businessUnits[0]
 
+          // Create user identifier from name/email or anonymous
+          const userIdentifier = userEmail || userName || `anon-${Date.now()}`
+
           const response = await fetch('/api/chat-history', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -159,7 +165,9 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
               action: 'create_session',
               businessUnitId: fallbackBU.id,
               aiStaffId: currentStaff?.id,
-              userIdentifier: `anon-${Date.now()}`,
+              userIdentifier,
+              userName: userName || undefined,
+              userEmail: userEmail || undefined,
               language: selectedLanguage
             })
           })
@@ -173,6 +181,9 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
         return
       }
 
+      // Create user identifier from name/email or anonymous
+      const userIdentifier = userEmail || userName || `anon-${Date.now()}`
+
       const response = await fetch('/api/chat-history', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -180,7 +191,9 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
           action: 'create_session',
           businessUnitId: businessUnitData.id,
           aiStaffId: currentStaff?.id,
-          userIdentifier: `anon-${Date.now()}`, // Can be replaced with actual user ID/email
+          userIdentifier,
+          userName: userName || undefined,
+          userEmail: userEmail || undefined,
           language: selectedLanguage
         })
       })
@@ -707,7 +720,65 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
           )}
         </div>
 
+        {/* Pre-Chat Form */}
+        {showPreChatForm && (
+          <div className="flex-1 overflow-y-auto p-6 flex items-center justify-center">
+            <div className="w-full max-w-sm space-y-4">
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Welcome! 👋</h3>
+                <p className="text-sm text-gray-600">
+                  Help us serve you better by sharing your information (optional)
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label htmlFor="userName" className="block text-sm font-medium text-gray-700 mb-1">
+                    Your Name
+                  </label>
+                  <input
+                    id="userName"
+                    type="text"
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                    placeholder="Enter your name (optional)"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="userEmail" className="block text-sm font-medium text-gray-700 mb-1">
+                    Your Email
+                  </label>
+                  <input
+                    id="userEmail"
+                    type="email"
+                    value={userEmail}
+                    onChange={(e) => setUserEmail(e.target.value)}
+                    placeholder="Enter your email (optional)"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-4">
+                <button
+                  onClick={() => setShowPreChatForm(false)}
+                  className="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all"
+                >
+                  {userName || userEmail ? 'Start Chat' : 'Continue as Guest'}
+                </button>
+
+                <p className="text-xs text-gray-500 text-center">
+                  By continuing, your chat will be saved for quality and compliance purposes
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Messages */}
+        {!showPreChatForm && (
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.map((message) => (
             <div
@@ -785,8 +856,10 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
           )}
           <div ref={messagesEndRef} />
         </div>
+        )}
 
         {/* Input */}
+        {!showPreChatForm && (
         <div className="p-4 border-t border-gray-200/50">
           {/* Image Preview */}
           {selectedImage && (
@@ -895,6 +968,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   )

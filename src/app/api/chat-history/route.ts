@@ -10,16 +10,28 @@ import {
 
 export async function POST(request: NextRequest) {
   try {
-    const { action, ...params } = await request.json()
+    const { action, ...params} = await request.json()
+
+    // Extract IP address and user agent from request headers
+    const userIp = request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+                   request.headers.get('x-real-ip') ||
+                   'unknown'
+    const userAgent = request.headers.get('user-agent') || 'unknown'
 
     switch (action) {
       case 'create_session': {
+        // Merge name/email into user_identifier if provided
+        let userIdentifier = params.userIdentifier
+        if (params.userName || params.userEmail) {
+          userIdentifier = params.userEmail || params.userName || params.userIdentifier
+        }
+
         const sessionId = await createChatSession({
           businessUnitId: params.businessUnitId,
           aiStaffId: params.aiStaffId,
-          userIdentifier: params.userIdentifier,
-          userIp: params.userIp,
-          userAgent: params.userAgent,
+          userIdentifier,
+          userIp,
+          userAgent,
           language: params.language
         })
         return NextResponse.json({ success: true, sessionId })
