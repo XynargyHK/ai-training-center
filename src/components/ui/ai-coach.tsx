@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { X, Send, Sparkles, MessageCircle, Loader2, Plus, Minus, Globe, Camera, Image, Trash2 } from 'lucide-react'
+import { X, Send, Sparkles, MessageCircle, Loader2, Plus, Minus, Globe, Image, Trash2 } from 'lucide-react'
 import { loadFAQCategories, loadFAQs } from '@/lib/api-client'
 import { type Language, getTranslation, languageNames } from '@/lib/translations'
 
@@ -92,14 +92,11 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
   const [faqCategories, setFaqCategories] = useState<string[]>([])  // Will load from Supabase
   const [translatedCategories, setTranslatedCategories] = useState<{[key: string]: string}>({})
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
-  const [showCamera, setShowCamera] = useState(false)
   const [chatSessionId, setChatSessionId] = useState<string | null>(null)
   const [showPreChatForm, setShowPreChatForm] = useState(true)
   const [userName, setUserName] = useState('')
   const [userEmail, setUserEmail] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
 
   // Get translations
   const t = getTranslation(selectedLanguage)
@@ -141,6 +138,8 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
       // API returns { data: [...] }
       const businessUnits = buData.data || []
 
+      console.log('Available business units:', businessUnits)
+
       // Try to find by slug, id, or name (case-insensitive)
       const businessUnitData = businessUnits.find((bu: any) =>
         bu.slug?.toLowerCase() === businessUnit.toLowerCase() ||
@@ -148,9 +147,11 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
         bu.name?.toLowerCase() === businessUnit.toLowerCase()
       )
 
+      console.log('Found business unit data:', businessUnitData)
+
       if (!businessUnitData) {
         console.error('Business unit not found:', businessUnit)
-        console.error('Available business units:', businessUnits.map((bu: any) => ({ id: bu.id, name: bu.name })))
+        console.error('Available business units:', businessUnits.map((bu: any) => ({ id: bu.id, name: bu.name, slug: bu.slug })))
 
         // Use first business unit as fallback
         if (businessUnits.length > 0) {
@@ -434,45 +435,6 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
       setSelectedImage(imageData)
     }
     reader.readAsDataURL(file)
-  }
-
-  // Handle camera capture
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true })
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        setShowCamera(true)
-      }
-    } catch (error) {
-      console.error('Camera error:', error)
-      alert('Unable to access camera. Please check permissions.')
-    }
-  }
-
-  const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current
-      const canvas = canvasRef.current
-      canvas.width = video.videoWidth
-      canvas.height = video.videoHeight
-      const ctx = canvas.getContext('2d')
-      if (ctx) {
-        ctx.drawImage(video, 0, 0)
-        const imageData = canvas.toDataURL('image/png')
-        setSelectedImage(imageData)
-        stopCamera()
-      }
-    }
-  }
-
-  const stopCamera = () => {
-    if (videoRef.current?.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream
-      stream.getTracks().forEach(track => track.stop())
-      videoRef.current.srcObject = null
-    }
-    setShowCamera(false)
   }
 
   const removeImage = () => {
@@ -877,36 +839,6 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
             </div>
           )}
 
-          {/* Camera Modal */}
-          {showCamera && (
-            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-lg p-4 max-w-md w-full">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-semibold">Take a Photo</h3>
-                  <button onClick={stopCamera} className="text-gray-500 hover:text-gray-700">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-                <video ref={videoRef} autoPlay className="w-full rounded-lg mb-4" />
-                <canvas ref={canvasRef} className="hidden" />
-                <div className="flex gap-2">
-                  <button
-                    onClick={capturePhoto}
-                    className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
-                  >
-                    Capture Photo
-                  </button>
-                  <button
-                    onClick={stopCamera}
-                    className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
           <div className="flex items-center space-x-2">
             {/* File Upload Button */}
             <input
@@ -919,20 +851,10 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
             <button
               onClick={() => fileInputRef.current?.click()}
               className="bg-gray-100 text-gray-600 p-2 rounded-xl hover:bg-gray-200 transition-all duration-200"
-              title="Upload image"
+              title="Upload or capture image"
               disabled={isTyping}
             >
               <Image className="w-4 h-4" />
-            </button>
-
-            {/* Camera Button */}
-            <button
-              onClick={startCamera}
-              className="bg-gray-100 text-gray-600 p-2 rounded-xl hover:bg-gray-200 transition-all duration-200"
-              title="Take photo"
-              disabled={isTyping}
-            >
-              <Camera className="w-4 h-4" />
             </button>
 
             <input
