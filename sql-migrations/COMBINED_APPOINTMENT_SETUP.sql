@@ -176,34 +176,47 @@ ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
 -- PART 5: CREATE RLS POLICIES
 -- ============================================================================
 
-CREATE POLICY IF NOT EXISTS "Service role can do everything on treatment_rooms"
+-- Drop existing policies if they exist (to allow re-running this script)
+DROP POLICY IF EXISTS "Service role can do everything on treatment_rooms" ON treatment_rooms;
+DROP POLICY IF EXISTS "Service role can do everything on appointment_services" ON appointment_services;
+DROP POLICY IF EXISTS "Service role can do everything on appointment_staff_availability" ON appointment_staff_availability;
+DROP POLICY IF EXISTS "Service role can do everything on appointments" ON appointments;
+DROP POLICY IF EXISTS "Anon can read active services" ON appointment_services;
+DROP POLICY IF EXISTS "Anon can read active rooms" ON treatment_rooms;
+DROP POLICY IF EXISTS "Anon can read availability" ON appointment_staff_availability;
+DROP POLICY IF EXISTS "Anon can create appointments" ON appointments;
+DROP POLICY IF EXISTS "Users can read their appointments" ON appointments;
+DROP POLICY IF EXISTS "Users can update their appointments" ON appointments;
+
+-- Create policies
+CREATE POLICY "Service role can do everything on treatment_rooms"
   ON treatment_rooms FOR ALL TO service_role USING (true) WITH CHECK (true);
 
-CREATE POLICY IF NOT EXISTS "Service role can do everything on appointment_services"
+CREATE POLICY "Service role can do everything on appointment_services"
   ON appointment_services FOR ALL TO service_role USING (true) WITH CHECK (true);
 
-CREATE POLICY IF NOT EXISTS "Service role can do everything on appointment_staff_availability"
+CREATE POLICY "Service role can do everything on appointment_staff_availability"
   ON appointment_staff_availability FOR ALL TO service_role USING (true) WITH CHECK (true);
 
-CREATE POLICY IF NOT EXISTS "Service role can do everything on appointments"
+CREATE POLICY "Service role can do everything on appointments"
   ON appointments FOR ALL TO service_role USING (true) WITH CHECK (true);
 
-CREATE POLICY IF NOT EXISTS "Anon can read active services"
+CREATE POLICY "Anon can read active services"
   ON appointment_services FOR SELECT TO anon USING (is_active = true);
 
-CREATE POLICY IF NOT EXISTS "Anon can read active rooms"
+CREATE POLICY "Anon can read active rooms"
   ON treatment_rooms FOR SELECT TO anon USING (is_active = true);
 
-CREATE POLICY IF NOT EXISTS "Anon can read availability"
+CREATE POLICY "Anon can read availability"
   ON appointment_staff_availability FOR SELECT TO anon USING (true);
 
-CREATE POLICY IF NOT EXISTS "Anon can create appointments"
+CREATE POLICY "Anon can create appointments"
   ON appointments FOR INSERT TO anon WITH CHECK (true);
 
-CREATE POLICY IF NOT EXISTS "Users can read their appointments"
+CREATE POLICY "Users can read their appointments"
   ON appointments FOR SELECT TO authenticated USING (true);
 
-CREATE POLICY IF NOT EXISTS "Users can update their appointments"
+CREATE POLICY "Users can update their appointments"
   ON appointments FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
 
 -- PART 6: CREATE TRIGGERS
