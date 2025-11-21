@@ -4,12 +4,14 @@
 // ============================================================================
 
 export type AppointmentStatus =
-  | 'pending'      // Waiting for provider confirmation
-  | 'confirmed'    // Provider accepted
-  | 'completed'    // Service finished
-  | 'cancelled'    // Cancelled by user or provider
-  | 'no_show'      // User didn't show up
-  | 'rescheduled'  // Moved to different time
+  | 'pending'               // Waiting for provider confirmation
+  | 'confirmed'             // Provider accepted
+  | 'completed'             // Service finished
+  | 'cancelled'             // Cancelled by user or provider
+  | 'no_show'               // User didn't show up
+  | 'rescheduled'           // Moved to different time
+  | 'pending_edit'          // Staff requested edit, awaiting approval
+  | 'pending_cancellation'  // Staff requested cancel, awaiting approval
 
 export type BookingSource = 'chat' | 'admin' | 'api' | 'phone' | 'walk-in'
 
@@ -266,4 +268,132 @@ export interface AvailabilityCheckResult {
   available: boolean
   reason?: string
   conflictingAppointment?: Appointment
+}
+
+// ============================================================================
+// SERVICE-STAFF ASSIGNMENT TYPES
+// ============================================================================
+
+export interface ServiceStaffAssignment {
+  id: string
+  business_unit_id: string
+  service_id: string
+  staff_id: string
+  assigned_at: string
+  assigned_by: string | null
+  is_active: boolean
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+// ============================================================================
+// APPOINTMENT CHANGE REQUEST TYPES
+// ============================================================================
+
+export type ChangeRequestType = 'edit' | 'cancel'
+
+export type ChangeRequestStatus =
+  | 'pending_manager_approval'
+  | 'manager_approved'
+  | 'manager_rejected'
+  | 'pending_client_confirmation'
+  | 'client_confirmed'
+  | 'client_rejected'
+  | 'completed'
+  | 'cancelled'
+
+export interface AppointmentChangeRequest {
+  id: string
+  appointment_id: string
+  business_unit_id: string
+  request_type: ChangeRequestType
+  requested_by_staff_id: string
+  requested_at: string
+
+  // Proposed changes (for edit requests)
+  proposed_date: string | null
+  proposed_start_time: string | null
+  proposed_end_time: string | null
+  proposed_staff_id: string | null
+  proposed_room_id: string | null
+
+  reason: string
+  staff_notes: string | null
+  status: ChangeRequestStatus
+
+  // Manager approval
+  manager_approved_at: string | null
+  manager_approved_by: string | null
+  manager_notes: string | null
+
+  // Client confirmation
+  client_confirmed_at: string | null
+  client_response: string | null
+
+  created_at: string
+  updated_at: string
+}
+
+export type ChangeHistoryType =
+  | 'created'
+  | 'confirmed'
+  | 'rescheduled'
+  | 'cancelled'
+  | 'completed'
+  | 'no_show'
+  | 'status_changed'
+  | 'details_updated'
+
+export type ChangedByType = 'staff' | 'manager' | 'client' | 'system'
+
+export interface AppointmentChangeHistory {
+  id: string
+  appointment_id: string
+  change_request_id: string | null
+  change_type: ChangeHistoryType
+  changed_by_type: ChangedByType | null
+  changed_by_identifier: string | null
+  old_values: Record<string, any> | null
+  new_values: Record<string, any> | null
+  reason: string | null
+  notes: string | null
+  changed_at: string
+}
+
+// ============================================================================
+// API REQUEST/RESPONSE TYPES FOR NEW FEATURES
+// ============================================================================
+
+export interface CreateChangeRequestPayload {
+  appointmentId: string
+  requestType: ChangeRequestType
+  staffId: string
+  reason: string
+  proposedDate?: string
+  proposedStartTime?: string
+  proposedEndTime?: string
+  proposedStaffId?: string
+  proposedRoomId?: string
+  staffNotes?: string
+}
+
+export interface ManagerReviewPayload {
+  requestId: string
+  approved: boolean
+  managerIdentifier: string
+  managerNotes?: string
+}
+
+export interface ClientConfirmPayload {
+  requestId: string
+  confirmed: boolean
+  clientResponse?: string
+}
+
+export interface AssignStaffToServicePayload {
+  serviceId: string
+  staffId: string
+  assignedBy: string
+  notes?: string
 }
