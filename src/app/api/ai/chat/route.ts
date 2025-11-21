@@ -448,7 +448,19 @@ Keep responses clear and professional (2-4 sentences).`
 
   try {
     // Get dynamic LLM configuration
-    const llmConfig = getLLMConfig()
+    let llmConfig = getLLMConfig()
+
+    // IMPORTANT: Force use Gemini for image analysis (vision)
+    // Only Gemini supports multimodal (text + image) input
+    if (image && llmConfig.provider !== 'google') {
+      console.log(`📷 Image detected - forcing Gemini vision model (was: ${llmConfig.provider})`)
+      llmConfig = {
+        ...llmConfig,
+        provider: 'google',
+        model: 'gemini-2.5-flash',
+        googleKey: process.env.GOOGLE_GEMINI_API_KEY
+      }
+    }
 
     let aiResponse = ""
 
