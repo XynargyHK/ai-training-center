@@ -40,7 +40,7 @@ interface AICoachProps {
 }
 
 // Function to get role-specific greeting with translation
-const getRoleGreeting = (staff: AIStaff | null, lang: Language) => {
+const getRoleGreeting = (staff: AIStaff | null, lang: Language, userName?: string) => {
   const t = getTranslation(lang)
 
   if (!staff) return t.greeting('AI', '', 'any questions you may have')
@@ -67,7 +67,9 @@ const getRoleGreeting = (staff: AIStaff | null, lang: Language) => {
       tasks = 'any questions you may have'
   }
 
-  return t.greeting(staff.name, roleEmoji, tasks)
+  // Add personalized greeting if user name is provided
+  const personalGreeting = userName ? `Hi ${userName}! ` : ''
+  return personalGreeting + t.greeting(staff.name, roleEmoji, tasks)
 }
 
 const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = false, selectedStaff = null, aiStaffList = [] }: AICoachProps) => {
@@ -109,15 +111,15 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
     }
   }, [initialOpen])
 
-  // Update greeting when current staff or language changes
+  // Update greeting when current staff, language, or userName changes
   useEffect(() => {
     setMessages([{
       id: '1',
       type: 'ai',
-      content: getRoleGreeting(currentStaff, selectedLanguage),
+      content: getRoleGreeting(currentStaff, selectedLanguage, userName),
       timestamp: new Date()
     }])
-  }, [currentStaff, selectedLanguage])
+  }, [currentStaff, selectedLanguage, userName])
 
   // Create chat session when pre-chat form is submitted or skipped
   useEffect(() => {
