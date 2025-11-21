@@ -98,6 +98,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
   const [userName, setUserName] = useState('')
   const [userEmail, setUserEmail] = useState('')
   const [showBookingModal, setShowBookingModal] = useState(false)
+  const [businessUnitId, setBusinessUnitId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Get translations
@@ -160,6 +161,9 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
           console.warn('Using first available business unit as fallback')
           const fallbackBU = businessUnits[0]
 
+          // Set business unit ID in state
+          setBusinessUnitId(fallbackBU.id)
+
           // Create user identifier from name/email or anonymous
           const userIdentifier = userEmail || userName || `anon-${Date.now()}`
 
@@ -185,6 +189,9 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
         }
         return
       }
+
+      // Set business unit ID in state
+      setBusinessUnitId(businessUnitData.id)
 
       // Create user identifier from name/email or anonymous
       const userIdentifier = userEmail || userName || `anon-${Date.now()}`
@@ -912,7 +919,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
       <BookingModal
         isOpen={showBookingModal}
         onClose={() => setShowBookingModal(false)}
-        businessUnitId={businessUnit}
+        businessUnitId={businessUnitId || businessUnit}
         chatSessionId={chatSessionId || undefined}
         userIdentifier={userEmail || userName || `anon-${Date.now()}`}
         userName={userName}
