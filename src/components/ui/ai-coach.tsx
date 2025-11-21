@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { X, Send, Sparkles, MessageCircle, Loader2, Plus, Minus, Globe, Image, Trash2 } from 'lucide-react'
+import { X, Send, Sparkles, MessageCircle, Loader2, Plus, Minus, Globe, Image, Trash2, Calendar } from 'lucide-react'
 import { loadFAQCategories, loadFAQs } from '@/lib/api-client'
 import { type Language, getTranslation, languageNames } from '@/lib/translations'
+import { BookingModal } from '@/components/appointments/booking-modal'
 
 interface FAQ {
   id: string
@@ -96,6 +97,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
   const [showPreChatForm, setShowPreChatForm] = useState(true)
   const [userName, setUserName] = useState('')
   const [userEmail, setUserEmail] = useState('')
+  const [showBookingModal, setShowBookingModal] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Get translations
@@ -857,6 +859,16 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
               <Image className="w-4 h-4" />
             </button>
 
+            {/* Booking Button */}
+            <button
+              onClick={() => setShowBookingModal(true)}
+              className="bg-blue-500 text-white p-2 rounded-xl hover:bg-blue-600 transition-all duration-200"
+              title="Book Appointment"
+              disabled={isTyping}
+            >
+              <Calendar className="w-4 h-4" />
+            </button>
+
             <input
               ref={inputRef}
               type="text"
@@ -895,6 +907,17 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
         </div>
         )}
       </div>
+
+      {/* Booking Modal */}
+      <BookingModal
+        isOpen={showBookingModal}
+        onClose={() => setShowBookingModal(false)}
+        businessUnitId={businessUnit}
+        chatSessionId={chatSessionId || undefined}
+        userIdentifier={userEmail || userName || `anon-${Date.now()}`}
+        userName={userName}
+        userEmail={userEmail}
+      />
     </div>
   )
 }
