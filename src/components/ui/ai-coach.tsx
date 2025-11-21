@@ -376,7 +376,8 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
         staffRole: currentStaff?.role,
         trainingMemory: currentStaff?.trainingMemory || {},
         language: selectedLanguage,  // Add selected language
-        image: imageData  // Add image data for vision models
+        image: imageData,  // Add image data for vision models
+        userName: userName || undefined  // Add user's name for personalized greeting
       }
 
       console.log('Sending to API - knowledgeBase entries:', knowledgeBase.length)

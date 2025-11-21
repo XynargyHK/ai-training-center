@@ -65,7 +65,8 @@ export async function POST(request: NextRequest) {
       staffRole = 'coach',
       trainingMemory = {},
       language = 'en',  // Default to English
-      image = null  // Image data for vision models
+      image = null,  // Image data for vision models
+      userName = null  // User's name for personalized greeting
     } = await request.json()
 
     if (!message || typeof message !== 'string') {
@@ -113,7 +114,8 @@ export async function POST(request: NextRequest) {
       staffRole,
       trainingMemory,
       language,
-      image
+      image,
+      userName
     )
 
     return NextResponse.json({
@@ -145,7 +147,8 @@ async function generateAIResponse(
   staffRole: string = 'coach',
   trainingMemory: {[key: string]: string[]} = {},
   language: string = 'en',
-  image: string | null = null
+  image: string | null = null,
+  userName: string | null = null
 ): Promise<string> {
 
   // Build knowledge context from knowledge base
@@ -404,8 +407,13 @@ async function generateAIResponse(
     ? `\n\n📷 IMAGE ANALYSIS: The user has provided an image. Carefully analyze the image content and incorporate your observations into your response. Describe what you see, read any text in the image, and provide relevant insights based on the visual information.\n`
     : ''
 
+  // Add personalized greeting instruction if user name is provided
+  const greetingInstruction = userName
+    ? `\n\n👋 PERSONALIZED GREETING: The user's name is ${userName}. If this is the first message in the conversation (no conversation history), start your response with a warm, personalized greeting using their name (e.g., "Hi ${userName}!" or "Hello ${userName}, nice to meet you!"). For subsequent messages, you can occasionally use their name naturally in conversation.\n`
+    : ''
+
   // Create system prompt with EXTREMELY STRICT anti-hallucination rules
-  const systemPrompt = `You are ${staffName}, a ${staffRole} for THIS company ONLY.${knowledgeContext}${trainingContext}${guidelinesContext}${trainingMemoryContext}${languageInstruction}${visionInstruction}
+  const systemPrompt = `You are ${staffName}, a ${staffRole} for THIS company ONLY.${knowledgeContext}${trainingContext}${guidelinesContext}${trainingMemoryContext}${languageInstruction}${visionInstruction}${greetingInstruction}
 
 ${conversationContext ? `RECENT CONVERSATION:\n${conversationContext}\n` : ''}
 
