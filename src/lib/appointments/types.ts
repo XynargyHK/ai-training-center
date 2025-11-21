@@ -58,7 +58,7 @@ export interface AppointmentService {
 export interface StaffAvailability {
   id: string
   business_unit_id: string
-  ai_staff_id: string | null
+  real_staff_id: string | null
   day_of_week: DayOfWeek | null
   start_time: string // HH:MM:SS format
   end_time: string   // HH:MM:SS format
@@ -78,7 +78,7 @@ export interface StaffAvailability {
 export interface Appointment {
   id: string
   business_unit_id: string
-  ai_staff_id: string | null
+  real_staff_id: string | null
   room_id: string | null
   service_id: string | null
   chat_session_id: string | null

@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the staff member is assigned to this appointment
-    if (appointment.ai_staff_id !== staffId) {
+    if (appointment.real_staff_id !== staffId) {
       return NextResponse.json(
         { error: 'Not authorized to modify this appointment' },
         { status: 403 }
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       .select(`
         *,
         service:appointment_services(*),
-        staff:ai_staff(id, name, avatar_url),
+        staff:real_staff(id, name, avatar_url),
         room:treatment_rooms(*)
       `)
       .single()

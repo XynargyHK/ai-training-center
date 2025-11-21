@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
       .from('appointments')
       .insert({
         business_unit_id: businessUnitId,
-        ai_staff_id: assignedStaffId,
+        real_staff_id: assignedStaffId,
         room_id: assignedRoomId,
         service_id: serviceId,
         chat_session_id: chatSessionId,
@@ -209,7 +209,7 @@ export async function GET(request: NextRequest) {
       .order('start_time', { ascending: true })
 
     if (staffId) {
-      query = query.eq('ai_staff_id', staffId)
+      query = query.eq('real_staff_id', staffId)
     }
 
     if (status) {

@@ -107,7 +107,7 @@ async function isStaffAvailable(
   const { data: availability } = await supabase
     .from('appointment_staff_availability')
     .select('*')
-    .eq('ai_staff_id', staffId)
+    .eq('real_staff_id', staffId)
     .or(`specific_date.eq.${date},and(day_of_week.eq.${dayOfWeek},is_recurring.eq.true)`)
 
   if (!availability || availability.length === 0) {
@@ -148,7 +148,7 @@ async function isStaffAvailable(
   let query = supabase
     .from('appointments')
     .select('id, start_time, end_time, status')
-    .eq('ai_staff_id', staffId)
+    .eq('real_staff_id', staffId)
     .eq('appointment_date', date)
     .not('status', 'in', ['cancelled', 'rescheduled'])
 
@@ -297,7 +297,7 @@ export async function getAvailableSlots(
 
   // 3. Get available staff for this service
   const { data: allStaff } = await supabase
-    .from('ai_staff')
+    .from('real_staff')
     .select('id, name')
     .eq('business_unit_id', businessUnitId)
     .eq('is_active', true)
@@ -406,7 +406,7 @@ export async function autoAssignResources(
 
   // Get available staff
   const { data: allStaff } = await supabase
-    .from('ai_staff')
+    .from('real_staff')
     .select('id')
     .eq('business_unit_id', businessUnitId)
     .eq('is_active', true)
