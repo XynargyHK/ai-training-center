@@ -101,56 +101,13 @@ async function isStaffAvailable(
   endTime: string,
   excludeAppointmentId?: string
 ): Promise<{ available: boolean; reason?: string }> {
-  const dayOfWeek = getDayOfWeek(date)
-
-  // 1. Check staff availability schedule
-  const { data: availability } = await supabase
-    .from('appointment_staff_availability')
-    .select('*')
-    .eq('real_staff_id', staffId)
-    .or(`specific_date.eq.${date},and(day_of_week.eq.${dayOfWeek},is_recurring.eq.true)`)
-
-  if (!availability || availability.length === 0) {
-    return { available: false, reason: 'Staff has no availability schedule for this time' }
-  }
-
-  // Check if time falls within any available slot
-  const hasAvailableSlot = availability.some((slot: StaffAvailability) => {
-    // Check if specific date takes precedence
-    if (slot.specific_date === date) {
-      return slot.is_available && isTimeInRange(startTime, slot.start_time, slot.end_time)
-    }
-    // Check recurring weekly schedule
-    if (slot.day_of_week === dayOfWeek && slot.is_recurring) {
-      // Check if effective dates apply
-      if (slot.effective_from && date < slot.effective_from) return false
-      if (slot.effective_until && date > slot.effective_until) return false
-
-      return slot.is_available && isTimeInRange(startTime, slot.start_time, slot.end_time)
-    }
-    return false
-  })
-
-  if (!hasAvailableSlot) {
-    // Check if it's a blocked slot
-    const blockedSlot = availability.find((slot: StaffAvailability) =>
-      !slot.is_available &&
-      ((slot.specific_date === date) || (slot.day_of_week === dayOfWeek && slot.is_recurring))
-    )
-
-    return {
-      available: false,
-      reason: blockedSlot?.block_reason || 'Staff not available at this time'
-    }
-  }
-
-  // 2. Check for existing appointments (conflicts)
+  // Check for existing appointments (conflicts) - simplified version without availability table
   let query = supabase
     .from('appointments')
     .select('id, start_time, end_time, status')
     .eq('real_staff_id', staffId)
     .eq('appointment_date', date)
-    .not('status', 'in', ['cancelled', 'rescheduled'])
+    .not('status', 'in', '(cancelled,rescheduled)')
 
   if (excludeAppointmentId) {
     query = query.neq('id', excludeAppointmentId)
@@ -170,6 +127,7 @@ async function isStaffAvailable(
     }
   }
 
+  // Staff is available if no conflicts
   return { available: true }
 }
 
@@ -272,7 +230,9 @@ export async function checkAvailability(
 export async function getAvailableSlots(
   businessUnitId: string,
   serviceId: string,
-  date: string
+  date: string,
+  staffId?: string,
+  outletId?: string
 ): Promise<TimeSlot[]> {
   // 1. Get business hours for this date
   const businessHours = await getBusinessHours(businessUnitId, date)
@@ -296,13 +256,23 @@ export async function getAvailableSlots(
   const duration = service.duration_minutes
 
   // 3. Get available staff for this service
-  const { data: allStaff } = await supabase
+  // If staffId is provided, use only that staff member
+  let staffQuery = supabase
     .from('real_staff')
     .select('id, name')
     .eq('business_unit_id', businessUnitId)
     .eq('is_active', true)
 
+  if (staffId) {
+    staffQuery = staffQuery.eq('id', staffId)
+  }
+
+  const { data: allStaff } = await staffQuery
+
+  console.log('📋 Available staff:', allStaff)
+
   if (!allStaff || allStaff.length === 0) {
+    console.warn('❌ No staff found for availability check')
     return []
   }
 
@@ -313,23 +283,55 @@ export async function getAvailableSlots(
     .eq('business_unit_id', businessUnitId)
     .eq('is_active', true)
 
+  // Filter by outlet if provided
+  if (outletId) {
+    roomQuery = roomQuery.eq('outlet_id', outletId)
+  }
+
   if (service.required_room_type) {
     roomQuery = roomQuery.eq('room_type', service.required_room_type)
   }
 
   const { data: availableRooms } = await roomQuery
 
+  console.log('🏢 Available rooms:', availableRooms, 'outletId:', outletId)
+
   if (!availableRooms || availableRooms.length === 0) {
+    console.warn('❌ No rooms found for availability check')
     return []
   }
 
-  // 5. Generate time slots
+  // 5. Optimize: Fetch all existing appointments ONCE (not per time slot)
+  const { data: existingAppointments } = await supabase
+    .from('appointments')
+    .select('id, start_time, end_time, room_id, real_staff_id')
+    .eq('appointment_date', date)
+    .in('real_staff_id', allStaff.map(s => s.id))
+    .not('status', 'in', '(cancelled,rescheduled)')
+
+  const bookedSlots = existingAppointments || []
+
+  // Helper to check if time conflicts with existing appointments
+  function hasConflict(startTime: string, endTime: string, checkStaffId?: string, checkRoomId?: string) {
+    return bookedSlots.some(apt => {
+      const timeConflict = startTime < apt.end_time && endTime > apt.start_time
+      if (!timeConflict) return false
+
+      // Check if same staff or same room
+      if (checkStaffId && apt.real_staff_id === checkStaffId) return true
+      if (checkRoomId && apt.room_id === checkRoomId) return true
+
+      return false
+    })
+  }
+
+  // 6. Generate time slots (much faster - no DB queries per slot)
   const slots: TimeSlot[] = []
   const hourSlots = generateHourSlots(businessHours.open, businessHours.close)
 
   for (const timeSlot of hourSlots) {
     const startTime = `${timeSlot}:00`
-    const [hour, minute] = timeSlot.split(':').map(Number)
+    const [hour] = timeSlot.split(':').map(Number)
     const endHour = hour + Math.ceil(duration / 60)
     const endTime = `${endHour.toString().padStart(2, '0')}:00:00`
 
@@ -343,34 +345,30 @@ export async function getAvailableSlots(
       continue
     }
 
-    // Try to find any available staff + room combination
+    // Try to find any available staff + room combination (check in memory - FAST!)
     let foundAvailable = false
 
     for (const staff of allStaff) {
       if (foundAvailable) break
 
-      for (const room of availableRooms) {
-        const result = await checkAvailability({
-          businessUnitId,
-          date,
-          startTime,
-          endTime,
-          staffId: staff.id,
-          roomId: room.id
-        })
+      // Check if staff is free at this time
+      if (hasConflict(startTime, endTime, staff.id, undefined)) continue
 
-        if (result.available) {
-          slots.push({
-            time: timeSlot,
-            available: true,
-            staffId: staff.id,
-            staffName: staff.name,
-            roomId: room.id,
-            roomName: room.room_name || room.room_number
-          })
-          foundAvailable = true
-          break
-        }
+      for (const room of availableRooms) {
+        // Check if room is free at this time
+        if (hasConflict(startTime, endTime, undefined, room.id)) continue
+
+        // Both staff and room are free!
+        slots.push({
+          time: timeSlot,
+          available: true,
+          staffId: staff.id,
+          staffName: staff.name,
+          roomId: room.id,
+          roomName: room.room_name || room.room_number
+        })
+        foundAvailable = true
+        break
       }
     }
 

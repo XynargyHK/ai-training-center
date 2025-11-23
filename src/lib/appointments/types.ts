@@ -116,7 +116,8 @@ export interface AvailabilityRequest {
   businessUnitId: string
   serviceId: string
   date: string // YYYY-MM-DD
-  staffId?: string // Optional: check specific staff
+  staffId?: string // Optional: check specific staff availability
+  outletId?: string // Optional: check availability at specific outlet
 }
 
 export interface TimeSlot {
@@ -143,6 +144,7 @@ export interface BookingRequest {
   serviceId: string
   staffId?: string // Optional: system auto-assigns if not provided
   roomId?: string  // Optional: system auto-assigns if not provided
+  outletId?: string // Optional: specify outlet for room auto-assignment
   chatSessionId?: string
   userIdentifier: string
   userName?: string
@@ -150,6 +152,7 @@ export interface BookingRequest {
   userPhone?: string
   appointmentDate: string // YYYY-MM-DD
   startTime: string // HH:MM
+  durationMinutes?: number // Optional: override service duration (for multi-slot bookings)
   customerNotes?: string
   timezone?: string
 }

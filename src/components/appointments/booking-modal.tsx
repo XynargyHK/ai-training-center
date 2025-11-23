@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react'
 import { SlotPicker } from './slot-picker'
+import WeeklyCalendarPicker from './weekly-calendar-picker'
 import type { TimeSlot, AppointmentService } from '@/lib/appointments/types'
 
 interface BookingModalProps {
@@ -28,11 +29,17 @@ export function BookingModal({
   userName,
   userEmail
 }: BookingModalProps) {
-  const [step, setStep] = useState<'service' | 'date' | 'time' | 'details' | 'confirm'>('service')
+  const [step, setStep] = useState<'service' | 'outlet' | 'staff' | 'datetime' | 'details' | 'confirm'>('service')
   const [services, setServices] = useState<AppointmentService[]>([])
   const [selectedService, setSelectedService] = useState<AppointmentService | null>(null)
+  const [outlets, setOutlets] = useState<any[]>([])
+  const [selectedOutlet, setSelectedOutlet] = useState<any | null>(null)
+  const [staff, setStaff] = useState<any[]>([])
+  const [selectedStaff, setSelectedStaff] = useState<any | null>(null)
+  const [assignedStaff, setAssignedStaff] = useState<any[]>([]) // Staff assigned to selected service
   const [selectedDate, setSelectedDate] = useState<string>('')
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null)
+  const [selectedSlots, setSelectedSlots] = useState<TimeSlot[]>([])
   const [customerNotes, setCustomerNotes] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [loading, setLoading] = useState(false)
@@ -47,55 +54,134 @@ export function BookingModal({
 
   async function fetchServices() {
     try {
-      const { createClient } = await import('@supabase/supabase-js')
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
+      // Use the API endpoint instead of direct query
+      // This handles slug to UUID conversion
+      const response = await fetch(`/api/booking/services?businessUnitId=${encodeURIComponent(businessUnitId)}`)
 
-      const { data, error } = await supabase
-        .from('appointment_services')
-        .select('*')
-        .eq('business_unit_id', businessUnitId)
-        .eq('is_active', true)
-        .order('display_order')
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to load services')
+      }
 
-      if (error) throw error
-      setServices(data || [])
+      const result = await response.json()
+      console.log('Services loaded:', result)
+      setServices(result.data || [])
+      setError(null)
     } catch (err: any) {
       console.error('Error fetching services:', err)
-      setError('Failed to load services')
+      setError(err.message || 'Failed to load services')
+    }
+  }
+
+  async function fetchOutlets() {
+    try {
+      const response = await fetch(`/api/booking/outlets?businessUnitId=${encodeURIComponent(businessUnitId)}`)
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to load locations')
+      }
+
+      const result = await response.json()
+      console.log('Outlets loaded:', result)
+      setOutlets(result.data || [])
+      setError(null)
+    } catch (err: any) {
+      console.error('Error fetching outlets:', err)
+      setError(err.message || 'Failed to load locations')
+    }
+  }
+
+  async function fetchServiceStaffAssignments(serviceId: string) {
+    try {
+      const response = await fetch(`/api/booking/assignments?businessUnitId=${encodeURIComponent(businessUnitId)}`)
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to load staff assignments')
+      }
+
+      const result = await response.json()
+      console.log('All assignments loaded:', result)
+
+      // Filter assignments for the selected service
+      const serviceAssignments = (result.data || []).filter((assignment: any) =>
+        assignment.service_id === serviceId && assignment.is_active
+      )
+
+      console.log('Assignments for service:', serviceAssignments)
+      setAssignedStaff(serviceAssignments)
+      setError(null)
+
+      return serviceAssignments
+    } catch (err: any) {
+      console.error('Error fetching service staff assignments:', err)
+      setError(err.message || 'Failed to load staff assignments')
+      return []
+    }
+  }
+
+  async function fetchStaff(outletId: string) {
+    try {
+      const response = await fetch(`/api/booking/staff?outletId=${encodeURIComponent(outletId)}`)
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to load staff')
+      }
+
+      const result = await response.json()
+      console.log('Staff loaded:', result)
+      setStaff(result.data || [])
+      setError(null)
+    } catch (err: any) {
+      console.error('Error fetching staff:', err)
+      setError(err.message || 'Failed to load staff')
     }
   }
 
   async function handleBooking() {
-    if (!selectedService || !selectedDate || !selectedSlot) return
+    if (!selectedService || !selectedDate || !selectedSlot || !selectedStaff || !selectedOutlet) return
 
     setLoading(true)
     setError(null)
 
     try {
+      // Calculate start time and duration based on selected slots
+      const startTime = selectedSlots.length > 0 ? selectedSlots[0].time : selectedSlot.time
+      const durationMinutes = selectedSlots.length > 0
+        ? selectedSlots.length * 60
+        : selectedService.duration_minutes
+
       const response = await fetch('/api/appointments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           businessUnitId,
           serviceId: selectedService.id,
-          staffId: selectedSlot.staffId,
-          roomId: selectedSlot.roomId,
+          staffId: selectedStaff.id,
+          outletId: selectedOutlet.id,
+          // Room will be auto-assigned by the API
           chatSessionId,
           userIdentifier,
           userName,
           userEmail,
           userPhone: customerPhone || undefined,
           appointmentDate: selectedDate,
-          startTime: selectedSlot.time,
+          startTime: startTime,
+          durationMinutes: durationMinutes,
           customerNotes: customerNotes || undefined
         })
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorText = await response.text()
+        let errorData: any = {}
+        try {
+          errorData = JSON.parse(errorText)
+        } catch (e) {
+          console.error('Failed to parse error response')
+        }
         throw new Error(errorData.error || 'Failed to create booking')
       }
 
@@ -113,8 +199,12 @@ export function BookingModal({
   function resetAndClose() {
     setStep('service')
     setSelectedService(null)
+    setSelectedOutlet(null)
+    setSelectedStaff(null)
+    setAssignedStaff([])
     setSelectedDate('')
     setSelectedSlot(null)
+    setSelectedSlots([])
     setCustomerNotes('')
     setCustomerPhone('')
     setBookingSuccess(false)
@@ -167,9 +257,30 @@ export function BookingModal({
                 {services.map((service) => (
                   <button
                     key={service.id}
-                    onClick={() => {
+                    onClick={async () => {
                       setSelectedService(service)
-                      setStep('date')
+                      setError(null)
+
+                      // Check service-staff assignments
+                      const assignments = await fetchServiceStaffAssignments(service.id)
+
+                      if (assignments.length === 0) {
+                        // No staff assigned - show error
+                        setError('No staff is assigned to this service yet. Please contact support.')
+                        return
+                      }
+
+                      // Fetch outlets
+                      await fetchOutlets()
+
+                      // If only one staff assigned, auto-select and skip staff selection step
+                      if (assignments.length === 1) {
+                        const staffMember = assignments[0].staff
+                        setSelectedStaff(staffMember)
+                        console.log('Auto-selected staff:', staffMember)
+                      }
+
+                      setStep('outlet')
                     }}
                     className="text-left p-4 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all"
                   >
@@ -193,8 +304,8 @@ export function BookingModal({
             </div>
           )}
 
-          {/* Step 2: Select Date */}
-          {step === 'date' && selectedService && (
+          {/* Step 2: Select Outlet/Location */}
+          {step === 'outlet' && selectedService && (
             <div className="space-y-4">
               <button
                 onClick={() => setStep('service')}
@@ -208,49 +319,131 @@ export function BookingModal({
                 <p className="text-sm text-gray-500">{selectedService.duration_minutes} minutes</p>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Select Date</h3>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  min={getMinDate()}
-                  max={getMaxDate()}
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Select Location</h3>
+                <div className="grid gap-4">
+                  {outlets.map((outlet) => (
+                    <button
+                      key={outlet.id}
+                      onClick={async () => {
+                        setSelectedOutlet(outlet)
+                        setError(null)
+
+                        // If staff already selected (auto-selected), skip to date selection
+                        if (selectedStaff) {
+                          console.log('Staff already selected, skipping staff selection step')
+                          setStep('datetime')
+                        } else {
+                          // Multiple staff assigned, show staff selection
+                          await fetchStaff(outlet.id)
+                          setStep('staff')
+                        }
+                      }}
+                      className="text-left p-4 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all"
+                    >
+                      <h4 className="font-semibold text-gray-900">{outlet.name}</h4>
+                      {outlet.address && (
+                        <p className="text-sm text-gray-600 mt-1">{outlet.address}</p>
+                      )}
+                      {outlet.city && (
+                        <p className="text-xs text-gray-500 mt-1">{outlet.city}</p>
+                      )}
+                    </button>
+                  ))}
+                </div>
               </div>
-              {selectedDate && (
-                <button
-                  onClick={() => setStep('time')}
-                  className="w-full bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 font-medium"
-                >
-                  Continue to Select Time
-                </button>
-              )}
             </div>
           )}
 
-          {/* Step 3: Select Time */}
-          {step === 'time' && selectedService && selectedDate && (
+          {/* Step 3: Select Staff */}
+          {step === 'staff' && selectedService && selectedOutlet && (
             <div className="space-y-4">
               <button
-                onClick={() => setStep('date')}
+                onClick={() => setStep('outlet')}
                 className="text-blue-600 hover:text-blue-800 text-sm"
               >
-                ← Change Date
+                ← Change Location
               </button>
               <div>
-                <p className="text-sm text-gray-600">
-                  {selectedService.name} on {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                </p>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Selected</h3>
+                <p className="text-gray-700">{selectedService.name}</p>
+                <p className="text-sm text-gray-500">at {selectedOutlet.name}</p>
               </div>
-              <SlotPicker
-                businessUnitId={businessUnitId}
-                serviceId={selectedService.id}
-                selectedDate={selectedDate}
-                onSlotSelect={setSelectedSlot}
-                selectedSlot={selectedSlot || undefined}
-              />
-              {selectedSlot && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Select Staff Member</h3>
+                <div className="grid gap-4">
+                  {(() => {
+                    // Filter staff to only show those assigned to this service
+                    const assignedStaffIds = assignedStaff.map(a => a.staff_id)
+                    const availableStaff = staff.filter(s => assignedStaffIds.includes(s.id))
+
+                    if (availableStaff.length === 0) {
+                      return (
+                        <div className="text-center py-8 text-gray-500">
+                          No assigned staff available at this location
+                        </div>
+                      )
+                    }
+
+                    return availableStaff.map((staffMember) => (
+                      <button
+                        key={staffMember.id}
+                        onClick={() => {
+                          setSelectedStaff(staffMember)
+                          setStep('datetime')
+                        }}
+                        className="text-left p-4 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all"
+                      >
+                        <h4 className="font-semibold text-gray-900">{staffMember.name}</h4>
+                        {staffMember.specialization && (
+                          <p className="text-sm text-gray-600 mt-1">{staffMember.specialization}</p>
+                        )}
+                      </button>
+                    ))
+                  })()}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Select Date & Time (Weekly Calendar) */}
+          {step === 'datetime' && selectedService && selectedStaff && selectedOutlet && (
+            <div className="space-y-4">
+              <button
+                onClick={() => setStep('staff')}
+                className="text-blue-600 hover:text-blue-800 text-sm"
+              >
+                ← Change Staff
+              </button>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Booking Details</h3>
+                <p className="text-gray-700">{selectedService.name}</p>
+                <p className="text-sm text-gray-500">{selectedService.duration_minutes} minutes</p>
+                <p className="text-sm text-gray-600 mt-1">at {selectedOutlet.name}</p>
+                <p className="text-sm text-gray-600">with {selectedStaff.name}</p>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Select Date & Time</h3>
+                <WeeklyCalendarPicker
+                  businessUnitId={businessUnitId}
+                  serviceId={selectedService.id}
+                  staffId={selectedStaff.id}
+                  outletId={selectedOutlet.id}
+                  onSlotSelect={(date, slot) => {
+                    setSelectedDate(date)
+                    setSelectedSlot(slot)
+                  }}
+                  onSlotsChange={(date, slots) => {
+                    setSelectedDate(date)
+                    setSelectedSlots(slots)
+                    if (slots.length > 0) {
+                      setSelectedSlot(slots[0])
+                    }
+                  }}
+                  selectedDate={selectedDate}
+                  selectedTime={selectedSlot?.time}
+                />
+              </div>
+              {selectedDate && selectedSlot && (
                 <button
                   onClick={() => setStep('details')}
                   className="w-full bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 font-medium"
@@ -261,25 +454,39 @@ export function BookingModal({
             </div>
           )}
 
-          {/* Step 4: Additional Details */}
-          {step === 'details' && selectedService && selectedDate && selectedSlot && (
+          {/* Step 6: Additional Details */}
+          {step === 'details' && selectedService && selectedDate && selectedSlot && selectedStaff && selectedOutlet && (
             <div className="space-y-4">
               <button
-                onClick={() => setStep('time')}
+                onClick={() => setStep('datetime')}
                 className="text-blue-600 hover:text-blue-800 text-sm"
               >
-                ← Change Time
+                ← Change Date/Time
               </button>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="font-semibold text-gray-900 mb-2">Booking Summary</h3>
-                <p className="text-sm text-gray-700">{selectedService.name}</p>
+                <p className="text-sm text-gray-700"><strong>Service:</strong> {selectedService.name}</p>
                 <p className="text-sm text-gray-700">
-                  {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                  <strong>Date:</strong> {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                 </p>
-                <p className="text-sm text-gray-700">{selectedSlot.time}</p>
-                {selectedSlot.staffName && (
-                  <p className="text-xs text-gray-600 mt-1">Provider: {selectedSlot.staffName}</p>
-                )}
+                <p className="text-sm text-gray-700">
+                  <strong>Time:</strong> {selectedSlots.length > 0 ? (
+                    selectedSlots.length === 1 ? (
+                      `${selectedSlots[0].time} - ${(() => {
+                        const [hour] = selectedSlots[0].time.split(':').map(Number)
+                        return `${(hour + 1).toString().padStart(2, '0')}:00`
+                      })()}`
+                    ) : (
+                      `${selectedSlots[0].time} - ${(() => {
+                        const lastSlot = selectedSlots[selectedSlots.length - 1]
+                        const [hour] = lastSlot.time.split(':').map(Number)
+                        return `${(hour + 1).toString().padStart(2, '0')}:00`
+                      })()} (${selectedSlots.length} hours)`
+                    )
+                  ) : selectedSlot.time}
+                </p>
+                <p className="text-sm text-gray-700"><strong>Location:</strong> {selectedOutlet.name}</p>
+                <p className="text-sm text-gray-700"><strong>Staff:</strong> {selectedStaff.name}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -315,7 +522,7 @@ export function BookingModal({
             </div>
           )}
 
-          {/* Step 5: Confirmation */}
+          {/* Step 7: Confirmation */}
           {step === 'confirm' && bookingSuccess && (
             <div className="text-center space-y-4">
               <div className="text-6xl">✅</div>
@@ -325,14 +532,15 @@ export function BookingModal({
               </p>
               <div className="bg-green-50 p-4 rounded-lg text-left">
                 <p className="text-sm text-gray-700"><strong>Service:</strong> {selectedService?.name}</p>
-                <p className="text-sm text-gray-700"><strong>Date:</strong> {selectedDate}</p>
+                <p className="text-sm text-gray-700">
+                  <strong>Date:</strong> {selectedDate ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : ''}
+                </p>
                 <p className="text-sm text-gray-700"><strong>Time:</strong> {selectedSlot?.time}</p>
-                {selectedSlot?.staffName && (
-                  <p className="text-sm text-gray-700"><strong>Provider:</strong> {selectedSlot.staffName}</p>
-                )}
+                <p className="text-sm text-gray-700"><strong>Location:</strong> {selectedOutlet?.name}</p>
+                <p className="text-sm text-gray-700"><strong>Staff:</strong> {selectedStaff?.name}</p>
               </div>
               <p className="text-sm text-gray-600">
-                You will receive a confirmation notification soon.
+                You will receive a confirmation notification soon. A room will be assigned for your appointment.
               </p>
               <button
                 onClick={resetAndClose}

@@ -7,11 +7,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAvailableSlots } from '@/lib/appointments/availability'
 import type { AvailabilityRequest, AvailabilityResponse } from '@/lib/appointments/types'
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const supabase = createClient(supabaseUrl, supabaseKey)
 
 export async function POST(request: NextRequest) {
   try {
     const body: AvailabilityRequest = await request.json()
-    const { businessUnitId, serviceId, date } = body
+    const { businessUnitId, serviceId, date, staffId, outletId } = body
 
     // Validation
     if (!businessUnitId || !serviceId || !date) {
@@ -19,6 +24,25 @@ export async function POST(request: NextRequest) {
         { error: 'Missing required fields: businessUnitId, serviceId, date' },
         { status: 400 }
       )
+    }
+
+    // Convert business unit slug to UUID if needed
+    let businessUnitUuid = businessUnitId
+    if (!businessUnitId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      // It's a slug, convert to UUID
+      const { data: bu, error: buError } = await supabase
+        .from('business_units')
+        .select('id')
+        .eq('slug', businessUnitId)
+        .single()
+
+      if (buError || !bu) {
+        return NextResponse.json(
+          { error: 'Invalid business unit' },
+          { status: 400 }
+        )
+      }
+      businessUnitUuid = bu.id
     }
 
     // Validate date format (YYYY-MM-DD)
@@ -42,8 +66,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get available slots
-    const slots = await getAvailableSlots(businessUnitId, serviceId, date)
+    // Get available slots (use UUID)
+    const slots = await getAvailableSlots(businessUnitUuid, serviceId, date, staffId, outletId)
 
     const response: AvailabilityResponse = {
       date,

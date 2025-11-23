@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
       serviceId,
       staffId,
       roomId,
+      outletId,
       chatSessionId,
       userIdentifier,
       userName,
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest) {
       userPhone,
       appointmentDate,
       startTime,
+      durationMinutes,
       customerNotes,
       timezone = 'UTC'
     } = body
@@ -40,6 +42,33 @@ export async function POST(request: NextRequest) {
     if (!businessUnitId || !serviceId || !userIdentifier || !appointmentDate || !startTime) {
       return NextResponse.json(
         { error: 'Missing required fields' },
+        { status: 400 }
+      )
+    }
+
+    // Convert business unit slug to UUID if needed
+    let businessUnitUuid = businessUnitId
+    if (!businessUnitId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      // It's a slug, convert to UUID
+      const { data: bu, error: buError } = await supabase
+        .from('business_units')
+        .select('id')
+        .eq('slug', businessUnitId)
+        .single()
+
+      if (buError || !bu) {
+        return NextResponse.json(
+          { error: 'Invalid business unit' },
+          { status: 400 }
+        )
+      }
+      businessUnitUuid = bu.id
+    }
+
+    // If using new flow, staff is required but room is optional (will be auto-assigned)
+    if (outletId && !staffId) {
+      return NextResponse.json(
+        { error: 'Staff ID is required when outlet is specified' },
         { status: 400 }
       )
     }
@@ -59,7 +88,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const duration = service.duration_minutes
+    // Use custom duration if provided, otherwise use service duration
+    const duration = durationMinutes || service.duration_minutes
 
     // Calculate end time
     const [hour, minute] = startTime.split(':').map(Number)
@@ -68,13 +98,36 @@ export async function POST(request: NextRequest) {
     const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}:00`
     const startTimeFormatted = `${startTime}:00`
 
-    // Auto-assign staff and room if not provided
+    // Auto-assign room if not provided
     let assignedStaffId = staffId
     let assignedRoomId = roomId
 
-    if (!staffId || !roomId) {
+    // New flow: Staff is provided, auto-assign room only
+    if (staffId && outletId && !roomId) {
+      // Call database function to auto-assign room
+      const { data: autoAssignedRoom, error: autoAssignError } = await supabase
+        .rpc('auto_assign_room', {
+          p_outlet_id: outletId,
+          p_service_id: serviceId,
+          p_appointment_date: appointmentDate,
+          p_start_time: startTimeFormatted,
+          p_end_time: endTime
+        })
+
+      if (autoAssignError || !autoAssignedRoom) {
+        console.error('Auto-assign room error:', autoAssignError)
+        return NextResponse.json(
+          { error: 'No compatible room available at this time. Please select a different time slot.' },
+          { status: 409 }
+        )
+      }
+
+      assignedRoomId = autoAssignedRoom
+    }
+    // Old flow: Auto-assign both staff and room if not provided
+    else if (!staffId || !roomId) {
       const autoAssigned = await autoAssignResources(
-        businessUnitId,
+        businessUnitUuid,
         serviceId,
         appointmentDate,
         startTime
@@ -93,7 +146,7 @@ export async function POST(request: NextRequest) {
 
     // Final availability check with assigned resources
     const availabilityCheck = await checkAvailability({
-      businessUnitId,
+      businessUnitId: businessUnitUuid,
       date: appointmentDate,
       startTime: startTimeFormatted,
       endTime,
@@ -112,7 +165,7 @@ export async function POST(request: NextRequest) {
     const { data: settings } = await supabase
       .from('business_unit_settings')
       .select('appointments_require_confirmation')
-      .eq('business_unit_id', businessUnitId)
+      .eq('business_unit_id', businessUnitUuid)
       .single()
 
     const requiresConfirmation = settings?.appointments_require_confirmation ?? true
@@ -122,7 +175,7 @@ export async function POST(request: NextRequest) {
     const { data: appointment, error: createError } = await supabase
       .from('appointments')
       .insert({
-        business_unit_id: businessUnitId,
+        business_unit_id: businessUnitUuid,
         real_staff_id: assignedStaffId,
         room_id: assignedRoomId,
         service_id: serviceId,
@@ -145,7 +198,7 @@ export async function POST(request: NextRequest) {
       .select(`
         *,
         service:appointment_services(*),
-        staff:ai_staff(id, name, avatar_url),
+        staff:real_staff(id, name, avatar_url),
         room:treatment_rooms(*)
       `)
       .single()
@@ -201,7 +254,7 @@ export async function GET(request: NextRequest) {
       .select(`
         *,
         service:appointment_services(*),
-        staff:ai_staff(id, name, avatar_url, role),
+        staff:real_staff(id, name, avatar_url),
         room:treatment_rooms(*)
       `)
       .eq('business_unit_id', businessUnitId)
