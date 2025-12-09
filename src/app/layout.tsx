@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AI Training Center - Professional AI Agent Training Platform",
+  title: "BNI AI Center",
   description: "Train and manage AI agents with roleplay scenarios, knowledge management, and real-time testing",
 };
 

@@ -1626,15 +1626,15 @@ Format as JSON array:
   )
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
+    <div className="min-h-screen bg-gray-50 text-gray-900">
       <div className="max-w-7xl mx-auto p-3 sm:p-6">
         {/* Header */}
         <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent mb-2">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-cyan-600 bg-clip-text text-transparent mb-2">
               {t.adminTitle}
             </h1>
-            <p className="text-slate-400 text-sm sm:text-base">{t.adminSubtitle}</p>
+            <p className="text-gray-500 text-sm sm:text-base">{t.adminSubtitle}</p>
           </div>
 
           {/* Profile, Language Selector and View Live Chat */}
@@ -1642,7 +1642,7 @@ Format as JSON array:
             {/* Profile Button */}
             <button
               onClick={() => setShowProfileModal(true)}
-              className="bg-slate-800 border border-slate-600 hover:border-purple-500 text-white px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-semibold flex items-center gap-2 transition-all duration-200 hover:shadow-lg text-sm sm:text-base"
+              className="bg-white border border-gray-300 hover:border-purple-500 text-gray-900 px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-semibold flex items-center gap-2 transition-all duration-200 hover:shadow-lg text-sm sm:text-base"
               title={t.profile || 'Profile'}
             >
               <User className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -1666,7 +1666,7 @@ Format as JSON array:
                   setIsLoading(false)
                   alert(`Loaded ${faqData?.length || 0} FAQs in ${newLanguage}\nFirst FAQ: ${faqData?.[0]?.question || 'none'}`)
                 }}
-                className="appearance-none bg-slate-800 border border-slate-600 rounded-xl px-3 sm:px-4 py-2 sm:py-3 pr-8 sm:pr-10 text-sm sm:text-base text-white hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer transition-colors"
+                className="appearance-none bg-white border border-gray-300 rounded-xl px-3 sm:px-4 py-2 sm:py-3 pr-8 sm:pr-10 text-sm sm:text-base text-gray-900 hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer transition-colors"
                 title={t.language}
               >
                 {Object.entries(languageNames).map(([code, name]) => (
@@ -1675,7 +1675,7 @@ Format as JSON array:
                   </option>
                 ))}
               </select>
-              <Globe className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <Globe className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
             </div>
 
             {/* View Live Chat Button */}
@@ -1683,7 +1683,7 @@ Format as JSON array:
               href={`/livechat?businessUnit=${selectedBusinessUnit}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 hover:from-purple-600 hover:via-pink-600 hover:to-cyan-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold flex items-center gap-2 transition-all duration-200 hover:shadow-lg hover:scale-105 text-sm sm:text-base justify-center flex-1 sm:flex-none"
+              className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 hover:from-purple-600 hover:via-pink-600 hover:to-cyan-600 text-gray-900 px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold flex items-center gap-2 transition-all duration-200 hover:shadow-lg hover:scale-105 text-sm sm:text-base justify-center flex-1 sm:flex-none"
             >
               <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
               {t.viewLiveChat}
@@ -1692,10 +1692,10 @@ Format as JSON array:
         </div>
 
         {/* Business Unit Selector */}
-        <div className="mb-6 bg-slate-800 rounded-xl p-4 border border-slate-700">
+        <div className="mb-6 bg-white rounded-xl p-4 border border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h3 className="text-sm font-medium text-slate-400">{t.businessUnit}:</h3>
+              <h3 className="text-sm font-medium text-gray-500">{t.businessUnit}:</h3>
               <div className="flex gap-2 flex-wrap">
                 {businessUnits.map((unit) => (
                   <button
@@ -1703,8 +1703,8 @@ Format as JSON array:
                     onClick={() => setSelectedBusinessUnit(unit.id)}
                     className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
                       selectedBusinessUnit === unit.id
-                        ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white'
-                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                        ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-gray-900'
+                        : 'bg-gray-100 text-gray-600 hover:bg-slate-600'
                     }`}
                   >
                     <span>{unit.name}</span>
@@ -1737,7 +1737,7 @@ Format as JSON array:
                 {!showAddBusinessUnit && (
                   <button
                     onClick={() => setShowAddBusinessUnit(true)}
-                    className="px-4 py-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors flex items-center gap-2"
+                    className="px-4 py-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-slate-600 transition-colors flex items-center gap-2"
                   >
                     <Plus className="w-4 h-4" />
                     {t.addBusinessUnit}
@@ -1749,27 +1749,27 @@ Format as JSON array:
 
           {/* Add Business Unit Form */}
           {showAddBusinessUnit && (
-            <div className="mt-4 pt-4 border-t border-slate-700">
+            <div className="mt-4 pt-4 border-t border-gray-200">
               <div className="flex gap-3 items-end">
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-slate-400 mb-2">{t.businessName}</label>
+                  <label className="block text-sm font-medium text-gray-500 mb-2">{t.businessName}</label>
                   <input
                     type="text"
                     value={newBusinessUnitName}
                     onChange={(e) => setNewBusinessUnitName(e.target.value)}
                     placeholder={t.businessNamePlaceholder}
-                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400"
+                    className="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 placeholder-gray-400"
                     autoFocus
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-slate-400 mb-2">{t.industry}</label>
+                  <label className="block text-sm font-medium text-gray-500 mb-2">{t.industry}</label>
                   <input
                     type="text"
                     value={newBusinessUnitIndustry}
                     onChange={(e) => setNewBusinessUnitIndustry(e.target.value)}
                     placeholder={t.industryPlaceholder}
-                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400"
+                    className="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 placeholder-gray-400"
                   />
                 </div>
                 <button
@@ -1785,7 +1785,7 @@ Format as JSON array:
                     setNewBusinessUnitName('')
                     setNewBusinessUnitIndustry('')
                   }}
-                  className="bg-slate-600 hover:bg-slate-700 px-4 py-2 rounded-lg transition-colors"
+                  className="bg-slate-600 hover:bg-gray-100 px-4 py-2 rounded-lg transition-colors"
                 >
                   {t.cancel}
                 </button>
@@ -1796,7 +1796,7 @@ Format as JSON array:
 
         {/* Navigation Tabs */}
         <div className="overflow-x-auto mb-6 sm:mb-8 -mx-3 sm:mx-0 px-3 sm:px-0">
-          <div className="flex space-x-1 bg-slate-800 rounded-xl p-1 min-w-max sm:min-w-0">
+          <div className="flex space-x-1 bg-white rounded-xl p-1 min-w-max sm:min-w-0">
             {[
               { id: 'knowledge', label: t.knowledge, icon: Book },
               { id: 'booking', label: t.booking, icon: Calendar },
@@ -1812,8 +1812,8 @@ Format as JSON array:
                 onClick={() => setActiveTab(id as any)}
                 className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all whitespace-nowrap text-sm sm:text-base ${
                   activeTab === id
-                    ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-700'
+                    ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-gray-900'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -1831,7 +1831,7 @@ Format as JSON array:
             placeholder={t.searchEntries}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder-slate-400 w-full sm:w-80 text-sm sm:text-base"
+            className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-gray-900 placeholder-gray-400 w-full sm:w-80 text-sm sm:text-base"
           />
           <div className="flex gap-2">
             {/* Training tab action buttons removed - guidelines management hidden from UI */}
@@ -1850,7 +1850,7 @@ Format as JSON array:
         </div>
 
         {/* Content Sections */}
-        <div className="bg-slate-800 rounded-xl p-6">
+        <div className="bg-white rounded-xl p-6">
 
           {/* Knowledge Base Tab */}
           {activeTab === 'knowledge' && (
@@ -1872,11 +1872,11 @@ Format as JSON array:
               <div className="mb-8">
                 <div className="flex justify-between items-center mb-4">
                   <div>
-                    <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                    <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                       <Book className="w-5 h-5 text-blue-400" />
                       {t.trainingGuidelines}
                     </h3>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-xs text-gray-500 mt-1">
                       {t.guidelinesDescription}
                       <span className="text-cyan-300 ml-2">FAQ</span> = FAQ generation,
                       <span className="text-purple-300 ml-2">CANNED</span> = Canned message generation,
@@ -1904,8 +1904,8 @@ Format as JSON array:
                 </div>
 
                 {guidelines.length === 0 ? (
-                  <div className="bg-slate-700 rounded-lg p-6 text-center">
-                    <p className="text-slate-400">{t.noGuidelinesYet}</p>
+                  <div className="bg-gray-100 rounded-lg p-6 text-center">
+                    <p className="text-gray-500">{t.noGuidelinesYet}</p>
                     <p className="text-slate-500 text-sm mt-2">{t.addGuidelinesHelp}</p>
                   </div>
                 ) : (
@@ -1916,7 +1916,7 @@ Format as JSON array:
                       const hasMoreContent = guideline.content.length > 100 || guideline.content.includes('\n')
 
                       return (
-                        <div key={guideline.id} className="bg-slate-700 rounded-lg p-4 border border-slate-600">
+                        <div key={guideline.id} className="bg-gray-100 rounded-lg p-4 border border-gray-300">
                           <div className="flex justify-between items-start mb-2">
                             <div className="flex gap-2 items-center flex-1">
                               <span className={`px-2 py-1 rounded text-xs ${
@@ -1927,7 +1927,7 @@ Format as JSON array:
                               }`}>
                                 {guideline.category.toUpperCase()}
                               </span>
-                              <h4 className="font-semibold text-white">{guideline.title}</h4>
+                              <h4 className="font-semibold text-gray-900">{guideline.title}</h4>
                             </div>
                             <div className="flex gap-2">
                               {hasMoreContent && (
@@ -1941,7 +1941,7 @@ Format as JSON array:
                                     }
                                     setExpandedGuidelines(newExpanded)
                                   }}
-                                  className="text-slate-400 hover:text-slate-300"
+                                  className="text-gray-500 hover:text-gray-600"
                                   title={isExpanded ? t.collapse : t.expand}
                                 >
                                   {isExpanded ? '-' : '+'}
@@ -1970,7 +1970,7 @@ Format as JSON array:
                             </div>
                           </div>
 
-                          <div className="text-slate-300 text-sm whitespace-pre-wrap">
+                          <div className="text-gray-600 text-sm whitespace-pre-wrap">
                             {isExpanded ? guideline.content : (
                               <>
                                 {contentPreview}
@@ -1979,7 +1979,7 @@ Format as JSON array:
                             )}
                           </div>
 
-                          <div className="flex gap-4 mt-3 text-xs text-slate-400">
+                          <div className="flex gap-4 mt-3 text-xs text-gray-500">
                             <span>{t.created}: {new Date(guideline.createdAt).toLocaleDateString()}</span>
                             <span>{t.updated}: {new Date(guideline.updatedAt).toLocaleDateString()}</span>
                           </div>
@@ -2013,7 +2013,7 @@ Format as JSON array:
               {/* Guideline Edit Modal */}
               {editingEntry && 'title' in editingEntry && 'category' in editingEntry && !('scenario' in editingEntry) && !('question' in editingEntry) && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                  <div className="bg-slate-800 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                  <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                     <h3 className="text-xl font-bold mb-4">{t.editGuideline}</h3>
 
                     <div className="space-y-4">
@@ -2022,7 +2022,7 @@ Format as JSON array:
                         <select
                           value={(editingEntry as any).category}
                           onChange={(e) => setEditingEntry({ ...editingEntry, category: e.target.value })}
-                          className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
+                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
                         >
                           <option value="faq">{t.categoryFaqLibrary}</option>
                           <option value="canned">{t.categoryCannedMessages}</option>
@@ -2037,7 +2037,7 @@ Format as JSON array:
                           type="text"
                           value={(editingEntry as any).title}
                           onChange={(e) => setEditingEntry({ ...editingEntry, title: e.target.value })}
-                          className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
+                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
                           placeholder={t.guidelineTitlePlaceholder}
                         />
                       </div>
@@ -2048,7 +2048,7 @@ Format as JSON array:
                           value={(editingEntry as any).content}
                           onChange={(e) => setEditingEntry({ ...editingEntry, content: e.target.value })}
                           rows={10}
-                          className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
+                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
                           placeholder={t.guidelineContentPlaceholder}
                         />
                       </div>
@@ -2083,7 +2083,7 @@ Format as JSON array:
                       </button>
                       <button
                         onClick={() => setEditingEntry(null)}
-                        className="flex-1 bg-slate-600 hover:bg-slate-700 px-4 py-2 rounded-lg"
+                        className="flex-1 bg-slate-600 hover:bg-gray-100 px-4 py-2 rounded-lg"
                       >
                         {t.cancel}
                       </button>
@@ -2094,47 +2094,47 @@ Format as JSON array:
 
               {/* Training Sessions History */}
               <div className="mb-8">
-                <h3 className="text-xl font-semibold mb-4 text-white">{t.completedTrainingSessions}</h3>
+                <h3 className="text-xl font-semibold mb-4 text-gray-900">{t.completedTrainingSessions}</h3>
                 {trainingSessions.length === 0 ? (
-                  <div className="bg-slate-700 rounded-lg p-6 text-center">
-                    <p className="text-slate-400">{t.noTrainingSessionsYet}</p>
+                  <div className="bg-gray-100 rounded-lg p-6 text-center">
+                    <p className="text-gray-500">{t.noTrainingSessionsYet}</p>
                     <p className="text-slate-500 text-sm mt-2">{t.trainingSessionsHelp}</p>
                   </div>
                 ) : (
                   <div className="grid gap-4">
                     {trainingSessions.map((session, idx) => (
-                      <div key={session.id || idx} className="bg-slate-700 rounded-lg p-4 border border-slate-600">
+                      <div key={session.id || idx} className="bg-gray-100 rounded-lg p-4 border border-gray-300">
                         <div className="flex justify-between items-start mb-3">
                           <div>
-                            <h4 className="font-semibold text-white">{session.scenario?.name || t.trainingSession}</h4>
-                            <p className="text-slate-300 text-sm">{session.customerPersona} {t.customer}</p>
+                            <h4 className="font-semibold text-gray-900">{session.scenario?.name || t.trainingSession}</h4>
+                            <p className="text-gray-600 text-sm">{session.customerPersona} {t.customer}</p>
                           </div>
                           <div className="text-right">
                             <span className="bg-green-500/20 text-green-300 px-2 py-1 rounded text-xs">
                               {t.score}: {session.score || 0}%
                             </span>
-                            <p className="text-slate-400 text-xs mt-1">
+                            <p className="text-gray-500 text-xs mt-1">
                               {new Date(session.endTime).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
 
                         <div className="mb-3">
-                          <p className="text-slate-300 text-sm">{session.summary}</p>
+                          <p className="text-gray-600 text-sm">{session.summary}</p>
                         </div>
 
                         <div className="grid md:grid-cols-3 gap-4 text-sm">
                           <div>
-                            <span className="text-slate-400">{t.messages}:</span>
-                            <span className="text-white ml-1">{session.conversation?.length || 0}</span>
+                            <span className="text-gray-500">{t.messages}:</span>
+                            <span className="text-gray-900 ml-1">{session.conversation?.length || 0}</span>
                           </div>
                           <div>
-                            <span className="text-slate-400">{t.feedback}:</span>
-                            <span className="text-white ml-1">{session.feedback?.length || 0}</span>
+                            <span className="text-gray-500">{t.feedback}:</span>
+                            <span className="text-gray-900 ml-1">{session.feedback?.length || 0}</span>
                           </div>
                           <div>
-                            <span className="text-slate-400">{t.duration}:</span>
-                            <span className="text-white ml-1">
+                            <span className="text-gray-500">{t.duration}:</span>
+                            <span className="text-gray-900 ml-1">
                               {session.startTime && session.endTime
                                 ? Math.round((new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / 60000) + ` ${t.min}`
                                 : t.na
@@ -2145,10 +2145,10 @@ Format as JSON array:
 
                         {session.objectives && session.objectives.length > 0 && (
                           <div className="mt-3">
-                            <p className="text-slate-400 text-xs">{t.objectives}:</p>
+                            <p className="text-gray-500 text-xs">{t.objectives}:</p>
                             <div className="flex flex-wrap gap-1 mt-1">
                               {session.objectives.map((obj, objIdx) => (
-                                <span key={objIdx} className="bg-slate-600 text-slate-300 px-2 py-1 rounded text-xs">
+                                <span key={objIdx} className="bg-slate-600 text-gray-600 px-2 py-1 rounded text-xs">
                                   {obj}
                                 </span>
                               ))}
@@ -2163,7 +2163,7 @@ Format as JSON array:
 
               <div className="grid gap-4">
                 {filteredTraining.map((entry) => (
-                  <div key={entry.id} className="bg-slate-700 rounded-lg p-4 border border-slate-600">
+                  <div key={entry.id} className="bg-gray-100 rounded-lg p-4 border border-gray-300">
                     <div className="flex justify-between items-start mb-3 gap-3">
                       <div className="flex gap-2 items-center flex-wrap min-w-0">
                         <span className="bg-purple-500/20 text-purple-300 px-2 py-1 rounded text-sm whitespace-nowrap">
@@ -2196,24 +2196,24 @@ Format as JSON array:
 
                     <div className="mb-3">
                       <h4 className="font-semibold text-cyan-300 mb-1">{t.question}:</h4>
-                      <p className="text-slate-300 break-words">{entry.question}</p>
+                      <p className="text-gray-600 break-words">{entry.question}</p>
                     </div>
 
                     <div className="mb-3">
                       <h4 className="font-semibold text-green-300 mb-1">{t.answer}:</h4>
-                      <p className="text-slate-300 break-words">{entry.answer}</p>
+                      <p className="text-gray-600 break-words">{entry.answer}</p>
                     </div>
 
                     <div className="flex flex-wrap gap-2 mb-2">
                       {entry.keywords.map((keyword, idx) => (
-                        <span key={idx} className="bg-slate-600 text-slate-300 px-2 py-1 rounded-full text-xs">
+                        <span key={idx} className="bg-slate-600 text-gray-600 px-2 py-1 rounded-full text-xs">
                           {keyword}
                         </span>
                       ))}
                     </div>
 
                     {entry.variations.length > 0 && (
-                      <div className="text-sm text-slate-400">
+                      <div className="text-sm text-gray-500">
                         {t.variations}: {entry.variations.join(', ')}
                       </div>
                     )}
@@ -2231,7 +2231,7 @@ Format as JSON array:
                 AI Testing
               </h2>
 
-              <div className="bg-slate-700 rounded-lg p-6">
+              <div className="bg-gray-100 rounded-lg p-6">
                 <div className="mb-6">
                   <label className="block text-sm font-medium mb-2">{t.testQuery}</label>
                   <input
@@ -2239,7 +2239,7 @@ Format as JSON array:
                     value={testQuery}
                     onChange={(e) => setTestQuery(e.target.value)}
                     placeholder={t.testQueryPlaceholder}
-                    className="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-white"
+                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900"
                   />
                   <button
                     onClick={testAI}
@@ -2253,8 +2253,8 @@ Format as JSON array:
                 {testResponse && (
                   <div>
                     <label className="block text-sm font-medium mb-2">{t.aiResponse}</label>
-                    <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
-                      <p className="text-slate-300 whitespace-pre-wrap">{testResponse}</p>
+                    <div className="bg-white border border-gray-300 rounded-lg p-4">
+                      <p className="text-gray-600 whitespace-pre-wrap">{testResponse}</p>
                     </div>
                   </div>
                 )}
@@ -2320,7 +2320,7 @@ Format as JSON array:
                         }}
                         onBlur={handleCategoryEdit}
                         placeholder={t.leaveBlankToDelete}
-                        className="bg-slate-700 border border-purple-500 rounded-lg px-3 py-2 text-white text-sm capitalize"
+                        className="bg-gray-100 border border-purple-500 rounded-lg px-3 py-2 text-gray-900 text-sm capitalize"
                         autoFocus
                       />
                     </div>
@@ -2331,8 +2331,8 @@ Format as JSON array:
                       onDoubleClick={() => handleCategoryDoubleClick(category)}
                       className={`px-4 py-2 rounded-lg transition-colors capitalize ${
                         selectedFaqCategory === category
-                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-gray-900'
+                          : 'bg-gray-100 text-gray-600 hover:bg-slate-600'
                       }`}
                       title={t.doubleClickToEdit}
                     >
@@ -2348,7 +2348,7 @@ Format as JSON array:
                       onChange={(e) => setNewCategoryName(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && addFaqCategory()}
                       placeholder={t.categoryNamePlaceholder}
-                      className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                      className="bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 text-sm"
                       autoFocus
                     />
                     <button
@@ -2362,7 +2362,7 @@ Format as JSON array:
                         setShowAddCategory(false)
                         setNewCategoryName('')
                       }}
-                      className="bg-slate-600 hover:bg-slate-700 px-3 py-2 rounded-lg text-sm"
+                      className="bg-slate-600 hover:bg-gray-100 px-3 py-2 rounded-lg text-sm"
                     >
                       {t.cancel}
                     </button>
@@ -2370,7 +2370,7 @@ Format as JSON array:
                 ) : (
                   <button
                     onClick={() => setShowAddCategory(true)}
-                    className="px-4 py-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors flex items-center gap-2"
+                    className="px-4 py-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-slate-600 transition-colors flex items-center gap-2"
                   >
                     <Plus className="w-4 h-4" />
                     {t.addCategory}
@@ -2380,7 +2380,7 @@ Format as JSON array:
 
               <div className="grid gap-4">
                 {faqs.filter(faq => faq.category === selectedFaqCategory).map((faq) => (
-                  <div key={faq.id} className="bg-slate-700 rounded-lg p-4 border border-slate-600">
+                  <div key={faq.id} className="bg-gray-100 rounded-lg p-4 border border-gray-300">
                     <div className="flex justify-between items-start mb-3 gap-3">
                       <div className="flex-1 min-w-0">
                         <span className="bg-cyan-500/20 text-cyan-300 px-2 py-1 rounded text-sm whitespace-nowrap inline-block">
@@ -2410,11 +2410,11 @@ Format as JSON array:
                       </div>
                     </div>
 
-                    <p className="text-slate-300 mb-3 whitespace-pre-line break-words">{faq.answer}</p>
+                    <p className="text-gray-600 mb-3 whitespace-pre-line break-words">{faq.answer}</p>
 
                     <div className="flex flex-wrap gap-2 mb-2">
                       {faq.keywords.map((keyword, idx) => (
-                        <span key={idx} className="bg-slate-600 text-slate-300 px-2 py-1 rounded-full text-xs">
+                        <span key={idx} className="bg-slate-600 text-gray-600 px-2 py-1 rounded-full text-xs">
                           {keyword}
                         </span>
                       ))}
@@ -2431,7 +2431,7 @@ Format as JSON array:
 
               {editingEntry && 'question' in editingEntry && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                  <div className="bg-slate-800 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                  <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                     <h3 className="text-xl font-bold mb-4">{t.editFaq}</h3>
 
                     <div className="space-y-4">
@@ -2440,7 +2440,7 @@ Format as JSON array:
                         <select
                           value={(editingEntry as FAQ).category}
                           onChange={(e) => setEditingEntry({ ...editingEntry, category: e.target.value as FAQ['category'] })}
-                          className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
+                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2"
                         >
                           {faqCategories.map((cat) => (
                             <option key={cat} value={cat} className="capitalize">
@@ -2456,7 +2456,7 @@ Format as JSON array:
                           type="text"
                           value={(editingEntry as FAQ).question}
                           onChange={(e) => setEditingEntry({ ...editingEntry, question: e.target.value })}
-                          className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
+                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2"
                         />
                       </div>
 
@@ -2478,20 +2478,20 @@ Format as JSON array:
                           value={(editingEntry as FAQ).answer}
                           onChange={(e) => setEditingEntry({ ...editingEntry, answer: e.target.value })}
                           rows={6}
-                          className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
+                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2"
                         />
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium mb-2">
                           Comments
-                          <span className="text-slate-400 text-xs ml-2">{t.commentsNote}</span>
+                          <span className="text-gray-500 text-xs ml-2">{t.commentsNote}</span>
                         </label>
                         <textarea
                           value={(editingEntry as FAQ).comments || ''}
                           onChange={(e) => setEditingEntry({ ...editingEntry, comments: e.target.value })}
                           rows={3}
-                          className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
+                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2"
                           placeholder={t.commentsPlaceholder}
                         />
                       </div>
@@ -2505,7 +2505,7 @@ Format as JSON array:
                             ...editingEntry,
                             keywords: e.target.value.split(',').map(k => k.trim()).filter(k => k)
                           })}
-                          className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
+                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2"
                           placeholder={t.keywordsPlaceholder}
                         />
                       </div>
@@ -2562,7 +2562,7 @@ Format as JSON array:
                       </button>
                       <button
                         onClick={() => setEditingEntry(null)}
-                        className="flex-1 bg-slate-600 hover:bg-slate-700 px-4 py-2 rounded-lg"
+                        className="flex-1 bg-slate-600 hover:bg-gray-100 px-4 py-2 rounded-lg"
                       >
                         Cancel
                       </button>
@@ -2593,7 +2593,7 @@ Format as JSON array:
                       className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors border ${
                         cannedGenerationSource === 'knowledge' && selectedKnowledgeEntries.length > 0
                           ? 'bg-cyan-600 hover:bg-cyan-700 border-cyan-500'
-                          : 'bg-slate-700 hover:bg-slate-600 border-slate-600'
+                          : 'bg-gray-100 hover:bg-slate-600 border-gray-300'
                       }`}
                     >
                       <Database className="w-4 h-4" />
@@ -2609,13 +2609,13 @@ Format as JSON array:
                     </button>
 
                     {showKnowledgeSelector && (
-                      <div className="absolute right-0 mt-2 w-96 max-w-[90vw] bg-slate-700 rounded-lg shadow-lg border border-slate-600 z-10 max-h-96 overflow-y-auto">
-                        <div className="sticky top-0 bg-slate-700 border-b border-slate-600 p-3">
+                      <div className="absolute right-0 mt-2 w-96 max-w-[90vw] bg-gray-100 rounded-lg shadow-lg border border-gray-300 z-10 max-h-96 overflow-y-auto">
+                        <div className="sticky top-0 bg-gray-100 border-b border-gray-300 p-3">
                           <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-semibold text-white">{t.selectKnowledgeFiles}</h4>
+                            <h4 className="font-semibold text-gray-900">{t.selectKnowledgeFiles}</h4>
                             <button
                               onClick={() => setShowKnowledgeSelector(false)}
-                              className="text-slate-400 hover:text-white"
+                              className="text-gray-500 hover:text-gray-900"
                             >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -2644,7 +2644,7 @@ Format as JSON array:
 
                         <div className="p-2">
                           {knowledgeEntries.length === 0 ? (
-                            <div className="text-center py-8 text-slate-400">
+                            <div className="text-center py-8 text-gray-500">
                               <p>{t.noKnowledgeYet}</p>
                               <p className="text-sm mt-2">{t.uploadInKnowledgeTab}</p>
                             </div>
@@ -2668,10 +2668,10 @@ Format as JSON array:
                                     className="mt-1 w-4 h-4"
                                   />
                                   <div className="flex-1 min-w-0">
-                                    <div className="font-medium text-white truncate">
+                                    <div className="font-medium text-gray-900 truncate">
                                       {entry.fileName || entry.topic}
                                     </div>
-                                    <div className="text-xs text-slate-400 truncate">
+                                    <div className="text-xs text-gray-500 truncate">
                                       {entry.content.substring(0, 80)}...
                                     </div>
                                   </div>
@@ -2701,7 +2701,7 @@ Format as JSON array:
                       className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors border ${
                         cannedGenerationSource === 'research' && selectedResearchSources.length > 0
                           ? 'bg-purple-600 hover:bg-purple-700 border-purple-500'
-                          : 'bg-slate-700 hover:bg-slate-600 border-slate-600'
+                          : 'bg-gray-100 hover:bg-slate-600 border-gray-300'
                       } ${isResearching ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       <Brain className="w-4 h-4" />
@@ -2720,13 +2720,13 @@ Format as JSON array:
 
                     {/* Research Sources Selector */}
                     {showResearchSources && researchSources.length > 0 && (
-                      <div className="absolute right-0 mt-2 w-96 max-w-[90vw] bg-slate-700 rounded-lg shadow-lg border border-slate-600 z-10 max-h-96 overflow-y-auto">
-                        <div className="sticky top-0 bg-slate-700 border-b border-slate-600 p-3">
+                      <div className="absolute right-0 mt-2 w-96 max-w-[90vw] bg-gray-100 rounded-lg shadow-lg border border-gray-300 z-10 max-h-96 overflow-y-auto">
+                        <div className="sticky top-0 bg-gray-100 border-b border-gray-300 p-3">
                           <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-semibold text-white">{t.selectExpertSources}</h4>
+                            <h4 className="font-semibold text-gray-900">{t.selectExpertSources}</h4>
                             <button
                               onClick={() => setShowResearchSources(false)}
-                              className="text-slate-400 hover:text-white"
+                              className="text-gray-500 hover:text-gray-900"
                             >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -2764,7 +2764,7 @@ Format as JSON array:
                             {researchSources.map((source) => (
                               <label
                                 key={source.id}
-                                className="flex items-start gap-3 p-3 hover:bg-slate-600 rounded cursor-pointer transition-colors border border-slate-600"
+                                className="flex items-start gap-3 p-3 hover:bg-slate-600 rounded cursor-pointer transition-colors border border-gray-300"
                               >
                                 <input
                                   type="checkbox"
@@ -2779,13 +2779,13 @@ Format as JSON array:
                                   className="mt-1 w-4 h-4"
                                 />
                                 <div className="flex-1 min-w-0">
-                                  <div className="font-medium text-white flex items-center gap-2">
+                                  <div className="font-medium text-gray-900 flex items-center gap-2">
                                     {source.name}
                                     <span className="text-xs bg-green-600/20 text-green-300 px-2 py-0.5 rounded">
                                       {source.credibility}
                                     </span>
                                   </div>
-                                  <div className="text-sm text-slate-300 mt-1">
+                                  <div className="text-sm text-gray-600 mt-1">
                                     {source.description}
                                   </div>
                                 </div>
@@ -2823,7 +2823,7 @@ Format as JSON array:
                         }}
                         onBlur={handleCannedCategoryEdit}
                         placeholder={t.leaveBlankToDelete}
-                        className="bg-slate-700 border border-pink-500 rounded-lg px-3 py-2 text-white text-sm capitalize"
+                        className="bg-gray-100 border border-pink-500 rounded-lg px-3 py-2 text-gray-900 text-sm capitalize"
                         autoFocus
                       />
                     </div>
@@ -2834,8 +2834,8 @@ Format as JSON array:
                       onDoubleClick={() => handleCannedCategoryDoubleClick(category)}
                       className={`px-4 py-2 rounded-lg transition-colors capitalize ${
                         selectedCannedCategory === category
-                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-gray-900'
+                          : 'bg-gray-100 text-gray-600 hover:bg-slate-600'
                       }`}
                       title={t.doubleClickToEdit}
                     >
@@ -2851,7 +2851,7 @@ Format as JSON array:
                       onChange={(e) => setNewCannedCategoryName(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && addCannedCategory()}
                       placeholder={t.categoryNamePlaceholder}
-                      className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                      className="bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 text-sm"
                       autoFocus
                     />
                     <button
@@ -2865,7 +2865,7 @@ Format as JSON array:
                         setShowAddCannedCategory(false)
                         setNewCannedCategoryName('')
                       }}
-                      className="bg-slate-600 hover:bg-slate-700 px-3 py-2 rounded-lg text-sm"
+                      className="bg-slate-600 hover:bg-gray-100 px-3 py-2 rounded-lg text-sm"
                     >
                       {t.cancel}
                     </button>
@@ -2873,7 +2873,7 @@ Format as JSON array:
                 ) : (
                   <button
                     onClick={() => setShowAddCannedCategory(true)}
-                    className="px-4 py-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors flex items-center gap-2"
+                    className="px-4 py-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-slate-600 transition-colors flex items-center gap-2"
                   >
                     <Plus className="w-4 h-4" />
                     {t.addCategory}
@@ -2883,7 +2883,7 @@ Format as JSON array:
 
               <div className="grid gap-4">
                 {cannedMsgs.filter(msg => msg.category === selectedCannedCategory).map((msg) => (
-                  <div key={msg.id} className="bg-slate-700 rounded-lg p-4 border border-slate-600">
+                  <div key={msg.id} className="bg-gray-100 rounded-lg p-4 border border-gray-300">
                     <div className="flex justify-between items-start mb-3 gap-3">
                       <div className="flex-1 min-w-0">
                         <span className="bg-pink-500/20 text-pink-300 px-2 py-1 rounded text-sm capitalize whitespace-nowrap inline-block">
@@ -2913,13 +2913,13 @@ Format as JSON array:
                       </div>
                     </div>
 
-                    <p className="text-slate-300 mb-3 whitespace-pre-line break-words">{msg.template}</p>
+                    <p className="text-gray-600 mb-3 whitespace-pre-line break-words">{msg.template}</p>
 
                     {msg.variables && msg.variables.length > 0 && (
                       <div className="flex flex-wrap gap-2">
-                        <span className="text-sm text-slate-400">{t.variablesLabel}:</span>
+                        <span className="text-sm text-gray-500">{t.variablesLabel}:</span>
                         {msg.variables.map((variable, idx) => (
-                          <span key={idx} className="bg-slate-600 text-slate-300 px-2 py-1 rounded-full text-xs">
+                          <span key={idx} className="bg-slate-600 text-gray-600 px-2 py-1 rounded-full text-xs">
                             {variable}
                           </span>
                         ))}
@@ -2931,7 +2931,7 @@ Format as JSON array:
 
               {editingEntry && 'scenario' in editingEntry && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                  <div className="bg-slate-800 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                  <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                     <h3 className="text-xl font-bold mb-4">{t.editCannedMessage}</h3>
 
                     <div className="space-y-4">
@@ -2940,7 +2940,7 @@ Format as JSON array:
                         <select
                           value={(editingEntry as CannedMessage).category || selectedCannedCategory}
                           onChange={(e) => setEditingEntry({ ...editingEntry, category: e.target.value })}
-                          className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white capitalize"
+                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 capitalize"
                         >
                           {cannedCategories.map((cat) => (
                             <option key={cat} value={cat} className="capitalize">
@@ -2956,7 +2956,7 @@ Format as JSON array:
                           type="text"
                           value={(editingEntry as CannedMessage).id}
                           onChange={(e) => setEditingEntry({ ...editingEntry, id: e.target.value })}
-                          className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
+                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2"
                         />
                       </div>
 
@@ -2966,7 +2966,7 @@ Format as JSON array:
                           type="text"
                           value={(editingEntry as CannedMessage).scenario}
                           onChange={(e) => setEditingEntry({ ...editingEntry, scenario: e.target.value })}
-                          className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
+                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2"
                           placeholder={t.scenarioPlaceholder}
                         />
                       </div>
@@ -2977,7 +2977,7 @@ Format as JSON array:
                           value={(editingEntry as CannedMessage).template}
                           onChange={(e) => setEditingEntry({ ...editingEntry, template: e.target.value })}
                           rows={8}
-                          className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
+                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2"
                         />
                       </div>
 
@@ -2990,7 +2990,7 @@ Format as JSON array:
                             ...editingEntry,
                             variables: e.target.value.split(',').map(v => v.trim()).filter(v => v)
                           })}
-                          className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
+                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2"
                           placeholder={t.variablesPlaceholder}
                         />
                       </div>
@@ -3011,7 +3011,7 @@ Format as JSON array:
                       </button>
                       <button
                         onClick={() => setEditingEntry(null)}
-                        className="flex-1 bg-slate-600 hover:bg-slate-700 px-4 py-2 rounded-lg"
+                        className="flex-1 bg-slate-600 hover:bg-gray-100 px-4 py-2 rounded-lg"
                       >
                         {t.cancel}
                       </button>
@@ -3031,7 +3031,7 @@ Format as JSON array:
               </h2>
 
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
+                <div className="bg-gray-100 rounded-lg p-6 border border-gray-300">
                   <div className="flex items-center gap-3 mb-3">
                     <Database className="w-8 h-8 text-cyan-400" />
                     <div>
@@ -3041,7 +3041,7 @@ Format as JSON array:
                   </div>
                 </div>
 
-                <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
+                <div className="bg-gray-100 rounded-lg p-6 border border-gray-300">
                   <div className="flex items-center gap-3 mb-3">
                     <Brain className="w-8 h-8 text-purple-400" />
                     <div>
@@ -3051,7 +3051,7 @@ Format as JSON array:
                   </div>
                 </div>
 
-                <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
+                <div className="bg-gray-100 rounded-lg p-6 border border-gray-300">
                   <div className="flex items-center gap-3 mb-3">
                     <Sparkles className="w-8 h-8 text-green-400" />
                     <div>
@@ -3088,7 +3088,7 @@ Format as JSON array:
               <div className="space-y-6">
 
                 {/* Staff Management */}
-                <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
+                <div className="bg-gray-100 rounded-lg p-6 border border-gray-300">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xl font-semibold">{t.staff}</h3>
                     <button
@@ -3103,19 +3103,19 @@ Format as JSON array:
                       {t.addStaffMember}
                     </button>
                   </div>
-                  <p className="text-slate-400 text-sm mb-4">
+                  <p className="text-gray-500 text-sm mb-4">
                     {t.staffDescription}
                   </p>
 
                   {/* Staff List */}
                   {staff.length === 0 ? (
-                    <div className="text-slate-300 text-center py-8 bg-slate-800 rounded-lg">
+                    <div className="text-gray-600 text-center py-8 bg-white rounded-lg">
                       {t.noStaffYet}
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {staff.map((member) => (
-                        <div key={member.id} className="bg-slate-800 rounded-lg p-4 border border-slate-600">
+                        <div key={member.id} className="bg-white rounded-lg p-4 border border-gray-300">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
@@ -3130,7 +3130,7 @@ Format as JSON array:
                                   <Calendar className="w-4 h-4" />
                                 </a>
                               </div>
-                              <div className="text-slate-400 text-sm space-y-1">
+                              <div className="text-gray-500 text-sm space-y-1">
                                 {member.email && <p>{t.email}: {member.email}</p>}
                                 {member.staff_type && <p>{t.type}: {member.staff_type}</p>}
                                 <p>{t.status}: <span className={member.is_active ? 'text-green-400' : 'text-red-400'}>{member.is_active ? t.active : t.inactive}</span></p>
@@ -3173,7 +3173,7 @@ Format as JSON array:
                   {/* Add/Edit Staff Modal */}
                   {showAddStaff && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                      <div className="bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4 border border-slate-600">
+                      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 border border-gray-300">
                         <h3 className="text-xl font-semibold mb-4">
                           {editingStaff ? t.editStaffMember : t.addNewStaffMember}
                         </h3>
@@ -3185,7 +3185,7 @@ Format as JSON array:
                               value={newStaff.name}
                               onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
                               placeholder={t.namePlaceholder}
-                              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             />
                           </div>
                           <div>
@@ -3195,7 +3195,7 @@ Format as JSON array:
                               value={newStaff.email}
                               onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
                               placeholder={t.emailPlaceholder}
-                              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             />
                           </div>
                           <div>
@@ -3205,7 +3205,7 @@ Format as JSON array:
                               value={newStaff.staff_type}
                               onChange={(e) => setNewStaff({ ...newStaff, staff_type: e.target.value })}
                               placeholder={t.staffTypePlaceholder}
-                              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             />
                           </div>
                         </div>
@@ -3255,7 +3255,7 @@ Format as JSON array:
                 </div>
 
                 {/* Service-Staff Assignments */}
-                <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
+                <div className="bg-gray-100 rounded-lg p-6 border border-gray-300">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xl font-semibold">{t.serviceAssignments}</h3>
                     <button
@@ -3270,12 +3270,12 @@ Format as JSON array:
                       {t.manageStaffAssignments}
                     </button>
                   </div>
-                  <p className="text-slate-400 text-sm mb-4">
+                  <p className="text-gray-500 text-sm mb-4">
                     {t.assignmentsDescription}
                   </p>
 
                   {assignments.length === 0 ? (
-                    <div className="text-slate-300 text-center py-8 bg-slate-800 rounded-lg">
+                    <div className="text-gray-600 text-center py-8 bg-white rounded-lg">
                       {t.noAssignmentsYet}
                     </div>
                   ) : (
@@ -3286,7 +3286,7 @@ Format as JSON array:
                         if (serviceAssignments.length === 0) return null
 
                         return (
-                          <div key={service.id} className="bg-slate-800 rounded-lg p-4 border border-slate-600">
+                          <div key={service.id} className="bg-white rounded-lg p-4 border border-gray-300">
                             <div className="flex items-center justify-between mb-3">
                               <h4 className="font-semibold text-cyan-400">{service.name}</h4>
                               <button
@@ -3304,7 +3304,7 @@ Format as JSON array:
                               {serviceAssignments.map((assignment) => (
                                 <span
                                   key={assignment.id}
-                                  className="px-3 py-1 bg-slate-700 rounded-full text-sm border border-slate-600"
+                                  className="px-3 py-1 bg-gray-100 rounded-full text-sm border border-gray-300"
                                 >
                                   {assignment.staff?.name}
                                 </span>
@@ -3319,7 +3319,7 @@ Format as JSON array:
                   {/* Add Assignment Modal */}
                   {showAddAssignment && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                      <div className="bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4 border border-slate-600 max-h-[90vh] overflow-y-auto">
+                      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 border border-gray-300 max-h-[90vh] overflow-y-auto">
                         <h3 className="text-xl font-semibold mb-4">{t.assignStaffToService}</h3>
                         <div className="space-y-4">
                           <div>
@@ -3332,7 +3332,7 @@ Format as JSON array:
                                 const existingAssignments = assignments.filter(a => a.service_id === e.target.value)
                                 setSelectedStaffIds(existingAssignments.map(a => a.staff_id))
                               }}
-                              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             >
                               <option value="">{t.selectService}</option>
                               {services.map(service => (
@@ -3346,7 +3346,7 @@ Format as JSON array:
                               <label className="block text-sm font-medium mb-2">
                                 {t.staffMembers(selectedStaffIds.length)}
                               </label>
-                              <div className="space-y-2 max-h-64 overflow-y-auto bg-slate-700 rounded-lg p-3 border border-slate-600">
+                              <div className="space-y-2 max-h-64 overflow-y-auto bg-gray-100 rounded-lg p-3 border border-gray-300">
                                 {staff.map(member => (
                                   <label
                                     key={member.id}
@@ -3362,7 +3362,7 @@ Format as JSON array:
                                           setSelectedStaffIds(selectedStaffIds.filter(id => id !== member.id))
                                         }
                                       }}
-                                      className="w-4 h-4 text-cyan-500 bg-slate-800 border-slate-500 rounded focus:ring-cyan-500 focus:ring-2"
+                                      className="w-4 h-4 text-cyan-500 bg-white border-gray-300 rounded focus:ring-cyan-500 focus:ring-2"
                                     />
                                     <span>{member.name}</span>
                                   </label>
@@ -3454,7 +3454,7 @@ Format as JSON array:
                 </div>
 
                 {/* Outlets Management */}
-                <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
+                <div className="bg-gray-100 rounded-lg p-6 border border-gray-300">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xl font-semibold">{t.outlets}</h3>
                     <button
@@ -3480,32 +3480,32 @@ Format as JSON array:
                       {t.addOutlet}
                     </button>
                   </div>
-                  <p className="text-slate-400 text-sm mb-4">
+                  <p className="text-gray-500 text-sm mb-4">
                     {t.outletsDescription}
                   </p>
 
                   {outlets.length === 0 ? (
-                    <div className="text-slate-300 text-center py-8 bg-slate-800 rounded-lg">
+                    <div className="text-gray-600 text-center py-8 bg-white rounded-lg">
                       {t.noOutletsYet}
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {outlets.map((outlet) => (
-                        <div key={outlet.id} className="bg-slate-800 rounded-lg p-4 border border-slate-600">
+                        <div key={outlet.id} className="bg-white rounded-lg p-4 border border-gray-300">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <h4 className="font-semibold text-lg mb-1">{outlet.name}</h4>
-                              <p className="text-slate-400 text-sm">{outlet.address_line1}</p>
-                              {outlet.address_line2 && <p className="text-slate-400 text-sm">{outlet.address_line2}</p>}
-                              <p className="text-slate-400 text-sm">
+                              <p className="text-gray-500 text-sm">{outlet.address_line1}</p>
+                              {outlet.address_line2 && <p className="text-gray-500 text-sm">{outlet.address_line2}</p>}
+                              <p className="text-gray-500 text-sm">
                                 {outlet.city}{outlet.state_province ? `, ${outlet.state_province}` : ''} {outlet.postal_code}
                               </p>
                               {outlet.country && outlet.country !== 'USA' && (
-                                <p className="text-slate-400 text-sm">{outlet.country}</p>
+                                <p className="text-gray-500 text-sm">{outlet.country}</p>
                               )}
-                              {outlet.phone && <p className="text-slate-400 text-sm mt-1">📞 {outlet.phone}</p>}
-                              {outlet.email && <p className="text-slate-400 text-sm">✉️ {outlet.email}</p>}
-                              <p className="text-slate-400 text-sm mt-1">{t.status}: <span className={outlet.is_active ? 'text-green-400' : 'text-red-400'}>{outlet.is_active ? t.active : t.inactive}</span></p>
+                              {outlet.phone && <p className="text-gray-500 text-sm mt-1">📞 {outlet.phone}</p>}
+                              {outlet.email && <p className="text-gray-500 text-sm">✉️ {outlet.email}</p>}
+                              <p className="text-gray-500 text-sm mt-1">{t.status}: <span className={outlet.is_active ? 'text-green-400' : 'text-red-400'}>{outlet.is_active ? t.active : t.inactive}</span></p>
                             </div>
                             <div className="flex gap-2 ml-4">
                               <button
@@ -3555,7 +3555,7 @@ Format as JSON array:
                   {/* Add/Edit Outlet Modal */}
                   {showAddOutlet && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                      <div className="bg-slate-800 rounded-lg p-6 max-w-2xl w-full mx-4 border border-slate-600 max-h-[90vh] overflow-y-auto">
+                      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 border border-gray-300 max-h-[90vh] overflow-y-auto">
                         <h3 className="text-xl font-semibold mb-4">
                           {editingOutlet ? t.editOutlet : t.addNewOutlet}
                         </h3>
@@ -3567,7 +3567,7 @@ Format as JSON array:
                               value={newOutlet.name}
                               onChange={(e) => setNewOutlet({ ...newOutlet, name: e.target.value })}
                               placeholder={t.outletNamePlaceholder}
-                              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             />
                           </div>
                           <div>
@@ -3577,7 +3577,7 @@ Format as JSON array:
                               value={newOutlet.address_line1}
                               onChange={(e) => setNewOutlet({ ...newOutlet, address_line1: e.target.value })}
                               placeholder={t.addressLine1Placeholder}
-                              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             />
                           </div>
                           <div>
@@ -3587,7 +3587,7 @@ Format as JSON array:
                               value={newOutlet.address_line2}
                               onChange={(e) => setNewOutlet({ ...newOutlet, address_line2: e.target.value })}
                               placeholder={t.addressLine2Placeholder}
-                              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             />
                           </div>
                           <div className="grid grid-cols-2 gap-4">
@@ -3598,7 +3598,7 @@ Format as JSON array:
                                 value={newOutlet.city}
                                 onChange={(e) => setNewOutlet({ ...newOutlet, city: e.target.value })}
                                 placeholder={t.cityPlaceholder}
-                                className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                               />
                             </div>
                             <div>
@@ -3608,7 +3608,7 @@ Format as JSON array:
                                 value={newOutlet.state_province}
                                 onChange={(e) => setNewOutlet({ ...newOutlet, state_province: e.target.value })}
                                 placeholder={t.statePlaceholder}
-                                className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                               />
                             </div>
                           </div>
@@ -3620,7 +3620,7 @@ Format as JSON array:
                                 value={newOutlet.postal_code}
                                 onChange={(e) => setNewOutlet({ ...newOutlet, postal_code: e.target.value })}
                                 placeholder={t.postalPlaceholder}
-                                className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                               />
                             </div>
                             <div>
@@ -3630,7 +3630,7 @@ Format as JSON array:
                                 value={newOutlet.country}
                                 onChange={(e) => setNewOutlet({ ...newOutlet, country: e.target.value })}
                                 placeholder={t.countryPlaceholder}
-                                className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                               />
                             </div>
                           </div>
@@ -3642,7 +3642,7 @@ Format as JSON array:
                                 value={newOutlet.phone}
                                 onChange={(e) => setNewOutlet({ ...newOutlet, phone: e.target.value })}
                                 placeholder={t.phonePlaceholder}
-                                className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                               />
                             </div>
                             <div>
@@ -3652,7 +3652,7 @@ Format as JSON array:
                                 value={newOutlet.email}
                                 onChange={(e) => setNewOutlet({ ...newOutlet, email: e.target.value })}
                                 placeholder={t.emailLocationPlaceholder}
-                                className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                               />
                             </div>
                           </div>
@@ -3663,9 +3663,9 @@ Format as JSON array:
                               value={newOutlet.display_order}
                               onChange={(e) => setNewOutlet({ ...newOutlet, display_order: parseInt(e.target.value) || 0 })}
                               placeholder="0"
-                              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             />
-                            <p className="text-slate-400 text-xs mt-1">{t.displayOrderHelp}</p>
+                            <p className="text-gray-500 text-xs mt-1">{t.displayOrderHelp}</p>
                           </div>
                         </div>
                         <div className="flex justify-end gap-3 mt-6">
@@ -3708,7 +3708,7 @@ Format as JSON array:
                 </div>
 
                 {/* Rooms Management */}
-                <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
+                <div className="bg-gray-100 rounded-lg p-6 border border-gray-300">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xl font-semibold">{t.treatmentRooms}</h3>
                     <button
@@ -3723,12 +3723,12 @@ Format as JSON array:
                       {t.addRoom}
                     </button>
                   </div>
-                  <p className="text-slate-400 text-sm mb-4">
+                  <p className="text-gray-500 text-sm mb-4">
                     {t.roomsDescription}
                   </p>
 
                   {rooms.length === 0 ? (
-                    <div className="text-slate-300 text-center py-8 bg-slate-800 rounded-lg">
+                    <div className="text-gray-600 text-center py-8 bg-white rounded-lg">
                       {t.noRoomsYet}
                     </div>
                   ) : (
@@ -3738,26 +3738,26 @@ Format as JSON array:
                         const roomServices = allRoomServices.filter(rs => rs.room_id === room.id)
                         const assignedServiceNames = roomServices.map(rs => rs.appointment_services?.name).filter(Boolean)
                         return (
-                        <div key={room.id} className="bg-slate-800 rounded-lg p-4 border border-slate-600">
+                        <div key={room.id} className="bg-white rounded-lg p-4 border border-gray-300">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <h4 className="font-semibold text-lg mb-1">{t.room(room.room_number)}</h4>
-                              {room.room_name && <p className="text-slate-400 text-sm">{room.room_name}</p>}
+                              {room.room_name && <p className="text-gray-500 text-sm">{room.room_name}</p>}
                               {outlet && (
-                                <p className="text-slate-400 text-sm mt-1">
+                                <p className="text-gray-500 text-sm mt-1">
                                   {t.locationDisplay(outlet.name, outlet.city)}
                                 </p>
                               )}
                               {assignedServiceNames.length > 0 ? (
-                                <p className="text-slate-400 text-sm mt-1">
+                                <p className="text-gray-500 text-sm mt-1">
                                   {t.roomServicesDisplay(assignedServiceNames.join(', '))}
                                 </p>
                               ) : (
-                                <p className="text-slate-400 text-sm mt-1">
+                                <p className="text-gray-500 text-sm mt-1">
                                   {t.roomServicesDisplay(t.allServicesText)}
                                 </p>
                               )}
-                              <p className="text-slate-400 text-sm mt-1">{t.status}: <span className={room.is_active ? 'text-green-400' : 'text-red-400'}>{room.is_active ? t.active : t.inactive}</span></p>
+                              <p className="text-gray-500 text-sm mt-1">{t.status}: <span className={room.is_active ? 'text-green-400' : 'text-red-400'}>{room.is_active ? t.active : t.inactive}</span></p>
                             </div>
                             <div className="flex gap-2 ml-4">
                               <button
@@ -3817,7 +3817,7 @@ Format as JSON array:
                   {/* Add/Edit Room Modal */}
                   {showAddRoom && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                      <div className="bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4 border border-slate-600">
+                      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 border border-gray-300">
                         <h3 className="text-xl font-semibold mb-4">
                           {editingRoom ? t.editRoom : t.addNewRoom}
                         </h3>
@@ -3827,7 +3827,7 @@ Format as JSON array:
                             <select
                               value={newRoom.outlet_id}
                               onChange={(e) => setNewRoom({ ...newRoom, outlet_id: e.target.value })}
-                              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             >
                               <option value="">{t.selectOutletOptional}</option>
                               {outlets.map((outlet) => (
@@ -3836,7 +3836,7 @@ Format as JSON array:
                                 </option>
                               ))}
                             </select>
-                            <p className="text-slate-400 text-xs mt-1">
+                            <p className="text-gray-500 text-xs mt-1">
                               {outlets.length === 0 ? t.noOutletsAvailable : t.selectLocationHelp}
                             </p>
                           </div>
@@ -3847,7 +3847,7 @@ Format as JSON array:
                               value={newRoom.room_number}
                               onChange={(e) => setNewRoom({ ...newRoom, room_number: e.target.value })}
                               placeholder={t.roomNumberPlaceholder}
-                              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             />
                           </div>
                           <div>
@@ -3857,7 +3857,7 @@ Format as JSON array:
                               value={newRoom.room_name}
                               onChange={(e) => setNewRoom({ ...newRoom, room_name: e.target.value })}
                               placeholder={t.roomNamePlaceholder}
-                              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             />
                           </div>
                         </div>
@@ -3908,21 +3908,21 @@ Format as JSON array:
                   {/* Manage Room Services Modal */}
                   {showRoomServices && selectedRoomForServices && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                      <div className="bg-slate-800 rounded-lg p-6 max-w-2xl w-full mx-4 border border-slate-600 max-h-[90vh] overflow-y-auto">
+                      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 border border-gray-300 max-h-[90vh] overflow-y-auto">
                         <h3 className="text-xl font-semibold mb-4">
                           {t.manageServicesForRoom(selectedRoomForServices.room_number)}
                         </h3>
-                        <p className="text-slate-400 text-sm mb-4">
+                        <p className="text-gray-500 text-sm mb-4">
                           {t.roomServicesDescription}
                         </p>
                         <div className="space-y-2 mb-6">
                           {services.length === 0 ? (
-                            <p className="text-slate-400 text-sm">{t.noServicesAvailable}</p>
+                            <p className="text-gray-500 text-sm">{t.noServicesAvailable}</p>
                           ) : (
                             services.map((service) => (
                               <label
                                 key={service.id}
-                                className="flex items-start gap-3 p-3 bg-slate-700 rounded-lg hover:bg-slate-600 cursor-pointer transition-colors"
+                                className="flex items-start gap-3 p-3 bg-gray-100 rounded-lg hover:bg-slate-600 cursor-pointer transition-colors"
                               >
                                 <input
                                   type="checkbox"
@@ -3939,7 +3939,7 @@ Format as JSON array:
                                 <div className="flex-1">
                                   <h4 className="font-semibold text-slate-200">{service.name}</h4>
                                   {service.description && (
-                                    <p className="text-sm text-slate-400 mt-1">{service.description}</p>
+                                    <p className="text-sm text-gray-500 mt-1">{service.description}</p>
                                   )}
                                   <p className="text-xs text-slate-500 mt-1">
                                     {service.duration_minutes} {t.min}
@@ -4001,9 +4001,9 @@ Format as JSON array:
                 {t.aiModelSettings}
               </h2>
 
-              <div className="bg-slate-700 rounded-lg p-6 border border-slate-600 max-w-3xl">
+              <div className="bg-gray-100 rounded-lg p-6 border border-gray-300 max-w-3xl">
                 <div className="mb-6">
-                  <p className="text-slate-300 mb-4">
+                  <p className="text-gray-600 mb-4">
                     {t.aiModelDescription}
                   </p>
                   <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-4 mb-6">
@@ -4023,7 +4023,7 @@ Format as JSON array:
                     <select
                       value={llmSettings.provider}
                       onChange={(e) => setLLMSettings({ ...llmSettings, provider: e.target.value as any })}
-                      className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                     >
                       <option value="anthropic">{t.providerAnthropic}</option>
                       <option value="ollama">{t.providerOllama}</option>
@@ -4045,10 +4045,10 @@ Format as JSON array:
                         llmSettings.provider === 'ollama' ? t.modelPlaceholderOllama :
                         t.modelPlaceholderOpenAI
                       }
-                      className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                       required
                     />
-                    <p className="text-slate-400 text-sm mt-1">
+                    <p className="text-gray-500 text-sm mt-1">
                       {llmSettings.provider === 'anthropic' && t.modelExamplesAnthropic}
                       {llmSettings.provider === 'ollama' && t.modelExamplesOllama}
                       {llmSettings.provider === 'openai' && t.modelExamplesOpenAI}
@@ -4066,10 +4066,10 @@ Format as JSON array:
                         value={llmSettings.ollamaUrl}
                         onChange={(e) => setLLMSettings({ ...llmSettings, ollamaUrl: e.target.value })}
                         placeholder={t.ollamaUrlPlaceholder}
-                        className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono text-sm"
+                        className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono text-sm"
                         required
                       />
-                      <p className="text-slate-400 text-sm mt-1" dangerouslySetInnerHTML={{ __html: t.ollamaHelp + ' <a href="https://ollama.com/" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline">Install Ollama</a>' }} />
+                      <p className="text-gray-500 text-sm mt-1" dangerouslySetInnerHTML={{ __html: t.ollamaHelp + ' <a href="https://ollama.com/" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline">Install Ollama</a>' }} />
                     </div>
                   )}
 
@@ -4087,7 +4087,7 @@ Format as JSON array:
                       onChange={(e) => setLLMSettings({ ...llmSettings, temperature: parseFloat(e.target.value) })}
                       className="w-full"
                     />
-                    <p className="text-slate-400 text-sm mt-1">
+                    <p className="text-gray-500 text-sm mt-1">
                       {t.temperatureHelp}
                     </p>
                   </div>
@@ -4096,7 +4096,7 @@ Format as JSON array:
                   <div className="flex gap-4">
                     <button
                       type="submit"
-                      className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2"
+                      className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-gray-900 px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2"
                     >
                       <Save className="w-5 h-5" />
                       {t.saveSettings}
@@ -4105,9 +4105,9 @@ Format as JSON array:
 
                   {/* Current Status */}
                   {llmSettings.provider && (
-                    <div className="mt-6 p-4 bg-slate-800 rounded-lg border border-slate-600">
+                    <div className="mt-6 p-4 bg-white rounded-lg border border-gray-300">
                       <h4 className="font-medium mb-2 text-green-400">{t.currentConfiguration}</h4>
-                      <div className="space-y-1 text-sm text-slate-300">
+                      <div className="space-y-1 text-sm text-gray-600">
                         <p><strong>{t.provider}:</strong> {llmSettings.provider}</p>
                         <p><strong>{t.model}:</strong> {llmSettings.model}</p>
                         <p><strong>Temperature:</strong> {llmSettings.temperature}</p>
