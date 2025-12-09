@@ -14,6 +14,10 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",
     "@google/generative-ai": "^0.24.1",
+    "@medusajs/cart": "^2.11.3",
+    "@medusajs/customer": "^2.11.3",
+    "@medusajs/medusa-js": "^6.1.10",
+    "@medusajs/product": "^2.11.3",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.80.0",
     "date-fns": "^4.1.0",

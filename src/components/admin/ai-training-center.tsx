@@ -1,9 +1,12 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Brain, Database, Plus, Edit, Trash2, Save, BarChart3, Book, Sparkles, Users, HelpCircle, Mail, Upload, FileText, TestTube, Settings } from 'lucide-react'
+import { Brain, Database, Plus, Edit, Trash2, Save, BarChart3, Book, Sparkles, Users, User, HelpCircle, Mail, Upload, FileText, TestTube, Settings, Calendar, Globe, X } from 'lucide-react'
+import ProfileModal from './profile-modal'
 import RoleplayTraining from './roleplay-training'
+import KnowledgeBase from './knowledge-base'
 import { FAQ, CannedMessage } from '@/lib/faq-library'
+import { type Language, languageNames, getTranslation } from '@/lib/translations'
 import {
   loadKnowledge, saveKnowledge, deleteKnowledge,
   loadFAQs, saveFAQ, deleteFAQ,
@@ -14,7 +17,13 @@ import {
   loadBusinessUnits, saveBusinessUnit, deleteBusinessUnit,
   loadAIStaff, saveAIStaff, deleteAIStaff,
   loadTrainingScenarios, saveTrainingScenario, deleteTrainingScenario,
-  loadTrainingSessions, saveTrainingSession, deleteTrainingSession
+  loadTrainingSessions, saveTrainingSession, deleteTrainingSession,
+  loadServices, saveService, deleteService,
+  loadStaff, saveStaff, deleteStaff,
+  loadAssignments, saveAssignment, deleteAssignment,
+  loadOutlets, saveOutlet, deleteOutlet,
+  loadRooms, saveRoom, deleteRoom,
+  loadRoomServices, saveRoomServices
 } from '@/lib/api-client'
 
 interface KnowledgeEntry {
@@ -44,7 +53,7 @@ interface TrainingData {
 }
 
 const AITrainingCenter = () => {
-  const [activeTab, setActiveTab] = useState<'knowledge' | 'training' | 'analytics' | 'roleplay' | 'faq' | 'canned' | 'aimodel'>('knowledge')
+  const [activeTab, setActiveTab] = useState<'knowledge' | 'training' | 'analytics' | 'roleplay' | 'faq' | 'canned' | 'aimodel' | 'booking'>('knowledge')
   const [knowledgeEntries, setKnowledgeEntries] = useState<KnowledgeEntry[]>([])
   const [trainingData, setTrainingData] = useState<TrainingData[]>([])
   const [faqs, setFaqs] = useState<FAQ[]>([])
@@ -61,6 +70,10 @@ const AITrainingCenter = () => {
   const [trainingSessions, setTrainingSessions] = useState<any[]>([])
   const [trainingMemory, setTrainingMemory] = useState<{[key: string]: string[]}>({})
   const [completedTrainingSessions, setCompletedTrainingSessions] = useState<any[]>([])
+  const [selectedLanguage, setSelectedLanguage] = useState<Language>('en')
+
+  // Get translations
+  const t = getTranslation(selectedLanguage)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const isLoadingDataRef = useRef(false) // Track loading state to prevent auto-save during load
@@ -107,6 +120,65 @@ const AITrainingCenter = () => {
   const [generatingGuidelines, setGeneratingGuidelines] = useState(false)
   const [expandedGuidelines, setExpandedGuidelines] = useState<Set<string>>(new Set())
 
+  // Booking state
+  interface AppointmentService {
+    id: string
+    name: string
+    description: string
+    business_unit_id: string
+  }
+  interface RealStaffMember {
+    id: string
+    name: string
+    email: string | null
+    staff_type: string | null
+    business_unit_id: string
+    is_active: boolean
+  }
+  const [services, setServices] = useState<AppointmentService[]>([])
+  const [showAddService, setShowAddService] = useState(false)
+  const [editingService, setEditingService] = useState<AppointmentService | null>(null)
+  const [newService, setNewService] = useState({ name: '', description: '', price: '' })
+
+  const [staff, setStaff] = useState<RealStaffMember[]>([])
+  const [showAddStaff, setShowAddStaff] = useState(false)
+  const [editingStaff, setEditingStaff] = useState<RealStaffMember | null>(null)
+  const [newStaff, setNewStaff] = useState({ name: '', email: '', staff_type: '' })
+
+  const [assignments, setAssignments] = useState<any[]>([])
+  const [showAddAssignment, setShowAddAssignment] = useState(false)
+  const [newAssignment, setNewAssignment] = useState({ service_id: '', staff_id: '' })
+  const [selectedServiceForAssignment, setSelectedServiceForAssignment] = useState<string>('')
+  const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([])
+
+  const [outlets, setOutlets] = useState<any[]>([])
+  const [showAddOutlet, setShowAddOutlet] = useState(false)
+  const [editingOutlet, setEditingOutlet] = useState<any | null>(null)
+  const [newOutlet, setNewOutlet] = useState({
+    name: '',
+    address_line1: '',
+    address_line2: '',
+    city: '',
+    state_province: '',
+    postal_code: '',
+    country: 'USA',
+    phone: '',
+    email: '',
+    display_order: 0
+  })
+
+  const [rooms, setRooms] = useState<any[]>([])
+  const [showAddRoom, setShowAddRoom] = useState(false)
+  const [editingRoom, setEditingRoom] = useState<any | null>(null)
+  const [newRoom, setNewRoom] = useState({ room_number: '', room_name: '', outlet_id: '' })
+
+  const [showRoomServices, setShowRoomServices] = useState(false)
+  const [selectedRoomForServices, setSelectedRoomForServices] = useState<any | null>(null)
+  const [roomServiceIds, setRoomServiceIds] = useState<string[]>([])
+  const [allRoomServices, setAllRoomServices] = useState<any[]>([])
+
+  const [appointments, setAppointments] = useState<any[]>([])
+
   // Business Unit state
   interface BusinessUnit {
     id: string
@@ -119,6 +191,9 @@ const AITrainingCenter = () => {
   const [showAddBusinessUnit, setShowAddBusinessUnit] = useState(false)
   const [newBusinessUnitName, setNewBusinessUnitName] = useState('')
   const [newBusinessUnitIndustry, setNewBusinessUnitIndustry] = useState('')
+
+  // Profile Modal state
+  const [showProfileModal, setShowProfileModal] = useState(false)
 
   // LLM Settings state
   const [llmSettings, setLLMSettings] = useState({
@@ -378,24 +453,24 @@ const AITrainingCenter = () => {
       })
 
       if (response.ok) {
-        alert('LLM settings saved successfully! Changes will apply to new conversations.\n\nNote: API keys remain configured in .env.local file.')
+        alert(t.settingsSaved)
       } else {
         const error = await response.json()
-        alert(`Failed to save settings: ${error.message || 'Unknown error'}`)
+        alert(t.failedToSave(error.message || 'Unknown error'))
       }
     } catch (error) {
       console.error('Error saving LLM settings:', error)
-      alert('Error saving LLM settings. Please check your configuration.')
+      alert(t.errorSavingSettings)
     }
   }
 
   const handleDeleteBusinessUnit = async (unitId: string) => {
     if (unitId === 'skincoach') {
-      alert('Cannot delete the default SkinCoach business unit')
+      alert(t.cannotDeleteDefault)
       return
     }
 
-    if (!confirm('Are you sure you want to delete this business unit? All associated data will be removed.')) {
+    if (!confirm(t.confirmDeleteBusinessUnit)) {
       return
     }
 
@@ -432,9 +507,9 @@ const AITrainingCenter = () => {
       console.log(`✅ Loaded ${knowledgeData?.length || 0} knowledge entries`)
 
       // Load FAQs
-      const faqData = await loadFAQs(selectedBusinessUnit)
+      const faqData = await loadFAQs(selectedBusinessUnit, selectedLanguage)
       setFaqs(faqData || [])
-      console.log(`✅ Loaded ${faqData?.length || 0} FAQs`)
+      console.log(`✅ Loaded ${faqData?.length || 0} FAQs for language: ${selectedLanguage}`)
 
       // Load canned messages
       const cannedData = await loadCannedMessages(selectedBusinessUnit)
@@ -462,6 +537,44 @@ const AITrainingCenter = () => {
         setCannedCategories(defaultCannedCategories)
       }
       console.log(`✅ Loaded ${cannedCategoriesData?.length || 0} canned message categories`)
+
+      // Load services
+      const servicesData = await loadServices(selectedBusinessUnit)
+      setServices(servicesData || [])
+      console.log(`✅ Loaded ${servicesData?.length || 0} services`)
+
+      // Load staff
+      const staffData = await loadStaff(selectedBusinessUnit)
+      setStaff(staffData || [])
+      console.log(`✅ Loaded ${staffData?.length || 0} staff members`)
+
+      // Load assignments
+      const assignmentsData = await loadAssignments(selectedBusinessUnit)
+      setAssignments(assignmentsData || [])
+      console.log(`✅ Loaded ${assignmentsData?.length || 0} assignments`)
+
+      // Load outlets
+      const outletsData = await loadOutlets(selectedBusinessUnit)
+      setOutlets(outletsData || [])
+      console.log(`✅ Loaded ${outletsData?.length || 0} outlets`)
+
+      // Load rooms
+      const roomsData = await loadRooms(selectedBusinessUnit)
+      setRooms(roomsData || [])
+      console.log(`✅ Loaded ${roomsData?.length || 0} rooms`)
+
+      // Load all room-service assignments
+      const roomServicesData = await loadRoomServices()
+      setAllRoomServices(roomServicesData || [])
+      console.log(`✅ Loaded ${roomServicesData?.length || 0} room-service assignments`)
+
+      // Load appointments
+      const appointmentsResponse = await fetch(`/api/appointments?businessUnit=${selectedBusinessUnit}`)
+      if (appointmentsResponse.ok) {
+        const appointmentsData = await appointmentsResponse.json()
+        setAppointments(appointmentsData.appointments || [])
+        console.log(`✅ Loaded ${appointmentsData.appointments?.length || 0} appointments`)
+      }
 
       // Load training data from Supabase
       const trainingDataFile = await loadTrainingData(selectedBusinessUnit)
@@ -727,12 +840,12 @@ const AITrainingCenter = () => {
 
         } else {
           // Unknown file type
-          alert(`Unsupported file type: ${fileType || fileName}`)
+          alert(t.unsupportedFileType(fileType || fileName))
         }
 
       } catch (error) {
         console.error(`Error processing file ${file.name}:`, error)
-        alert(`Error processing file ${file.name}`)
+        alert(t.errorProcessingFile(file.name))
       }
     }
 
@@ -747,7 +860,7 @@ const AITrainingCenter = () => {
           console.error('Error saving knowledge entry:', error)
         }
       }
-      alert(`Successfully imported ${newEntries.length} knowledge entries!`)
+      alert(t.importSuccess(newEntries.length))
     }
 
     setIsLoading(false)
@@ -759,7 +872,7 @@ const AITrainingCenter = () => {
 
   const handleUrlFetch = async () => {
     if (!urlInput.trim()) {
-      alert('Please enter a URL')
+      alert(t.pleaseEnterUrl)
       return
     }
 
@@ -777,7 +890,7 @@ const AITrainingCenter = () => {
       const result = await response.json()
 
       if (!response.ok || !result.success) {
-        alert(`Error: ${result.error || 'Failed to fetch URL'}`)
+        alert(t.error(result.error || t.failedToFetchUrl))
         return
       }
 
@@ -791,7 +904,7 @@ const AITrainingCenter = () => {
         confidence: 0.8,
         createdAt: new Date(),
         updatedAt: new Date(),
-        fileName: result.data.isYouTube ? 'YouTube Video' : 'Web Content',
+        fileName: result.data.isYouTube ? t.youtubeVideo : t.webContent,
         filePath: result.data.url
       }
 
@@ -803,7 +916,7 @@ const AITrainingCenter = () => {
       alert(`Successfully imported content from: ${result.data.title}`)
     } catch (error) {
       console.error('Error fetching URL:', error)
-      alert('Failed to fetch URL. Please check the URL and try again.')
+      alert(t.failedToFetchUrl)
     } finally {
       setFetchingUrl(false)
     }
@@ -811,7 +924,7 @@ const AITrainingCenter = () => {
 
   const handleGenerateFaqs = async () => {
     if (knowledgeEntries.length === 0) {
-      alert('Please add some knowledge base entries first')
+      alert(t.pleaseAddKnowledgeFirst)
       return
     }
 
@@ -835,7 +948,7 @@ const AITrainingCenter = () => {
       const result = await response.json()
 
       if (!response.ok || !result.success) {
-        alert(`Error: ${result.error || 'Failed to generate FAQs'}`)
+        alert(t.error(result.error || t.failedToGenerateFaqs))
         return
       }
 
@@ -849,7 +962,7 @@ const AITrainingCenter = () => {
       alert(`Successfully generated ${result.faqs.length} FAQs for ${selectedFaqCategory}!`)
     } catch (error) {
       console.error('Error generating FAQs:', error)
-      alert('Failed to generate FAQs. Please try again.')
+      alert(t.failedToGenerateFaqs)
     } finally {
       setGeneratingFaqs(false)
     }
@@ -882,7 +995,7 @@ const AITrainingCenter = () => {
       const result = await response.json()
 
       if (!response.ok || !result.success) {
-        alert(`Error: ${result.error || 'Failed to regenerate answer'}`)
+        alert(t.error(result.error || 'Failed to regenerate answer'))
         return
       }
 
@@ -914,7 +1027,7 @@ const AITrainingCenter = () => {
       const result = await response.json()
 
       if (!response.ok || !result.success) {
-        alert(`Error: ${result.error || 'Failed to research sources'}`)
+        alert(t.error(result.error || 'Failed to research sources'))
         return
       }
 
@@ -980,7 +1093,7 @@ const AITrainingCenter = () => {
       const result = await response.json()
 
       if (!response.ok || !result.success) {
-        alert(`Error: ${result.error || 'Failed to generate canned messages'}`)
+        alert(t.error(result.error || 'Failed to generate canned messages'))
         return
       }
 
@@ -1242,7 +1355,7 @@ Format as JSON array:
   }
 
   const deleteGuideline = async (id: string) => {
-    if (confirm('Delete this guideline?')) {
+    if (confirm(t.deleteGuideline)) {
       const updated = guidelines.filter(g => g.id !== id)
       setGuidelines(updated)
       // Delete from Supabase
@@ -1315,6 +1428,10 @@ Format as JSON array:
 
     try {
       const response = await fetch(`/api/admin/ai-training/train?action=status&sessionId=${trainingSession.id}`)
+      if (!response.ok) {
+        // API not available - silently ignore
+        return
+      }
       const data = await response.json()
 
       if (data.success) {
@@ -1326,7 +1443,7 @@ Format as JSON array:
         }
       }
     } catch (error) {
-      console.error('Error checking progress:', error)
+      // Silently ignore - API may not exist
     }
   }
 
@@ -1342,11 +1459,16 @@ Format as JSON array:
         })
       })
 
+      if (!response.ok) {
+        alert('Validation API not available')
+        return
+      }
+
       const result = await response.json()
       setValidationResults(result.validation)
 
       if (result.success) {
-        alert(`Validation complete:\n✅ Valid: ${result.validation.valid}\n❌ Invalid: ${result.validation.invalid}\n\nRecommend training: ${result.recommendTraining ? 'Yes' : 'No'}`)
+        alert(`Validation complete:\n✅ Valid: ${result.validation.valid}\n❌ Invalid: ${result.validation.invalid}\n\nRecommend training: ${result.recommendTraining ? t.yes : t.no}`)
       }
     } catch (error) {
       console.error('Validation error:', error)
@@ -1372,6 +1494,11 @@ Format as JSON array:
           data: trainingData
         })
       })
+
+      if (!response.ok) {
+        alert('Training API not available')
+        return
+      }
 
       const result = await response.json()
       if (result.success) {
@@ -1445,7 +1572,7 @@ Format as JSON array:
   }
 
   const clearTrainingMemory = async () => {
-    if (confirm('Are you sure you want to clear all training memory? This action cannot be undone.')) {
+    if (confirm(`${t.areYouSure} ${t.actionCannotBeUndone}`)) {
       try {
         // Clear training memory for all AI staff in Supabase
         const staff = await loadAIStaff(selectedBusinessUnit)
@@ -1505,26 +1632,70 @@ Format as JSON array:
         <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent mb-2">
-              AI Training Center
+              {t.adminTitle}
             </h1>
-            <p className="text-slate-400 text-sm sm:text-base">Train and manage your AI customer support agent</p>
+            <p className="text-slate-400 text-sm sm:text-base">{t.adminSubtitle}</p>
           </div>
-          <a
-            href={`/livechat?businessUnit=${selectedBusinessUnit}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 hover:from-purple-600 hover:via-pink-600 hover:to-cyan-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold flex items-center gap-2 transition-all duration-200 hover:shadow-lg hover:scale-105 text-sm sm:text-base w-full sm:w-auto justify-center"
-          >
-            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-            View Live Chat
-          </a>
+
+          {/* Profile, Language Selector and View Live Chat */}
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            {/* Profile Button */}
+            <button
+              onClick={() => setShowProfileModal(true)}
+              className="bg-slate-800 border border-slate-600 hover:border-purple-500 text-white px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-semibold flex items-center gap-2 transition-all duration-200 hover:shadow-lg text-sm sm:text-base"
+              title={t.profile || 'Profile'}
+            >
+              <User className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">{t.profile || 'Profile'}</span>
+            </button>
+
+            {/* Language Selector */}
+            <div className="relative">
+              <select
+                value={selectedLanguage}
+                onChange={async (e) => {
+                  const newLanguage = e.target.value as Language
+                  setSelectedLanguage(newLanguage)
+                  console.log(`🌍 Language changed to: ${newLanguage}`)
+                  // Reload FAQs with new language immediately
+                  setIsLoading(true)
+                  console.log(`📥 Loading FAQs for business unit: ${selectedBusinessUnit}, language: ${newLanguage}`)
+                  const faqData = await loadFAQs(selectedBusinessUnit, newLanguage)
+                  console.log(`✅ Loaded ${faqData?.length || 0} FAQs:`, faqData?.slice(0, 2))
+                  setFaqs(faqData || [])
+                  setIsLoading(false)
+                  alert(`Loaded ${faqData?.length || 0} FAQs in ${newLanguage}\nFirst FAQ: ${faqData?.[0]?.question || 'none'}`)
+                }}
+                className="appearance-none bg-slate-800 border border-slate-600 rounded-xl px-3 sm:px-4 py-2 sm:py-3 pr-8 sm:pr-10 text-sm sm:text-base text-white hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer transition-colors"
+                title={t.language}
+              >
+                {Object.entries(languageNames).map(([code, name]) => (
+                  <option key={code} value={code}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+              <Globe className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            </div>
+
+            {/* View Live Chat Button */}
+            <a
+              href={`/livechat?businessUnit=${selectedBusinessUnit}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 hover:from-purple-600 hover:via-pink-600 hover:to-cyan-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold flex items-center gap-2 transition-all duration-200 hover:shadow-lg hover:scale-105 text-sm sm:text-base justify-center flex-1 sm:flex-none"
+            >
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+              {t.viewLiveChat}
+            </a>
+          </div>
         </div>
 
         {/* Business Unit Selector */}
         <div className="mb-6 bg-slate-800 rounded-xl p-4 border border-slate-700">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h3 className="text-sm font-medium text-slate-400">Business Unit:</h3>
+              <h3 className="text-sm font-medium text-slate-400">{t.businessUnit}:</h3>
               <div className="flex gap-2 flex-wrap">
                 {businessUnits.map((unit) => (
                   <button
@@ -1569,7 +1740,7 @@ Format as JSON array:
                     className="px-4 py-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors flex items-center gap-2"
                   >
                     <Plus className="w-4 h-4" />
-                    Add Business Unit
+                    {t.addBusinessUnit}
                   </button>
                 )}
               </div>
@@ -1581,23 +1752,23 @@ Format as JSON array:
             <div className="mt-4 pt-4 border-t border-slate-700">
               <div className="flex gap-3 items-end">
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-slate-400 mb-2">Business Name</label>
+                  <label className="block text-sm font-medium text-slate-400 mb-2">{t.businessName}</label>
                   <input
                     type="text"
                     value={newBusinessUnitName}
                     onChange={(e) => setNewBusinessUnitName(e.target.value)}
-                    placeholder="e.g., AIA Insurance, FitCoach, etc."
+                    placeholder={t.businessNamePlaceholder}
                     className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400"
                     autoFocus
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-slate-400 mb-2">Industry</label>
+                  <label className="block text-sm font-medium text-slate-400 mb-2">{t.industry}</label>
                   <input
                     type="text"
                     value={newBusinessUnitIndustry}
                     onChange={(e) => setNewBusinessUnitIndustry(e.target.value)}
-                    placeholder="e.g., Insurance, Fitness, etc."
+                    placeholder={t.industryPlaceholder}
                     className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400"
                   />
                 </div>
@@ -1606,7 +1777,7 @@ Format as JSON array:
                   disabled={!newBusinessUnitName.trim()}
                   className="bg-green-600 hover:bg-green-700 disabled:bg-slate-600 px-4 py-2 rounded-lg transition-colors"
                 >
-                  Add
+                  {t.add}
                 </button>
                 <button
                   onClick={() => {
@@ -1616,7 +1787,7 @@ Format as JSON array:
                   }}
                   className="bg-slate-600 hover:bg-slate-700 px-4 py-2 rounded-lg transition-colors"
                 >
-                  Cancel
+                  {t.cancel}
                 </button>
               </div>
             </div>
@@ -1627,13 +1798,14 @@ Format as JSON array:
         <div className="overflow-x-auto mb-6 sm:mb-8 -mx-3 sm:mx-0 px-3 sm:px-0">
           <div className="flex space-x-1 bg-slate-800 rounded-xl p-1 min-w-max sm:min-w-0">
             {[
-              { id: 'knowledge', label: 'Knowledge Base', icon: Book },
-              { id: 'training', label: 'Training Data', icon: Brain },
-              { id: 'faq', label: 'FAQ Library', icon: HelpCircle },
-              { id: 'canned', label: 'Canned Messages', icon: Mail },
-              { id: 'roleplay', label: 'Role-Play Training', icon: Users },
-              { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-              { id: 'aimodel', label: 'AI Model', icon: Settings }
+              { id: 'knowledge', label: t.knowledge, icon: Book },
+              { id: 'booking', label: t.booking, icon: Calendar },
+              { id: 'training', label: t.training, icon: Brain },
+              { id: 'faq', label: t.faq, icon: HelpCircle },
+              { id: 'canned', label: t.cannedMessages, icon: Mail },
+              { id: 'roleplay', label: t.roleplay, icon: Users },
+              { id: 'analytics', label: t.analytics, icon: BarChart3 },
+              { id: 'aimodel', label: t.aiModel, icon: Settings }
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -1656,7 +1828,7 @@ Format as JSON array:
         <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center mb-6 gap-3">
           <input
             type="text"
-            placeholder="Search entries..."
+            placeholder={t.searchEntries}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder-slate-400 w-full sm:w-80 text-sm sm:text-base"
@@ -1674,36 +1846,6 @@ Format as JSON array:
                 Deploy Model
               </button>
             )}
-            {activeTab === 'knowledge' && (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isLoading}
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:bg-slate-600 px-4 py-2 rounded-lg transition-colors"
-                  title="Upload files: TXT, JSON, CSV, PDF, DOCX"
-                >
-                  <Upload className="w-4 h-4" />
-                  Upload Files
-                </button>
-                <button
-                  onClick={() => setShowUrlInput(!showUrlInput)}
-                  disabled={isLoading}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 px-4 py-2 rounded-lg transition-colors"
-                  title="Add content from URL (websites, YouTube)"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add URL
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept=".txt,.json,.csv,.pdf,.docx,.doc,.xlsx,.xls"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-              </div>
-            )}
           </div>
         </div>
 
@@ -1712,66 +1854,10 @@ Format as JSON array:
 
           {/* Knowledge Base Tab */}
           {activeTab === 'knowledge' && (
-            <div>
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <Book className="w-6 h-6 text-cyan-400" />
-                Knowledge Base
-              </h2>
-
-              {/* URL Input Row */}
-              {showUrlInput && (
-                <div className="mb-6 bg-slate-700 rounded-lg p-4 border border-slate-600">
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="url"
-                      value={urlInput}
-                      onChange={(e) => setUrlInput(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleUrlFetch()}
-                      placeholder="Enter URL (website or YouTube video)..."
-                      className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-400"
-                      disabled={fetchingUrl}
-                    />
-                    <button
-                      onClick={handleUrlFetch}
-                      disabled={fetchingUrl || !urlInput.trim()}
-                      className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 px-6 py-2 rounded-lg transition-colors"
-                    >
-                      {fetchingUrl ? 'Fetching...' : 'Add'}
-                    </button>
-                  </div>
-                  <p className="text-slate-400 text-sm mt-2">
-                    Supports: Web pages, YouTube videos, and any public URLs
-                  </p>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                {filteredKnowledge.map((entry) => (
-                  <div key={entry.id} className="bg-slate-700 rounded-lg p-3 border border-slate-600 flex justify-between items-start gap-3">
-                    <div className="flex flex-col gap-1 flex-1 min-w-0">
-                      <span className="text-slate-300 font-medium break-words">{entry.fileName || entry.topic}</span>
-                      <span className="text-slate-400 text-sm break-words line-clamp-2">
-                        {entry.content.length > 100 ? entry.content.substring(0, 100) + '...' : entry.content}
-                      </span>
-                    </div>
-                    <div className="flex gap-2 flex-shrink-0">
-                      <button
-                        onClick={() => setEditingEntry(entry)}
-                        className="text-blue-400 hover:text-blue-300 p-1"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => deleteEntry(entry.id, 'knowledge')}
-                        className="text-red-400 hover:text-red-300 p-1"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <KnowledgeBase
+              businessUnitId={selectedBusinessUnit}
+              language={selectedLanguage}
+            />
           )}
 
           {/* Training Data Tab */}
@@ -1779,7 +1865,7 @@ Format as JSON array:
             <div>
               <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
                 <Brain className="w-6 h-6 text-purple-400" />
-                Training Data
+                {t.trainingDataTitle}
               </h2>
 
               {/* Training Guidelines Section */}
@@ -1788,10 +1874,10 @@ Format as JSON array:
                   <div>
                     <h3 className="text-xl font-semibold text-white flex items-center gap-2">
                       <Book className="w-5 h-5 text-blue-400" />
-                      Training Guidelines
+                      {t.trainingGuidelines}
                     </h3>
                     <p className="text-xs text-slate-400 mt-1">
-                      Guidelines control AI behavior across different features:
+                      {t.guidelinesDescription}
                       <span className="text-cyan-300 ml-2">FAQ</span> = FAQ generation,
                       <span className="text-purple-300 ml-2">CANNED</span> = Canned message generation,
                       <span className="text-pink-300 ml-2">ROLEPLAY</span> = Roleplay training,
@@ -1803,8 +1889,8 @@ Format as JSON array:
                       const newGuideline: Guideline = {
                         id: `guideline-${Date.now()}`,
                         category: 'general',
-                        title: 'New Guideline',
-                        content: 'Enter guideline content here...',
+                        title: t.newGuideline,
+                        content: '',
                         createdAt: new Date(),
                         updatedAt: new Date()
                       }
@@ -1813,14 +1899,14 @@ Format as JSON array:
                     className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors"
                   >
                     <Plus className="w-4 h-4" />
-                    Add Guideline
+                    {t.addGuideline}
                   </button>
                 </div>
 
                 {guidelines.length === 0 ? (
                   <div className="bg-slate-700 rounded-lg p-6 text-center">
-                    <p className="text-slate-400">No training guidelines yet.</p>
-                    <p className="text-slate-500 text-sm mt-2">Add guidelines to help the AI understand how to respond correctly.</p>
+                    <p className="text-slate-400">{t.noGuidelinesYet}</p>
+                    <p className="text-slate-500 text-sm mt-2">{t.addGuidelinesHelp}</p>
                   </div>
                 ) : (
                   <div className="max-h-[600px] overflow-y-auto pr-2 space-y-3 custom-scrollbar">
@@ -1856,7 +1942,7 @@ Format as JSON array:
                                     setExpandedGuidelines(newExpanded)
                                   }}
                                   className="text-slate-400 hover:text-slate-300"
-                                  title={isExpanded ? "Collapse" : "Expand"}
+                                  title={isExpanded ? t.collapse : t.expand}
                                 >
                                   {isExpanded ? '-' : '+'}
                                 </button>
@@ -1864,20 +1950,20 @@ Format as JSON array:
                               <button
                                 onClick={() => setEditingEntry(guideline)}
                                 className="text-blue-400 hover:text-blue-300"
-                                title="Edit guideline"
+                                title={t.editGuideline}
                               >
                                 <Edit className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={async () => {
-                                  if (confirm('Delete this guideline?')) {
+                                  if (confirm(t.deleteGuideline)) {
                                     await deleteGuideline(guideline.id)  // Delete from Supabase
                                     const updated = guidelines.filter(g => g.id !== guideline.id)
                                     setGuidelines(updated)
                                   }
                                 }}
                                 className="text-red-400 hover:text-red-300"
-                                title="Delete guideline"
+                                title={t.deleteGuideline}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -1894,8 +1980,8 @@ Format as JSON array:
                           </div>
 
                           <div className="flex gap-4 mt-3 text-xs text-slate-400">
-                            <span>Created: {new Date(guideline.createdAt).toLocaleDateString()}</span>
-                            <span>Updated: {new Date(guideline.updatedAt).toLocaleDateString()}</span>
+                            <span>{t.created}: {new Date(guideline.createdAt).toLocaleDateString()}</span>
+                            <span>{t.updated}: {new Date(guideline.updatedAt).toLocaleDateString()}</span>
                           </div>
                         </div>
                       )
@@ -1928,42 +2014,42 @@ Format as JSON array:
               {editingEntry && 'title' in editingEntry && 'category' in editingEntry && !('scenario' in editingEntry) && !('question' in editingEntry) && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                   <div className="bg-slate-800 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                    <h3 className="text-xl font-bold mb-4">Edit Guideline</h3>
+                    <h3 className="text-xl font-bold mb-4">{t.editGuideline}</h3>
 
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium mb-2">Category</label>
+                        <label className="block text-sm font-medium mb-2">{t.category}</label>
                         <select
                           value={(editingEntry as any).category}
                           onChange={(e) => setEditingEntry({ ...editingEntry, category: e.target.value })}
                           className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
                         >
-                          <option value="faq">FAQ Library</option>
-                          <option value="canned">Canned Messages</option>
-                          <option value="roleplay">Role-Play Training</option>
-                          <option value="general">General Guidelines</option>
+                          <option value="faq">{t.categoryFaqLibrary}</option>
+                          <option value="canned">{t.categoryCannedMessages}</option>
+                          <option value="roleplay">{t.categoryRoleplay}</option>
+                          <option value="general">{t.categoryGeneral}</option>
                         </select>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2">Title</label>
+                        <label className="block text-sm font-medium mb-2">{t.title}</label>
                         <input
                           type="text"
                           value={(editingEntry as any).title}
                           onChange={(e) => setEditingEntry({ ...editingEntry, title: e.target.value })}
                           className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
-                          placeholder="Guideline title"
+                          placeholder={t.guidelineTitlePlaceholder}
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2">Content</label>
+                        <label className="block text-sm font-medium mb-2">{t.content}</label>
                         <textarea
                           value={(editingEntry as any).content}
                           onChange={(e) => setEditingEntry({ ...editingEntry, content: e.target.value })}
                           rows={10}
                           className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
-                          placeholder="Enter guideline content here..."
+                          placeholder={t.guidelineContentPlaceholder}
                         />
                       </div>
                     </div>
@@ -1993,13 +2079,13 @@ Format as JSON array:
                         }}
                         className="flex-1 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg"
                       >
-                        Save
+                        {t.save}
                       </button>
                       <button
                         onClick={() => setEditingEntry(null)}
                         className="flex-1 bg-slate-600 hover:bg-slate-700 px-4 py-2 rounded-lg"
                       >
-                        Cancel
+                        {t.cancel}
                       </button>
                     </div>
                   </div>
@@ -2008,11 +2094,11 @@ Format as JSON array:
 
               {/* Training Sessions History */}
               <div className="mb-8">
-                <h3 className="text-xl font-semibold mb-4 text-white">Completed Training Sessions</h3>
+                <h3 className="text-xl font-semibold mb-4 text-white">{t.completedTrainingSessions}</h3>
                 {trainingSessions.length === 0 ? (
                   <div className="bg-slate-700 rounded-lg p-6 text-center">
-                    <p className="text-slate-400">No completed training sessions yet.</p>
-                    <p className="text-slate-500 text-sm mt-2">Complete a roleplay training session to see it here.</p>
+                    <p className="text-slate-400">{t.noTrainingSessionsYet}</p>
+                    <p className="text-slate-500 text-sm mt-2">{t.trainingSessionsHelp}</p>
                   </div>
                 ) : (
                   <div className="grid gap-4">
@@ -2020,12 +2106,12 @@ Format as JSON array:
                       <div key={session.id || idx} className="bg-slate-700 rounded-lg p-4 border border-slate-600">
                         <div className="flex justify-between items-start mb-3">
                           <div>
-                            <h4 className="font-semibold text-white">{session.scenario?.name || 'Training Session'}</h4>
-                            <p className="text-slate-300 text-sm">{session.customerPersona} Customer</p>
+                            <h4 className="font-semibold text-white">{session.scenario?.name || t.trainingSession}</h4>
+                            <p className="text-slate-300 text-sm">{session.customerPersona} {t.customer}</p>
                           </div>
                           <div className="text-right">
                             <span className="bg-green-500/20 text-green-300 px-2 py-1 rounded text-xs">
-                              Score: {session.score || 0}%
+                              {t.score}: {session.score || 0}%
                             </span>
                             <p className="text-slate-400 text-xs mt-1">
                               {new Date(session.endTime).toLocaleDateString()}
@@ -2039,19 +2125,19 @@ Format as JSON array:
 
                         <div className="grid md:grid-cols-3 gap-4 text-sm">
                           <div>
-                            <span className="text-slate-400">Messages:</span>
+                            <span className="text-slate-400">{t.messages}:</span>
                             <span className="text-white ml-1">{session.conversation?.length || 0}</span>
                           </div>
                           <div>
-                            <span className="text-slate-400">Feedback:</span>
+                            <span className="text-slate-400">{t.feedback}:</span>
                             <span className="text-white ml-1">{session.feedback?.length || 0}</span>
                           </div>
                           <div>
-                            <span className="text-slate-400">Duration:</span>
+                            <span className="text-slate-400">{t.duration}:</span>
                             <span className="text-white ml-1">
                               {session.startTime && session.endTime
-                                ? Math.round((new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / 60000) + ' min'
-                                : 'N/A'
+                                ? Math.round((new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / 60000) + ` ${t.min}`
+                                : t.na
                               }
                             </span>
                           </div>
@@ -2059,7 +2145,7 @@ Format as JSON array:
 
                         {session.objectives && session.objectives.length > 0 && (
                           <div className="mt-3">
-                            <p className="text-slate-400 text-xs">Objectives:</p>
+                            <p className="text-slate-400 text-xs">{t.objectives}:</p>
                             <div className="flex flex-wrap gap-1 mt-1">
                               {session.objectives.map((obj, objIdx) => (
                                 <span key={objIdx} className="bg-slate-600 text-slate-300 px-2 py-1 rounded text-xs">
@@ -2086,10 +2172,10 @@ Format as JSON array:
                         <span className={`px-2 py-1 rounded text-xs whitespace-nowrap ${
                           entry.active ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
                         }`}>
-                          {entry.active ? 'Active' : 'Inactive'}
+                          {entry.active ? t.active : t.inactive}
                         </span>
                         <span className="bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded text-xs whitespace-nowrap">
-                          Priority: {entry.priority}
+                          {t.priority}: {entry.priority}
                         </span>
                       </div>
                       <div className="flex gap-2 flex-shrink-0">
@@ -2109,12 +2195,12 @@ Format as JSON array:
                     </div>
 
                     <div className="mb-3">
-                      <h4 className="font-semibold text-cyan-300 mb-1">Question:</h4>
+                      <h4 className="font-semibold text-cyan-300 mb-1">{t.question}:</h4>
                       <p className="text-slate-300 break-words">{entry.question}</p>
                     </div>
 
                     <div className="mb-3">
-                      <h4 className="font-semibold text-green-300 mb-1">Answer:</h4>
+                      <h4 className="font-semibold text-green-300 mb-1">{t.answer}:</h4>
                       <p className="text-slate-300 break-words">{entry.answer}</p>
                     </div>
 
@@ -2128,7 +2214,7 @@ Format as JSON array:
 
                     {entry.variations.length > 0 && (
                       <div className="text-sm text-slate-400">
-                        Variations: {entry.variations.join(', ')}
+                        {t.variations}: {entry.variations.join(', ')}
                       </div>
                     )}
                   </div>
@@ -2147,12 +2233,12 @@ Format as JSON array:
 
               <div className="bg-slate-700 rounded-lg p-6">
                 <div className="mb-6">
-                  <label className="block text-sm font-medium mb-2">Test Query</label>
+                  <label className="block text-sm font-medium mb-2">{t.testQuery}</label>
                   <input
                     type="text"
                     value={testQuery}
                     onChange={(e) => setTestQuery(e.target.value)}
-                    placeholder="Ask the AI a question..."
+                    placeholder={t.testQueryPlaceholder}
                     className="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-white"
                   />
                   <button
@@ -2166,7 +2252,7 @@ Format as JSON array:
 
                 {testResponse && (
                   <div>
-                    <label className="block text-sm font-medium mb-2">AI Response</label>
+                    <label className="block text-sm font-medium mb-2">{t.aiResponse}</label>
                     <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
                       <p className="text-slate-300 whitespace-pre-wrap">{testResponse}</p>
                     </div>
@@ -2183,6 +2269,7 @@ Format as JSON array:
               businessUnit={selectedBusinessUnit}
               knowledgeEntries={knowledgeEntries}
               guidelines={guidelines}
+              language={selectedLanguage}
               onAddGuideline={async (guideline) => {
                 const newGuideline: Guideline = {
                   id: `guideline-${Date.now()}`,
@@ -2205,16 +2292,16 @@ Format as JSON array:
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold flex items-center gap-2">
                   <HelpCircle className="w-6 h-6 text-cyan-400" />
-                  FAQ Library
+                  {t.faqLibrary}
                 </h2>
                 <button
                   onClick={handleGenerateFaqs}
                   disabled={knowledgeEntries.length === 0 || generatingFaqs}
                   className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-slate-600 disabled:to-slate-600 px-4 py-2 rounded-lg transition-colors"
-                  title="Generate 10 FAQs from knowledge base"
+                  title={t.generateFaqTitle}
                 >
                   <Sparkles className="w-4 h-4" />
-                  {generatingFaqs ? 'Generating...' : 'Generate FAQ'}
+                  {generatingFaqs ? t.generating : t.generateFaq}
                 </button>
               </div>
 
@@ -2232,7 +2319,7 @@ Format as JSON array:
                           if (e.key === 'Escape') cancelCategoryEdit()
                         }}
                         onBlur={handleCategoryEdit}
-                        placeholder="Leave blank to delete"
+                        placeholder={t.leaveBlankToDelete}
                         className="bg-slate-700 border border-purple-500 rounded-lg px-3 py-2 text-white text-sm capitalize"
                         autoFocus
                       />
@@ -2247,7 +2334,7 @@ Format as JSON array:
                           ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
                           : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                       }`}
-                      title="Double-click to edit or delete"
+                      title={t.doubleClickToEdit}
                     >
                       {category}
                     </button>
@@ -2260,7 +2347,7 @@ Format as JSON array:
                       value={newCategoryName}
                       onChange={(e) => setNewCategoryName(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && addFaqCategory()}
-                      placeholder="Category name..."
+                      placeholder={t.categoryNamePlaceholder}
                       className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
                       autoFocus
                     />
@@ -2268,7 +2355,7 @@ Format as JSON array:
                       onClick={addFaqCategory}
                       className="bg-green-600 hover:bg-green-700 px-3 py-2 rounded-lg text-sm"
                     >
-                      Add
+                      {t.add}
                     </button>
                     <button
                       onClick={() => {
@@ -2277,7 +2364,7 @@ Format as JSON array:
                       }}
                       className="bg-slate-600 hover:bg-slate-700 px-3 py-2 rounded-lg text-sm"
                     >
-                      Cancel
+                      {t.cancel}
                     </button>
                   </div>
                 ) : (
@@ -2286,7 +2373,7 @@ Format as JSON array:
                     className="px-4 py-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors flex items-center gap-2"
                   >
                     <Plus className="w-4 h-4" />
-                    Add Category
+                    {t.addCategory}
                   </button>
                 )}
               </div>
@@ -2310,7 +2397,7 @@ Format as JSON array:
                         </button>
                         <button
                           onClick={async () => {
-                            if (confirm('Delete this FAQ?')) {
+                            if (confirm(t.deleteFaq)) {
                               await deleteFAQ(faq.id)  // Delete from Supabase
                               const updatedFaqs = faqs.filter(f => f.id !== faq.id)
                               setFaqs(updatedFaqs)
@@ -2335,7 +2422,7 @@ Format as JSON array:
 
                     <div className="flex items-center gap-2 text-sm">
                       <span className={`px-2 py-1 rounded ${faq.is_active ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
-                        {faq.is_active ? 'Active' : 'Inactive'}
+                        {faq.is_active ? t.active : t.inactive}
                       </span>
                     </div>
                   </div>
@@ -2345,11 +2432,11 @@ Format as JSON array:
               {editingEntry && 'question' in editingEntry && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                   <div className="bg-slate-800 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                    <h3 className="text-xl font-bold mb-4">Edit FAQ</h3>
+                    <h3 className="text-xl font-bold mb-4">{t.editFaq}</h3>
 
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium mb-2">Category</label>
+                        <label className="block text-sm font-medium mb-2">{t.category}</label>
                         <select
                           value={(editingEntry as FAQ).category}
                           onChange={(e) => setEditingEntry({ ...editingEntry, category: e.target.value as FAQ['category'] })}
@@ -2364,7 +2451,7 @@ Format as JSON array:
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2">Question</label>
+                        <label className="block text-sm font-medium mb-2">{t.question}</label>
                         <input
                           type="text"
                           value={(editingEntry as FAQ).question}
@@ -2375,7 +2462,7 @@ Format as JSON array:
 
                       <div>
                         <div className="flex justify-between items-center mb-2">
-                          <label className="block text-sm font-medium">Answer</label>
+                          <label className="block text-sm font-medium">{t.answer}</label>
                           <button
                             onClick={regenerateFaqAnswer}
                             disabled={regeneratingAnswer}
@@ -2384,7 +2471,7 @@ Format as JSON array:
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                             </svg>
-                            {regeneratingAnswer ? 'Regenerating...' : 'Regenerate'}
+                            {regeneratingAnswer ? t.regenerating : t.regenerate}
                           </button>
                         </div>
                         <textarea
@@ -2398,19 +2485,19 @@ Format as JSON array:
                       <div>
                         <label className="block text-sm font-medium mb-2">
                           Comments
-                          <span className="text-slate-400 text-xs ml-2">(How to improve this answer)</span>
+                          <span className="text-slate-400 text-xs ml-2">{t.commentsNote}</span>
                         </label>
                         <textarea
                           value={(editingEntry as FAQ).comments || ''}
                           onChange={(e) => setEditingEntry({ ...editingEntry, comments: e.target.value })}
                           rows={3}
                           className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
-                          placeholder="Add notes on how to improve this answer, specific requirements, tone preferences, etc."
+                          placeholder={t.commentsPlaceholder}
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2">Keywords (comma-separated)</label>
+                        <label className="block text-sm font-medium mb-2">{t.keywords}</label>
                         <input
                           type="text"
                           value={(editingEntry as FAQ).keywords.join(', ')}
@@ -2419,7 +2506,7 @@ Format as JSON array:
                             keywords: e.target.value.split(',').map(k => k.trim()).filter(k => k)
                           })}
                           className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
-                          placeholder="price, cost, how much"
+                          placeholder={t.keywordsPlaceholder}
                         />
                       </div>
 
@@ -2493,7 +2580,7 @@ Format as JSON array:
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold flex items-center gap-2">
                   <Mail className="w-6 h-6 text-pink-400" />
-                  Canned Messages
+                  {t.cannedMessages}
                 </h2>
                 <div className="flex gap-2 items-center flex-wrap justify-end">
                   {/* Knowledge Base Selector */}
@@ -2510,7 +2597,7 @@ Format as JSON array:
                       }`}
                     >
                       <Database className="w-4 h-4" />
-                      Knowledge Base
+                      {t.knowledgeBaseBtn}
                       {selectedKnowledgeEntries.length > 0 && (
                         <span className="bg-cyan-800 text-cyan-200 px-2 py-0.5 rounded-full text-xs">
                           {selectedKnowledgeEntries.length}
@@ -2525,7 +2612,7 @@ Format as JSON array:
                       <div className="absolute right-0 mt-2 w-96 max-w-[90vw] bg-slate-700 rounded-lg shadow-lg border border-slate-600 z-10 max-h-96 overflow-y-auto">
                         <div className="sticky top-0 bg-slate-700 border-b border-slate-600 p-3">
                           <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-semibold text-white">Select Knowledge Base Files</h4>
+                            <h4 className="font-semibold text-white">{t.selectKnowledgeFiles}</h4>
                             <button
                               onClick={() => setShowKnowledgeSelector(false)}
                               className="text-slate-400 hover:text-white"
@@ -2542,7 +2629,7 @@ Format as JSON array:
                               }}
                               className="text-xs bg-slate-600 hover:bg-slate-500 px-2 py-1 rounded"
                             >
-                              Select All
+                              {t.selectAll}
                             </button>
                             <button
                               onClick={() => {
@@ -2550,7 +2637,7 @@ Format as JSON array:
                               }}
                               className="text-xs bg-slate-600 hover:bg-slate-500 px-2 py-1 rounded"
                             >
-                              Clear All
+                              {t.clearAll}
                             </button>
                           </div>
                         </div>
@@ -2558,8 +2645,8 @@ Format as JSON array:
                         <div className="p-2">
                           {knowledgeEntries.length === 0 ? (
                             <div className="text-center py-8 text-slate-400">
-                              <p>No knowledge base entries yet.</p>
-                              <p className="text-sm mt-2">Upload files in the Knowledge Base tab.</p>
+                              <p>{t.noKnowledgeYet}</p>
+                              <p className="text-sm mt-2">{t.uploadInKnowledgeTab}</p>
                             </div>
                           ) : (
                             <div className="space-y-1">
@@ -2618,7 +2705,7 @@ Format as JSON array:
                       } ${isResearching ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       <Brain className="w-4 h-4" />
-                      {isResearching ? 'Researching...' : 'Deep AI Research'}
+                      {isResearching ? t.researching : t.deepAiResearch}
                       {selectedResearchSources.length > 0 && (
                         <span className="bg-purple-800 text-purple-200 px-2 py-0.5 rounded-full text-xs">
                           {selectedResearchSources.length}
@@ -2636,7 +2723,7 @@ Format as JSON array:
                       <div className="absolute right-0 mt-2 w-96 max-w-[90vw] bg-slate-700 rounded-lg shadow-lg border border-slate-600 z-10 max-h-96 overflow-y-auto">
                         <div className="sticky top-0 bg-slate-700 border-b border-slate-600 p-3">
                           <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-semibold text-white">Select Expert Sources</h4>
+                            <h4 className="font-semibold text-white">{t.selectExpertSources}</h4>
                             <button
                               onClick={() => setShowResearchSources(false)}
                               className="text-slate-400 hover:text-white"
@@ -2653,7 +2740,7 @@ Format as JSON array:
                               }}
                               className="text-xs bg-slate-600 hover:bg-slate-500 px-2 py-1 rounded"
                             >
-                              Select All
+                              {t.selectAll}
                             </button>
                             <button
                               onClick={() => {
@@ -2661,13 +2748,13 @@ Format as JSON array:
                               }}
                               className="text-xs bg-slate-600 hover:bg-slate-500 px-2 py-1 rounded"
                             >
-                              Clear All
+                              {t.clearAll}
                             </button>
                             <button
                               onClick={handleDeepResearch}
                               className="text-xs bg-purple-600 hover:bg-purple-500 px-2 py-1 rounded ml-auto"
                             >
-                              🔄 Research Again
+                              {t.researchAgain}
                             </button>
                           </div>
                         </div>
@@ -2716,7 +2803,7 @@ Format as JSON array:
                     className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded-lg transition-colors"
                   >
                     <Sparkles className="w-4 h-4" />
-                    {generatingFaqs ? 'Generating...' : 'Generate'}
+                    {generatingFaqs ? t.generating : t.generate}
                   </button>
                 </div>
               </div>
@@ -2735,7 +2822,7 @@ Format as JSON array:
                           if (e.key === 'Escape') cancelCannedCategoryEdit()
                         }}
                         onBlur={handleCannedCategoryEdit}
-                        placeholder="Leave blank to delete"
+                        placeholder={t.leaveBlankToDelete}
                         className="bg-slate-700 border border-pink-500 rounded-lg px-3 py-2 text-white text-sm capitalize"
                         autoFocus
                       />
@@ -2750,7 +2837,7 @@ Format as JSON array:
                           ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
                           : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                       }`}
-                      title="Double-click to edit or delete"
+                      title={t.doubleClickToEdit}
                     >
                       {category}
                     </button>
@@ -2763,7 +2850,7 @@ Format as JSON array:
                       value={newCannedCategoryName}
                       onChange={(e) => setNewCannedCategoryName(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && addCannedCategory()}
-                      placeholder="Category name..."
+                      placeholder={t.categoryNamePlaceholder}
                       className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
                       autoFocus
                     />
@@ -2771,7 +2858,7 @@ Format as JSON array:
                       onClick={addCannedCategory}
                       className="bg-green-600 hover:bg-green-700 px-3 py-2 rounded-lg text-sm"
                     >
-                      Add
+                      {t.add}
                     </button>
                     <button
                       onClick={() => {
@@ -2780,7 +2867,7 @@ Format as JSON array:
                       }}
                       className="bg-slate-600 hover:bg-slate-700 px-3 py-2 rounded-lg text-sm"
                     >
-                      Cancel
+                      {t.cancel}
                     </button>
                   </div>
                 ) : (
@@ -2789,7 +2876,7 @@ Format as JSON array:
                     className="px-4 py-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors flex items-center gap-2"
                   >
                     <Plus className="w-4 h-4" />
-                    Add Category
+                    {t.addCategory}
                   </button>
                 )}
               </div>
@@ -2813,7 +2900,7 @@ Format as JSON array:
                         </button>
                         <button
                           onClick={async () => {
-                            if (confirm('Delete this canned message?')) {
+                            if (confirm(t.deleteCannedMessage)) {
                               await deleteCannedMessage(msg.id)  // Delete from Supabase
                               const updated = cannedMsgs.filter(m => m.id !== msg.id)
                               setCannedMsgs(updated)
@@ -2830,7 +2917,7 @@ Format as JSON array:
 
                     {msg.variables && msg.variables.length > 0 && (
                       <div className="flex flex-wrap gap-2">
-                        <span className="text-sm text-slate-400">Variables:</span>
+                        <span className="text-sm text-slate-400">{t.variablesLabel}:</span>
                         {msg.variables.map((variable, idx) => (
                           <span key={idx} className="bg-slate-600 text-slate-300 px-2 py-1 rounded-full text-xs">
                             {variable}
@@ -2845,11 +2932,11 @@ Format as JSON array:
               {editingEntry && 'scenario' in editingEntry && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                   <div className="bg-slate-800 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                    <h3 className="text-xl font-bold mb-4">Edit Canned Message</h3>
+                    <h3 className="text-xl font-bold mb-4">{t.editCannedMessage}</h3>
 
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium mb-2">Category</label>
+                        <label className="block text-sm font-medium mb-2">{t.category}</label>
                         <select
                           value={(editingEntry as CannedMessage).category || selectedCannedCategory}
                           onChange={(e) => setEditingEntry({ ...editingEntry, category: e.target.value })}
@@ -2864,7 +2951,7 @@ Format as JSON array:
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2">ID</label>
+                        <label className="block text-sm font-medium mb-2">{t.id}</label>
                         <input
                           type="text"
                           value={(editingEntry as CannedMessage).id}
@@ -2874,18 +2961,18 @@ Format as JSON array:
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2">Scenario Description</label>
+                        <label className="block text-sm font-medium mb-2">{t.scenarioDescription}</label>
                         <input
                           type="text"
                           value={(editingEntry as CannedMessage).scenario}
                           onChange={(e) => setEditingEntry({ ...editingEntry, scenario: e.target.value })}
                           className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
-                          placeholder="e.g., User says 'too expensive'"
+                          placeholder={t.scenarioPlaceholder}
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2">Template</label>
+                        <label className="block text-sm font-medium mb-2">{t.template}</label>
                         <textarea
                           value={(editingEntry as CannedMessage).template}
                           onChange={(e) => setEditingEntry({ ...editingEntry, template: e.target.value })}
@@ -2895,7 +2982,7 @@ Format as JSON array:
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2">Variables (comma-separated)</label>
+                        <label className="block text-sm font-medium mb-2">{t.variables}</label>
                         <input
                           type="text"
                           value={(editingEntry as CannedMessage).variables?.join(', ') || ''}
@@ -2904,7 +2991,7 @@ Format as JSON array:
                             variables: e.target.value.split(',').map(v => v.trim()).filter(v => v)
                           })}
                           className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2"
-                          placeholder="userName, productName"
+                          placeholder={t.variablesPlaceholder}
                         />
                       </div>
                     </div>
@@ -2920,13 +3007,13 @@ Format as JSON array:
                         }}
                         className="flex-1 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg"
                       >
-                        Save
+                        {t.save}
                       </button>
                       <button
                         onClick={() => setEditingEntry(null)}
                         className="flex-1 bg-slate-600 hover:bg-slate-700 px-4 py-2 rounded-lg"
                       >
-                        Cancel
+                        {t.cancel}
                       </button>
                     </div>
                   </div>
@@ -2948,7 +3035,7 @@ Format as JSON array:
                   <div className="flex items-center gap-3 mb-3">
                     <Database className="w-8 h-8 text-cyan-400" />
                     <div>
-                      <h3 className="font-semibold">Knowledge Entries</h3>
+                      <h3 className="font-semibold">{t.knowledgeEntries}</h3>
                       <p className="text-2xl font-bold text-cyan-400">{knowledgeEntries.length}</p>
                     </div>
                   </div>
@@ -2958,7 +3045,7 @@ Format as JSON array:
                   <div className="flex items-center gap-3 mb-3">
                     <Brain className="w-8 h-8 text-purple-400" />
                     <div>
-                      <h3 className="font-semibold">Training Examples</h3>
+                      <h3 className="font-semibold">{t.trainingExamples}</h3>
                       <p className="text-2xl font-bold text-purple-400">{trainingData.length}</p>
                     </div>
                   </div>
@@ -2968,7 +3055,7 @@ Format as JSON array:
                   <div className="flex items-center gap-3 mb-3">
                     <Sparkles className="w-8 h-8 text-green-400" />
                     <div>
-                      <h3 className="font-semibold">Active Training</h3>
+                      <h3 className="font-semibold">{t.activeTraining}</h3>
                       <p className="text-2xl font-bold text-green-400">
                         {trainingData.filter(t => t.active).length}
                       </p>
@@ -2979,23 +3066,948 @@ Format as JSON array:
             </div>
           )}
 
+          {/* Booking Management Tab */}
+          {activeTab === 'booking' && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold flex items-center gap-2">
+                  <Calendar className="w-6 h-6 text-cyan-400" />
+                  {t.bookingManagement}
+                </h2>
+                <a
+                  href="/booking"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg transition-colors"
+                >
+                  <Users className="w-5 h-5" />
+                  {t.manageAppointments}
+                </a>
+              </div>
+
+              <div className="space-y-6">
+
+                {/* Staff Management */}
+                <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-semibold">{t.staff}</h3>
+                    <button
+                      onClick={() => {
+                        setNewStaff({ name: '', email: '', staff_type: '' })
+                        setEditingStaff(null)
+                        setShowAddStaff(true)
+                      }}
+                      className="flex items-center gap-2 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      {t.addStaffMember}
+                    </button>
+                  </div>
+                  <p className="text-slate-400 text-sm mb-4">
+                    {t.staffDescription}
+                  </p>
+
+                  {/* Staff List */}
+                  {staff.length === 0 ? (
+                    <div className="text-slate-300 text-center py-8 bg-slate-800 rounded-lg">
+                      {t.noStaffYet}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {staff.map((member) => (
+                        <div key={member.id} className="bg-slate-800 rounded-lg p-4 border border-slate-600">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-semibold text-lg">{member.name}</h4>
+                                <a
+                                  href={`/booking?staff=${member.id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-1.5 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
+                                  title={t.viewSchedule}
+                                >
+                                  <Calendar className="w-4 h-4" />
+                                </a>
+                              </div>
+                              <div className="text-slate-400 text-sm space-y-1">
+                                {member.email && <p>{t.email}: {member.email}</p>}
+                                {member.staff_type && <p>{t.type}: {member.staff_type}</p>}
+                                <p>{t.status}: <span className={member.is_active ? 'text-green-400' : 'text-red-400'}>{member.is_active ? t.active : t.inactive}</span></p>
+                              </div>
+                            </div>
+                            <div className="flex gap-2 ml-4">
+                              <button
+                                onClick={() => {
+                                  setEditingStaff(member)
+                                  setNewStaff({ name: member.name, email: member.email || '', staff_type: member.staff_type || '' })
+                                  setShowAddStaff(true)
+                                }}
+                                className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (confirm(t.confirmDeleteStaff(member.name))) {
+                                    try {
+                                      await deleteStaff(member.id)
+                                      setStaff(staff.filter(s => s.id !== member.id))
+                                      alert(t.staffMemberDeleted)
+                                    } catch (error: any) {
+                                      alert(t.error(error.message))
+                                    }
+                                  }
+                                }}
+                                className="p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add/Edit Staff Modal */}
+                  {showAddStaff && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                      <div className="bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4 border border-slate-600">
+                        <h3 className="text-xl font-semibold mb-4">
+                          {editingStaff ? t.editStaffMember : t.addNewStaffMember}
+                        </h3>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">{t.nameRequired}</label>
+                            <input
+                              type="text"
+                              value={newStaff.name}
+                              onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
+                              placeholder={t.namePlaceholder}
+                              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">{t.emailOptional}</label>
+                            <input
+                              type="email"
+                              value={newStaff.email}
+                              onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
+                              placeholder={t.emailPlaceholder}
+                              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">{t.staffTypeOptional}</label>
+                            <input
+                              type="text"
+                              value={newStaff.staff_type}
+                              onChange={(e) => setNewStaff({ ...newStaff, staff_type: e.target.value })}
+                              placeholder={t.staffTypePlaceholder}
+                              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-3 mt-6">
+                          <button
+                            onClick={async () => {
+                              if (!newStaff.name) {
+                                alert(t.pleaseEnterName)
+                                return
+                              }
+                              try {
+                                const staffData = editingStaff
+                                  ? { id: editingStaff.id, ...newStaff }
+                                  : newStaff
+                                const savedStaff = await saveStaff(staffData, selectedBusinessUnit)
+                                if (editingStaff) {
+                                  setStaff(staff.map(s => s.id === savedStaff.id ? savedStaff : s))
+                                } else {
+                                  setStaff([...staff, savedStaff])
+                                }
+                                setShowAddStaff(false)
+                                setNewStaff({ name: '', email: '', staff_type: '' })
+                                setEditingStaff(null)
+                                alert(t.staffMemberSaved)
+                              } catch (error: any) {
+                                alert(t.error(error.message))
+                              }
+                            }}
+                            className="flex-1 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition-colors"
+                          >
+                            {editingStaff ? t.update : t.create}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowAddStaff(false)
+                              setNewStaff({ name: '', email: '', staff_type: '' })
+                              setEditingStaff(null)
+                            }}
+                            className="flex-1 bg-slate-600 hover:bg-slate-500 px-4 py-2 rounded-lg transition-colors"
+                          >
+                            {t.cancel}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Service-Staff Assignments */}
+                <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-semibold">{t.serviceAssignments}</h3>
+                    <button
+                      onClick={() => {
+                        setSelectedServiceForAssignment('')
+                        setSelectedStaffIds([])
+                        setShowAddAssignment(true)
+                      }}
+                      className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      {t.manageStaffAssignments}
+                    </button>
+                  </div>
+                  <p className="text-slate-400 text-sm mb-4">
+                    {t.assignmentsDescription}
+                  </p>
+
+                  {assignments.length === 0 ? (
+                    <div className="text-slate-300 text-center py-8 bg-slate-800 rounded-lg">
+                      {t.noAssignmentsYet}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Group assignments by service */}
+                      {services.map((service) => {
+                        const serviceAssignments = assignments.filter(a => a.service_id === service.id)
+                        if (serviceAssignments.length === 0) return null
+
+                        return (
+                          <div key={service.id} className="bg-slate-800 rounded-lg p-4 border border-slate-600">
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="font-semibold text-cyan-400">{service.name}</h4>
+                              <button
+                                onClick={() => {
+                                  setSelectedServiceForAssignment(service.id)
+                                  setSelectedStaffIds(serviceAssignments.map(a => a.staff_id))
+                                  setShowAddAssignment(true)
+                                }}
+                                className="text-sm px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+                              >
+                                {t.edit}
+                              </button>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {serviceAssignments.map((assignment) => (
+                                <span
+                                  key={assignment.id}
+                                  className="px-3 py-1 bg-slate-700 rounded-full text-sm border border-slate-600"
+                                >
+                                  {assignment.staff?.name}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {/* Add Assignment Modal */}
+                  {showAddAssignment && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                      <div className="bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4 border border-slate-600 max-h-[90vh] overflow-y-auto">
+                        <h3 className="text-xl font-semibold mb-4">{t.assignStaffToService}</h3>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">{t.service}</label>
+                            <select
+                              value={selectedServiceForAssignment}
+                              onChange={(e) => {
+                                setSelectedServiceForAssignment(e.target.value)
+                                // Pre-select staff already assigned to this service
+                                const existingAssignments = assignments.filter(a => a.service_id === e.target.value)
+                                setSelectedStaffIds(existingAssignments.map(a => a.staff_id))
+                              }}
+                              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            >
+                              <option value="">{t.selectService}</option>
+                              {services.map(service => (
+                                <option key={service.id} value={service.id}>{service.name}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {selectedServiceForAssignment && (
+                            <div>
+                              <label className="block text-sm font-medium mb-2">
+                                {t.staffMembers(selectedStaffIds.length)}
+                              </label>
+                              <div className="space-y-2 max-h-64 overflow-y-auto bg-slate-700 rounded-lg p-3 border border-slate-600">
+                                {staff.map(member => (
+                                  <label
+                                    key={member.id}
+                                    className="flex items-center gap-3 p-2 hover:bg-slate-600 rounded cursor-pointer"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedStaffIds.includes(member.id)}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setSelectedStaffIds([...selectedStaffIds, member.id])
+                                        } else {
+                                          setSelectedStaffIds(selectedStaffIds.filter(id => id !== member.id))
+                                        }
+                                      }}
+                                      className="w-4 h-4 text-cyan-500 bg-slate-800 border-slate-500 rounded focus:ring-cyan-500 focus:ring-2"
+                                    />
+                                    <span>{member.name}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex gap-3 mt-6">
+                          <button
+                            onClick={async () => {
+                              if (!selectedServiceForAssignment) {
+                                alert(t.pleaseSelectService)
+                                return
+                              }
+                              if (selectedStaffIds.length === 0) {
+                                alert(t.pleaseSelectStaff)
+                                return
+                              }
+                              try {
+                                // Get existing assignments for this service
+                                const existingAssignments = assignments.filter(a => a.service_id === selectedServiceForAssignment)
+                                const existingStaffIds = existingAssignments.map(a => a.staff_id)
+
+                                // Determine which to add and which to remove
+                                const staffToAdd = selectedStaffIds.filter(id => !existingStaffIds.includes(id))
+                                const staffToRemove = existingStaffIds.filter(id => !selectedStaffIds.includes(id))
+
+                                console.log('Staff to add:', staffToAdd)
+                                console.log('Staff to remove:', staffToRemove)
+
+                                // Remove assignments that are no longer selected
+                                for (const staffId of staffToRemove) {
+                                  const assignmentToRemove = existingAssignments.find(a => a.staff_id === staffId)
+                                  if (assignmentToRemove) {
+                                    await deleteAssignment(assignmentToRemove.id)
+                                  }
+                                }
+
+                                // Add new assignments
+                                const newAssignments = []
+                                for (const staffId of staffToAdd) {
+                                  try {
+                                    const savedAssignment = await saveAssignment(
+                                      { service_id: selectedServiceForAssignment, staff_id: staffId },
+                                      selectedBusinessUnit
+                                    )
+                                    newAssignments.push(savedAssignment)
+                                  } catch (err: any) {
+                                    console.error(`Error assigning staff ${staffId}:`, err)
+                                    // Continue with other assignments
+                                  }
+                                }
+
+                                // Update state - keep unchanged assignments and add new ones
+                                const unchangedAssignments = assignments.filter(a =>
+                                  a.service_id !== selectedServiceForAssignment ||
+                                  (a.service_id === selectedServiceForAssignment && selectedStaffIds.includes(a.staff_id))
+                                )
+                                setAssignments([...unchangedAssignments, ...newAssignments])
+
+                                setShowAddAssignment(false)
+                                setSelectedServiceForAssignment('')
+                                setSelectedStaffIds([])
+                                alert(t.assignmentsSaved)
+                              } catch (error: any) {
+                                console.error('Assignment error:', error)
+                                alert(t.error(error.message))
+                              }
+                            }}
+                            className="flex-1 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors"
+                          >
+                            {t.saveAssignments}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowAddAssignment(false)
+                              setSelectedServiceForAssignment('')
+                              setSelectedStaffIds([])
+                            }}
+                            className="flex-1 bg-slate-600 hover:bg-slate-500 px-4 py-2 rounded-lg transition-colors"
+                          >
+                            {t.cancel}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Outlets Management */}
+                <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-semibold">{t.outlets}</h3>
+                    <button
+                      onClick={() => {
+                        setNewOutlet({
+                          name: '',
+                          address_line1: '',
+                          address_line2: '',
+                          city: '',
+                          state_province: '',
+                          postal_code: '',
+                          country: 'USA',
+                          phone: '',
+                          email: '',
+                          display_order: 0
+                        })
+                        setEditingOutlet(null)
+                        setShowAddOutlet(true)
+                      }}
+                      className="flex items-center gap-2 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      {t.addOutlet}
+                    </button>
+                  </div>
+                  <p className="text-slate-400 text-sm mb-4">
+                    {t.outletsDescription}
+                  </p>
+
+                  {outlets.length === 0 ? (
+                    <div className="text-slate-300 text-center py-8 bg-slate-800 rounded-lg">
+                      {t.noOutletsYet}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {outlets.map((outlet) => (
+                        <div key={outlet.id} className="bg-slate-800 rounded-lg p-4 border border-slate-600">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-lg mb-1">{outlet.name}</h4>
+                              <p className="text-slate-400 text-sm">{outlet.address_line1}</p>
+                              {outlet.address_line2 && <p className="text-slate-400 text-sm">{outlet.address_line2}</p>}
+                              <p className="text-slate-400 text-sm">
+                                {outlet.city}{outlet.state_province ? `, ${outlet.state_province}` : ''} {outlet.postal_code}
+                              </p>
+                              {outlet.country && outlet.country !== 'USA' && (
+                                <p className="text-slate-400 text-sm">{outlet.country}</p>
+                              )}
+                              {outlet.phone && <p className="text-slate-400 text-sm mt-1">📞 {outlet.phone}</p>}
+                              {outlet.email && <p className="text-slate-400 text-sm">✉️ {outlet.email}</p>}
+                              <p className="text-slate-400 text-sm mt-1">{t.status}: <span className={outlet.is_active ? 'text-green-400' : 'text-red-400'}>{outlet.is_active ? t.active : t.inactive}</span></p>
+                            </div>
+                            <div className="flex gap-2 ml-4">
+                              <button
+                                onClick={() => {
+                                  setEditingOutlet(outlet)
+                                  setNewOutlet({
+                                    name: outlet.name,
+                                    address_line1: outlet.address_line1,
+                                    address_line2: outlet.address_line2 || '',
+                                    city: outlet.city,
+                                    state_province: outlet.state_province || '',
+                                    postal_code: outlet.postal_code || '',
+                                    country: outlet.country || 'USA',
+                                    phone: outlet.phone || '',
+                                    email: outlet.email || '',
+                                    display_order: outlet.display_order || 0
+                                  })
+                                  setShowAddOutlet(true)
+                                }}
+                                className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (confirm(t.confirmDeleteOutlet(outlet.name))) {
+                                    try {
+                                      await deleteOutlet(outlet.id)
+                                      setOutlets(outlets.filter(o => o.id !== outlet.id))
+                                      alert(t.outletDeleted)
+                                    } catch (error: any) {
+                                      alert(t.error(error.message))
+                                    }
+                                  }
+                                }}
+                                className="p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add/Edit Outlet Modal */}
+                  {showAddOutlet && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                      <div className="bg-slate-800 rounded-lg p-6 max-w-2xl w-full mx-4 border border-slate-600 max-h-[90vh] overflow-y-auto">
+                        <h3 className="text-xl font-semibold mb-4">
+                          {editingOutlet ? t.editOutlet : t.addNewOutlet}
+                        </h3>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">{t.outletNameRequired}</label>
+                            <input
+                              type="text"
+                              value={newOutlet.name}
+                              onChange={(e) => setNewOutlet({ ...newOutlet, name: e.target.value })}
+                              placeholder={t.outletNamePlaceholder}
+                              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">{t.addressLine1Required}</label>
+                            <input
+                              type="text"
+                              value={newOutlet.address_line1}
+                              onChange={(e) => setNewOutlet({ ...newOutlet, address_line1: e.target.value })}
+                              placeholder={t.addressLine1Placeholder}
+                              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">{t.addressLine2}</label>
+                            <input
+                              type="text"
+                              value={newOutlet.address_line2}
+                              onChange={(e) => setNewOutlet({ ...newOutlet, address_line2: e.target.value })}
+                              placeholder={t.addressLine2Placeholder}
+                              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium mb-2">{t.cityRequired}</label>
+                              <input
+                                type="text"
+                                value={newOutlet.city}
+                                onChange={(e) => setNewOutlet({ ...newOutlet, city: e.target.value })}
+                                placeholder={t.cityPlaceholder}
+                                className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-2">{t.stateProvince}</label>
+                              <input
+                                type="text"
+                                value={newOutlet.state_province}
+                                onChange={(e) => setNewOutlet({ ...newOutlet, state_province: e.target.value })}
+                                placeholder={t.statePlaceholder}
+                                className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium mb-2">{t.postalCode}</label>
+                              <input
+                                type="text"
+                                value={newOutlet.postal_code}
+                                onChange={(e) => setNewOutlet({ ...newOutlet, postal_code: e.target.value })}
+                                placeholder={t.postalPlaceholder}
+                                className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-2">{t.country}</label>
+                              <input
+                                type="text"
+                                value={newOutlet.country}
+                                onChange={(e) => setNewOutlet({ ...newOutlet, country: e.target.value })}
+                                placeholder={t.countryPlaceholder}
+                                className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium mb-2">{t.phone}</label>
+                              <input
+                                type="tel"
+                                value={newOutlet.phone}
+                                onChange={(e) => setNewOutlet({ ...newOutlet, phone: e.target.value })}
+                                placeholder={t.phonePlaceholder}
+                                className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-2">{t.email}</label>
+                              <input
+                                type="email"
+                                value={newOutlet.email}
+                                onChange={(e) => setNewOutlet({ ...newOutlet, email: e.target.value })}
+                                placeholder={t.emailLocationPlaceholder}
+                                className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">{t.displayOrder}</label>
+                            <input
+                              type="number"
+                              value={newOutlet.display_order}
+                              onChange={(e) => setNewOutlet({ ...newOutlet, display_order: parseInt(e.target.value) || 0 })}
+                              placeholder="0"
+                              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            />
+                            <p className="text-slate-400 text-xs mt-1">{t.displayOrderHelp}</p>
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-3 mt-6">
+                          <button
+                            onClick={async () => {
+                              if (!newOutlet.name || !newOutlet.address_line1 || !newOutlet.city) {
+                                alert(t.pleaseProvideRequired)
+                                return
+                              }
+                              try {
+                                const savedOutlet = await saveOutlet(
+                                  editingOutlet ? { ...newOutlet, id: editingOutlet.id } : newOutlet,
+                                  selectedBusinessUnit
+                                )
+                                if (editingOutlet) {
+                                  setOutlets(outlets.map(o => o.id === savedOutlet.id ? savedOutlet : o))
+                                } else {
+                                  setOutlets([...outlets, savedOutlet])
+                                }
+                                setShowAddOutlet(false)
+                                alert(editingOutlet ? t.outletUpdated : t.outletCreated)
+                              } catch (error: any) {
+                                alert(t.error(error.message))
+                              }
+                            }}
+                            className="px-6 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+                          >
+                            {editingOutlet ? t.update : t.create}
+                          </button>
+                          <button
+                            onClick={() => setShowAddOutlet(false)}
+                            className="px-6 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg transition-colors"
+                          >
+                            {t.cancel}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Rooms Management */}
+                <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-semibold">{t.treatmentRooms}</h3>
+                    <button
+                      onClick={() => {
+                        setNewRoom({ room_number: '', room_name: '', outlet_id: '' })
+                        setEditingRoom(null)
+                        setShowAddRoom(true)
+                      }}
+                      className="flex items-center gap-2 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      {t.addRoom}
+                    </button>
+                  </div>
+                  <p className="text-slate-400 text-sm mb-4">
+                    {t.roomsDescription}
+                  </p>
+
+                  {rooms.length === 0 ? (
+                    <div className="text-slate-300 text-center py-8 bg-slate-800 rounded-lg">
+                      {t.noRoomsYet}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {rooms.map((room) => {
+                        const outlet = outlets.find(o => o.id === room.outlet_id)
+                        const roomServices = allRoomServices.filter(rs => rs.room_id === room.id)
+                        const assignedServiceNames = roomServices.map(rs => rs.appointment_services?.name).filter(Boolean)
+                        return (
+                        <div key={room.id} className="bg-slate-800 rounded-lg p-4 border border-slate-600">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-lg mb-1">{t.room(room.room_number)}</h4>
+                              {room.room_name && <p className="text-slate-400 text-sm">{room.room_name}</p>}
+                              {outlet && (
+                                <p className="text-slate-400 text-sm mt-1">
+                                  {t.locationDisplay(outlet.name, outlet.city)}
+                                </p>
+                              )}
+                              {assignedServiceNames.length > 0 ? (
+                                <p className="text-slate-400 text-sm mt-1">
+                                  {t.roomServicesDisplay(assignedServiceNames.join(', '))}
+                                </p>
+                              ) : (
+                                <p className="text-slate-400 text-sm mt-1">
+                                  {t.roomServicesDisplay(t.allServicesText)}
+                                </p>
+                              )}
+                              <p className="text-slate-400 text-sm mt-1">{t.status}: <span className={room.is_active ? 'text-green-400' : 'text-red-400'}>{room.is_active ? t.active : t.inactive}</span></p>
+                            </div>
+                            <div className="flex gap-2 ml-4">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const existingServices = await loadRoomServices(room.id)
+                                    setSelectedRoomForServices(room)
+                                    setRoomServiceIds(existingServices?.map((rs: any) => rs.service_id) || [])
+                                    setShowRoomServices(true)
+                                  } catch (error: any) {
+                                    alert(t.error(error.message))
+                                  }
+                                }}
+                                className="p-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
+                                title={t.manageServicesBtn}
+                              >
+                                <Settings className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setEditingRoom(room)
+                                  setNewRoom({
+                                    room_number: room.room_number,
+                                    room_name: room.room_name || '',
+                                    outlet_id: room.outlet_id || ''
+                                  })
+                                  setShowAddRoom(true)
+                                }}
+                                className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (confirm(t.confirmDeleteRoom(room.room_number))) {
+                                    try {
+                                      await deleteRoom(room.id)
+                                      setRooms(rooms.filter(r => r.id !== room.id))
+                                      alert(t.roomDeleted)
+                                    } catch (error: any) {
+                                      alert(t.error(error.message))
+                                    }
+                                  }
+                                }}
+                                className="p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {/* Add/Edit Room Modal */}
+                  {showAddRoom && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                      <div className="bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4 border border-slate-600">
+                        <h3 className="text-xl font-semibold mb-4">
+                          {editingRoom ? t.editRoom : t.addNewRoom}
+                        </h3>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">{t.outletLocation}</label>
+                            <select
+                              value={newRoom.outlet_id}
+                              onChange={(e) => setNewRoom({ ...newRoom, outlet_id: e.target.value })}
+                              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            >
+                              <option value="">{t.selectOutletOptional}</option>
+                              {outlets.map((outlet) => (
+                                <option key={outlet.id} value={outlet.id}>
+                                  {outlet.name} - {outlet.city}
+                                </option>
+                              ))}
+                            </select>
+                            <p className="text-slate-400 text-xs mt-1">
+                              {outlets.length === 0 ? t.noOutletsAvailable : t.selectLocationHelp}
+                            </p>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">{t.roomNumberRequired}</label>
+                            <input
+                              type="text"
+                              value={newRoom.room_number}
+                              onChange={(e) => setNewRoom({ ...newRoom, room_number: e.target.value })}
+                              placeholder={t.roomNumberPlaceholder}
+                              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">{t.roomNameOptional}</label>
+                            <input
+                              type="text"
+                              value={newRoom.room_name}
+                              onChange={(e) => setNewRoom({ ...newRoom, room_name: e.target.value })}
+                              placeholder={t.roomNamePlaceholder}
+                              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-3 mt-6">
+                          <button
+                            onClick={async () => {
+                              if (!newRoom.room_number) {
+                                alert(t.pleaseEnterRoomNumber)
+                                return
+                              }
+                              try {
+                                const roomData = editingRoom
+                                  ? { id: editingRoom.id, ...newRoom }
+                                  : newRoom
+                                const savedRoom = await saveRoom(roomData, selectedBusinessUnit)
+                                if (editingRoom) {
+                                  setRooms(rooms.map(r => r.id === savedRoom.id ? savedRoom : r))
+                                } else {
+                                  setRooms([...rooms, savedRoom])
+                                }
+                                setShowAddRoom(false)
+                                setNewRoom({ room_number: '', room_name: '', outlet_id: '' })
+                                setEditingRoom(null)
+                                alert(t.roomSaved)
+                              } catch (error: any) {
+                                alert(t.error(error.message))
+                              }
+                            }}
+                            className="flex-1 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition-colors"
+                          >
+                            {editingRoom ? t.update : t.create}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowAddRoom(false)
+                              setNewRoom({ room_number: '', room_name: '', outlet_id: '' })
+                              setEditingRoom(null)
+                            }}
+                            className="flex-1 bg-slate-600 hover:bg-slate-500 px-4 py-2 rounded-lg transition-colors"
+                          >
+                            {t.cancel}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Manage Room Services Modal */}
+                  {showRoomServices && selectedRoomForServices && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                      <div className="bg-slate-800 rounded-lg p-6 max-w-2xl w-full mx-4 border border-slate-600 max-h-[90vh] overflow-y-auto">
+                        <h3 className="text-xl font-semibold mb-4">
+                          {t.manageServicesForRoom(selectedRoomForServices.room_number)}
+                        </h3>
+                        <p className="text-slate-400 text-sm mb-4">
+                          {t.roomServicesDescription}
+                        </p>
+                        <div className="space-y-2 mb-6">
+                          {services.length === 0 ? (
+                            <p className="text-slate-400 text-sm">{t.noServicesAvailable}</p>
+                          ) : (
+                            services.map((service) => (
+                              <label
+                                key={service.id}
+                                className="flex items-start gap-3 p-3 bg-slate-700 rounded-lg hover:bg-slate-600 cursor-pointer transition-colors"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={roomServiceIds.includes(service.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setRoomServiceIds([...roomServiceIds, service.id])
+                                    } else {
+                                      setRoomServiceIds(roomServiceIds.filter(id => id !== service.id))
+                                    }
+                                  }}
+                                  className="mt-1 w-4 h-4"
+                                />
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-slate-200">{service.name}</h4>
+                                  {service.description && (
+                                    <p className="text-sm text-slate-400 mt-1">{service.description}</p>
+                                  )}
+                                  <p className="text-xs text-slate-500 mt-1">
+                                    {service.duration_minutes} {t.min}
+                                    {service.price && ` • $${service.price}`}
+                                  </p>
+                                </div>
+                              </label>
+                            ))
+                          )}
+                        </div>
+                        <div className="flex justify-end gap-3">
+                          <button
+                            onClick={async () => {
+                              try {
+                                await saveRoomServices(selectedRoomForServices.id, roomServiceIds)
+                                // Reload room services to update the display
+                                const roomServicesData = await loadRoomServices()
+                                setAllRoomServices(roomServicesData || [])
+                                setShowRoomServices(false)
+                                setSelectedRoomForServices(null)
+                                setRoomServiceIds([])
+                                alert(
+                                  roomServiceIds.length === 0
+                                    ? t.roomCanHandleAny
+                                    : t.roomCanHandle(roomServiceIds.length)
+                                )
+                              } catch (error: any) {
+                                alert(t.error(error.message))
+                              }
+                            }}
+                            className="px-6 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+                          >
+                            {t.saveServices}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowRoomServices(false)
+                              setSelectedRoomForServices(null)
+                              setRoomServiceIds([])
+                            }}
+                            className="px-6 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg transition-colors"
+                          >
+                            {t.cancel}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* AI Model Settings Tab */}
           {activeTab === 'aimodel' && (
             <div>
               <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
                 <Settings className="w-6 h-6 text-cyan-400" />
-                AI Model Settings
+                {t.aiModelSettings}
               </h2>
 
               <div className="bg-slate-700 rounded-lg p-6 border border-slate-600 max-w-3xl">
                 <div className="mb-6">
                   <p className="text-slate-300 mb-4">
-                    Configure which AI model to use for chat and training. Changes apply immediately.
+                    {t.aiModelDescription}
                   </p>
                   <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-4 mb-6">
-                    <p className="text-blue-300 text-sm">
-                      <strong>🔐 Security Note:</strong> API keys are configured in the .env.local file on the server. This interface only allows you to change the provider and model settings.
-                    </p>
+                    <p className="text-blue-300 text-sm" dangerouslySetInnerHTML={{ __html: t.securityNote }} />
                   </div>
                 </div>
 
@@ -3006,40 +4018,40 @@ Format as JSON array:
                   {/* Provider Selection */}
                   <div>
                     <label className="block text-sm font-medium mb-2">
-                      LLM Provider
+                      {t.llmProvider}
                     </label>
                     <select
                       value={llmSettings.provider}
                       onChange={(e) => setLLMSettings({ ...llmSettings, provider: e.target.value as any })}
                       className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                     >
-                      <option value="anthropic">Anthropic Claude</option>
-                      <option value="ollama">Ollama (Local)</option>
-                      <option value="openai">OpenAI GPT</option>
+                      <option value="anthropic">{t.providerAnthropic}</option>
+                      <option value="ollama">{t.providerOllama}</option>
+                      <option value="openai">{t.providerOpenAI}</option>
                     </select>
                   </div>
 
                   {/* Model Name */}
                   <div>
                     <label className="block text-sm font-medium mb-2">
-                      Model Name
+                      {t.modelName}
                     </label>
                     <input
                       type="text"
                       value={llmSettings.model}
                       onChange={(e) => setLLMSettings({ ...llmSettings, model: e.target.value })}
                       placeholder={
-                        llmSettings.provider === 'anthropic' ? 'claude-3-haiku-20240307' :
-                        llmSettings.provider === 'ollama' ? 'qwen2.5:7b' :
-                        'gpt-4'
+                        llmSettings.provider === 'anthropic' ? t.modelPlaceholderAnthropic :
+                        llmSettings.provider === 'ollama' ? t.modelPlaceholderOllama :
+                        t.modelPlaceholderOpenAI
                       }
                       className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                       required
                     />
                     <p className="text-slate-400 text-sm mt-1">
-                      {llmSettings.provider === 'anthropic' && 'Examples: claude-3-haiku-20240307, claude-3-5-sonnet-20241022'}
-                      {llmSettings.provider === 'ollama' && 'Examples: qwen2.5:7b, llama3.1:8b, mistral:7b'}
-                      {llmSettings.provider === 'openai' && 'Examples: gpt-4o (recommended), gpt-4-turbo, gpt-4o-mini, gpt-4, gpt-3.5-turbo'}
+                      {llmSettings.provider === 'anthropic' && t.modelExamplesAnthropic}
+                      {llmSettings.provider === 'ollama' && t.modelExamplesOllama}
+                      {llmSettings.provider === 'openai' && t.modelExamplesOpenAI}
                     </p>
                   </div>
 
@@ -3047,26 +4059,24 @@ Format as JSON array:
                   {llmSettings.provider === 'ollama' && (
                     <div>
                       <label className="block text-sm font-medium mb-2">
-                        Ollama Base URL
+                        {t.ollamaBaseUrl}
                       </label>
                       <input
                         type="url"
                         value={llmSettings.ollamaUrl}
                         onChange={(e) => setLLMSettings({ ...llmSettings, ollamaUrl: e.target.value })}
-                        placeholder="http://localhost:11434"
+                        placeholder={t.ollamaUrlPlaceholder}
                         className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono text-sm"
                         required
                       />
-                      <p className="text-slate-400 text-sm mt-1">
-                        Make sure Ollama is running locally. <a href="https://ollama.com/" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">Install Ollama</a>
-                      </p>
+                      <p className="text-slate-400 text-sm mt-1" dangerouslySetInnerHTML={{ __html: t.ollamaHelp + ' <a href="https://ollama.com/" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline">Install Ollama</a>' }} />
                     </div>
                   )}
 
                   {/* Temperature */}
                   <div>
                     <label className="block text-sm font-medium mb-2">
-                      Temperature: {llmSettings.temperature}
+                      {t.temperature(llmSettings.temperature.toString())}
                     </label>
                     <input
                       type="range"
@@ -3078,7 +4088,7 @@ Format as JSON array:
                       className="w-full"
                     />
                     <p className="text-slate-400 text-sm mt-1">
-                      Lower = more focused, Higher = more creative (0.7 recommended)
+                      {t.temperatureHelp}
                     </p>
                   </div>
 
@@ -3089,17 +4099,17 @@ Format as JSON array:
                       className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2"
                     >
                       <Save className="w-5 h-5" />
-                      Save Settings
+                      {t.saveSettings}
                     </button>
                   </div>
 
                   {/* Current Status */}
                   {llmSettings.provider && (
                     <div className="mt-6 p-4 bg-slate-800 rounded-lg border border-slate-600">
-                      <h4 className="font-medium mb-2 text-green-400">Current Configuration</h4>
+                      <h4 className="font-medium mb-2 text-green-400">{t.currentConfiguration}</h4>
                       <div className="space-y-1 text-sm text-slate-300">
-                        <p><strong>Provider:</strong> {llmSettings.provider}</p>
-                        <p><strong>Model:</strong> {llmSettings.model}</p>
+                        <p><strong>{t.provider}:</strong> {llmSettings.provider}</p>
+                        <p><strong>{t.model}:</strong> {llmSettings.model}</p>
                         <p><strong>Temperature:</strong> {llmSettings.temperature}</p>
                       </div>
                     </div>
@@ -3110,6 +4120,15 @@ Format as JSON array:
           )}
         </div>
       </div>
+
+      {/* Profile Modal */}
+      {showProfileModal && (
+        <ProfileModal
+          isOpen={showProfileModal}
+          onClose={() => setShowProfileModal(false)}
+          language={selectedLanguage}
+        />
+      )}
     </div>
   )
 }

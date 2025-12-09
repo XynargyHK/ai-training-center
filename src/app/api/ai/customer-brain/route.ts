@@ -1,56 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getLLMConfig } from '@/app/api/llm-config/route'
-import Anthropic from '@anthropic-ai/sdk'
-import OpenAI from 'openai'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { getLLMConfig } from '@/app/api/llm-config/route'
 
-// Initialize Anthropic client dynamically
-function getAnthropicClient() {
-  const config = getLLMConfig()
-  if (config.provider === 'anthropic' && config.anthropicKey) {
-    return new Anthropic({ apiKey: config.anthropicKey })
-  }
-  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-}
-
-// Initialize OpenAI client dynamically
-function getOpenAIClient() {
-  const config = getLLMConfig()
-  if (config.provider === 'openai' && config.openaiKey) {
-    return new OpenAI({ apiKey: config.openaiKey })
-  }
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-}
-
-// Initialize Google Gemini client dynamically
+// Initialize Google Gemini client - ONLY Gemini, no fallbacks
 function getGoogleClient() {
-  const config = getLLMConfig()
-  const apiKey = config.googleKey || process.env.GOOGLE_GEMINI_API_KEY || ''
-  return new GoogleGenerativeAI(apiKey)
-}
-
-// Ollama helper function
-async function generateOllamaResponse(prompt: string, model: string, baseURL: string): Promise<string> {
-  const ollamaResponse = await fetch(`${baseURL}/api/generate`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: model,
-      prompt: prompt,
-      stream: false,
-      options: {
-        temperature: 1.0,
-        num_predict: 256,
-      }
-    })
-  })
-
-  if (!ollamaResponse.ok) {
-    throw new Error(`Ollama API error: ${ollamaResponse.status}`)
+  const apiKey = process.env.GOOGLE_GEMINI_API_KEY
+  if (!apiKey) {
+    throw new Error('GOOGLE_GEMINI_API_KEY is not configured')
   }
-
-  const ollamaData = await ollamaResponse.json()
-  return ollamaData.response?.trim() || ''
+  return new GoogleGenerativeAI(apiKey)
 }
 
 interface KnowledgeEntry {
@@ -99,6 +57,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
+      )
+    }
+
+    // Check for Google API key
+    if (!process.env.GOOGLE_GEMINI_API_KEY) {
+      return NextResponse.json(
+        { error: 'GOOGLE_GEMINI_API_KEY is not configured' },
+        { status: 500 }
       )
     }
 
@@ -167,84 +133,31 @@ Generate a realistic customer response that moves the conversation forward natur
 
     const userPrompt = `As a ${scenario.customerType} customer, how do you respond to the coach's message: "${coachMessage}"${knowledgeContext ? '\n\nRemember: Use real product/service names from the knowledge base, not placeholders!' : ''}`
 
-    // Get dynamic LLM configuration
+    // Get LLM configuration
     const llmConfig = getLLMConfig()
-    let aiCustomerResponse = ''
-    let tokensUsed = 0
 
-    // Route to appropriate AI provider based on global config
-    if (llmConfig.provider === 'google') {
-      // Google Gemini API
-      const genAI = getGoogleClient()
-      const model = genAI.getGenerativeModel({ model: llmConfig.model || 'gemini-2.5-flash' })
+    // ONLY use Google Gemini - no fallbacks
+    const genAI = getGoogleClient()
+    const model = genAI.getGenerativeModel({ model: llmConfig.model || 'gemini-2.5-flash' })
 
-      const result = await model.generateContent({
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
-          }
-        ],
-        generationConfig: {
-          temperature: 1.0,
-          maxOutputTokens: 256,
+    const result = await model.generateContent({
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
         }
-      })
-
-      const response = result.response
-      aiCustomerResponse = response.text() || ''
-      tokensUsed = 0
-
-    } else if (llmConfig.provider === 'openai') {
-      const openai = getOpenAIClient()
-      const isGPT5 = llmConfig.model?.startsWith('gpt-5')
-
-      const tokenParam = isGPT5
-        ? { max_completion_tokens: 256 }
-        : { max_tokens: 256 }
-
-      const temperatureParam = isGPT5
-        ? {}
-        : { temperature: 1.0 }
-
-      const response = await openai.chat.completions.create({
-        model: llmConfig.model || 'gpt-4o',
-        ...tokenParam,
-        ...temperatureParam,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ]
-      })
-
-      aiCustomerResponse = response.choices[0]?.message?.content || ''
-      tokensUsed = response.usage?.total_tokens || 0
-
-    } else if (llmConfig.provider === 'ollama') {
-      const fullPrompt = `${systemPrompt}\n\n${userPrompt}`
-      aiCustomerResponse = await generateOllamaResponse(fullPrompt, llmConfig.model, llmConfig.ollamaUrl || 'http://localhost:11434')
-      tokensUsed = Math.ceil(aiCustomerResponse.length / 4) // Rough estimate
-
-    } else {
-      // Anthropic Claude
-      const anthropic = getAnthropicClient()
-
-      const response = await anthropic.messages.create({
-        model: llmConfig.model,
-        max_tokens: 256,
+      ],
+      generationConfig: {
         temperature: 1.0,
-        system: systemPrompt,
-        messages: [
-          { role: 'user', content: userPrompt }
-        ]
-      })
+        maxOutputTokens: 256,
+      }
+    })
 
-      aiCustomerResponse = response.content[0].type === 'text' ? response.content[0].text : ''
-      tokensUsed = response.usage.input_tokens + response.usage.output_tokens
-    }
+    const response = result.response
+    const aiCustomerResponse = response.text() || ''
 
     if (!aiCustomerResponse) {
-      throw new Error('No response generated from AI for customer')
+      throw new Error('No response generated from Gemini')
     }
 
     // Return the AI Customer response
@@ -252,11 +165,11 @@ Generate a realistic customer response that moves the conversation forward natur
       success: true,
       response: aiCustomerResponse,
       metadata: {
-        model: llmConfig.model,
-        provider: llmConfig.provider,
+        model: llmConfig.model || 'gemini-2.5-flash',
+        provider: 'google',
         customerType: scenario.customerType,
         turn: turn,
-        tokens: tokensUsed,
+        tokens: 0,
         timestamp: new Date().toISOString()
       }
     })
@@ -264,24 +177,8 @@ Generate a realistic customer response that moves the conversation forward natur
   } catch (error) {
     console.error('AI Customer Brain API Error:', error)
 
-    // Handle specific AI errors
-    if (error instanceof Error) {
-      if (error.message.includes('ECONNREFUSED')) {
-        return NextResponse.json(
-          { error: 'AI service not reachable. Please check configuration.' },
-          { status: 500 }
-        )
-      }
-      if (error.message.includes('API error')) {
-        return NextResponse.json(
-          { error: 'AI API error. Please check if the model is available.' },
-          { status: 500 }
-        )
-      }
-    }
-
     return NextResponse.json(
-      { error: 'Failed to generate AI Customer response' },
+      { error: error instanceof Error ? error.message : 'Failed to generate AI Customer response' },
       { status: 500 }
     )
   }
@@ -292,8 +189,8 @@ export async function GET() {
   const config = getLLMConfig()
   return NextResponse.json({
     message: 'AI Customer Brain API is running',
-    model: config.model,
-    provider: config.provider,
+    model: config.model || 'gemini-2.5-flash',
+    provider: 'google',
     status: 'ready'
   })
 }

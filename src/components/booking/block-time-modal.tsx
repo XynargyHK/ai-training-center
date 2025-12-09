@@ -7,6 +7,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { getTranslation, Language } from '@/lib/translations'
 
 interface BlockTimeModalProps {
   businessUnitId: string
@@ -14,6 +15,7 @@ interface BlockTimeModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
+  language?: Language
 }
 
 export default function BlockTimeModal({
@@ -21,8 +23,10 @@ export default function BlockTimeModal({
   staffId,
   isOpen,
   onClose,
-  onSuccess
+  onSuccess,
+  language = 'en'
 }: BlockTimeModalProps) {
+  const t = getTranslation(language)
   const supabase = createClient()
   const [loading, setLoading] = useState(false)
 
@@ -121,7 +125,7 @@ export default function BlockTimeModal({
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Block Time</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{t.blockTimeTitle}</h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 text-2xl"
@@ -135,7 +139,7 @@ export default function BlockTimeModal({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Start Date *
+                  {t.startDate} *
                 </label>
                 <input
                   type="date"
@@ -148,7 +152,7 @@ export default function BlockTimeModal({
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  End Date *
+                  {t.endDate} *
                 </label>
                 <input
                   type="date"
@@ -165,7 +169,7 @@ export default function BlockTimeModal({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Start Time
+                  {t.startTime}
                 </label>
                 <input
                   type="time"
@@ -177,7 +181,7 @@ export default function BlockTimeModal({
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  End Time
+                  {t.endTime}
                 </label>
                 <input
                   type="time"
@@ -192,12 +196,12 @@ export default function BlockTimeModal({
             {/* Block Reason */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Reason for Blocking *
+                {t.reasonForBlocking} *
               </label>
               <textarea
                 value={formData.blockReason}
                 onChange={(e) => setFormData({ ...formData, blockReason: e.target.value })}
-                placeholder="e.g., Vacation, Training, Personal Time Off"
+                placeholder={t.blockReasonPlaceholder}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                 rows={3}
                 required
@@ -214,15 +218,14 @@ export default function BlockTimeModal({
                 className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
               />
               <label htmlFor="isRecurring" className="text-sm text-gray-700">
-                Recurring (same time every week)
+                {t.recurringOption}
               </label>
             </div>
 
             {/* Info Message */}
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
               <p className="text-sm text-orange-800">
-                During this blocked time, new appointments cannot be booked.
-                Existing appointments are not affected.
+                {t.blockTimeInfo}
               </p>
             </div>
 
@@ -233,14 +236,14 @@ export default function BlockTimeModal({
                 disabled={loading}
                 className="flex-1 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50"
               >
-                {loading ? 'Blocking Time...' : 'Block Time'}
+                {loading ? t.blockingTime : t.blockTime}
               </button>
               <button
                 type="button"
                 onClick={onClose}
                 className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
               >
-                Cancel
+                {t.cancel}
               </button>
             </div>
           </form>

@@ -4,6 +4,7 @@
 // BOOKING MANAGEMENT DASHBOARD (Staff View)
 // Route: /booking
 // Features: Calendar view, block time, confirm/edit/cancel appointments
+// Updated: Multi-view with responsive layout
 // ============================================================================
 
 import { useState, useEffect } from 'react'
@@ -12,6 +13,7 @@ import type { Appointment, AppointmentService, TreatmentRoom } from '@/lib/appoi
 import EditAppointmentModal from '@/components/booking/edit-appointment-modal'
 import CancelAppointmentModal from '@/components/booking/cancel-appointment-modal'
 import BlockTimeModal from '@/components/booking/block-time-modal'
+import { getTranslation, Language } from '@/lib/translations'
 
 interface RealStaff {
   id: string
@@ -27,17 +29,31 @@ interface AppointmentWithDetails extends Appointment {
   room: TreatmentRoom | null
 }
 
-export default function BookingDashboard() {
+interface BookingDashboardProps {
+  language?: Language
+}
+
+export default function BookingDashboard({ language = 'en' }: BookingDashboardProps) {
+  const t = getTranslation(language)
   const supabase = createClient()
   const [appointments, setAppointments] = useState<AppointmentWithDetails[]>([])
   const [filteredAppointments, setFilteredAppointments] = useState<AppointmentWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState(new Date())
-  const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day')
+  const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [businessUnitId, setBusinessUnitId] = useState<string | null>(null)
   const [filterStaffId, setFilterStaffId] = useState<string | null>(null)
   const [filterStaffName, setFilterStaffName] = useState<string | null>(null)
+
+  // Multi-view mode states
+  const [groupByMode, setGroupByMode] = useState<'staff' | 'room' | 'service'>('staff')
+  const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([])
+  const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>([])
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([])
+  const [allStaff, setAllStaff] = useState<RealStaff[]>([])
+  const [allRooms, setAllRooms] = useState<TreatmentRoom[]>([])
+  const [allServices, setAllServices] = useState<AppointmentService[]>([])
 
   // Modal states
   const [editModalOpen, setEditModalOpen] = useState(false)
@@ -60,7 +76,7 @@ export default function BookingDashboard() {
   // Fetch business unit and current staff (simplified - in real app, get from auth)
   useEffect(() => {
     async function fetchBusinessUnit() {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('business_units')
         .select('id')
         .eq('slug', 'skincoach')
@@ -68,6 +84,10 @@ export default function BookingDashboard() {
 
       if (data) {
         setBusinessUnitId(data.id)
+        // Loading will be set to false by fetchAppointments once it runs
+      } else {
+        console.error('Error fetching business unit:', error)
+        setLoading(false) // Stop loading if business unit fetch fails
       }
     }
 
@@ -89,6 +109,61 @@ export default function BookingDashboard() {
     fetchBusinessUnit()
     fetchCurrentStaff()
   }, [])
+
+  // Fetch all staff, rooms, and services for multi-select
+  useEffect(() => {
+    if (!businessUnitId) return
+
+    async function fetchAllData() {
+      try {
+        // Fetch all staff
+        const { data: staffData, error: staffError } = await supabase
+          .from('real_staff')
+          .select('*')
+          .eq('business_unit_id', businessUnitId)
+          .eq('is_active', true)
+          .order('name')
+
+        if (staffError) {
+          console.error('Error fetching staff:', staffError)
+        } else if (staffData) {
+          setAllStaff(staffData)
+        }
+
+        // Fetch all rooms
+        const { data: roomsData, error: roomsError } = await supabase
+          .from('treatment_rooms')
+          .select('*')
+          .eq('business_unit_id', businessUnitId)
+          .eq('is_active', true)
+          .order('room_name')
+
+        if (roomsError) {
+          console.error('Error fetching rooms:', roomsError)
+        } else if (roomsData) {
+          setAllRooms(roomsData)
+        }
+
+        // Fetch all services
+        const { data: servicesData, error: servicesError } = await supabase
+          .from('appointment_services')
+          .select('*')
+          .eq('business_unit_id', businessUnitId)
+          .eq('is_active', true)
+          .order('name')
+
+        if (servicesError) {
+          console.error('Error fetching services:', servicesError)
+        } else if (servicesData) {
+          setAllServices(servicesData)
+        }
+      } catch (error) {
+        console.error('Error in fetchAllData:', error)
+      }
+    }
+
+    fetchAllData()
+  }, [businessUnitId])
 
   // Fetch staff name when filterStaffId changes
   useEffect(() => {
@@ -253,14 +328,88 @@ export default function BookingDashboard() {
     return days
   }
 
-  // Get appointments for a specific time slot
-  const getAppointmentsForSlot = (date: Date, time: string) => {
+  // Get appointments that START at a specific time slot (for rendering once)
+  const getAppointmentsStartingAtSlot = (date: Date, time: string) => {
     const dateStr = date.toISOString().split('T')[0]
     return filteredAppointments.filter(apt => {
       if (apt.appointment_date !== dateStr) return false
       const startHour = apt.start_time.substring(0, 5)
       return startHour === time
     })
+  }
+
+  // Calculate how many hours an appointment spans
+  const calculateAppointmentHeight = (apt: AppointmentWithDetails) => {
+    const startHour = parseInt(apt.start_time.substring(0, 2))
+    const startMin = parseInt(apt.start_time.substring(3, 5))
+    const endHour = parseInt(apt.end_time.substring(0, 2))
+    const endMin = parseInt(apt.end_time.substring(3, 5))
+
+    const startMinutes = startHour * 60 + startMin
+    const endMinutes = endHour * 60 + endMin
+    const durationMinutes = endMinutes - startMinutes
+
+    // Each hour block is 80px (min-h-[80px])
+    // Return height in pixels
+    return (durationMinutes / 60) * 80
+  }
+
+  // Get filtered appointments for a specific staff/room/service
+  const getFilteredAppointmentsForItem = (itemId: string) => {
+    return filteredAppointments.filter(apt => {
+      if (groupByMode === 'staff') {
+        return apt.real_staff_id === itemId
+      } else if (groupByMode === 'room') {
+        return apt.room_id === itemId
+      } else if (groupByMode === 'service') {
+        return apt.service_id === itemId
+      }
+      return false
+    })
+  }
+
+  // Get appointments starting at slot for a specific filtered set
+  const getAppointmentsStartingAtSlotForItem = (date: Date, time: string, itemId: string) => {
+    const dateStr = date.toISOString().split('T')[0]
+    const itemAppointments = getFilteredAppointmentsForItem(itemId)
+    return itemAppointments.filter(apt => {
+      if (apt.appointment_date !== dateStr) return false
+      const startHour = apt.start_time.substring(0, 5)
+      return startHour === time
+    })
+  }
+
+  // Get items to display based on groupByMode and selections
+  const getItemsToDisplay = (): Array<{id: string, name: string}> => {
+    if (groupByMode === 'staff') {
+      if (selectedStaffIds.length > 0) {
+        return selectedStaffIds.map(id => {
+          const staff = allStaff.find(s => s.id === id)
+          return { id, name: staff?.name || 'Unknown Staff' }
+        })
+      }
+      // If no selection, return empty array (don't show any calendars)
+      return []
+    } else if (groupByMode === 'room') {
+      if (selectedRoomIds.length > 0) {
+        return selectedRoomIds.map(id => {
+          const room = allRooms.find(r => r.id === id)
+          return { id, name: room?.room_name || room?.room_number || 'Unknown Room' }
+        })
+      }
+      // If no selection, return empty array (don't show any calendars)
+      return []
+    } else if (groupByMode === 'service') {
+      if (selectedServiceIds.length > 0) {
+        return selectedServiceIds.map(id => {
+          const service = allServices.find(s => s.id === id)
+          return { id, name: service?.name || 'Unknown Service' }
+        })
+      }
+      // If no selection, return empty array (don't show any calendars)
+      return []
+    }
+    return []
   }
 
   // Status badge colors
@@ -417,7 +566,7 @@ export default function BookingDashboard() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading appointments...</p>
+          <p className="mt-4 text-gray-600">{t.loadingAppointments}</p>
         </div>
       </div>
     )
@@ -428,13 +577,13 @@ export default function BookingDashboard() {
       {/* Header */}
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                {filterStaffName ? `${filterStaffName}'s Schedule` : 'Booking Dashboard'}
+                {filterStaffName ? `${t.scheduleFor} ${filterStaffName}` : t.bookingDashboard}
               </h1>
               <p className="mt-1 text-sm text-gray-500">
-                {filterStaffName ? `Viewing appointments for ${filterStaffName}` : 'Manage appointments and availability'}
+                {filterStaffName ? `${t.viewingAppointmentsFor} ${filterStaffName}` : t.manageAppointmentsAndAvailability}
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -443,15 +592,132 @@ export default function BookingDashboard() {
                   href="/booking"
                   className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
                 >
-                  Clear Filter
+                  {t.clearFilter}
                 </a>
               )}
               <button
                 onClick={goToToday}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
-                Today
+                {t.today}
               </button>
+            </div>
+          </div>
+
+          {/* View Mode Buttons and Selection */}
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <span className="text-sm font-medium text-gray-700">{t.groupBy}:</span>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  onClick={() => setGroupByMode('staff')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    groupByMode === 'staff'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {t.staff}
+                </button>
+                <button
+                  onClick={() => setGroupByMode('room')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    groupByMode === 'room'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {t.roomLabel}
+                </button>
+                <button
+                  onClick={() => setGroupByMode('service')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    groupByMode === 'service'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {t.service}
+                </button>
+              </div>
+            </div>
+
+            {/* Checkbox selection based on groupByMode */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              {groupByMode === 'staff' && (
+                <>
+                  <label className="text-sm font-medium text-gray-700 whitespace-nowrap">{t.selectStaff}:</label>
+                  <div className="flex gap-4 flex-wrap">
+                    {allStaff.map(staff => (
+                      <label key={staff.id} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedStaffIds.includes(staff.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedStaffIds([...selectedStaffIds, staff.id])
+                            } else {
+                              setSelectedStaffIds(selectedStaffIds.filter(id => id !== staff.id))
+                            }
+                          }}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">{staff.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {groupByMode === 'room' && (
+                <>
+                  <label className="text-sm font-medium text-gray-700 whitespace-nowrap">{t.selectRooms}:</label>
+                  <div className="flex gap-4 flex-wrap">
+                    {allRooms.map(room => (
+                      <label key={room.id} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedRoomIds.includes(room.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedRoomIds([...selectedRoomIds, room.id])
+                            } else {
+                              setSelectedRoomIds(selectedRoomIds.filter(id => id !== room.id))
+                            }
+                          }}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">{room.room_name || room.room_number}</span>
+                      </label>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {groupByMode === 'service' && (
+                <>
+                  <label className="text-sm font-medium text-gray-700 whitespace-nowrap">{t.selectServices}:</label>
+                  <div className="flex gap-4 flex-wrap">
+                    {allServices.map(service => (
+                      <label key={service.id} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedServiceIds.includes(service.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedServiceIds([...selectedServiceIds, service.id])
+                            } else {
+                              setSelectedServiceIds(selectedServiceIds.filter(id => id !== service.id))
+                            }
+                          }}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">{service.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -467,7 +733,7 @@ export default function BookingDashboard() {
                 onClick={goToPrevious}
                 className="p-2 hover:bg-gray-100 rounded-lg"
               >
-                ← Previous
+                ← {t.previous}
               </button>
               <div className="text-lg font-semibold min-w-[300px] text-center">
                 {formatDateDisplay()}
@@ -476,7 +742,7 @@ export default function BookingDashboard() {
                 onClick={goToNext}
                 className="p-2 hover:bg-gray-100 rounded-lg"
               >
-                Next →
+                {t.next} →
               </button>
             </div>
 
@@ -488,7 +754,7 @@ export default function BookingDashboard() {
                   viewMode === 'day' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                Day
+                {t.day}
               </button>
               <button
                 onClick={() => setViewMode('week')}
@@ -496,7 +762,7 @@ export default function BookingDashboard() {
                   viewMode === 'week' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                Week
+                {t.week}
               </button>
               <button
                 onClick={() => setViewMode('month')}
@@ -504,7 +770,7 @@ export default function BookingDashboard() {
                   viewMode === 'month' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                Month
+                {t.month}
               </button>
             </div>
 
@@ -514,129 +780,180 @@ export default function BookingDashboard() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg"
             >
-              <option value="all">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-              <option value="pending_edit">Pending Edit</option>
-              <option value="pending_cancellation">Pending Cancellation</option>
-              <option value="blocked">Blocked Time</option>
+              <option value="all">{t.allStatuses}</option>
+              <option value="pending">{t.statusPending}</option>
+              <option value="confirmed">{t.statusConfirmed}</option>
+              <option value="completed">{t.statusCompleted}</option>
+              <option value="cancelled">{t.statusCancelled}</option>
+              <option value="pending_edit">{t.statusPendingEdit}</option>
+              <option value="pending_cancellation">{t.statusPendingCancellation}</option>
+              <option value="blocked">{t.statusBlocked}</option>
             </select>
           </div>
         </div>
 
         {/* Calendar View */}
         {viewMode === 'week' ? (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            {/* Mobile View - Stack by day */}
-            <div className="block lg:hidden">
-              {generateWeekDays().map((day, dayIdx) => (
-                <div key={dayIdx} className="border-b last:border-b-0">
-                  {/* Day Header */}
-                  <div className="bg-gray-50 p-3 border-b sticky top-0 z-10">
-                    <div className="text-sm font-semibold">{day.toLocaleDateString('en-US', { weekday: 'long' })}</div>
-                    <div className="text-xs text-gray-600">{day.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
-                  </div>
-
-                  {/* Time Slots for this day */}
-                  {generateTimeSlots().map((time) => {
-                    const appointments = getAppointmentsForSlot(day, time)
-                    if (appointments.length === 0) return null // Hide empty slots on mobile
-
-                    return (
-                      <div key={time} className="border-b last:border-b-0">
-                        <div className="flex">
-                          <div className="w-20 flex-shrink-0 p-2 bg-gray-50 border-r text-xs text-gray-600 font-medium">
-                            {time}
-                          </div>
-                          <div className="flex-1 p-2 space-y-2">
-                            {appointments.map((apt) => (
-                              <div
-                                key={apt.id}
-                                onClick={() => {
-                                  setSelectedAppointment(apt)
-                                  if (apt.status === 'confirmed') setEditModalOpen(true)
-                                }}
-                                className={`p-3 rounded-lg cursor-pointer hover:opacity-80 ${getStatusColor(apt.status)}`}
-                              >
-                                <div className="font-semibold">{apt.service?.name}</div>
-                                <div className="text-sm mt-1">{apt.user_name}</div>
-                                <div className="text-xs mt-1">{apt.start_time.substring(0, 5)} - {apt.end_time.substring(0, 5)}</div>
-                                {apt.staff && <div className="text-xs mt-1">Staff: {apt.staff.name}</div>}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-
-                  {/* Show message if no appointments for this day */}
-                  {generateTimeSlots().every(time => getAppointmentsForSlot(day, time).length === 0) && (
-                    <div className="p-4 text-center text-sm text-gray-500">
-                      No appointments
-                    </div>
-                  )}
+          <div className="space-y-6">
+            {getItemsToDisplay().length === 0 ? (
+              <div className="bg-white rounded-lg shadow p-12">
+                <div className="text-center">
+                  <div className="text-6xl mb-4">📅</div>
+                  <h3 className="text-xl font-semibold text-gray-700 mb-2">{t.noSelectionMade}</h3>
+                  <p className="text-gray-500">
+                    {groupByMode === 'staff' ? t.pleaseSelectStaff : groupByMode === 'room' ? t.pleaseSelectRoom : t.pleaseSelectService}
+                  </p>
                 </div>
-              ))}
-            </div>
+              </div>
+            ) : (
+              getItemsToDisplay().map((item, itemIdx) => (
+                <div key={item.id} className="bg-white rounded-lg shadow overflow-hidden">
+                {/* Item Header */}
+                <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4">
+                  <h3 className="text-xl font-bold">
+                    {groupByMode === 'staff' && '👨‍⚕️ '}
+                    {groupByMode === 'room' && '📍 '}
+                    {groupByMode === 'service' && '💆 '}
+                    {item.name}
+                  </h3>
+                  <p className="text-sm text-blue-100 mt-1">
+                    {getFilteredAppointmentsForItem(item.id).length} {t.appointmentsThisWeek}
+                  </p>
+                </div>
 
-            {/* Desktop View - Grid */}
-            <div className="hidden lg:block overflow-x-auto">
-              <div className="min-w-[1000px]">
-                {/* Week Header */}
-                <div className="grid grid-cols-8 border-b">
-                  <div className="p-4 bg-gray-50 border-r text-sm font-semibold">Time</div>
-                  {generateWeekDays().map((day, idx) => (
-                    <div key={idx} className="p-4 bg-gray-50 border-r text-center">
-                      <div className="text-sm font-semibold">{day.toLocaleDateString('en-US', { weekday: 'short' })}</div>
-                      <div className="text-xs text-gray-600">{day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+                {/* Mobile View - Stack by day */}
+                <div className="block lg:hidden">
+                  {generateWeekDays().map((day, dayIdx) => (
+                    <div key={dayIdx} className="border-b last:border-b-0">
+                      {/* Day Header */}
+                      <div className="bg-gray-50 p-3 border-b sticky top-0 z-10">
+                        <div className="text-sm font-semibold">{day.toLocaleDateString('en-US', { weekday: 'long' })}</div>
+                        <div className="text-xs text-gray-600">{day.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
+                      </div>
+
+                      {/* Time Slots for this day */}
+                      {generateTimeSlots().map((time) => {
+                        const appointments = getAppointmentsStartingAtSlotForItem(day, time, item.id)
+                        if (appointments.length === 0) return null // Hide empty slots on mobile
+
+                        return (
+                          <div key={time} className="border-b last:border-b-0">
+                            <div className="flex">
+                              <div className="w-20 flex-shrink-0 p-2 bg-gray-50 border-r text-xs text-gray-600 font-medium">
+                                {time}
+                              </div>
+                              <div className="flex-1 p-2 space-y-2">
+                                {appointments.map((apt) => (
+                                  <div
+                                    key={apt.id}
+                                    onClick={() => {
+                                      setSelectedAppointment(apt)
+                                      if (apt.status === 'confirmed') setEditModalOpen(true)
+                                    }}
+                                    className={`p-3 rounded-lg cursor-pointer hover:opacity-90 border-2 ${
+                                      apt.status === 'pending' ? 'bg-yellow-200 border-yellow-400 text-yellow-900' :
+                                      apt.status === 'confirmed' ? 'bg-green-200 border-green-400 text-green-900' :
+                                      apt.status === 'completed' ? 'bg-blue-200 border-blue-400 text-blue-900' :
+                                      apt.status === 'cancelled' ? 'bg-red-200 border-red-400 text-red-900' :
+                                      apt.status === 'blocked' ? 'bg-gray-400 border-gray-600 text-gray-900' :
+                                      'bg-orange-200 border-orange-400 text-orange-900'
+                                    }`}
+                                  >
+                                    <div className="font-bold text-base">{apt.service?.name}</div>
+                                    <div className="text-sm mt-1 font-medium">👤 {t.client}: {apt.user_name}</div>
+                                    <div className="text-sm mt-1 font-medium">🕐 {apt.start_time.substring(0, 5)} - {apt.end_time.substring(0, 5)}</div>
+                                    {apt.staff && <div className="text-xs mt-1">👨‍⚕️ {t.staff}: {apt.staff.name}</div>}
+                                    {apt.room && <div className="text-xs mt-1">📍 {t.location}: {apt.room.room_name || apt.room.room_number}</div>}
+                                    <div className="text-xs mt-1 font-semibold uppercase">{t.status}: {apt.status}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+
+                      {/* Show message if no appointments for this day */}
+                      {generateTimeSlots().every(time => getAppointmentsStartingAtSlotForItem(day, time, item.id).length === 0) && (
+                        <div className="p-4 text-center text-sm text-gray-500">
+                          {t.noAppointments}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
 
-                {/* Time Slots */}
-                {generateTimeSlots().map((time) => (
-                  <div key={time} className="grid grid-cols-8 border-b hover:bg-gray-50 transition-colors">
-                    <div className="p-3 bg-gray-50 border-r text-sm text-gray-600 font-medium">{time}</div>
-                    {generateWeekDays().map((day, dayIdx) => {
-                      const appointments = getAppointmentsForSlot(day, time)
-                      return (
-                        <div key={dayIdx} className="border-r min-h-[80px] p-1.5">
-                          {appointments.map((apt) => (
-                            <div
-                              key={apt.id}
-                              onClick={() => {
-                                setSelectedAppointment(apt)
-                                if (apt.status === 'confirmed') setEditModalOpen(true)
-                              }}
-                              className={`text-xs p-2 rounded-lg mb-1 cursor-pointer hover:opacity-80 transition-opacity ${getStatusColor(apt.status)}`}
-                            >
-                              <div className="font-semibold truncate">{apt.service?.name}</div>
-                              <div className="truncate mt-0.5">{apt.user_name}</div>
-                              <div className="text-[10px] mt-0.5">{apt.start_time.substring(0, 5)}-{apt.end_time.substring(0, 5)}</div>
-                            </div>
-                          ))}
+                {/* Desktop View - Grid */}
+                <div className="hidden lg:block overflow-x-auto">
+                  <div className="min-w-[1000px]">
+                    {/* Week Header */}
+                    <div className="grid grid-cols-8 border-b">
+                      <div className="p-4 bg-gray-50 border-r text-sm font-semibold">{t.time}</div>
+                      {generateWeekDays().map((day, idx) => (
+                        <div key={idx} className="p-4 bg-gray-50 border-r text-center">
+                          <div className="text-sm font-semibold">{day.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+                          <div className="text-xs text-gray-600">{day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
                         </div>
-                      )
-                    })}
+                      ))}
+                    </div>
+
+                    {/* Time Slots */}
+                    {generateTimeSlots().map((time) => (
+                      <div key={time} className="grid grid-cols-8 border-b hover:bg-gray-50 transition-colors">
+                        <div className="p-3 bg-gray-50 border-r text-sm text-gray-600 font-medium">{time}</div>
+                        {generateWeekDays().map((day, dayIdx) => {
+                          const appointments = getAppointmentsStartingAtSlotForItem(day, time, item.id)
+                          return (
+                            <div key={dayIdx} className="border-r min-h-[80px] p-1.5 relative">
+                              {appointments.map((apt) => {
+                                const heightPx = calculateAppointmentHeight(apt)
+                                return (
+                                  <div
+                                    key={apt.id}
+                                    onClick={() => {
+                                      setSelectedAppointment(apt)
+                                      if (apt.status === 'confirmed') setEditModalOpen(true)
+                                    }}
+                                    style={{ height: `${heightPx}px` }}
+                                    className={`absolute inset-x-1.5 top-1.5 text-xs p-2 rounded-lg cursor-pointer hover:opacity-90 transition-opacity border-2 overflow-hidden ${
+                                      apt.status === 'pending' ? 'bg-yellow-200 border-yellow-400 text-yellow-900' :
+                                      apt.status === 'confirmed' ? 'bg-green-200 border-green-400 text-green-900' :
+                                      apt.status === 'completed' ? 'bg-blue-200 border-blue-400 text-blue-900' :
+                                      apt.status === 'cancelled' ? 'bg-red-200 border-red-400 text-red-900' :
+                                      apt.status === 'blocked' ? 'bg-gray-400 border-gray-600 text-gray-900' :
+                                      'bg-orange-200 border-orange-400 text-orange-900'
+                                    }`}
+                                  >
+                                    <div className="font-bold truncate">{apt.service?.name}</div>
+                                    <div className="truncate mt-0.5 font-medium">👤 {apt.user_name}</div>
+                                    <div className="text-[10px] mt-0.5 font-semibold">🕐 {apt.start_time.substring(0, 5)}-{apt.end_time.substring(0, 5)}</div>
+                                    {apt.room && <div className="text-[10px] mt-0.5 font-semibold">📍 {apt.room.room_name || apt.room.room_number}</div>}
+                                    <div className="text-[10px] mt-0.5 font-semibold uppercase">{apt.status}</div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
-            </div>
+              ))
+            )}
           </div>
         ) : (
           /* List View for Day/Month */
           <div className="bg-white rounded-lg shadow">
             <div className="p-6">
               <h2 className="text-xl font-semibold mb-4">
-                Appointments ({filteredAppointments.length})
+                {t.appointments} ({filteredAppointments.length})
               </h2>
 
               {filteredAppointments.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
-                  No appointments found for this period
+                  {t.noAppointmentsForPeriod}
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -664,13 +981,13 @@ export default function BookingDashboard() {
                           </h3>
 
                           <div className="text-sm text-gray-600 space-y-1">
-                            <p><strong>Client:</strong> {appointment.user_name || appointment.user_identifier}</p>
-                            {appointment.user_email && <p><strong>Email:</strong> {appointment.user_email}</p>}
-                            {appointment.user_phone && <p><strong>Phone:</strong> {appointment.user_phone}</p>}
-                            {appointment.staff && <p><strong>Staff:</strong> {appointment.staff.name}</p>}
-                            {appointment.room && <p><strong>Room:</strong> {appointment.room.room_name || appointment.room.room_number}</p>}
+                            <p><strong>{t.client}:</strong> {appointment.user_name || appointment.user_identifier}</p>
+                            {appointment.user_email && <p><strong>{t.email}:</strong> {appointment.user_email}</p>}
+                            {appointment.user_phone && <p><strong>{t.phone}:</strong> {appointment.user_phone}</p>}
+                            {appointment.staff && <p><strong>{t.staff}:</strong> {appointment.staff.name}</p>}
+                            {appointment.room && <p><strong>📍 {t.location}:</strong> {appointment.room.room_name || appointment.room.room_number}</p>}
                             {appointment.customer_notes && (
-                              <p><strong>Notes:</strong> {appointment.customer_notes}</p>
+                              <p><strong>{t.notes}:</strong> {appointment.customer_notes}</p>
                             )}
                           </div>
                         </div>
@@ -682,13 +999,13 @@ export default function BookingDashboard() {
                                 onClick={() => handleConfirm(appointment)}
                                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
                               >
-                                Confirm
+                                {t.confirm}
                               </button>
                               <button
                                 onClick={() => handleDecline(appointment)}
                                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
                               >
-                                Decline
+                                {t.decline}
                               </button>
                             </>
                           )}
@@ -698,19 +1015,19 @@ export default function BookingDashboard() {
                                 onClick={() => handleEdit(appointment)}
                                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
                               >
-                                Edit
+                                {t.edit}
                               </button>
                               <button
                                 onClick={() => handleCancel(appointment)}
                                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
                               >
-                                Cancel
+                                {t.cancel}
                               </button>
                             </>
                           )}
                           {appointment.status === 'completed' && (
                             <button className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg cursor-not-allowed text-sm" disabled>
-                              Completed
+                              {t.statusCompleted}
                             </button>
                           )}
                         </div>
@@ -725,16 +1042,16 @@ export default function BookingDashboard() {
 
         {/* Block Time Section */}
         <div className="bg-white rounded-lg shadow mt-6 p-6">
-          <h2 className="text-xl font-semibold mb-4">Block Time</h2>
+          <h2 className="text-xl font-semibold mb-4">{t.blockTime}</h2>
           <p className="text-gray-600 mb-4">
-            Block specific time slots for holidays, breaks, or personal time
+            {t.blockTimeDescription}
           </p>
           <button
             onClick={() => setBlockTimeModalOpen(true)}
             disabled={!currentStaffId || !businessUnitId}
             className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Add Blocked Time
+            {t.addBlockedTime}
           </button>
         </div>
       </div>
@@ -750,6 +1067,7 @@ export default function BookingDashboard() {
               setSelectedAppointment(null)
             }}
             onSuccess={handleModalSuccess}
+            language={language}
           />
           <CancelAppointmentModal
             appointment={selectedAppointment}
@@ -759,6 +1077,7 @@ export default function BookingDashboard() {
               setSelectedAppointment(null)
             }}
             onSuccess={handleModalSuccess}
+            language={language}
           />
         </>
       )}
@@ -773,6 +1092,7 @@ export default function BookingDashboard() {
           onSuccess={() => {
             refreshAppointments()
           }}
+          language={language}
         />
       )}
     </div>

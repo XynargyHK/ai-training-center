@@ -1,24 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
-import OpenAI from 'openai'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import { getLLMConfig } from '@/app/api/llm-config/route'
 
-// Initialize Anthropic client dynamically
-function getAnthropicClient() {
-  const config = getLLMConfig()
-  if (config.provider === 'anthropic' && config.anthropicKey) {
-    return new Anthropic({ apiKey: config.anthropicKey })
-  }
-  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-}
-
-// Initialize OpenAI client dynamically
-function getOpenAIClient() {
-  const config = getLLMConfig()
-  if (config.provider === 'openai' && config.openaiKey) {
-    return new OpenAI({ apiKey: config.openaiKey })
-  }
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+// Initialize Google Gemini client
+function getGoogleClient() {
+  const apiKey = process.env.GOOGLE_GEMINI_API_KEY || ''
+  return new GoogleGenerativeAI(apiKey)
 }
 
 export async function POST(request: NextRequest) {
@@ -33,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get LLM configuration
-    const config = getLLMConfig()
+    const llmConfig = getLLMConfig()
 
     let translation = ''
 
@@ -47,39 +34,19 @@ export async function POST(request: NextRequest) {
       prompt = `Translate the following text to ${targetLanguage}. Only return the translation, nothing else.\n\nText: ${text}`
     }
 
-    if (config.provider === 'anthropic') {
-      // Use Anthropic Claude
-      const anthropic = getAnthropicClient()
+    // Use Gemini for translation
+    const genAI = getGoogleClient()
+    const model = genAI.getGenerativeModel({ model: llmConfig.model || 'gemini-2.5-flash' })
 
-      const response = await anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 1024,
-        messages: [{
-          role: 'user',
-          content: prompt
-        }]
-      })
-
-      const content = response.content[0]
-      if (content.type === 'text') {
-        translation = content.text
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 1024,
       }
-    } else {
-      // Use OpenAI
-      const openai = getOpenAIClient()
+    })
 
-      const response = await openai.chat.completions.create({
-        model: config.openaiModel || 'gpt-4o-mini',
-        messages: [{
-          role: 'user',
-          content: prompt
-        }],
-        max_tokens: 1024,
-        temperature: 0.3
-      })
-
-      translation = response.choices[0]?.message?.content || text
-    }
+    translation = result.response.text() || text
 
     return NextResponse.json({
       success: true,

@@ -168,7 +168,8 @@ export async function POST(request: NextRequest) {
       .eq('business_unit_id', businessUnitUuid)
       .single()
 
-    const requiresConfirmation = settings?.appointments_require_confirmation ?? true
+    // Default to auto-confirm (false) - can be changed in business_unit_settings
+    const requiresConfirmation = settings?.appointments_require_confirmation ?? false
     const initialStatus = requiresConfirmation ? 'pending' : 'confirmed'
 
     // Create the appointment

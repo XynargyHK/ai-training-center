@@ -133,6 +133,7 @@ export async function saveKnowledge(entry: any, businessUnitSlugOrId?: string | 
 
   const knowledgeEntry = {
     business_unit_id: businessUnitId,
+    reference_id: entry.reference_id || entry.id || crypto.randomUUID(),
     category: entry.category,
     topic: entry.topic,
     title: entry.topic,
@@ -265,8 +266,9 @@ export async function hybridSearchKnowledge(query: string, limit: number = 10) {
 // FAQs
 // ============================================
 
-export async function loadFAQs(businessUnitSlugOrId?: string | null) {
+export async function loadFAQs(businessUnitSlugOrId?: string | null, language: string = 'en') {
   const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+  console.log(`🔍 loadFAQs called with language: ${language}, businessUnitId: ${businessUnitId}`)
 
   const { data, error } = await supabase
     .from('faq_library')
@@ -280,7 +282,10 @@ export async function loadFAQs(businessUnitSlugOrId?: string | null) {
       )
     `)
     .eq('business_unit_id', businessUnitId)
+    .eq('language', language)
     .order('created_at', { ascending: false })
+
+  console.log(`📊 loadFAQs returned ${data?.length || 0} FAQs, first question: ${data?.[0]?.question?.substring(0, 50)}`)
 
   if (error) {
     handleSupabaseError(error, 'Loading FAQs')
@@ -434,6 +439,8 @@ export async function saveCannedMessage(msg: any, businessUnitSlugOrId?: string 
     tags: msg.tags || [],
     use_case: msg.useCase,
     is_active: true,
+    language: msg.language || 'en',
+    reference_id: msg.reference_id || msg.id || crypto.randomUUID(),
     embedding: embedding,
     embedding_model: 'text-embedding-3-small',
     embedded_at: new Date().toISOString()
@@ -590,6 +597,8 @@ export async function saveGuideline(guideline: any, businessUnitSlugOrId?: strin
       category: guideline.category,
       title: guideline.title,
       content: guideline.content,
+      language: guideline.language || 'en',
+      reference_id: guideline.reference_id || guideline.id || crypto.randomUUID(),
       embedding: embedding,
       embedding_model: 'text-embedding-3-small',
       embedded_at: new Date().toISOString(),

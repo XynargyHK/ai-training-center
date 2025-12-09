@@ -8,29 +8,37 @@
 
 import { useState, useEffect } from 'react'
 import type { TimeSlot } from '@/lib/appointments/types'
+import { getTranslation, Language } from '@/lib/translations'
 
 interface SlotPickerProps {
   businessUnitId: string
   serviceId: string
   selectedDate: string // YYYY-MM-DD
+  staffId?: string // Optional: check availability for specific staff
+  outletId?: string // Optional: check availability at specific outlet
   onSlotSelect: (slot: TimeSlot) => void
   selectedSlot?: TimeSlot
+  language?: Language
 }
 
 export function SlotPicker({
   businessUnitId,
   serviceId,
   selectedDate,
+  staffId,
+  outletId,
   onSlotSelect,
-  selectedSlot
+  selectedSlot,
+  language = 'en'
 }: SlotPickerProps) {
+  const t = getTranslation(language)
   const [slots, setSlots] = useState<TimeSlot[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchAvailability()
-  }, [businessUnitId, serviceId, selectedDate])
+  }, [businessUnitId, serviceId, selectedDate, staffId, outletId])
 
   async function fetchAvailability() {
     if (!businessUnitId || !serviceId || !selectedDate) return
@@ -39,14 +47,20 @@ export function SlotPicker({
     setError(null)
 
     try {
+      const requestBody: any = {
+        businessUnitId,
+        serviceId,
+        date: selectedDate
+      }
+
+      // Add optional parameters if provided
+      if (staffId) requestBody.staffId = staffId
+      if (outletId) requestBody.outletId = outletId
+
       const response = await fetch('/api/appointments/availability', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          businessUnitId,
-          serviceId,
-          date: selectedDate
-        })
+        body: JSON.stringify(requestBody)
       })
 
       if (!response.ok) {
@@ -81,7 +95,7 @@ export function SlotPicker({
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        <span className="ml-3 text-gray-600">Loading availability...</span>
+        <span className="ml-3 text-gray-600">{t.loadingAvailability}</span>
       </div>
     )
   }
@@ -89,12 +103,12 @@ export function SlotPicker({
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-red-700">Error loading slots: {error}</p>
+        <p className="text-red-700">{t.errorLoadingSlots} {error}</p>
         <button
           onClick={fetchAvailability}
           className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
         >
-          Try again
+          {t.tryAgain}
         </button>
       </div>
     )
@@ -103,8 +117,8 @@ export function SlotPicker({
   if (slots.length === 0) {
     return (
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-        <p className="text-yellow-800">No appointments available on this date.</p>
-        <p className="text-sm text-yellow-600 mt-2">Please select a different date.</p>
+        <p className="text-yellow-800">{t.noAppointmentsAvailable}</p>
+        <p className="text-sm text-yellow-600 mt-2">{t.selectDifferentDate}</p>
       </div>
     )
   }
@@ -112,15 +126,15 @@ export function SlotPicker({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Select a Time</h3>
+        <h3 className="text-lg font-semibold text-gray-900">{t.selectATime}</h3>
         <div className="flex gap-4 text-xs">
           <div className="flex items-center gap-1">
             <div className="w-3 h-3 bg-white border-2 border-gray-300 rounded"></div>
-            <span className="text-gray-600">Available</span>
+            <span className="text-gray-600">{t.available}</span>
           </div>
           <div className="flex items-center gap-1">
             <div className="w-3 h-3 bg-gray-100 border-2 border-gray-200 rounded"></div>
-            <span className="text-gray-600">Unavailable</span>
+            <span className="text-gray-600">{t.unavailable}</span>
           </div>
         </div>
       </div>

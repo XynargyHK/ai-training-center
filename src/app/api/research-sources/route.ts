@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI } from '@google/generative-ai'
+import { getLLMConfig } from '@/app/api/llm-config/route'
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || '',
-})
+// Initialize Google Gemini client
+function getGoogleClient() {
+  const apiKey = process.env.GOOGLE_GEMINI_API_KEY || ''
+  return new GoogleGenerativeAI(apiKey)
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,9 +19,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!process.env.ANTHROPIC_API_KEY) {
+    if (!process.env.GOOGLE_GEMINI_API_KEY) {
       return NextResponse.json(
-        { error: 'ANTHROPIC_API_KEY is not configured' },
+        { error: 'GOOGLE_GEMINI_API_KEY is not configured' },
         { status: 500 }
       )
     }
@@ -56,18 +59,21 @@ Focus on sources that are:
 
 Return ONLY the JSON array, no additional text or explanations.`
 
-    // Call Claude API
-    const message = await anthropic.messages.create({
-      model: 'claude-3-haiku-20240307',
-      max_tokens: 2048,
-      messages: [{
-        role: 'user',
-        content: prompt
-      }]
+    // Call Gemini API
+    const genAI = getGoogleClient()
+    const llmConfig = getLLMConfig()
+    const model = genAI.getGenerativeModel({ model: llmConfig.model || 'gemini-2.5-flash' })
+
+    const result = await model.generateContent({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 2048,
+      }
     })
 
     // Extract the response
-    const responseText = message.content[0].type === 'text' ? message.content[0].text : ''
+    const responseText = result.response.text() || ''
 
     // Parse JSON response
     let sourcesData: any[]

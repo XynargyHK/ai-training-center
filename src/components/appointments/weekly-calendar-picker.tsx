@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import type { TimeSlot } from '@/lib/appointments/types'
+import { getTranslation, Language } from '@/lib/translations'
 
 interface WeeklyCalendarPickerProps {
   businessUnitId: string
@@ -12,6 +13,7 @@ interface WeeklyCalendarPickerProps {
   onSlotsChange?: (date: string, slots: TimeSlot[]) => void
   selectedDate?: string
   selectedTime?: string
+  language?: Language
 }
 
 interface DaySlots {
@@ -27,8 +29,10 @@ export default function WeeklyCalendarPicker({
   staffId,
   outletId,
   onSlotSelect,
-  onSlotsChange
+  onSlotsChange,
+  language = 'en'
 }: WeeklyCalendarPickerProps) {
+  const t = getTranslation(language)
   const [weekStart, setWeekStart] = useState<Date>(getStartOfCurrentWeek())
   const [weekData, setWeekData] = useState<DaySlots[]>([])
   const [loading, setLoading] = useState(false)
@@ -190,7 +194,7 @@ export default function WeeklyCalendarPicker({
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-sm text-gray-600">Loading available slots...</p>
+          <p className="text-sm text-gray-600">{t.loadingAvailability}</p>
         </div>
       </div>
     )
@@ -219,7 +223,7 @@ export default function WeeklyCalendarPicker({
           onClick={nextWeek}
           className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded font-medium text-sm"
         >
-          Next Week →
+          {t.nextWeek} →
         </button>
       </div>
 
@@ -310,7 +314,7 @@ export default function WeeklyCalendarPicker({
       {/* Selected Slots Info */}
       {selectedSlots.length > 0 && (
         <div className="bg-blue-50 border-2 border-blue-500 rounded-lg p-3">
-          <div className="text-sm font-medium text-blue-700">Selected Time:</div>
+          <div className="text-sm font-medium text-blue-700">{t.selectedTime}:</div>
           <div className="text-lg font-bold text-blue-900 mt-1">
             {new Date(selectedSlots[0].date).toLocaleDateString('en-US', {
               weekday: 'long',
@@ -331,7 +335,7 @@ export default function WeeklyCalendarPicker({
                   const [hour] = lastSlot.time.split(':').map(Number)
                   return `${(hour + 1).toString().padStart(2, '0')}:00`
                 })()}
-                {' '}({selectedSlots.length} hours)
+                {' '}({selectedSlots.length} {t.hours})
               </span>
             )}
           </div>

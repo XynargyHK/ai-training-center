@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Appointment, AppointmentService, TreatmentRoom } from '@/lib/appointments/types'
+import { getTranslation, Language } from '@/lib/translations'
 
 interface RealStaff {
   id: string
@@ -23,14 +24,17 @@ interface EditAppointmentModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
+  language?: Language
 }
 
 export default function EditAppointmentModal({
   appointment,
   isOpen,
   onClose,
-  onSuccess
+  onSuccess,
+  language = 'en'
 }: EditAppointmentModalProps) {
+  const t = getTranslation(language)
   const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const [availableStaff, setAvailableStaff] = useState<RealStaff[]>([])
@@ -138,7 +142,7 @@ export default function EditAppointmentModal({
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Edit Appointment</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{t.editAppointment}</h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 text-2xl"
@@ -150,17 +154,17 @@ export default function EditAppointmentModal({
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Current Details */}
             <div className="bg-gray-50 p-4 rounded-lg mb-4">
-              <h3 className="font-semibold text-gray-900 mb-2">Current Details</h3>
-              <p className="text-sm text-gray-600">Service: {appointment.service?.name}</p>
-              <p className="text-sm text-gray-600">Date: {new Date(appointment.appointment_date).toLocaleDateString()}</p>
-              <p className="text-sm text-gray-600">Time: {appointment.start_time.substring(0, 5)} - {appointment.end_time.substring(0, 5)}</p>
-              <p className="text-sm text-gray-600">Client: {appointment.user_name || appointment.user_identifier}</p>
+              <h3 className="font-semibold text-gray-900 mb-2">{t.currentDetails}</h3>
+              <p className="text-sm text-gray-600">{t.service}: {appointment.service?.name}</p>
+              <p className="text-sm text-gray-600">{t.date}: {new Date(appointment.appointment_date).toLocaleDateString()}</p>
+              <p className="text-sm text-gray-600">{t.time}: {appointment.start_time.substring(0, 5)} - {appointment.end_time.substring(0, 5)}</p>
+              <p className="text-sm text-gray-600">{t.client}: {appointment.user_name || appointment.user_identifier}</p>
             </div>
 
             {/* New Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                New Date
+                {t.newDate}
               </label>
               <input
                 type="date"
@@ -175,7 +179,7 @@ export default function EditAppointmentModal({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Start Time
+                  {t.startTime}
                 </label>
                 <input
                   type="time"
@@ -187,7 +191,7 @@ export default function EditAppointmentModal({
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  End Time
+                  {t.endTime}
                 </label>
                 <input
                   type="time"
@@ -202,14 +206,14 @@ export default function EditAppointmentModal({
             {/* Staff Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Assigned Staff
+                {t.assignedStaff}
               </label>
               <select
                 value={formData.staffId}
                 onChange={(e) => setFormData({ ...formData, staffId: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">Select Staff</option>
+                <option value="">{t.selectStaffOption}</option>
                 {availableStaff.map((staff) => (
                   <option key={staff.id} value={staff.id}>
                     {staff.name} {staff.staff_type ? `(${staff.staff_type})` : ''}
@@ -221,14 +225,14 @@ export default function EditAppointmentModal({
             {/* Room Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Treatment Room
+                {t.treatmentRoom}
               </label>
               <select
                 value={formData.roomId}
                 onChange={(e) => setFormData({ ...formData, roomId: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">Select Room</option>
+                <option value="">{t.selectRoomOption}</option>
                 {availableRooms.map((room) => (
                   <option key={room.id} value={room.id}>
                     {room.room_name || room.room_number}
@@ -240,12 +244,12 @@ export default function EditAppointmentModal({
             {/* Reason */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Reason for Change *
+                {t.reasonForChange} *
               </label>
               <textarea
                 value={formData.reason}
                 onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                placeholder="Please explain why this appointment needs to be changed..."
+                placeholder={t.reasonPlaceholder}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 rows={3}
                 required
@@ -255,7 +259,7 @@ export default function EditAppointmentModal({
             {/* Info Message */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
-                This request will be sent to your manager for approval, and then to the client for confirmation.
+                {t.editRequestInfo}
               </p>
             </div>
 
@@ -266,14 +270,14 @@ export default function EditAppointmentModal({
                 disabled={loading}
                 className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
-                {loading ? 'Submitting...' : 'Submit Edit Request'}
+                {loading ? t.submitting : t.submitEditRequest}
               </button>
               <button
                 type="button"
                 onClick={onClose}
                 className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
               >
-                Cancel
+                {t.cancel}
               </button>
             </div>
           </form>

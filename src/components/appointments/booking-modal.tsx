@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react'
 import { SlotPicker } from './slot-picker'
 import WeeklyCalendarPicker from './weekly-calendar-picker'
 import type { TimeSlot, AppointmentService } from '@/lib/appointments/types'
+import { getTranslation, Language } from '@/lib/translations'
 
 interface BookingModalProps {
   isOpen: boolean
@@ -18,6 +19,7 @@ interface BookingModalProps {
   userIdentifier: string
   userName?: string
   userEmail?: string
+  language?: Language
 }
 
 export function BookingModal({
@@ -27,8 +29,10 @@ export function BookingModal({
   chatSessionId,
   userIdentifier,
   userName,
-  userEmail
+  userEmail,
+  language = 'en'
 }: BookingModalProps) {
+  const t = getTranslation(language)
   const [step, setStep] = useState<'service' | 'outlet' | 'staff' | 'datetime' | 'details' | 'confirm'>('service')
   const [services, setServices] = useState<AppointmentService[]>([])
   const [selectedService, setSelectedService] = useState<AppointmentService | null>(null)
@@ -231,7 +235,7 @@ export function BookingModal({
         {/* Header */}
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-900">
-            {bookingSuccess ? 'Booking Confirmed!' : 'Book Appointment'}
+            {bookingSuccess ? t.bookingConfirmed : t.bookAppointment}
           </h2>
           <button
             onClick={resetAndClose}
@@ -252,7 +256,7 @@ export function BookingModal({
           {/* Step 1: Select Service */}
           {step === 'service' && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900">Select a Service</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t.selectAService}</h3>
               <div className="grid gap-4">
                 {services.map((service) => (
                   <button
@@ -290,7 +294,7 @@ export function BookingModal({
                         {service.description && (
                           <p className="text-sm text-gray-600 mt-1">{service.description}</p>
                         )}
-                        <p className="text-xs text-gray-500 mt-2">{service.duration_minutes} minutes</p>
+                        <p className="text-xs text-gray-500 mt-2">{service.duration_minutes} {t.minutes}</p>
                       </div>
                       {service.price && (
                         <span className="text-lg font-bold text-gray-900">
@@ -311,15 +315,15 @@ export function BookingModal({
                 onClick={() => setStep('service')}
                 className="text-blue-600 hover:text-blue-800 text-sm"
               >
-                ← Change Service
+                ← {t.changeService}
               </button>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Selected Service</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{t.selectedService}</h3>
                 <p className="text-gray-700">{selectedService.name}</p>
-                <p className="text-sm text-gray-500">{selectedService.duration_minutes} minutes</p>
+                <p className="text-sm text-gray-500">{selectedService.duration_minutes} {t.minutes}</p>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Select Location</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{t.selectLocation}</h3>
                 <div className="grid gap-4">
                   {outlets.map((outlet) => (
                     <button
@@ -361,15 +365,15 @@ export function BookingModal({
                 onClick={() => setStep('outlet')}
                 className="text-blue-600 hover:text-blue-800 text-sm"
               >
-                ← Change Location
+                ← {t.changeLocation}
               </button>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Selected</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{t.selected}</h3>
                 <p className="text-gray-700">{selectedService.name}</p>
-                <p className="text-sm text-gray-500">at {selectedOutlet.name}</p>
+                <p className="text-sm text-gray-500">{t.at} {selectedOutlet.name}</p>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Select Staff Member</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{t.selectStaffMember}</h3>
                 <div className="grid gap-4">
                   {(() => {
                     // Filter staff to only show those assigned to this service
@@ -379,7 +383,7 @@ export function BookingModal({
                     if (availableStaff.length === 0) {
                       return (
                         <div className="text-center py-8 text-gray-500">
-                          No assigned staff available at this location
+                          {t.noAssignedStaffAtLocation}
                         </div>
                       )
                     }
@@ -412,17 +416,17 @@ export function BookingModal({
                 onClick={() => setStep('staff')}
                 className="text-blue-600 hover:text-blue-800 text-sm"
               >
-                ← Change Staff
+                ← {t.changeStaff}
               </button>
               <div className="bg-gray-50 p-3 rounded-lg">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Booking Details</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{t.bookingDetails}</h3>
                 <p className="text-gray-700">{selectedService.name}</p>
-                <p className="text-sm text-gray-500">{selectedService.duration_minutes} minutes</p>
-                <p className="text-sm text-gray-600 mt-1">at {selectedOutlet.name}</p>
-                <p className="text-sm text-gray-600">with {selectedStaff.name}</p>
+                <p className="text-sm text-gray-500">{selectedService.duration_minutes} {t.minutes}</p>
+                <p className="text-sm text-gray-600 mt-1">{t.at} {selectedOutlet.name}</p>
+                <p className="text-sm text-gray-600">{t.with} {selectedStaff.name}</p>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Select Date & Time</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{t.selectDateTime}</h3>
                 <WeeklyCalendarPicker
                   businessUnitId={businessUnitId}
                   serviceId={selectedService.id}
@@ -448,7 +452,7 @@ export function BookingModal({
                   onClick={() => setStep('details')}
                   className="w-full bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 font-medium"
                 >
-                  Continue to Details
+                  {t.continueToDetails}
                 </button>
               )}
             </div>
@@ -461,16 +465,16 @@ export function BookingModal({
                 onClick={() => setStep('datetime')}
                 className="text-blue-600 hover:text-blue-800 text-sm"
               >
-                ← Change Date/Time
+                ← {t.changeDateTime}
               </button>
               <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-gray-900 mb-2">Booking Summary</h3>
-                <p className="text-sm text-gray-700"><strong>Service:</strong> {selectedService.name}</p>
+                <h3 className="font-semibold text-gray-900 mb-2">{t.bookingSummary}</h3>
+                <p className="text-sm text-gray-700"><strong>{t.service}:</strong> {selectedService.name}</p>
                 <p className="text-sm text-gray-700">
-                  <strong>Date:</strong> {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                  <strong>{t.date}:</strong> {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                 </p>
                 <p className="text-sm text-gray-700">
-                  <strong>Time:</strong> {selectedSlots.length > 0 ? (
+                  <strong>{t.time}:</strong> {selectedSlots.length > 0 ? (
                     selectedSlots.length === 1 ? (
                       `${selectedSlots[0].time} - ${(() => {
                         const [hour] = selectedSlots[0].time.split(':').map(Number)
@@ -481,16 +485,16 @@ export function BookingModal({
                         const lastSlot = selectedSlots[selectedSlots.length - 1]
                         const [hour] = lastSlot.time.split(':').map(Number)
                         return `${(hour + 1).toString().padStart(2, '0')}:00`
-                      })()} (${selectedSlots.length} hours)`
+                      })()} (${selectedSlots.length} ${t.hours})`
                     )
                   ) : selectedSlot.time}
                 </p>
-                <p className="text-sm text-gray-700"><strong>Location:</strong> {selectedOutlet.name}</p>
-                <p className="text-sm text-gray-700"><strong>Staff:</strong> {selectedStaff.name}</p>
+                <p className="text-sm text-gray-700"><strong>{t.location}:</strong> {selectedOutlet.name}</p>
+                <p className="text-sm text-gray-700"><strong>{t.staff}:</strong> {selectedStaff.name}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone Number (Optional)
+                  {t.phoneNumberOptional}
                 </label>
                 <input
                   type="tel"
@@ -502,12 +506,12 @@ export function BookingModal({
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Special Requests (Optional)
+                  {t.specialRequestsOptional}
                 </label>
                 <textarea
                   value={customerNotes}
                   onChange={(e) => setCustomerNotes(e.target.value)}
-                  placeholder="Any special requests or notes..."
+                  placeholder={t.specialRequestsPlaceholder}
                   rows={3}
                   className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none resize-none"
                 />
@@ -517,7 +521,7 @@ export function BookingModal({
                 disabled={loading}
                 className="w-full bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
-                {loading ? 'Booking...' : 'Confirm Booking'}
+                {loading ? t.booking : t.confirmBooking}
               </button>
             </div>
           )}
@@ -526,27 +530,27 @@ export function BookingModal({
           {step === 'confirm' && bookingSuccess && (
             <div className="text-center space-y-4">
               <div className="text-6xl">✅</div>
-              <h3 className="text-2xl font-bold text-green-600">Booking Confirmed!</h3>
+              <h3 className="text-2xl font-bold text-green-600">{t.bookingConfirmed}</h3>
               <p className="text-gray-700">
-                Your appointment has been successfully booked.
+                {t.appointmentBookedSuccess}
               </p>
               <div className="bg-green-50 p-4 rounded-lg text-left">
-                <p className="text-sm text-gray-700"><strong>Service:</strong> {selectedService?.name}</p>
+                <p className="text-sm text-gray-700"><strong>{t.service}:</strong> {selectedService?.name}</p>
                 <p className="text-sm text-gray-700">
-                  <strong>Date:</strong> {selectedDate ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : ''}
+                  <strong>{t.date}:</strong> {selectedDate ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : ''}
                 </p>
-                <p className="text-sm text-gray-700"><strong>Time:</strong> {selectedSlot?.time}</p>
-                <p className="text-sm text-gray-700"><strong>Location:</strong> {selectedOutlet?.name}</p>
-                <p className="text-sm text-gray-700"><strong>Staff:</strong> {selectedStaff?.name}</p>
+                <p className="text-sm text-gray-700"><strong>{t.time}:</strong> {selectedSlot?.time}</p>
+                <p className="text-sm text-gray-700"><strong>{t.location}:</strong> {selectedOutlet?.name}</p>
+                <p className="text-sm text-gray-700"><strong>{t.staff}:</strong> {selectedStaff?.name}</p>
               </div>
               <p className="text-sm text-gray-600">
-                You will receive a confirmation notification soon. A room will be assigned for your appointment.
+                {t.confirmationNotificationMessage}
               </p>
               <button
                 onClick={resetAndClose}
                 className="w-full bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 font-medium"
               >
-                Done
+                {t.done}
               </button>
             </div>
           )}

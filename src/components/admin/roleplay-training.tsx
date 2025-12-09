@@ -27,6 +27,7 @@ import {
   loadTrainingScenarios, saveTrainingScenario, deleteTrainingScenario,
   loadTrainingSessions, saveTrainingSession
 } from '@/lib/api-client'
+import { type Language, getTranslation } from '@/lib/translations'
 
 interface CustomerPersona {
   id: string
@@ -96,6 +97,7 @@ interface RoleplayTrainingProps {
     title: string
     content: string
   }) => void
+  language?: Language
 }
 
 interface AIStaff {
@@ -112,7 +114,8 @@ interface AIStaff {
 // 2. Knowledge base content uploaded by user
 // 3. Training guidelines created by user
 
-const RoleplayTraining = ({ onTrainingSessionsUpdate, businessUnit, knowledgeEntries, guidelines, onAddGuideline }: RoleplayTrainingProps) => {
+const RoleplayTraining = ({ onTrainingSessionsUpdate, businessUnit, knowledgeEntries, guidelines, onAddGuideline, language = 'en' }: RoleplayTrainingProps) => {
+  const t = getTranslation(language)
   const [selectedScenario, setSelectedScenario] = useState<TrainingScenario | null>(null)
   const [activeSession, setActiveSession] = useState<TrainingSession | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -791,7 +794,7 @@ The customer should naturally bring up their issue or question based on the scen
           id: Date.now().toString(),
           sessionId: activeSession.id,
           sender: 'user',
-          message: `❌ TRAINING ERROR: AI Coach failed - ${error instanceof Error ? error.message : 'Unknown error'}. Check your Anthropic API key and connection.`,
+          message: `❌ TRAINING ERROR: AI Coach failed - ${error instanceof Error ? error.message : 'Unknown error'}. Check your Google Gemini API key and connection.`,
           timestamp: new Date(),
           metadata: {
             intent: 'training_error',
@@ -1163,7 +1166,7 @@ Respond to the customer's CURRENT message while considering the FULL conversatio
           })),
           turn,
           knowledgeBase: knowledgeEntries,
-          guidelines: guidelinesData
+          guidelines: guidelines.filter(g => g.category === 'roleplay' || g.category === 'general')
         })
       })
 
@@ -1227,7 +1230,7 @@ Respond to the customer's CURRENT message while considering the FULL conversatio
             id: Date.now().toString(),
             sessionId: selectedScenario.id,
             sender: 'user',
-            message: `❌ TRAINING ERROR: AI Coach failed - ${error instanceof Error ? error.message : 'Unknown error'}. Check your Anthropic API key and connection.`,
+            message: `❌ TRAINING ERROR: AI Coach failed - ${error instanceof Error ? error.message : 'Unknown error'}. Check your Google Gemini API key and connection.`,
             timestamp: new Date(),
             metadata: {
               intent: 'training_error',
@@ -1250,7 +1253,7 @@ Respond to the customer's CURRENT message while considering the FULL conversatio
         id: Date.now().toString(),
         sessionId: selectedScenario?.id || 'error',
         sender: 'customer',
-        message: `❌ TRAINING ERROR: AI Customer Brain failed - ${error instanceof Error ? error.message : 'Unknown error'}. Check your Anthropic API key and connection.`,
+        message: `❌ TRAINING ERROR: AI Customer Brain failed - ${error instanceof Error ? error.message : 'Unknown error'}. Check your Google Gemini API key and connection.`,
         timestamp: new Date(),
         metadata: {
           intent: 'ai_customer_error',
@@ -1740,9 +1743,9 @@ Now provide your REVISED response to the customer's question above:`
         <div>
           <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
             <Users className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
-            AI Staff Training Center
+            {t.aiStaffTrainingCenter}
           </h2>
-          <p className="text-slate-400 text-sm sm:text-base">Train your AI staff members with different roles through automated dialogue with AI customers</p>
+          <p className="text-slate-400 text-sm sm:text-base">{t.aiStaffTrainingDesc}</p>
         </div>
       </div>
 
@@ -1751,14 +1754,14 @@ Now provide your REVISED response to the customer's question above:`
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-lg font-semibold text-white flex items-center gap-2">
             <User className="w-5 h-5 text-purple-400" />
-            AI Staff Members
+            {t.aiStaffMembers}
           </h3>
           <button
             onClick={() => setShowStaffCreator(true)}
             className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg transition-colors text-white flex items-center gap-2 text-sm"
           >
             <Plus className="w-4 h-4" />
-            Add Staff
+            {t.addStaff}
           </button>
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -1802,10 +1805,10 @@ Now provide your REVISED response to the customer's question above:`
                   </div>
                 )}
                 <div className="text-xs opacity-70">{
-                  staff.role === 'coach' ? 'Coach' :
-                  staff.role === 'sales' ? 'Sales' :
-                  staff.role === 'customer-service' ? 'Support' :
-                  'Scientist'
+                  staff.role === 'coach' ? t.roleCoach :
+                  staff.role === 'sales' ? t.roleSales :
+                  staff.role === 'customer-service' ? t.roleSupport :
+                  t.roleScientist
                 }</div>
               </div>
             </div>
@@ -1818,14 +1821,14 @@ Now provide your REVISED response to the customer's question above:`
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-semibold text-white flex items-center gap-2">
             <Bot className="w-5 h-5 text-green-400" />
-            AI Coach Training Session
+            {t.aiCoachTrainingSession}
           </h3>
           <button
             onClick={handleCompleteTrainingSession}
             disabled={messages.length === 0}
             className="bg-green-600 hover:bg-green-700 disabled:bg-slate-600 px-4 py-2 rounded-lg transition-colors text-white text-sm"
           >
-            Complete
+            {t.complete}
           </button>
         </div>
 
@@ -1835,8 +1838,8 @@ Now provide your REVISED response to the customer's question above:`
             {messages.length === 0 && (
               <div className="text-center py-6 sm:py-8 text-slate-400">
                 <MessageSquare className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-2 opacity-50" />
-                <p className="text-sm sm:text-base">AI training conversation will appear here</p>
-                <p className="text-xs mt-1">Select a scenario below to begin training</p>
+                <p className="text-sm sm:text-base">{t.aiTrainingWillAppear}</p>
+                <p className="text-xs mt-1">{t.selectScenarioToBegin}</p>
               </div>
             )}
 
@@ -1854,12 +1857,12 @@ Now provide your REVISED response to the customer's question above:`
                       <Bot className="h-4 w-4" />
                     )}
                     <span className="text-xs opacity-70">
-                      {msg.sender === 'customer' ? 'AI Customer 🤖' :
+                      {msg.sender === 'customer' ? `${t.aiCustomer} 🤖` :
                         `${selectedStaff?.name || 'AI'} (${
-                          selectedRole === 'coach' ? 'Coach' :
-                          selectedRole === 'sales' ? 'Sales' :
-                          selectedRole === 'customer-service' ? 'Support' :
-                          'Scientist'
+                          selectedRole === 'coach' ? t.roleCoach :
+                          selectedRole === 'sales' ? t.roleSales :
+                          selectedRole === 'customer-service' ? t.roleSupport :
+                          t.roleScientist
                         }) ${
                           selectedRole === 'coach' ? '🎓' :
                           selectedRole === 'sales' ? '💰' :
@@ -1880,7 +1883,7 @@ Now provide your REVISED response to the customer's question above:`
                   <div className="flex items-center space-x-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     <span className="text-sm">
-                      {generatingWho === 'customer' ? 'Thinking...' : 'Thinking...'}
+                      {t.thinking}
                     </span>
                   </div>
                 </div>
@@ -1893,7 +1896,7 @@ Now provide your REVISED response to the customer's question above:`
         <div className="mt-3 sm:mt-4 flex gap-2">
           <input
             type="text"
-            placeholder="Type your question as a customer..."
+            placeholder={t.typeQuestionPlaceholder}
             value={currentMessage}
             onChange={(e) => setCurrentMessage(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleDirectMessage()}
@@ -1905,14 +1908,14 @@ Now provide your REVISED response to the customer's question above:`
             disabled={!currentMessage.trim() || isGeneratingResponse}
             className="bg-green-600 hover:bg-green-700 disabled:bg-slate-600 px-3 sm:px-4 py-2 rounded-lg transition-colors text-white text-sm sm:text-base whitespace-nowrap"
           >
-            Send
+            {t.send}
           </button>
           <button
             onClick={generateCustomerQuestion}
             disabled={isGeneratingResponse}
             className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 px-3 sm:px-4 py-2 rounded-lg transition-colors text-white text-sm sm:text-base whitespace-nowrap"
           >
-            Auto
+            {t.autoBtn}
           </button>
         </div>
 
@@ -1920,7 +1923,7 @@ Now provide your REVISED response to the customer's question above:`
         <div className="mt-3 flex gap-2 flex-wrap">
           <input
             type="text"
-            placeholder="Comment on AI coach's response for improvement..."
+            placeholder={t.feedbackPlaceholder}
             value={feedbackMessage}
             onChange={(e) => setFeedbackMessage(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleFeedback()}
@@ -1931,34 +1934,34 @@ Now provide your REVISED response to the customer's question above:`
             onClick={handleFeedback}
             disabled={!feedbackMessage.trim() || isGeneratingResponse}
             className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-slate-600 px-3 sm:px-4 py-2 rounded-lg transition-colors text-white text-sm sm:text-base whitespace-nowrap"
-            title="Provide feedback and get revised response"
+            title={t.provideCoachFeedback}
           >
-            Feedback
+            {t.feedbackBtn}
           </button>
           <button
             onClick={handleSaveAsGuideline}
             disabled={!feedbackMessage.trim()}
             className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 px-3 sm:px-4 py-2 rounded-lg transition-colors text-white whitespace-nowrap text-sm sm:text-base"
-            title="Save this feedback as a permanent training guideline"
+            title={t.saveAsGuideline}
           >
-            💾 Save as Guideline
+            💾 {t.saveAsGuideline}
           </button>
         </div>
 
         <div className="text-xs text-slate-400 mt-4 text-center">
-          🎯 <strong>Training Purpose:</strong> AI Customer asks questions → Dr. Sakura ({
-            selectedRole === 'coach' ? 'Coach' :
-            selectedRole === 'sales' ? 'Sales' :
-            selectedRole === 'customer-service' ? 'Support' :
-            'Scientist'
-          }) learns to respond properly in their role
+          🎯 <strong>{t.trainingPurpose}:</strong> {t.aiCustomer} → {selectedStaff?.name || 'AI'} ({
+            selectedRole === 'coach' ? t.roleCoach :
+            selectedRole === 'sales' ? t.roleSales :
+            selectedRole === 'customer-service' ? t.roleSupport :
+            t.roleScientist
+          })
         </div>
 
         {/* Training Memory Indicator */}
         {selectedScenario && trainingMemory[selectedScenario.customerType] && trainingMemory[selectedScenario.customerType].length > 0 && (
           <div className="mt-3 p-2 bg-purple-900/30 rounded-lg border border-purple-600">
             <div className="text-xs text-purple-300 text-center">
-              🧠 <strong>Active Training Memory:</strong> {trainingMemory[selectedScenario.customerType].length} feedback items for {selectedScenario.customerType} customers
+              🧠 <strong>{t.activeTrainingMemory}:</strong> {trainingMemory[selectedScenario.customerType].length} {t.feedbackItems} - {selectedScenario.customerType} {t.forCustomers}
             </div>
           </div>
         )}
@@ -1969,18 +1972,18 @@ Now provide your REVISED response to the customer's question above:`
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-              Training Scenarios for {
-                selectedRole === 'coach' ? '🎓 Coach' :
-                selectedRole === 'sales' ? '💰 Sales' :
-                selectedRole === 'customer-service' ? '🛡️ Customer Service' :
-                '🔬 Scientist'
-              } Role
+              {t.trainingScenariosFor} {
+                selectedRole === 'coach' ? `🎓 ${t.roleCoach}` :
+                selectedRole === 'sales' ? `💰 ${t.roleSales}` :
+                selectedRole === 'customer-service' ? `🛡️ ${t.roleSupport}` :
+                `🔬 ${t.roleScientist}`
+              }
             </h3>
             <p className="text-sm text-slate-400">
-              {selectedRole === 'coach' && 'Practice educating and guiding customers with empathy'}
-              {selectedRole === 'sales' && 'Practice closing deals, handling objections, and upselling'}
-              {selectedRole === 'customer-service' && 'Practice resolving issues and ensuring customer satisfaction'}
-              {selectedRole === 'scientist' && 'Practice providing evidence-based, technical explanations'}
+              {selectedRole === 'coach' && t.coachRoleDesc}
+              {selectedRole === 'sales' && t.salesRoleDesc}
+              {selectedRole === 'customer-service' && t.customerServiceRoleDesc}
+              {selectedRole === 'scientist' && t.scientistRoleDesc}
             </p>
           </div>
           <button
@@ -1991,10 +1994,10 @@ Now provide your REVISED response to the customer's question above:`
                 ? 'bg-slate-600 cursor-not-allowed text-slate-400'
                 : 'bg-blue-600 hover:bg-blue-700 text-white'
             } px-4 py-2 rounded-lg flex items-center gap-2 transition-colors`}
-            title={allTemplatesUsed() ? 'All scenarios generated for this role' : 'Generate more scenarios'}
+            title={allTemplatesUsed() ? t.allScenariosGenerated : t.generate3MoreScenarios}
           >
             <Plus className="w-5 h-5" />
-            {allTemplatesUsed() ? 'All Scenarios Generated' : 'Generate 3 More Scenarios'}
+            {allTemplatesUsed() ? t.allScenariosGenerated : t.generate3MoreScenarios}
           </button>
         </div>
 
@@ -2009,7 +2012,7 @@ Now provide your REVISED response to the customer's question above:`
                   <button
                     onClick={() => handleDeleteScenario(scenario.id)}
                     className="text-red-400 hover:text-red-300 p-1 rounded hover:bg-slate-600 transition-colors"
-                    title="Delete scenario"
+                    title={t.deleteScenario}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -2028,12 +2031,12 @@ Now provide your REVISED response to the customer's question above:`
               <p className="text-slate-300 text-sm mb-3">{scenario.description}</p>
 
               <div className="mb-3">
-                <p className="text-xs text-slate-400 mb-1">Scenario:</p>
+                <p className="text-xs text-slate-400 mb-1">{t.scenario}:</p>
                 <p className="text-xs text-slate-300">{scenario.scenario}</p>
               </div>
 
               <div className="mb-4">
-                <p className="text-xs text-slate-400 mb-1">Success Criteria:</p>
+                <p className="text-xs text-slate-400 mb-1">{t.successCriteria}:</p>
                 <ul className="text-xs space-y-1">
                   {scenario.successCriteria && scenario.successCriteria.map((obj, idx) => (
                     <li key={idx} className="flex items-start gap-2 text-slate-300">
@@ -2050,18 +2053,18 @@ Now provide your REVISED response to the customer's question above:`
                 className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 disabled:from-slate-600 disabled:to-slate-600 text-white py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
               >
                 <Play className="h-4 w-4" />
-                Start Training Session
+                {t.startTrainingSession}
               </button>
             </div>
           )) : (
             <div className="col-span-full text-center py-12">
-              <p className="text-slate-400 mb-4">No training scenarios yet. Create your first scenario to get started!</p>
+              <p className="text-slate-400 mb-4">{t.noScenariosYet}</p>
               <button
                 onClick={() => setShowCreateScenario(true)}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg inline-flex items-center gap-2 transition-colors"
               >
                 <Plus className="w-5 h-5" />
-                Create Your First Scenario
+                {t.createFirstScenario}
               </button>
             </div>
           )}
@@ -2072,7 +2075,7 @@ Now provide your REVISED response to the customer's question above:`
       {showCreateScenario && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-slate-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-bold text-white mb-4">Create Custom Training Scenario</h3>
+            <h3 className="text-xl font-bold text-white mb-4">{t.createCustomScenario}</h3>
             <ScenarioCreationForm
               onSubmit={createCustomScenario}
               onCancel={() => setShowCreateScenario(false)}

@@ -1,33 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
-import OpenAI from 'openai'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { getLLMConfig } from '@/app/api/llm-config/route'
 
-// Initialize Anthropic client dynamically
-function getAnthropicClient() {
-  const config = getLLMConfig()
-  if (config.provider === 'anthropic' && config.anthropicKey) {
-    return new Anthropic({ apiKey: config.anthropicKey })
-  }
-  // Fallback to environment variable
-  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-}
-
-// Initialize OpenAI client dynamically
-function getOpenAIClient() {
-  const config = getLLMConfig()
-  if (config.provider === 'openai' && config.openaiKey) {
-    return new OpenAI({ apiKey: config.openaiKey })
-  }
-  // Fallback to environment variable
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-}
-
-// Initialize Google Gemini client dynamically
+// Initialize Google Gemini client - ONLY Gemini, no fallbacks
 function getGoogleClient() {
-  const config = getLLMConfig()
-  const apiKey = config.googleKey || process.env.GOOGLE_GEMINI_API_KEY || ''
+  const apiKey = process.env.GOOGLE_GEMINI_API_KEY
+  if (!apiKey) {
+    throw new Error('GOOGLE_GEMINI_API_KEY is not configured')
+  }
   return new GoogleGenerativeAI(apiKey)
 }
 
@@ -448,177 +428,74 @@ Keep responses clear and professional (2-4 sentences).`
 
   try {
     // Get dynamic LLM configuration
-    let llmConfig = getLLMConfig()
-
-    // IMPORTANT: Force use Gemini for image analysis (vision)
-    // Only Gemini supports multimodal (text + image) input
-    if (image && llmConfig.provider !== 'google') {
-      console.log(`📷 Image detected - forcing Gemini vision model (was: ${llmConfig.provider})`)
-      llmConfig = {
-        ...llmConfig,
-        provider: 'google',
-        model: 'gemini-2.5-flash',
-        googleKey: process.env.GOOGLE_GEMINI_API_KEY
-      }
-    }
+    const llmConfig = getLLMConfig()
 
     let aiResponse = ""
 
-    // Route to appropriate AI provider
-    if (llmConfig.provider === 'google') {
-      // Google Gemini API
-      const genAI = getGoogleClient()
-      const model = genAI.getGenerativeModel({ model: llmConfig.model || 'gemini-2.5-flash' })
+    // ONLY use Google Gemini - no fallbacks
+    const genAI = getGoogleClient()
+    const model = genAI.getGenerativeModel({ model: llmConfig.model || 'gemini-2.5-flash' })
 
-      // Build conversation history for Gemini
-      const geminiContents: any[] = []
+    // Build conversation history for Gemini
+    const geminiContents: any[] = []
 
-      // Add conversation history
-      for (const msg of recentHistory) {
-        const parts: any[] = [{ text: msg.content }]
+    // Add conversation history
+    for (const msg of recentHistory) {
+      const parts: any[] = [{ text: msg.content }]
 
-        // Include image if present in history
-        if (msg.image) {
-          const imageData = msg.image.split(',')[1] // Extract base64 data
-          const mimeType = msg.image.match(/data:([^;]+);/)?.[1] || 'image/jpeg'
-          parts.push({
-            inlineData: {
-              data: imageData,
-              mimeType: mimeType
-            }
-          })
-        }
-
-        geminiContents.push({
-          role: msg.role === 'user' ? 'user' : 'model',
-          parts: parts
-        })
-      }
-
-      // Add current user message with reminder and optional image
-      const currentMessageParts: any[] = [{ text: `${message}
-
-${knowledgeContext ? `
-🚨 REMINDER: ONLY mention products/information EXPLICITLY LISTED in the knowledge base above. DO NOT mention competitor brands or make up information.` : ''}` }]
-
-      // Add image to current message if provided
-      if (image) {
-        const imageData = image.split(',')[1] // Extract base64 data after "data:image/xxx;base64,"
-        const mimeType = image.match(/data:([^;]+);/)?.[1] || 'image/jpeg'
-        currentMessageParts.push({
+      // Include image if present in history
+      if (msg.image) {
+        const imageData = msg.image.split(',')[1] // Extract base64 data
+        const mimeType = msg.image.match(/data:([^;]+);/)?.[1] || 'image/jpeg'
+        parts.push({
           inlineData: {
             data: imageData,
             mimeType: mimeType
           }
         })
-        console.log('📷 Image included in Gemini request - MIME type:', mimeType)
       }
 
       geminiContents.push({
-        role: 'user',
-        parts: currentMessageParts
+        role: msg.role === 'user' ? 'user' : 'model',
+        parts: parts
       })
-
-      const result = await model.generateContent({
-        contents: geminiContents,
-        systemInstruction: systemPrompt,
-        generationConfig: {
-          temperature: llmConfig.temperature ?? 0.7,
-          maxOutputTokens: 4096,
-        }
-      })
-
-      const response = result.response
-      aiResponse = response.text() || "I'm here to help! Could you please provide more details about your question?"
-
-    } else if (llmConfig.provider === 'openai') {
-      // OpenAI API
-      const openai = getOpenAIClient()
-
-      // GPT-5 models have different parameter requirements
-      const isGPT5 = llmConfig.model?.startsWith('gpt-5')
-
-      // GPT-5 uses max_completion_tokens instead of max_tokens
-      // Increased from 1024 to 4096 for longer responses
-      const tokenParam = isGPT5
-        ? { max_completion_tokens: 4096 }
-        : { max_tokens: 4096 }
-
-      // GPT-5 only supports temperature=1 (default), custom values not allowed
-      const temperatureParam = isGPT5
-        ? {} // Don't set temperature for GPT-5, use default (1)
-        : { temperature: llmConfig.temperature ?? 0.7 }
-
-      // Build proper message array with conversation history
-      const messages: any[] = [
-        {
-          role: 'system',
-          content: systemPrompt
-        }
-      ]
-
-      // Add conversation history as proper messages
-      for (const msg of recentHistory) {
-        messages.push({
-          role: msg.role === 'user' ? 'user' : 'assistant',
-          content: msg.content
-        })
-      }
-
-      // Add current user message
-      messages.push({
-        role: 'user',
-        content: `${message}
-
-${knowledgeContext ? `
-🚨 REMINDER: ONLY mention products/information EXPLICITLY LISTED in the knowledge base above. DO NOT mention competitor brands or make up information.` : ''}`
-      })
-
-      const response = await openai.chat.completions.create({
-        model: llmConfig.model || 'gpt-4o',
-        ...tokenParam,
-        ...temperatureParam,
-        messages
-      })
-
-      aiResponse = response.choices[0]?.message?.content || "I'm here to help! Could you please provide more details about your question?"
-
-    } else {
-      // Anthropic Claude API
-      const anthropic = getAnthropicClient()
-
-      // Build proper message array with conversation history
-      const claudeMessages: any[] = []
-
-      // Add conversation history as proper messages
-      for (const msg of recentHistory) {
-        claudeMessages.push({
-          role: msg.role === 'user' ? 'user' : 'assistant',
-          content: msg.content
-        })
-      }
-
-      // Add current user message
-      claudeMessages.push({
-        role: 'user',
-        content: `${message}
-
-${knowledgeContext ? `
-🚨 REMINDER: ONLY mention products/information EXPLICITLY LISTED in the knowledge base above. DO NOT mention competitor brands or make up information.` : ''}`
-      })
-
-      const response = await anthropic.messages.create({
-        model: llmConfig.model,
-        max_tokens: 4096, // Increased from 1024 for longer responses
-        temperature: llmConfig.temperature ?? 0.7,
-        system: systemPrompt,
-        messages: claudeMessages
-      })
-
-      aiResponse = response.content[0].type === 'text'
-        ? response.content[0].text
-        : "I'm here to help! Could you please provide more details about your question?"
     }
+
+    // Add current user message with reminder and optional image
+    const currentMessageParts: any[] = [{ text: `${message}
+
+${knowledgeContext ? `
+🚨 REMINDER: ONLY mention products/information EXPLICITLY LISTED in the knowledge base above. DO NOT mention competitor brands or make up information.` : ''}` }]
+
+    // Add image to current message if provided
+    if (image) {
+      const imageData = image.split(',')[1] // Extract base64 data after "data:image/xxx;base64,"
+      const mimeType = image.match(/data:([^;]+);/)?.[1] || 'image/jpeg'
+      currentMessageParts.push({
+        inlineData: {
+          data: imageData,
+          mimeType: mimeType
+        }
+      })
+      console.log('📷 Image included in Gemini request - MIME type:', mimeType)
+    }
+
+    geminiContents.push({
+      role: 'user',
+      parts: currentMessageParts
+    })
+
+    const result = await model.generateContent({
+      contents: geminiContents,
+      systemInstruction: systemPrompt,
+      generationConfig: {
+        temperature: llmConfig.temperature ?? 0.7,
+        maxOutputTokens: 4096,
+      }
+    })
+
+    const response = result.response
+    aiResponse = response.text() || "I'm here to help! Could you please provide more details about your question?"
 
     return aiResponse
 
@@ -643,8 +520,8 @@ export async function GET() {
   return NextResponse.json({
     status: 'ready',
     message: 'AI Chat API is operational',
-    model: config.model,
-    provider: config.provider,
+    model: config.model || 'gemini-2.5-flash',
+    provider: 'google',
     endpoints: {
       POST: 'Send a chat message with optional knowledgeBase and trainingData',
     },

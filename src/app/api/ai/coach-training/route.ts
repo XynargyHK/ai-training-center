@@ -1,33 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
-import OpenAI from 'openai'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { getLLMConfig } from '@/app/api/llm-config/route'
 
-// Initialize Anthropic client dynamically
-function getAnthropicClient() {
-  const config = getLLMConfig()
-  if (config.provider === 'anthropic' && config.anthropicKey) {
-    return new Anthropic({ apiKey: config.anthropicKey })
-  }
-  // Fallback to environment variable
-  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-}
-
-// Initialize OpenAI client dynamically
-function getOpenAIClient() {
-  const config = getLLMConfig()
-  if (config.provider === 'openai' && config.openaiKey) {
-    return new OpenAI({ apiKey: config.openaiKey })
-  }
-  // Fallback to environment variable
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-}
-
-// Initialize Google Gemini client dynamically
+// Initialize Google Gemini client - ONLY Gemini, no fallbacks
 function getGoogleClient() {
-  const config = getLLMConfig()
-  const apiKey = config.googleKey || process.env.GOOGLE_GEMINI_API_KEY || ''
+  const apiKey = process.env.GOOGLE_GEMINI_API_KEY
+  if (!apiKey) {
+    throw new Error('GOOGLE_GEMINI_API_KEY is not configured')
+  }
   return new GoogleGenerativeAI(apiKey)
 }
 
@@ -82,6 +62,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
+      )
+    }
+
+    // Check for Google API key
+    if (!process.env.GOOGLE_GEMINI_API_KEY) {
+      return NextResponse.json(
+        { error: 'GOOGLE_GEMINI_API_KEY is not configured' },
+        { status: 500 }
       )
     }
 
@@ -229,9 +217,6 @@ Generate a professional coach response.`
     // Get dynamic LLM configuration
     const llmConfig = getLLMConfig()
 
-    let aiCoachResponse = ''
-    let apiResponse: any = null
-
     const userPrompt = `As a professional AI coach, respond to this ${customerPersona} customer's message: "${customerMessage}"${knowledgeContext ? `
 
 🚨 CRITICAL REMINDER BEFORE YOU RESPOND 🚨
@@ -243,88 +228,28 @@ Generate a professional coach response.`
 
 Now respond professionally without making up ANY product names.` : ''}`
 
-    // Route to appropriate AI provider
-    if (llmConfig.provider === 'google') {
-      // Google Gemini API
-      const genAI = getGoogleClient()
-      const model = genAI.getGenerativeModel({ model: llmConfig.model || 'gemini-2.5-flash' })
+    // ONLY use Google Gemini - no fallbacks
+    const genAI = getGoogleClient()
+    const model = genAI.getGenerativeModel({ model: llmConfig.model || 'gemini-2.5-flash' })
 
-      const result = await model.generateContent({
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
-          }
-        ],
-        generationConfig: {
-          temperature: llmConfig.temperature ?? 0.7,
-          maxOutputTokens: 2048,
+    const result = await model.generateContent({
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
         }
-      })
-
-      const response = result.response
-      aiCoachResponse = response.text() || ''
-
-      apiResponse = { usage: { input_tokens: 0, output_tokens: 0 } }
-
-    } else if (llmConfig.provider === 'openai') {
-      // OpenAI API
-      const openai = getOpenAIClient()
-
-      // GPT-5 models have different parameter requirements
-      const isGPT5 = llmConfig.model?.startsWith('gpt-5')
-
-      // GPT-5 uses max_completion_tokens instead of max_tokens
-      const tokenParam = isGPT5
-        ? { max_completion_tokens: 2048 }
-        : { max_tokens: 2048 }
-
-      // GPT-5 only supports temperature=1 (default), custom values not allowed
-      const temperatureParam = isGPT5
-        ? {} // Don't set temperature for GPT-5, use default (1)
-        : { temperature: llmConfig.temperature ?? 0.7 }
-
-      apiResponse = await openai.chat.completions.create({
-        model: llmConfig.model || 'gpt-4o',
-        ...tokenParam,
-        ...temperatureParam,
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          {
-            role: 'user',
-            content: userPrompt
-          }
-        ]
-      })
-
-      aiCoachResponse = apiResponse.choices[0]?.message?.content || ''
-
-    } else {
-      // Anthropic Claude API
-      const anthropic = getAnthropicClient()
-      apiResponse = await anthropic.messages.create({
-        model: llmConfig.model,
-        max_tokens: 2048,
+      ],
+      generationConfig: {
         temperature: llmConfig.temperature ?? 0.7,
-        system: systemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: userPrompt
-          }
-        ]
-      })
+        maxOutputTokens: 2048,
+      }
+    })
 
-      aiCoachResponse = apiResponse.content[0].type === 'text'
-        ? apiResponse.content[0].text
-        : ''
-    }
+    const response = result.response
+    const aiCoachResponse = response.text() || ''
 
     if (!aiCoachResponse) {
-      throw new Error('No response generated from AI for Coach Training')
+      throw new Error('No response generated from Gemini')
     }
 
     // Return the AI Coach response
@@ -332,17 +257,11 @@ Now respond professionally without making up ANY product names.` : ''}`
       success: true,
       response: aiCoachResponse,
       metadata: {
-        model: llmConfig.model,
-        provider: llmConfig.provider,
+        model: llmConfig.model || 'gemini-2.5-flash',
+        provider: 'google',
         customerPersona: customerPersona,
         scenario: scenario,
-        tokens: apiResponse?.usage ? (
-          llmConfig.provider === 'openai'
-            ? (apiResponse.usage.prompt_tokens + apiResponse.usage.completion_tokens)
-            : llmConfig.provider === 'google'
-            ? 0
-            : (apiResponse.usage.input_tokens + apiResponse.usage.output_tokens)
-        ) : 0,
+        tokens: 0,
         timestamp: new Date().toISOString()
       }
     })
@@ -350,18 +269,8 @@ Now respond professionally without making up ANY product names.` : ''}`
   } catch (error) {
     console.error('AI Coach Training API Error:', error)
 
-    // Handle specific API errors
-    if (error instanceof Error) {
-      if (error.message.includes('API key')) {
-        return NextResponse.json(
-          { error: 'Claude API key error. Please check configuration.' },
-          { status: 500 }
-        )
-      }
-    }
-
     return NextResponse.json(
-      { error: 'Failed to generate AI Coach response' },
+      { error: error instanceof Error ? error.message : 'Failed to generate AI Coach response' },
       { status: 500 }
     )
   }
@@ -372,8 +281,8 @@ export async function GET() {
   const config = getLLMConfig()
   return NextResponse.json({
     message: 'AI Coach Training API is running',
-    model: config.model,
-    provider: config.provider,
+    model: config.model || 'gemini-2.5-flash',
+    provider: 'google',
     status: 'ready'
   })
 }
