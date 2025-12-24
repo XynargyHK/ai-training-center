@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import {
   Package, Wrench, FileText, Plus, Edit, Trash2,
   Upload, Search, Grid, List,
-  Loader2, X, BookOpen, Globe, Layout, Save, Image, Video, Copy, Check
+  Loader2, X, BookOpen, Globe, Layout, Save, Image, Video, Copy, Check,
+  ChevronDown, ChevronUp, Zap, MessageSquare, Shield, ShoppingCart
 } from 'lucide-react'
 import PolicyManager from './policy-manager'
 import ProductCatalogManager from './product-catalog-manager'
@@ -83,6 +84,19 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
   const [selectedCountry, setSelectedCountry] = useState('US')
   const [selectedLangCode, setSelectedLangCode] = useState('en')
   const [availableLocales, setAvailableLocales] = useState<{country: string, language_code: string}[]>([])
+  // Collapsible section state for landing page editor
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
+    header: false,
+    hero: false,
+    problem: true,
+    solution: true,
+    proof: true,
+    offer: true,
+    footer: true
+  })
+  const toggleSection = (section: string) => {
+    setCollapsedSections(prev => ({ ...prev, [section]: !prev[section] }))
+  }
 
   // Media Library state
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([])
@@ -294,6 +308,10 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
     show_cart: true,
     account_url: '/account',
     cart_url: '/cart',
+
+    // ═══════════════════════════════════════════════════════════════════
+    // SECTION 1: HERO SECTION - First impression
+    // ═══════════════════════════════════════════════════════════════════
     hero_slides: [
       { headline: '', subheadline: '', content: '', background_url: '', background_type: 'image', cta_text: 'Shop Now', cta_url: '#shop', text_align: 'center' }
     ],
@@ -302,7 +320,29 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
     hero_product_name: '',
     hero_benefits: [],
     hero_cta_text: 'Shop Now',
-    clinical_results: [],
+
+    // ═══════════════════════════════════════════════════════════════════
+    // SECTION 2: PROBLEM / STORY - Make user feel understood
+    // ═══════════════════════════════════════════════════════════════════
+    problem_section_enabled: false,
+    problem_headline: '',
+    problem_subheadline: '',
+    problem_variant: 'emotional', // 'emotional' | 'fear-based' | 'aspirational' | 'educational'
+    problem_statements: [], // Array of { icon: '', text: '', highlight: false }
+    story_blocks: [], // Array of { type: 'text' | 'image' | 'quote', content: '', image_url: '', author: '' }
+    pain_points: [], // Array of { icon: '', title: '', description: '' }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // SECTION 3: SOLUTION / HOW IT WORKS - Explain the idea
+    // ═══════════════════════════════════════════════════════════════════
+    solution_section_enabled: false,
+    solution_headline: '',
+    solution_subheadline: '',
+    solution_variant: '3-step', // '3-step' | 'visual-cards' | 'video-based'
+    solution_steps: [], // Array of { step_number: 1, icon: '', title: '', description: '', image_url: '' }
+    solution_features: [], // Array of { icon: '', title: '', description: '', benefits: [] }
+    solution_video_url: '',
+    // Legacy fields - kept for backwards compatibility
     tech_headline: '',
     tech_subheadline: '',
     tech_features: [],
@@ -313,16 +353,53 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
     ingredients_headline: '',
     ingredients_subheadline: '',
     ingredients: [],
+
+    // ═══════════════════════════════════════════════════════════════════
+    // SECTION 4: PROOF / TRUST - Build credibility
+    // ═══════════════════════════════════════════════════════════════════
+    proof_section_enabled: true,
+    proof_headline: '',
+    proof_subheadline: '',
+    proof_variant: 'social', // 'social' | 'clinical' | 'expert'
+    // Testimonials
+    testimonials_headline: '',
+    testimonials: [],
+    testimonials_stats: { recommend_pct: 0, five_star_pct: 0 },
+    // Clinical/Science Claims
+    clinical_results: [],
+    science_claims: [], // Array of { claim: '', source: '', link: '' }
+    // Expert Quotes
+    expert_quotes: [], // Array of { name: '', title: '', organization: '', quote: '', image_url: '' }
+    // Partner/Press Logos
+    partner_logos: [], // Array of { name: '', image_url: '', link: '' }
+    // FAQs
+    landing_faqs: [],
+    // Trust Badges
+    trust_badges: [],
+
+    // ═══════════════════════════════════════════════════════════════════
+    // SECTION 5: CTA / OFFER - Drive action
+    // ═══════════════════════════════════════════════════════════════════
+    offer_section_enabled: true,
+    offer_headline: '',
+    offer_subheadline: '',
+    offer_variant: 'buy', // 'buy' | 'book' | 'quiz' | 'contact'
+    offer_cta_text: 'Buy Now',
+    offer_cta_url: '#shop',
+    offer_urgency_text: '', // e.g., "Limited Time Only!"
+    // Pricing
     pricing_headline: '',
     pricing_subheadline: '',
     pricing_options: [],
     show_sold_indicator: false,
     sold_percentage: 0,
-    testimonials_headline: '',
-    testimonials: [],
-    testimonials_stats: { recommend_pct: 0, five_star_pct: 0 },
-    landing_faqs: [],
-    trust_badges: [],
+    // Guarantee
+    guarantee_text: '',
+    guarantee_icon: '🛡️',
+
+    // ═══════════════════════════════════════════════════════════════════
+    // FOOTER & THEME
+    // ═══════════════════════════════════════════════════════════════════
     footer_disclaimer: '',
     primary_color: '#4A90D9',
     secondary_color: '#0D1B2A',
@@ -2267,57 +2344,678 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                       )}
                     </div>
 
-                    {/* Clinical Results Section */}
-                    <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold text-violet-400">{t.clinicalResults || 'Clinical Results'}</h3>
-                        <button
-                          onClick={() => setLandingPageData({...landingPageData, clinical_results: [...(landingPageData.clinical_results || []), {value: '', label: ''}]})}
-                          className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
-                        >
-                          <Plus className="w-4 h-4" /> {t.addResult || 'Add Result'}
-                        </button>
-                      </div>
-                      <div className="space-y-3">
-                        {(landingPageData.clinical_results || []).map((result: any, index: number) => (
-                          <div key={index} className="flex gap-3 items-center">
-                            <input
-                              type="text"
-                              value={result.value || ''}
-                              onChange={(e) => {
-                                const updated = [...landingPageData.clinical_results]
-                                updated[index] = {...result, value: e.target.value}
-                                setLandingPageData({...landingPageData, clinical_results: updated})
-                              }}
-                              placeholder={t.resultValue || 'Value (e.g., 94%)'}
-                              className="w-24 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                            />
-                            <input
-                              type="text"
-                              value={result.label || ''}
-                              onChange={(e) => {
-                                const updated = [...landingPageData.clinical_results]
-                                updated[index] = {...result, label: e.target.value}
-                                setLandingPageData({...landingPageData, clinical_results: updated})
-                              }}
-                              placeholder={t.resultLabel || 'Label (e.g., Improved)'}
-                              className="flex-1 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                            />
-                            <button
-                              onClick={() => {
-                                const updated = landingPageData.clinical_results.filter((_: any, i: number) => i !== index)
-                                setLandingPageData({...landingPageData, clinical_results: updated})
-                              }}
-                              className="text-red-400 hover:text-red-300"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                    {/* ═══════════════════════════════════════════════════════════════════ */}
+                    {/* SECTION 2: PROBLEM / STORY - Make user feel understood */}
+                    {/* ═══════════════════════════════════════════════════════════════════ */}
+                    <div className="bg-gradient-to-r from-rose-900/20 to-slate-800/50 rounded-lg border border-rose-500/30">
+                      <button
+                        onClick={() => toggleSection('problem')}
+                        className="w-full flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors rounded-t-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-rose-500/20 flex items-center justify-center">
+                            <MessageSquare className="w-5 h-5 text-rose-400" />
                           </div>
-                        ))}
-                      </div>
+                          <div className="text-left">
+                            <h3 className="text-lg font-semibold text-rose-400">2️⃣ Problem / Story</h3>
+                            <p className="text-xs text-slate-400">Make user feel understood</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={landingPageData.problem_section_enabled || false}
+                              onChange={(e) => {
+                                e.stopPropagation()
+                                setLandingPageData({...landingPageData, problem_section_enabled: e.target.checked})
+                              }}
+                              className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-rose-500 focus:ring-rose-500"
+                            />
+                            <span className="text-slate-300">Enabled</span>
+                          </label>
+                          {collapsedSections.problem ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronUp className="w-5 h-5 text-slate-400" />}
+                        </div>
+                      </button>
+
+                      {!collapsedSections.problem && (
+                        <div className="p-6 pt-2 space-y-4 border-t border-slate-600/50">
+                          {/* Variant Selector */}
+                          <div>
+                            <label className="block text-sm text-slate-400 mb-2">Variant Style</label>
+                            <div className="flex gap-2">
+                              {['emotional', 'fear-based', 'aspirational', 'educational'].map(variant => (
+                                <button
+                                  key={variant}
+                                  onClick={() => setLandingPageData({...landingPageData, problem_variant: variant})}
+                                  className={`px-3 py-1.5 text-sm rounded capitalize ${
+                                    (landingPageData.problem_variant || 'emotional') === variant
+                                      ? 'bg-rose-600 text-white'
+                                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                  }`}
+                                >
+                                  {variant}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Headline & Subheadline */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm text-slate-400 mb-1">Headline</label>
+                              <input
+                                type="text"
+                                value={landingPageData.problem_headline || ''}
+                                onChange={(e) => setLandingPageData({...landingPageData, problem_headline: e.target.value})}
+                                placeholder="e.g., Tired of..."
+                                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm text-slate-400 mb-1">Subheadline</label>
+                              <input
+                                type="text"
+                                value={landingPageData.problem_subheadline || ''}
+                                onChange={(e) => setLandingPageData({...landingPageData, problem_subheadline: e.target.value})}
+                                placeholder="e.g., You're not alone..."
+                                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Pain Points */}
+                          <div>
+                            <div className="flex justify-between items-center mb-2">
+                              <label className="text-sm text-slate-400">Pain Points</label>
+                              <button
+                                onClick={() => setLandingPageData({
+                                  ...landingPageData,
+                                  pain_points: [...(landingPageData.pain_points || []), { icon: '😓', title: '', description: '' }]
+                                })}
+                                className="text-sm text-rose-400 hover:text-rose-300 flex items-center gap-1"
+                              >
+                                <Plus className="w-4 h-4" /> Add Pain Point
+                              </button>
+                            </div>
+                            <div className="space-y-3">
+                              {(landingPageData.pain_points || []).map((point: any, index: number) => (
+                                <div key={index} className="flex gap-3 items-start bg-slate-800/50 p-3 rounded-lg">
+                                  <input
+                                    type="text"
+                                    value={point.icon || ''}
+                                    onChange={(e) => {
+                                      const updated = [...(landingPageData.pain_points || [])]
+                                      updated[index] = {...point, icon: e.target.value}
+                                      setLandingPageData({...landingPageData, pain_points: updated})
+                                    }}
+                                    placeholder="😓"
+                                    className="w-12 px-2 py-2 bg-slate-700 border border-slate-600 rounded text-center text-lg"
+                                  />
+                                  <div className="flex-1 space-y-2">
+                                    <input
+                                      type="text"
+                                      value={point.title || ''}
+                                      onChange={(e) => {
+                                        const updated = [...(landingPageData.pain_points || [])]
+                                        updated[index] = {...point, title: e.target.value}
+                                        setLandingPageData({...landingPageData, pain_points: updated})
+                                      }}
+                                      placeholder="Pain point title..."
+                                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 text-sm"
+                                    />
+                                    <textarea
+                                      value={point.description || ''}
+                                      onChange={(e) => {
+                                        const updated = [...(landingPageData.pain_points || [])]
+                                        updated[index] = {...point, description: e.target.value}
+                                        setLandingPageData({...landingPageData, pain_points: updated})
+                                      }}
+                                      placeholder="Description..."
+                                      rows={2}
+                                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 text-sm"
+                                    />
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      const updated = (landingPageData.pain_points || []).filter((_: any, i: number) => i !== index)
+                                      setLandingPageData({...landingPageData, pain_points: updated})
+                                    }}
+                                    className="text-red-400 hover:text-red-300 p-1"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Story Blocks */}
+                          <div>
+                            <div className="flex justify-between items-center mb-2">
+                              <label className="text-sm text-slate-400">Story Blocks</label>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => setLandingPageData({
+                                    ...landingPageData,
+                                    story_blocks: [...(landingPageData.story_blocks || []), { type: 'text', content: '' }]
+                                  })}
+                                  className="text-sm text-rose-400 hover:text-rose-300 flex items-center gap-1"
+                                >
+                                  <Plus className="w-4 h-4" /> Text
+                                </button>
+                                <button
+                                  onClick={() => setLandingPageData({
+                                    ...landingPageData,
+                                    story_blocks: [...(landingPageData.story_blocks || []), { type: 'quote', content: '', author: '' }]
+                                  })}
+                                  className="text-sm text-rose-400 hover:text-rose-300 flex items-center gap-1"
+                                >
+                                  <Plus className="w-4 h-4" /> Quote
+                                </button>
+                              </div>
+                            </div>
+                            <div className="space-y-3">
+                              {(landingPageData.story_blocks || []).map((block: any, index: number) => (
+                                <div key={index} className="bg-slate-800/50 p-3 rounded-lg">
+                                  <div className="flex justify-between items-center mb-2">
+                                    <span className="text-xs text-slate-500 uppercase">{block.type}</span>
+                                    <button
+                                      onClick={() => {
+                                        const updated = (landingPageData.story_blocks || []).filter((_: any, i: number) => i !== index)
+                                        setLandingPageData({...landingPageData, story_blocks: updated})
+                                      }}
+                                      className="text-red-400 hover:text-red-300"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                  <textarea
+                                    value={block.content || ''}
+                                    onChange={(e) => {
+                                      const updated = [...(landingPageData.story_blocks || [])]
+                                      updated[index] = {...block, content: e.target.value}
+                                      setLandingPageData({...landingPageData, story_blocks: updated})
+                                    }}
+                                    placeholder={block.type === 'quote' ? 'Enter quote...' : 'Enter story text...'}
+                                    rows={3}
+                                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 text-sm"
+                                  />
+                                  {block.type === 'quote' && (
+                                    <input
+                                      type="text"
+                                      value={block.author || ''}
+                                      onChange={(e) => {
+                                        const updated = [...(landingPageData.story_blocks || [])]
+                                        updated[index] = {...block, author: e.target.value}
+                                        setLandingPageData({...landingPageData, story_blocks: updated})
+                                      }}
+                                      placeholder="- Author name"
+                                      className="w-full mt-2 px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 text-sm"
+                                    />
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Testimonials Section */}
+                    {/* ═══════════════════════════════════════════════════════════════════ */}
+                    {/* SECTION 3: SOLUTION / HOW IT WORKS - Explain the idea */}
+                    {/* ═══════════════════════════════════════════════════════════════════ */}
+                    <div className="bg-gradient-to-r from-emerald-900/20 to-slate-800/50 rounded-lg border border-emerald-500/30">
+                      <button
+                        onClick={() => toggleSection('solution')}
+                        className="w-full flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors rounded-t-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                            <Zap className="w-5 h-5 text-emerald-400" />
+                          </div>
+                          <div className="text-left">
+                            <h3 className="text-lg font-semibold text-emerald-400">3️⃣ Solution / How It Works</h3>
+                            <p className="text-xs text-slate-400">Explain the idea</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={landingPageData.solution_section_enabled || false}
+                              onChange={(e) => {
+                                e.stopPropagation()
+                                setLandingPageData({...landingPageData, solution_section_enabled: e.target.checked})
+                              }}
+                              className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-emerald-500 focus:ring-emerald-500"
+                            />
+                            <span className="text-slate-300">Enabled</span>
+                          </label>
+                          {collapsedSections.solution ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronUp className="w-5 h-5 text-slate-400" />}
+                        </div>
+                      </button>
+
+                      {!collapsedSections.solution && (
+                        <div className="p-6 pt-2 space-y-4 border-t border-slate-600/50">
+                          {/* Variant Selector */}
+                          <div>
+                            <label className="block text-sm text-slate-400 mb-2">Variant Style</label>
+                            <div className="flex gap-2">
+                              {['3-step', 'visual-cards', 'video-based'].map(variant => (
+                                <button
+                                  key={variant}
+                                  onClick={() => setLandingPageData({...landingPageData, solution_variant: variant})}
+                                  className={`px-3 py-1.5 text-sm rounded capitalize ${
+                                    (landingPageData.solution_variant || '3-step') === variant
+                                      ? 'bg-emerald-600 text-white'
+                                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                  }`}
+                                >
+                                  {variant}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Headline & Subheadline */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm text-slate-400 mb-1">Headline</label>
+                              <input
+                                type="text"
+                                value={landingPageData.solution_headline || ''}
+                                onChange={(e) => setLandingPageData({...landingPageData, solution_headline: e.target.value})}
+                                placeholder="e.g., How It Works"
+                                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm text-slate-400 mb-1">Subheadline</label>
+                              <input
+                                type="text"
+                                value={landingPageData.solution_subheadline || ''}
+                                onChange={(e) => setLandingPageData({...landingPageData, solution_subheadline: e.target.value})}
+                                placeholder="e.g., Simple 3-step process..."
+                                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Video URL (for video-based variant) */}
+                          {landingPageData.solution_variant === 'video-based' && (
+                            <div>
+                              <label className="block text-sm text-slate-400 mb-1">Video URL</label>
+                              <input
+                                type="text"
+                                value={landingPageData.solution_video_url || ''}
+                                onChange={(e) => setLandingPageData({...landingPageData, solution_video_url: e.target.value})}
+                                placeholder="https://youtube.com/... or video file URL"
+                                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500"
+                              />
+                            </div>
+                          )}
+
+                          {/* Solution Steps */}
+                          <div>
+                            <div className="flex justify-between items-center mb-2">
+                              <label className="text-sm text-slate-400">Steps</label>
+                              <button
+                                onClick={() => setLandingPageData({
+                                  ...landingPageData,
+                                  solution_steps: [...(landingPageData.solution_steps || []), {
+                                    step_number: (landingPageData.solution_steps || []).length + 1,
+                                    icon: '✨',
+                                    title: '',
+                                    description: ''
+                                  }]
+                                })}
+                                className="text-sm text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+                              >
+                                <Plus className="w-4 h-4" /> Add Step
+                              </button>
+                            </div>
+                            <div className="space-y-3">
+                              {(landingPageData.solution_steps || []).map((step: any, index: number) => (
+                                <div key={index} className="flex gap-3 items-start bg-slate-800/50 p-3 rounded-lg">
+                                  <div className="flex flex-col items-center gap-1">
+                                    <span className="w-8 h-8 bg-emerald-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                                      {step.step_number || index + 1}
+                                    </span>
+                                    <input
+                                      type="text"
+                                      value={step.icon || ''}
+                                      onChange={(e) => {
+                                        const updated = [...(landingPageData.solution_steps || [])]
+                                        updated[index] = {...step, icon: e.target.value}
+                                        setLandingPageData({...landingPageData, solution_steps: updated})
+                                      }}
+                                      placeholder="✨"
+                                      className="w-10 px-1 py-1 bg-slate-700 border border-slate-600 rounded text-center text-lg"
+                                    />
+                                  </div>
+                                  <div className="flex-1 space-y-2">
+                                    <input
+                                      type="text"
+                                      value={step.title || ''}
+                                      onChange={(e) => {
+                                        const updated = [...(landingPageData.solution_steps || [])]
+                                        updated[index] = {...step, title: e.target.value}
+                                        setLandingPageData({...landingPageData, solution_steps: updated})
+                                      }}
+                                      placeholder="Step title..."
+                                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 text-sm font-medium"
+                                    />
+                                    <textarea
+                                      value={step.description || ''}
+                                      onChange={(e) => {
+                                        const updated = [...(landingPageData.solution_steps || [])]
+                                        updated[index] = {...step, description: e.target.value}
+                                        setLandingPageData({...landingPageData, solution_steps: updated})
+                                      }}
+                                      placeholder="Step description..."
+                                      rows={2}
+                                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 text-sm"
+                                    />
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      const updated = (landingPageData.solution_steps || []).filter((_: any, i: number) => i !== index)
+                                      setLandingPageData({...landingPageData, solution_steps: updated})
+                                    }}
+                                    className="text-red-400 hover:text-red-300 p-1"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Solution Features */}
+                          <div>
+                            <div className="flex justify-between items-center mb-2">
+                              <label className="text-sm text-slate-400">Feature Highlights</label>
+                              <button
+                                onClick={() => setLandingPageData({
+                                  ...landingPageData,
+                                  solution_features: [...(landingPageData.solution_features || []), { icon: '⭐', title: '', description: '', benefits: [] }]
+                                })}
+                                className="text-sm text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+                              >
+                                <Plus className="w-4 h-4" /> Add Feature
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {(landingPageData.solution_features || []).map((feature: any, index: number) => (
+                                <div key={index} className="bg-slate-800/50 p-3 rounded-lg">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <input
+                                      type="text"
+                                      value={feature.icon || ''}
+                                      onChange={(e) => {
+                                        const updated = [...(landingPageData.solution_features || [])]
+                                        updated[index] = {...feature, icon: e.target.value}
+                                        setLandingPageData({...landingPageData, solution_features: updated})
+                                      }}
+                                      placeholder="⭐"
+                                      className="w-10 px-1 py-1 bg-slate-700 border border-slate-600 rounded text-center text-lg"
+                                    />
+                                    <button
+                                      onClick={() => {
+                                        const updated = (landingPageData.solution_features || []).filter((_: any, i: number) => i !== index)
+                                        setLandingPageData({...landingPageData, solution_features: updated})
+                                      }}
+                                      className="text-red-400 hover:text-red-300"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                  <input
+                                    type="text"
+                                    value={feature.title || ''}
+                                    onChange={(e) => {
+                                      const updated = [...(landingPageData.solution_features || [])]
+                                      updated[index] = {...feature, title: e.target.value}
+                                      setLandingPageData({...landingPageData, solution_features: updated})
+                                    }}
+                                    placeholder="Feature title..."
+                                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 text-sm mb-2"
+                                  />
+                                  <textarea
+                                    value={feature.description || ''}
+                                    onChange={(e) => {
+                                      const updated = [...(landingPageData.solution_features || [])]
+                                      updated[index] = {...feature, description: e.target.value}
+                                      setLandingPageData({...landingPageData, solution_features: updated})
+                                    }}
+                                    placeholder="Description..."
+                                    rows={2}
+                                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 text-sm"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* ═══════════════════════════════════════════════════════════════════ */}
+                    {/* SECTION 4: PROOF / TRUST - Build credibility */}
+                    {/* ═══════════════════════════════════════════════════════════════════ */}
+                    <div className="bg-gradient-to-r from-blue-900/20 to-slate-800/50 rounded-lg border border-blue-500/30">
+                      <button
+                        onClick={() => toggleSection('proof')}
+                        className="w-full flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors rounded-t-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                            <Shield className="w-5 h-5 text-blue-400" />
+                          </div>
+                          <div className="text-left">
+                            <h3 className="text-lg font-semibold text-blue-400">4️⃣ Proof / Trust</h3>
+                            <p className="text-xs text-slate-400">Build credibility</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={landingPageData.proof_section_enabled !== false}
+                              onChange={(e) => {
+                                e.stopPropagation()
+                                setLandingPageData({...landingPageData, proof_section_enabled: e.target.checked})
+                              }}
+                              className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-blue-500"
+                            />
+                            <span className="text-slate-300">Enabled</span>
+                          </label>
+                          {collapsedSections.proof ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronUp className="w-5 h-5 text-slate-400" />}
+                        </div>
+                      </button>
+
+                      {!collapsedSections.proof && (
+                        <div className="p-6 pt-2 space-y-4 border-t border-slate-600/50">
+                          {/* Variant Selector */}
+                          <div>
+                            <label className="block text-sm text-slate-400 mb-2">Primary Proof Type</label>
+                            <div className="flex gap-2">
+                              {['social', 'clinical', 'expert'].map(variant => (
+                                <button
+                                  key={variant}
+                                  onClick={() => setLandingPageData({...landingPageData, proof_variant: variant})}
+                                  className={`px-3 py-1.5 text-sm rounded capitalize ${
+                                    (landingPageData.proof_variant || 'social') === variant
+                                      ? 'bg-blue-600 text-white'
+                                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                  }`}
+                                >
+                                  {variant === 'social' ? 'Social Proof' : variant === 'clinical' ? 'Clinical Proof' : 'Expert Quotes'}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Sub-sections within Proof */}
+                          <div className="space-y-4">
+                            {/* Clinical Results - nested */}
+                            <div className="bg-slate-800/50 rounded-lg p-4">
+                              <div className="flex justify-between items-center mb-3">
+                                <h4 className="text-sm font-semibold text-blue-300">📊 Clinical Results</h4>
+                                <button
+                                  onClick={() => setLandingPageData({...landingPageData, clinical_results: [...(landingPageData.clinical_results || []), {value: '', label: ''}]})}
+                                  className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
+                                >
+                                  <Plus className="w-3 h-3" /> Add
+                                </button>
+                              </div>
+                              <div className="space-y-2">
+                                {(landingPageData.clinical_results || []).map((result: any, index: number) => (
+                                  <div key={index} className="flex gap-2 items-center">
+                                    <input
+                                      type="text"
+                                      value={result.value || ''}
+                                      onChange={(e) => {
+                                        const updated = [...landingPageData.clinical_results]
+                                        updated[index] = {...result, value: e.target.value}
+                                        setLandingPageData({...landingPageData, clinical_results: updated})
+                                      }}
+                                      placeholder="94%"
+                                      className="w-20 px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={result.label || ''}
+                                      onChange={(e) => {
+                                        const updated = [...landingPageData.clinical_results]
+                                        updated[index] = {...result, label: e.target.value}
+                                        setLandingPageData({...landingPageData, clinical_results: updated})
+                                      }}
+                                      placeholder="saw improvement"
+                                      className="flex-1 px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                                    />
+                                    <button
+                                      onClick={() => {
+                                        const updated = landingPageData.clinical_results.filter((_: any, i: number) => i !== index)
+                                        setLandingPageData({...landingPageData, clinical_results: updated})
+                                      }}
+                                      className="text-red-400 hover:text-red-300"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Expert Quotes - nested */}
+                            <div className="bg-slate-800/50 rounded-lg p-4">
+                              <div className="flex justify-between items-center mb-3">
+                                <h4 className="text-sm font-semibold text-blue-300">👨‍⚕️ Expert Quotes</h4>
+                                <button
+                                  onClick={() => setLandingPageData({...landingPageData, expert_quotes: [...(landingPageData.expert_quotes || []), {name: '', title: '', quote: ''}]})}
+                                  className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
+                                >
+                                  <Plus className="w-3 h-3" /> Add
+                                </button>
+                              </div>
+                              <div className="space-y-3">
+                                {(landingPageData.expert_quotes || []).map((expert: any, index: number) => (
+                                  <div key={index} className="bg-slate-700/50 p-3 rounded-lg">
+                                    <div className="flex gap-2 mb-2">
+                                      <input
+                                        type="text"
+                                        value={expert.name || ''}
+                                        onChange={(e) => {
+                                          const updated = [...(landingPageData.expert_quotes || [])]
+                                          updated[index] = {...expert, name: e.target.value}
+                                          setLandingPageData({...landingPageData, expert_quotes: updated})
+                                        }}
+                                        placeholder="Dr. Jane Smith"
+                                        className="flex-1 px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                                      />
+                                      <input
+                                        type="text"
+                                        value={expert.title || ''}
+                                        onChange={(e) => {
+                                          const updated = [...(landingPageData.expert_quotes || [])]
+                                          updated[index] = {...expert, title: e.target.value}
+                                          setLandingPageData({...landingPageData, expert_quotes: updated})
+                                        }}
+                                        placeholder="Dermatologist"
+                                        className="flex-1 px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                                      />
+                                      <button
+                                        onClick={() => {
+                                          const updated = (landingPageData.expert_quotes || []).filter((_: any, i: number) => i !== index)
+                                          setLandingPageData({...landingPageData, expert_quotes: updated})
+                                        }}
+                                        className="text-red-400 hover:text-red-300"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                    <textarea
+                                      value={expert.quote || ''}
+                                      onChange={(e) => {
+                                        const updated = [...(landingPageData.expert_quotes || [])]
+                                        updated[index] = {...expert, quote: e.target.value}
+                                        setLandingPageData({...landingPageData, expert_quotes: updated})
+                                      }}
+                                      placeholder="Expert quote..."
+                                      rows={2}
+                                      className="w-full px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Partner Logos - nested */}
+                            <div className="bg-slate-800/50 rounded-lg p-4">
+                              <div className="flex justify-between items-center mb-3">
+                                <h4 className="text-sm font-semibold text-blue-300">🏢 Partner/Press Logos</h4>
+                                <button
+                                  onClick={() => setLandingPageData({...landingPageData, partner_logos: [...(landingPageData.partner_logos || []), {name: '', image_url: ''}]})}
+                                  className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
+                                >
+                                  <Plus className="w-3 h-3" /> Add
+                                </button>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                {(landingPageData.partner_logos || []).map((logo: any, index: number) => (
+                                  <div key={index} className="flex gap-2 items-center">
+                                    <input
+                                      type="text"
+                                      value={logo.name || ''}
+                                      onChange={(e) => {
+                                        const updated = [...(landingPageData.partner_logos || [])]
+                                        updated[index] = {...logo, name: e.target.value}
+                                        setLandingPageData({...landingPageData, partner_logos: updated})
+                                      }}
+                                      placeholder="Partner name"
+                                      className="flex-1 px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                                    />
+                                    <button
+                                      onClick={() => {
+                                        const updated = (landingPageData.partner_logos || []).filter((_: any, i: number) => i !== index)
+                                        setLandingPageData({...landingPageData, partner_logos: updated})
+                                      }}
+                                      className="text-red-400 hover:text-red-300"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Testimonials Section (under Proof) */}
                     <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
                       <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-semibold text-violet-400">{t.testimonialsSection || 'Testimonials'}</h3>
@@ -2480,6 +3178,270 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                           </div>
                         ))}
                       </div>
+                    </div>
+
+                    {/* ═══════════════════════════════════════════════════════════════════ */}
+                    {/* SECTION 5: CTA / OFFER - Drive action */}
+                    {/* ═══════════════════════════════════════════════════════════════════ */}
+                    <div className="bg-gradient-to-r from-amber-900/20 to-slate-800/50 rounded-lg border border-amber-500/30">
+                      <button
+                        onClick={() => toggleSection('offer')}
+                        className="w-full flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors rounded-t-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                            <ShoppingCart className="w-5 h-5 text-amber-400" />
+                          </div>
+                          <div className="text-left">
+                            <h3 className="text-lg font-semibold text-amber-400">5️⃣ CTA / Offer</h3>
+                            <p className="text-xs text-slate-400">Drive action</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={landingPageData.offer_section_enabled !== false}
+                              onChange={(e) => {
+                                e.stopPropagation()
+                                setLandingPageData({...landingPageData, offer_section_enabled: e.target.checked})
+                              }}
+                              className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-amber-500 focus:ring-amber-500"
+                            />
+                            <span className="text-slate-300">Enabled</span>
+                          </label>
+                          {collapsedSections.offer ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronUp className="w-5 h-5 text-slate-400" />}
+                        </div>
+                      </button>
+
+                      {!collapsedSections.offer && (
+                        <div className="p-6 pt-2 space-y-4 border-t border-slate-600/50">
+                          {/* Variant Selector */}
+                          <div>
+                            <label className="block text-sm text-slate-400 mb-2">CTA Type</label>
+                            <div className="flex gap-2">
+                              {['buy', 'book', 'quiz', 'contact'].map(variant => (
+                                <button
+                                  key={variant}
+                                  onClick={() => setLandingPageData({...landingPageData, offer_variant: variant})}
+                                  className={`px-3 py-1.5 text-sm rounded capitalize ${
+                                    (landingPageData.offer_variant || 'buy') === variant
+                                      ? 'bg-amber-600 text-white'
+                                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                  }`}
+                                >
+                                  {variant === 'buy' ? '🛒 Buy' : variant === 'book' ? '📅 Book' : variant === 'quiz' ? '📝 Quiz' : '📧 Contact'}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Headline & Subheadline */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm text-slate-400 mb-1">Offer Headline</label>
+                              <input
+                                type="text"
+                                value={landingPageData.offer_headline || ''}
+                                onChange={(e) => setLandingPageData({...landingPageData, offer_headline: e.target.value})}
+                                placeholder="e.g., Special Launch Offer"
+                                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm text-slate-400 mb-1">Offer Subheadline</label>
+                              <input
+                                type="text"
+                                value={landingPageData.offer_subheadline || ''}
+                                onChange={(e) => setLandingPageData({...landingPageData, offer_subheadline: e.target.value})}
+                                placeholder="e.g., Limited time only..."
+                                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500"
+                              />
+                            </div>
+                          </div>
+
+                          {/* CTA Button */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm text-slate-400 mb-1">CTA Button Text</label>
+                              <input
+                                type="text"
+                                value={landingPageData.offer_cta_text || ''}
+                                onChange={(e) => setLandingPageData({...landingPageData, offer_cta_text: e.target.value})}
+                                placeholder="e.g., Buy Now"
+                                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm text-slate-400 mb-1">CTA Button URL</label>
+                              <input
+                                type="text"
+                                value={landingPageData.offer_cta_url || ''}
+                                onChange={(e) => setLandingPageData({...landingPageData, offer_cta_url: e.target.value})}
+                                placeholder="e.g., #shop or /checkout"
+                                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Urgency & Guarantee */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm text-slate-400 mb-1">Urgency Text</label>
+                              <input
+                                type="text"
+                                value={landingPageData.offer_urgency_text || ''}
+                                onChange={(e) => setLandingPageData({...landingPageData, offer_urgency_text: e.target.value})}
+                                placeholder="e.g., Only 5 left in stock!"
+                                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm text-slate-400 mb-1">Guarantee Text</label>
+                              <input
+                                type="text"
+                                value={landingPageData.guarantee_text || ''}
+                                onChange={(e) => setLandingPageData({...landingPageData, guarantee_text: e.target.value})}
+                                placeholder="e.g., 30-Day Money Back Guarantee"
+                                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Pricing Section (nested) */}
+                          <div className="bg-slate-800/50 rounded-lg p-4">
+                            <div className="flex justify-between items-center mb-3">
+                              <h4 className="text-sm font-semibold text-amber-300">💰 Pricing Options</h4>
+                              <button
+                                onClick={() => setLandingPageData({
+                                  ...landingPageData,
+                                  pricing_options: [...(landingPageData.pricing_options || []), {
+                                    id: `option-${Date.now()}`,
+                                    label: '',
+                                    originalPrice: 0,
+                                    salePrice: 0,
+                                    discount: 0,
+                                    popular: false
+                                  }]
+                                })}
+                                className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300"
+                              >
+                                <Plus className="w-3 h-3" /> Add Option
+                              </button>
+                            </div>
+                            <div className="space-y-3">
+                              {(landingPageData.pricing_options || []).map((option: any, index: number) => (
+                                <div key={index} className="bg-slate-700/50 p-3 rounded-lg">
+                                  <div className="flex gap-2 items-center mb-2">
+                                    <input
+                                      type="text"
+                                      value={option.label || ''}
+                                      onChange={(e) => {
+                                        const updated = [...(landingPageData.pricing_options || [])]
+                                        updated[index] = {...option, label: e.target.value}
+                                        setLandingPageData({...landingPageData, pricing_options: updated})
+                                      }}
+                                      placeholder="Package name"
+                                      className="flex-1 px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                                    />
+                                    <label className="flex items-center gap-1 text-xs text-slate-300">
+                                      <input
+                                        type="checkbox"
+                                        checked={option.popular || false}
+                                        onChange={(e) => {
+                                          const updated = [...(landingPageData.pricing_options || [])]
+                                          updated[index] = {...option, popular: e.target.checked}
+                                          setLandingPageData({...landingPageData, pricing_options: updated})
+                                        }}
+                                        className="w-3 h-3"
+                                      />
+                                      Popular
+                                    </label>
+                                    <button
+                                      onClick={() => {
+                                        const updated = (landingPageData.pricing_options || []).filter((_: any, i: number) => i !== index)
+                                        setLandingPageData({...landingPageData, pricing_options: updated})
+                                      }}
+                                      className="text-red-400 hover:text-red-300"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                  <div className="grid grid-cols-3 gap-2">
+                                    <div>
+                                      <label className="block text-xs text-slate-500 mb-1">Original $</label>
+                                      <input
+                                        type="number"
+                                        value={option.originalPrice || 0}
+                                        onChange={(e) => {
+                                          const updated = [...(landingPageData.pricing_options || [])]
+                                          const original = parseFloat(e.target.value) || 0
+                                          const sale = option.salePrice || 0
+                                          const discount = original > 0 ? Math.round((1 - sale / original) * 100) : 0
+                                          updated[index] = {...option, originalPrice: original, discount}
+                                          setLandingPageData({...landingPageData, pricing_options: updated})
+                                        }}
+                                        className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-xs text-slate-500 mb-1">Sale $</label>
+                                      <input
+                                        type="number"
+                                        value={option.salePrice || 0}
+                                        onChange={(e) => {
+                                          const updated = [...(landingPageData.pricing_options || [])]
+                                          const sale = parseFloat(e.target.value) || 0
+                                          const original = option.originalPrice || 0
+                                          const discount = original > 0 ? Math.round((1 - sale / original) * 100) : 0
+                                          updated[index] = {...option, salePrice: sale, discount}
+                                          setLandingPageData({...landingPageData, pricing_options: updated})
+                                        }}
+                                        className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-xs text-slate-500 mb-1">Discount %</label>
+                                      <input
+                                        type="number"
+                                        value={option.discount || 0}
+                                        readOnly
+                                        className="w-full px-2 py-1 bg-slate-600 border border-slate-600 rounded text-slate-300 text-sm"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Sold Indicator */}
+                          <div className="flex items-center gap-4">
+                            <label className="flex items-center gap-2 text-sm">
+                              <input
+                                type="checkbox"
+                                checked={landingPageData.show_sold_indicator || false}
+                                onChange={(e) => setLandingPageData({...landingPageData, show_sold_indicator: e.target.checked})}
+                                className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-amber-500"
+                              />
+                              <span className="text-slate-300">Show Sold Indicator</span>
+                            </label>
+                            {landingPageData.show_sold_indicator && (
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={landingPageData.sold_percentage || 0}
+                                  onChange={(e) => setLandingPageData({...landingPageData, sold_percentage: parseInt(e.target.value) || 0})}
+                                  className="w-16 px-2 py-1 bg-slate-800 border border-slate-600 rounded text-white text-sm"
+                                />
+                                <span className="text-slate-400 text-sm">% Sold</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Theme Colors & Footer */}
