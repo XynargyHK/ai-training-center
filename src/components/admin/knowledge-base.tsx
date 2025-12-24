@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import {
   Package, Wrench, FileText, Plus, Edit, Trash2,
   Upload, Search, Grid, List,
-  Loader2, X, BookOpen, Globe
+  Loader2, X, BookOpen, Globe, Layout, Save, Image, Video, Copy, Check
 } from 'lucide-react'
 import PolicyManager from './policy-manager'
 import ProductCatalogManager from './product-catalog-manager'
@@ -39,7 +39,16 @@ interface KnowledgeBaseProps {
   language: Language
 }
 
-type ActiveSubTab = 'industry' | 'products' | 'services' | 'policies'
+type ActiveSubTab = 'industry' | 'products' | 'services' | 'landing' | 'media'
+
+interface MediaFile {
+  id: string
+  name: string
+  size: number
+  type: string
+  url: string
+  createdAt: string
+}
 type ViewMode = 'grid' | 'list'
 
 const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language }) => {
@@ -66,9 +75,30 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
   const [editingService, setEditingService] = useState<Service | null>(null)
   const [newService, setNewService] = useState({ name: '', description: '', price: '' })
 
+  // Landing Page state
+  const [landingPageData, setLandingPageData] = useState<any>(null)
+  const [hasLandingPage, setHasLandingPage] = useState(false)
+  const [landingPageLoading, setLandingPageLoading] = useState(false)
+  const [landingPageSaving, setLandingPageSaving] = useState(false)
+  const [selectedCountry, setSelectedCountry] = useState('US')
+  const [selectedLangCode, setSelectedLangCode] = useState('en')
+  const [availableLocales, setAvailableLocales] = useState<{country: string, language_code: string}[]>([])
+
+  // Media Library state
+  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([])
+  const [mediaLoading, setMediaLoading] = useState(false)
+  const [mediaUploading, setMediaUploading] = useState(false)
+  const [logoUploading, setLogoUploading] = useState(false)
+  const logoInputRef = useRef<HTMLInputElement>(null)
+  const [heroSlideUploading, setHeroSlideUploading] = useState<number | null>(null)
+  const heroSlideInputRefs = useRef<(HTMLInputElement | null)[]>([])
+  const [showMediaPicker, setShowMediaPicker] = useState<number | null>(null) // slide index or null
+  const [copiedUrl, setCopiedUrl] = useState<string | null>(null)
+
   // File refs
   const pdfInputRef = useRef<HTMLInputElement>(null)
   const industryDocInputRef = useRef<HTMLInputElement>(null)
+  const mediaInputRef = useRef<HTMLInputElement>(null)
 
   // Load data on mount
   useEffect(() => {
@@ -93,12 +123,485 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
       }
       // Products tab uses ProductCatalogManager which loads its own data
       // Policies tab uses PolicyManager which loads its own data
+      // Landing tab loads its own data via loadLandingPage
+      if (activeSubTab === 'landing') {
+        loadLandingPage()
+      }
+      // Media tab loads its own data via loadMediaFiles
+      if (activeSubTab === 'media') {
+        loadMediaFiles()
+      }
     } catch (error) {
       console.error('Failed to load knowledge base data:', error)
     } finally {
       setIsLoading(false)
     }
   }
+
+  // Landing Page functions
+  const loadLandingPage = async (country?: string, langCode?: string) => {
+    if (!businessUnitId) return
+    const loadCountry = country || selectedCountry
+    const loadLang = langCode || selectedLangCode
+
+    setLandingPageLoading(true)
+    try {
+      const response = await fetch(`/api/landing-page?businessUnit=${businessUnitId}&country=${loadCountry}&language=${loadLang}`)
+      const data = await response.json()
+
+      // Update available locales
+      if (data.availableLocales) {
+        setAvailableLocales(data.availableLocales)
+      }
+
+      if (data.landingPage) {
+        // Migrate legacy hero data to hero_slides if needed
+        const landingPage = { ...data.landingPage }
+        if ((!landingPage.hero_slides || landingPage.hero_slides.length === 0) && landingPage.hero_headline) {
+          landingPage.hero_slides = [{
+            headline: landingPage.hero_headline || '',
+            subheadline: landingPage.hero_subheadline || '',
+            content: '',
+            background_url: '',
+            background_type: 'image',
+            cta_text: landingPage.hero_cta_text || 'Shop Now',
+            cta_url: '#shop',
+            text_align: 'center'
+          }]
+        }
+        setLandingPageData(landingPage)
+        setHasLandingPage(true)
+      } else {
+        // No landing page for this locale - create default with the selected locale
+        const defaultPage = getDefaultLandingPage()
+        defaultPage.country = loadCountry
+        defaultPage.language_code = loadLang
+        // Set currency based on country
+        const currencyInfo = countryCurrencyMap[loadCountry] || countryCurrencyMap['US']
+        defaultPage.currency = currencyInfo.currency
+        defaultPage.currency_symbol = currencyInfo.symbol
+        setLandingPageData(defaultPage)
+        setHasLandingPage(false)
+      }
+    } catch (error) {
+      console.error('Error loading landing page:', error)
+      const defaultPage = getDefaultLandingPage()
+      defaultPage.country = loadCountry
+      defaultPage.language_code = loadLang
+      setLandingPageData(defaultPage)
+      setHasLandingPage(false)
+    } finally {
+      setLandingPageLoading(false)
+    }
+  }
+
+  // Handle locale change - load landing page for new locale
+  const handleLocaleChange = (newCountry: string, newLangCode: string) => {
+    setSelectedCountry(newCountry)
+    setSelectedLangCode(newLangCode)
+    loadLandingPage(newCountry, newLangCode)
+  }
+
+  // Country to currency mapping
+  const countryCurrencyMap: Record<string, { currency: string; symbol: string; locale: string }> = {
+    'US': { currency: 'USD', symbol: '$', locale: 'en-US' },
+    'CA': { currency: 'CAD', symbol: 'CA$', locale: 'en-CA' },
+    'GB': { currency: 'GBP', symbol: '£', locale: 'en-GB' },
+    'AU': { currency: 'AUD', symbol: 'A$', locale: 'en-AU' },
+    'NZ': { currency: 'NZD', symbol: 'NZ$', locale: 'en-NZ' },
+    'EU': { currency: 'EUR', symbol: '€', locale: 'de-DE' },
+    'JP': { currency: 'JPY', symbol: '¥', locale: 'ja-JP' },
+    'CN': { currency: 'CNY', symbol: '¥', locale: 'zh-CN' },
+    'HK': { currency: 'HKD', symbol: 'HK$', locale: 'zh-HK' },
+    'TW': { currency: 'TWD', symbol: 'NT$', locale: 'zh-TW' },
+    'SG': { currency: 'SGD', symbol: 'S$', locale: 'en-SG' },
+    'MY': { currency: 'MYR', symbol: 'RM', locale: 'ms-MY' },
+    'TH': { currency: 'THB', symbol: '฿', locale: 'th-TH' },
+    'KR': { currency: 'KRW', symbol: '₩', locale: 'ko-KR' },
+    'IN': { currency: 'INR', symbol: '₹', locale: 'en-IN' },
+    'AE': { currency: 'AED', symbol: 'AED', locale: 'ar-AE' },
+    'SA': { currency: 'SAR', symbol: 'SAR', locale: 'ar-SA' },
+    'MX': { currency: 'MXN', symbol: 'MX$', locale: 'es-MX' },
+    'BR': { currency: 'BRL', symbol: 'R$', locale: 'pt-BR' },
+  }
+
+  const countryOptions = [
+    { code: 'US', name: 'United States', flag: '🇺🇸' },
+    { code: 'CA', name: 'Canada', flag: '🇨🇦' },
+    { code: 'GB', name: 'United Kingdom', flag: '🇬🇧' },
+    { code: 'AU', name: 'Australia', flag: '🇦🇺' },
+    { code: 'NZ', name: 'New Zealand', flag: '🇳🇿' },
+    { code: 'EU', name: 'European Union', flag: '🇪🇺' },
+    { code: 'JP', name: 'Japan', flag: '🇯🇵' },
+    { code: 'CN', name: 'China', flag: '🇨🇳' },
+    { code: 'HK', name: 'Hong Kong', flag: '🇭🇰' },
+    { code: 'TW', name: 'Taiwan', flag: '🇹🇼' },
+    { code: 'SG', name: 'Singapore', flag: '🇸🇬' },
+    { code: 'MY', name: 'Malaysia', flag: '🇲🇾' },
+    { code: 'TH', name: 'Thailand', flag: '🇹🇭' },
+    { code: 'KR', name: 'South Korea', flag: '🇰🇷' },
+    { code: 'IN', name: 'India', flag: '🇮🇳' },
+    { code: 'AE', name: 'UAE', flag: '🇦🇪' },
+    { code: 'SA', name: 'Saudi Arabia', flag: '🇸🇦' },
+    { code: 'MX', name: 'Mexico', flag: '🇲🇽' },
+    { code: 'BR', name: 'Brazil', flag: '🇧🇷' },
+  ]
+
+  const languageOptions = [
+    { code: 'en', short: 'en', name: 'English', native: 'English' },
+    { code: 'zh-CN', short: 'cn', name: 'Chinese (Simplified)', native: '简体中文' },
+    { code: 'zh-TW', short: 'tw', name: 'Chinese (Traditional)', native: '繁體中文' },
+    { code: 'ja', short: 'ja', name: 'Japanese', native: '日本語' },
+    { code: 'ko', short: 'ko', name: 'Korean', native: '한국어' },
+    { code: 'es', short: 'es', name: 'Spanish', native: 'Español' },
+    { code: 'pt', short: 'pt', name: 'Portuguese', native: 'Português' },
+    { code: 'fr', short: 'fr', name: 'French', native: 'Français' },
+    { code: 'de', short: 'de', name: 'German', native: 'Deutsch' },
+    { code: 'it', short: 'it', name: 'Italian', native: 'Italiano' },
+    { code: 'th', short: 'th', name: 'Thai', native: 'ไทย' },
+    { code: 'vi', short: 'vi', name: 'Vietnamese', native: 'Tiếng Việt' },
+    { code: 'ms', short: 'ms', name: 'Malay', native: 'Bahasa Melayu' },
+    { code: 'ar', short: 'ar', name: 'Arabic', native: 'العربية' },
+    { code: 'hi', short: 'hi', name: 'Hindi', native: 'हिन्दी' },
+  ]
+
+  // Helper to get locale path like /us/en
+  const getLocalePath = (countryCode: string, langCode: string) => {
+    const lang = languageOptions.find(l => l.code === langCode)
+    return `/${countryCode.toLowerCase()}/${lang?.short || langCode.substring(0, 2)}`
+  }
+
+  const getDefaultLandingPage = () => ({
+    // Localization settings
+    country: 'US',
+    language_code: 'en',
+    currency: 'USD',
+    currency_symbol: '$',
+    announcements: [], // Array of announcement messages that rotate every 5 seconds
+    // Menu bar settings
+    logo_url: '',
+    logo_text: '',
+    logo_position: 'left', // 'left' or 'center'
+    menu_items: [
+      { label: 'Home', url: '#', enabled: true },
+      { label: 'Shop', url: '#shop', enabled: true },
+      { label: 'About', url: '#about', enabled: false },
+      { label: 'Contact', url: '#contact', enabled: false },
+    ],
+    // Right side utilities
+    show_search: true,
+    show_account: true,
+    show_cart: true,
+    account_url: '/account',
+    cart_url: '/cart',
+    hero_slides: [
+      { headline: '', subheadline: '', content: '', background_url: '', background_type: 'image', cta_text: 'Shop Now', cta_url: '#shop', text_align: 'center' }
+    ],
+    hero_headline: '', // Legacy - kept for backwards compatibility
+    hero_subheadline: '',
+    hero_product_name: '',
+    hero_benefits: [],
+    hero_cta_text: 'Shop Now',
+    clinical_results: [],
+    tech_headline: '',
+    tech_subheadline: '',
+    tech_features: [],
+    performance_metrics: [],
+    how_to_use_headline: '',
+    how_to_use_steps: [],
+    how_to_use_footer: '',
+    ingredients_headline: '',
+    ingredients_subheadline: '',
+    ingredients: [],
+    pricing_headline: '',
+    pricing_subheadline: '',
+    pricing_options: [],
+    show_sold_indicator: false,
+    sold_percentage: 0,
+    testimonials_headline: '',
+    testimonials: [],
+    testimonials_stats: { recommend_pct: 0, five_star_pct: 0 },
+    landing_faqs: [],
+    trust_badges: [],
+    footer_disclaimer: '',
+    primary_color: '#4A90D9',
+    secondary_color: '#0D1B2A',
+    is_active: true
+  })
+
+  const saveLandingPage = async () => {
+    console.log('[DEBUG v2] saveLandingPage called')
+    if (!businessUnitId || !landingPageData) {
+      console.error('Missing businessUnitId or landingPageData', { businessUnitId, landingPageData })
+      alert('Cannot save: missing business unit or data')
+      return
+    }
+    setLandingPageSaving(true)
+    try {
+      // Create payload without id, business_unit_id, created_at, updated_at to prevent conflicts
+      const { id, business_unit_id, created_at, updated_at, ...cleanData } = landingPageData
+      const payload = {
+        businessUnitId: businessUnitId,
+        ...cleanData
+      }
+      console.log('[DEBUG v2] businessUnitId:', businessUnitId)
+      console.log('[DEBUG v2] payload keys:', Object.keys(payload))
+      console.log('[DEBUG v2] announcements:', payload.announcements)
+
+      console.log('[DEBUG v2] Sending POST to /api/landing-page')
+      const response = await fetch('/api/landing-page', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      console.log('[DEBUG v2] Response status:', response.status, response.statusText)
+      const responseText = await response.text()
+      console.log('[DEBUG v2] Response text:', responseText.substring(0, 500))
+
+      let result
+      try {
+        result = JSON.parse(responseText)
+        console.log('[DEBUG v2] Parsed result:', result.success ? 'SUCCESS' : result.error)
+      } catch (e) {
+        console.error('[DEBUG v2] Failed to parse response:', e)
+        result = { error: 'Invalid response from server' }
+      }
+      if (response.ok && result.success) {
+        setHasLandingPage(true)
+        // Reload the landing page to get the updated data with proper IDs
+        // Pass the current locale to ensure we reload the correct page
+        await loadLandingPage(landingPageData.country || 'US', landingPageData.language_code || 'en')
+        console.log('[DEBUG v2] Landing page saved successfully!')
+        alert(t.landingPageSaved || 'Landing page saved successfully!')
+      } else {
+        console.error('[DEBUG v2] Failed to save landing page:', JSON.stringify(result, null, 2))
+        console.error('[DEBUG v2] Response status:', response.status)
+        console.error('[DEBUG v2] Response ok:', response.ok)
+        const errorMsg = result.error || result.message || 'Unknown error'
+        const details = result.details || result.code || ''
+        alert(`Failed to save: ${errorMsg}${details ? '\n\nDetails: ' + details : ''}\n\nStatus: ${response.status}`)
+      }
+    } catch (error) {
+      console.error('[DEBUG v2] Error saving landing page:', error)
+      alert('Error saving landing page: ' + (error instanceof Error ? error.message : 'Unknown error'))
+    } finally {
+      setLandingPageSaving(false)
+    }
+  }
+
+  // Media Library functions
+  const loadMediaFiles = async () => {
+    if (!businessUnitId) return
+    setMediaLoading(true)
+    try {
+      const response = await fetch(`/api/media-library?businessUnit=${businessUnitId}`)
+      const data = await response.json()
+      if (data.files) {
+        setMediaFiles(data.files)
+      }
+    } catch (error) {
+      console.error('Error loading media files:', error)
+    } finally {
+      setMediaLoading(false)
+    }
+  }
+
+  const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    setMediaUploading(true)
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('businessUnit', businessUnitId)
+
+        const response = await fetch('/api/media-library', {
+          method: 'POST',
+          body: formData
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          alert(`Failed to upload ${file.name}: ${error.error}`)
+        }
+      }
+      // Reload media files after upload
+      await loadMediaFiles()
+    } catch (error) {
+      console.error('Error uploading media:', error)
+      alert('Error uploading media files')
+    } finally {
+      setMediaUploading(false)
+      if (mediaInputRef.current) {
+        mediaInputRef.current.value = ''
+      }
+    }
+  }
+
+  // Logo upload handler
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type - only allow PNG, JPG, WebP, GIF
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    if (!allowedTypes.includes(file.type)) {
+      alert('Please select a PNG, JPG, WebP, or GIF image.\nSVG files are not supported.')
+      return
+    }
+
+    // Validate file size (max 2MB for logo)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Logo image must be less than 2MB')
+      return
+    }
+
+    setLogoUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('businessUnitId', businessUnitId)
+
+      const response = await fetch('/api/ecommerce/upload-image', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Upload failed')
+      }
+
+      const data = await response.json()
+      if (data.url) {
+        setLandingPageData({ ...landingPageData, logo_url: data.url })
+      }
+    } catch (error: any) {
+      console.error('Error uploading logo:', error)
+      alert(`Failed to upload logo: ${error.message}`)
+    } finally {
+      setLogoUploading(false)
+      if (logoInputRef.current) {
+        logoInputRef.current.value = ''
+      }
+    }
+  }
+
+  // Hero slide background upload handler
+  const handleHeroSlideUpload = async (e: React.ChangeEvent<HTMLInputElement>, slideIndex: number) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type - allow images and videos
+    const isImage = file.type.startsWith('image/')
+    const isVideo = file.type.startsWith('video/')
+
+    if (!isImage && !isVideo) {
+      alert('Please select an image or video file')
+      return
+    }
+
+    // Validate file size (max 10MB for images, 50MB for videos)
+    const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024
+    if (file.size > maxSize) {
+      alert(`File must be less than ${isVideo ? '50MB' : '10MB'}`)
+      return
+    }
+
+    setHeroSlideUploading(slideIndex)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('businessUnitId', businessUnitId)
+
+      const response = await fetch('/api/ecommerce/upload-image', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Upload failed')
+      }
+
+      const data = await response.json()
+      if (data.url) {
+        const slides = [...(landingPageData.hero_slides || [])]
+        slides[slideIndex] = {
+          ...slides[slideIndex],
+          background_url: data.url,
+          background_type: isVideo ? 'video' : 'image'
+        }
+        setLandingPageData({ ...landingPageData, hero_slides: slides })
+      }
+    } catch (error: any) {
+      console.error('Error uploading hero background:', error)
+      alert(`Failed to upload: ${error.message}`)
+    } finally {
+      setHeroSlideUploading(null)
+      if (heroSlideInputRefs.current[slideIndex]) {
+        heroSlideInputRefs.current[slideIndex]!.value = ''
+      }
+    }
+  }
+
+  // Select media from library for hero slide
+  const selectMediaForHeroSlide = (slideIndex: number, file: MediaFile) => {
+    const isVideo = file.type.startsWith('video/')
+    const slides = [...(landingPageData.hero_slides || [])]
+    slides[slideIndex] = {
+      ...slides[slideIndex],
+      background_url: file.url,
+      background_type: isVideo ? 'video' : 'image'
+    }
+    setLandingPageData({ ...landingPageData, hero_slides: slides })
+    setShowMediaPicker(null)
+  }
+
+  const deleteMediaFile = async (fileName: string) => {
+    if (!confirm('Are you sure you want to delete this file?')) return
+
+    try {
+      const response = await fetch(
+        `/api/media-library?businessUnit=${businessUnitId}&fileName=${encodeURIComponent(fileName)}`,
+        { method: 'DELETE' }
+      )
+      if (response.ok) {
+        await loadMediaFiles()
+      } else {
+        const error = await response.json()
+        alert(`Failed to delete: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error deleting media:', error)
+      alert('Error deleting file')
+    }
+  }
+
+  const copyToClipboard = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopiedUrl(url)
+      setTimeout(() => setCopiedUrl(null), 2000)
+    } catch (error) {
+      console.error('Failed to copy:', error)
+    }
+  }
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
+  const isVideo = (type: string) => type.startsWith('video/')
+  const isImage = (type: string) => type.startsWith('image/')
 
   // Handle Excel/CSV upload
   const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -208,21 +711,34 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
           extractedText = await file.text()
         }
       }
-      // Handle PDF files with pdf.js
+      // Handle PDF files - send to server API (Gemini can read PDFs properly including Chinese)
       else if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
-        const pdfjsLib = await import('pdfjs-dist')
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
-        const arrayBuffer = await file.arrayBuffer()
-        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer })
-        const pdf = await loadingTask.promise
-        let fullText = ''
-        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-          const page = await pdf.getPage(pageNum)
-          const textContent = await page.getTextContent()
-          const pageText = textContent.items.map((item: any) => item.str).join(' ')
-          fullText += pageText + '\n\n'
+        setProcessingMessage('Uploading PDF to AI for extraction...')
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('type', 'industry')
+        formData.append('businessUnitId', businessUnitId)
+
+        const response = await fetch('/api/knowledge-base/upload-pdf', {
+          method: 'POST',
+          body: formData
+        })
+
+        const result = await response.json()
+
+        if (result.success) {
+          setProcessingMessage(`AI extracted ${result.count} knowledge entries from PDF!`)
+          setTimeout(() => {
+            setIsProcessing(false)
+            setProcessingMessage('')
+            loadData()
+          }, 2000)
+        } else {
+          throw new Error(result.error || 'Failed to process PDF')
         }
-        extractedText = fullText
+
+        if (pdfInputRef.current) pdfInputRef.current.value = ''
+        return
       }
       // Handle text/CSV files
       else if (fileType.includes('text') || fileName.endsWith('.txt') || fileName.endsWith('.md') || fileName.endsWith('.csv')) {
@@ -311,23 +827,34 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
           extractedText = await file.text()
         }
       }
-      // Handle PDF files with pdf.js
+      // Handle PDF files - send to server API (Gemini can read PDFs properly including Chinese)
       else if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
-        const pdfjsLib = await import('pdfjs-dist')
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
+        setProcessingMessage('Uploading PDF to AI for extraction...')
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('type', 'industry')
+        formData.append('businessUnitId', businessUnitId)
 
-        const arrayBuffer = await file.arrayBuffer()
-        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer })
-        const pdf = await loadingTask.promise
+        const response = await fetch('/api/knowledge-base/upload-pdf', {
+          method: 'POST',
+          body: formData
+        })
 
-        let fullText = ''
-        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-          const page = await pdf.getPage(pageNum)
-          const textContent = await page.getTextContent()
-          const pageText = textContent.items.map((item: any) => item.str).join(' ')
-          fullText += pageText + '\n\n'
+        const result = await response.json()
+
+        if (result.success) {
+          setProcessingMessage(`AI extracted ${result.count} knowledge entries from PDF!`)
+          setTimeout(() => {
+            setIsProcessing(false)
+            setProcessingMessage('')
+            loadData()
+          }, 2000)
+        } else {
+          throw new Error(result.error || 'Failed to process PDF')
         }
-        extractedText = fullText
+
+        if (industryDocInputRef.current) industryDocInputRef.current.value = ''
+        return
       }
       // Handle text files
       else if (fileType.includes('text') || fileName.endsWith('.txt') || fileName.endsWith('.md') || fileName.endsWith('.csv')) {
@@ -432,13 +959,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
     if (industryDocInputRef.current) industryDocInputRef.current.value = ''
   }
 
-  // Delete KB item (products, services, policies)
+  // Delete KB item (products, services)
   const handleDeleteKBItem = async (id: string) => {
     if (!confirm('Are you sure you want to delete this item?')) return
 
     try {
-      const endpoint = activeSubTab === 'products' ? 'products' :
-                       activeSubTab === 'services' ? 'services' : 'policies'
+      const endpoint = activeSubTab === 'products' ? 'products' : 'services'
 
       const response = await fetch(`/api/knowledge-base/${endpoint}?id=${id}`, {
         method: 'DELETE'
@@ -584,17 +1110,30 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
             <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">{services.length}</span>
           </button>
 
-          {/* Policies Tab */}
+          {/* Landing Page Tab */}
           <button
-            onClick={() => setActiveSubTab('policies')}
+            onClick={() => setActiveSubTab('landing')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-              activeSubTab === 'policies'
-                ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white'
+              activeSubTab === 'landing'
+                ? 'bg-gradient-to-r from-violet-500 to-purple-500 text-white'
                 : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
             }`}
           >
-            <FileText className="w-4 h-4" />
-            Policies
+            <Layout className="w-4 h-4" />
+            Landing Page
+          </button>
+
+          {/* Image Library Tab */}
+          <button
+            onClick={() => setActiveSubTab('media')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+              activeSubTab === 'media'
+                ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white'
+                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+            }`}
+          >
+            <Image className="w-4 h-4" />
+            Image Library
           </button>
         </div>
 
@@ -953,9 +1492,1211 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
               </div>
             )}
 
-            {/* Policies Tab */}
-            {activeSubTab === 'policies' && (
-              <PolicyManager businessUnitId={businessUnitId} language={language} />
+            {/* Landing Page Tab Content */}
+            {activeSubTab === 'landing' && (
+              <div>
+                {/* Header Row with Title and Action Buttons */}
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold flex items-center gap-2 text-white">
+                    <Layout className="w-6 h-6 text-violet-400" />
+                    {t.landingPageEditor || 'Landing Page Editor'}
+                  </h2>
+                  {landingPageData && (
+                    <div className="flex gap-2 items-center">
+                      <button
+                        onClick={saveLandingPage}
+                        disabled={landingPageSaving}
+                        className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
+                      >
+                        <Save className="w-4 h-4" />
+                        {landingPageSaving ? 'Saving...' : 'Save'}
+                      </button>
+                      <button
+                        onClick={() => window.open(`/livechat?businessUnit=${businessUnitId}&country=${landingPageData.country || 'US'}&lang=${landingPageData.language_code || 'en'}`, '_blank')}
+                        className="flex items-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
+                      >
+                        <Globe className="w-4 h-4" />
+                        Preview
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!hasLandingPage) {
+                            alert('Please save the landing page first before publishing.')
+                            return
+                          }
+                          const confirmPublish = landingPageData.is_published
+                            ? confirm('This will unpublish the landing page. Continue?')
+                            : confirm('This will make the landing page live. Continue?')
+                          if (!confirmPublish) return
+
+                          try {
+                            const response = await fetch('/api/landing-page/publish', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                businessUnitId,
+                                country: landingPageData.country || 'US',
+                                language_code: landingPageData.language_code || 'en',
+                                is_published: !landingPageData.is_published
+                              })
+                            })
+                            const result = await response.json()
+                            if (response.ok) {
+                              setLandingPageData({ ...landingPageData, is_published: !landingPageData.is_published })
+                              alert(landingPageData.is_published ? 'Landing page unpublished!' : 'Landing page is now live!')
+                            } else {
+                              alert('Failed to update publish status: ' + (result.error || 'Unknown error'))
+                            }
+                          } catch (err) {
+                            alert('Error updating publish status')
+                          }
+                        }}
+                        disabled={!hasLandingPage}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50 ${
+                          landingPageData.is_published
+                            ? 'bg-green-600 hover:bg-green-700 text-white'
+                            : 'bg-amber-500 hover:bg-amber-600 text-white'
+                        }`}
+                      >
+                        {landingPageData.is_published ? (
+                          <>
+                            <Check className="w-4 h-4" />
+                            Published
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-4 h-4" />
+                            Publish
+                          </>
+                        )}
+                      </button>
+                      {landingPageData.is_published && (
+                        <span className="text-green-400 text-xs">Live</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {landingPageLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+                    <span className="ml-3 text-slate-400">Loading...</span>
+                  </div>
+                ) : landingPageData ? (
+                  <div className="space-y-6">
+                    {/* Country & Language Section - Compact */}
+                    <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
+                      <div className="flex flex-wrap items-center gap-3">
+                        {/* Current Locale Badge */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-cyan-400 text-sm font-medium">Locale:</span>
+                          <span className="text-white font-mono bg-cyan-600 px-2 py-1 rounded text-sm">
+                            {getLocalePath(landingPageData.country || 'US', landingPageData.language_code || 'en')}
+                          </span>
+                          <span className="text-slate-300 text-sm">
+                            {countryOptions.find(c => c.code === (landingPageData.country || 'US'))?.flag}
+                            {' '}{landingPageData.currency_symbol || '$'}{landingPageData.currency || 'USD'}
+                          </span>
+                          {!hasLandingPage && <span className="text-amber-400 text-xs bg-amber-500/20 px-2 py-0.5 rounded">New</span>}
+                        </div>
+
+                        {/* Divider */}
+                        <div className="h-6 w-px bg-slate-600 hidden md:block" />
+
+                        {/* Country Selector */}
+                        <select
+                          value={landingPageData.country || 'US'}
+                          onChange={(e) => {
+                            const countryCode = e.target.value
+                            const currencyInfo = countryCurrencyMap[countryCode] || countryCurrencyMap['US']
+                            const exists = availableLocales.some(
+                              l => l.country === countryCode && l.language_code === (landingPageData.language_code || 'en')
+                            )
+                            if (exists) {
+                              handleLocaleChange(countryCode, landingPageData.language_code || 'en')
+                            } else {
+                              setSelectedCountry(countryCode)
+                              setLandingPageData({
+                                ...landingPageData,
+                                country: countryCode,
+                                currency: currencyInfo.currency,
+                                currency_symbol: currencyInfo.symbol
+                              })
+                              setHasLandingPage(false)
+                            }
+                          }}
+                          className="px-2 py-1 bg-slate-800 border border-slate-600 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                        >
+                          {countryOptions.map(country => (
+                            <option key={country.code} value={country.code}>
+                              {country.flag} {country.code}
+                            </option>
+                          ))}
+                        </select>
+
+                        {/* Language Selector */}
+                        <select
+                          value={landingPageData.language_code || 'en'}
+                          onChange={(e) => {
+                            const langCode = e.target.value
+                            const exists = availableLocales.some(
+                              l => l.country === (landingPageData.country || 'US') && l.language_code === langCode
+                            )
+                            if (exists) {
+                              handleLocaleChange(landingPageData.country || 'US', langCode)
+                            } else {
+                              setSelectedLangCode(langCode)
+                              setLandingPageData({
+                                ...landingPageData,
+                                language_code: langCode
+                              })
+                              setHasLandingPage(false)
+                            }
+                          }}
+                          className="px-2 py-1 bg-slate-800 border border-slate-600 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                        >
+                          {languageOptions.map(lang => (
+                            <option key={lang.code} value={lang.code}>
+                              {lang.short.toUpperCase()} - {lang.native}
+                            </option>
+                          ))}
+                        </select>
+
+                        {/* Existing Locales */}
+                        {availableLocales.length > 1 && (
+                          <>
+                            <div className="h-6 w-px bg-slate-600 hidden md:block" />
+                            <div className="flex items-center gap-1 flex-wrap">
+                              <span className="text-slate-400 text-xs">Switch:</span>
+                              {availableLocales.map(locale => {
+                                const isActive = (landingPageData.country || 'US') === locale.country &&
+                                                 (landingPageData.language_code || 'en') === locale.language_code
+                                if (isActive) return null
+                                const country = countryOptions.find(c => c.code === locale.country)
+                                return (
+                                  <button
+                                    key={`${locale.country}-${locale.language_code}`}
+                                    onClick={() => handleLocaleChange(locale.country, locale.language_code)}
+                                    className="px-2 py-0.5 rounded text-xs font-mono bg-slate-800 text-slate-300 hover:bg-slate-600 transition-colors"
+                                  >
+                                    {country?.flag}{getLocalePath(locale.country, locale.language_code)}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Announcement Section */}
+                    <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
+                      <div className="flex justify-between items-center mb-4">
+                        <div>
+                          <h3 className="text-lg font-semibold text-amber-400">Announcement Banner</h3>
+                          <p className="text-sm text-slate-400 mt-1">Add multiple announcements that rotate every 5 seconds</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <select
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                setLandingPageData({
+                                  ...landingPageData,
+                                  announcements: [...(landingPageData.announcements || []), e.target.value]
+                                })
+                                e.target.value = ''
+                              }
+                            }}
+                            className="px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            defaultValue=""
+                          >
+                            <option value="" disabled>+ Add from suggestions...</option>
+                            <option value="FREE SHIPPING ON ORDERS OVER $50">FREE SHIPPING ON ORDERS OVER $50</option>
+                            <option value="90-DAY MONEY BACK GUARANTEE">90-DAY MONEY BACK GUARANTEE</option>
+                            <option value="LIMITED TIME OFFER - 60% OFF TODAY ONLY">LIMITED TIME OFFER - 60% OFF TODAY ONLY</option>
+                            <option value="BUY 2 GET 1 FREE - USE CODE: B2G1">BUY 2 GET 1 FREE - USE CODE: B2G1</option>
+                            <option value="NEW CUSTOMERS: 20% OFF YOUR FIRST ORDER">NEW CUSTOMERS: 20% OFF YOUR FIRST ORDER</option>
+                            <option value="SUBSCRIBE & SAVE 15% ON EVERY ORDER">SUBSCRIBE & SAVE 15% ON EVERY ORDER</option>
+                            <option value="SAME DAY SHIPPING ON ORDERS BEFORE 2PM">SAME DAY SHIPPING ON ORDERS BEFORE 2PM</option>
+                            <option value="OVER 50,000+ HAPPY CUSTOMERS WORLDWIDE">OVER 50,000+ HAPPY CUSTOMERS WORLDWIDE</option>
+                            <option value="DERMATOLOGIST TESTED & APPROVED">DERMATOLOGIST TESTED & APPROVED</option>
+                            <option value="100% NATURAL INGREDIENTS - CRUELTY FREE">100% NATURAL INGREDIENTS - CRUELTY FREE</option>
+                          </select>
+                          <button
+                            onClick={() => setLandingPageData({
+                              ...landingPageData,
+                              announcements: [...(landingPageData.announcements || []), '']
+                            })}
+                            className="flex items-center gap-1 px-3 py-2 text-sm bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 rounded-lg transition-colors"
+                          >
+                            <Plus className="w-4 h-4" /> Custom
+                          </button>
+                        </div>
+                      </div>
+
+                      {(!landingPageData.announcements || landingPageData.announcements.length === 0) ? (
+                        <div className="text-center py-6 bg-slate-800/50 rounded-lg border border-dashed border-slate-600">
+                          <p className="text-slate-400 mb-3">No announcements yet</p>
+                          <p className="text-slate-500 text-sm">Select from suggestions above or add a custom announcement</p>
+                          <p className="text-amber-400/70 text-xs mt-2">After adding, click "Save" to save</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {landingPageData.announcements.map((announcement: string, index: number) => (
+                            <div key={index} className="flex gap-3 items-center">
+                              <span className="text-slate-500 text-sm w-6">{index + 1}.</span>
+                              <input
+                                type="text"
+                                value={announcement}
+                                onChange={(e) => {
+                                  const updated = [...landingPageData.announcements]
+                                  updated[index] = e.target.value
+                                  setLandingPageData({...landingPageData, announcements: updated})
+                                }}
+                                placeholder="e.g., FREE SHIPPING ON ORDERS OVER $50"
+                                className="flex-1 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                              />
+                              <button
+                                onClick={() => {
+                                  const updated = landingPageData.announcements.filter((_: string, i: number) => i !== index)
+                                  setLandingPageData({...landingPageData, announcements: updated})
+                                }}
+                                className="text-red-400 hover:text-red-300 p-2"
+                                title="Remove"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+                          <p className="text-xs text-slate-500 mt-2">
+                            These announcements will rotate automatically every 5 seconds on your landing page.
+                          </p>
+                          <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
+                            <span>*</span> Remember to click "Save" to save your changes.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Menu Bar Section */}
+                    <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
+                      <h3 className="text-lg font-semibold mb-4 text-indigo-400">Menu Bar</h3>
+
+                      {/* Visual Layout Preview */}
+                      <div className="bg-slate-800 rounded-lg p-3 mb-4 border border-slate-600">
+                        <p className="text-xs text-slate-500 mb-2">Layout Preview (Desktop)</p>
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-3">
+                            {landingPageData.logo_position === 'left' && (
+                              <span className="bg-indigo-500/30 text-indigo-300 px-2 py-1 rounded">Logo</span>
+                            )}
+                            <span className="text-slate-400">Menu Items →</span>
+                          </div>
+                          {landingPageData.logo_position === 'center' && (
+                            <span className="bg-indigo-500/30 text-indigo-300 px-2 py-1 rounded">Logo</span>
+                          )}
+                          <div className="flex items-center gap-2">
+                            {landingPageData.show_search && <span className="text-slate-400">🔍</span>}
+                            {landingPageData.show_account && <span className="text-slate-400">👤</span>}
+                            {landingPageData.show_cart && <span className="text-slate-400">🛒</span>}
+                          </div>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-2">
+                          Mobile: {landingPageData.logo_position === 'left' ? 'Logo left, ☰ menu right' : 'Logo center, ☰ menu left'}
+                        </p>
+                      </div>
+
+                      <div className="grid gap-6">
+                        {/* Logo Settings Row */}
+                        <div>
+                          <label className="block text-sm font-medium mb-2 text-slate-300">Logo Settings</label>
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <div>
+                              <label className="block text-xs text-slate-400 mb-1">Position</label>
+                              <select
+                                value={landingPageData.logo_position || 'left'}
+                                onChange={(e) => setLandingPageData({...landingPageData, logo_position: e.target.value})}
+                                className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                              >
+                                <option value="left">Left</option>
+                                <option value="center">Center</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-slate-400 mb-1">Logo Text</label>
+                              <input
+                                type="text"
+                                value={landingPageData.logo_text || ''}
+                                onChange={(e) => setLandingPageData({...landingPageData, logo_text: e.target.value})}
+                                placeholder="Brand Name"
+                                className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                              />
+                            </div>
+                            <div className="md:col-span-2">
+                              <label className="block text-xs text-slate-400 mb-1">Logo Image</label>
+                              <div className="flex items-center gap-3">
+                                {landingPageData.logo_url ? (
+                                  <div className="relative">
+                                    <img
+                                      src={landingPageData.logo_url}
+                                      alt="Logo preview"
+                                      className="h-10 w-auto max-w-[120px] object-contain bg-white rounded p-1"
+                                    />
+                                    <button
+                                      onClick={() => setLandingPageData({...landingPageData, logo_url: ''})}
+                                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="h-10 w-20 bg-slate-800 border border-dashed border-slate-600 rounded flex items-center justify-center">
+                                    <Image className="w-5 h-5 text-slate-500" />
+                                  </div>
+                                )}
+                                <button
+                                  onClick={() => logoInputRef.current?.click()}
+                                  disabled={logoUploading}
+                                  className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                                >
+                                  {logoUploading ? (
+                                    <>
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                      Uploading...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Upload className="w-4 h-4" />
+                                      {landingPageData.logo_url ? 'Change' : 'Upload'}
+                                    </>
+                                  )}
+                                </button>
+                                <input
+                                  ref={logoInputRef}
+                                  type="file"
+                                  accept="image/png,image/jpeg,image/webp,image/gif"
+                                  onChange={handleLogoUpload}
+                                  className="hidden"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Menu Items */}
+                        <div>
+                          <label className="block text-sm font-medium mb-2 text-slate-300">Menu Items (Left Side)</label>
+                          <div className="space-y-2">
+                            {(landingPageData.menu_items || []).map((item: { label: string; url: string; enabled: boolean }, index: number) => (
+                              <div key={index} className="flex items-center gap-2 bg-slate-800/50 p-2 rounded-lg">
+                                <input
+                                  type="checkbox"
+                                  checked={item.enabled}
+                                  onChange={(e) => {
+                                    const updated = [...(landingPageData.menu_items || [])]
+                                    updated[index] = { ...item, enabled: e.target.checked }
+                                    setLandingPageData({...landingPageData, menu_items: updated})
+                                  }}
+                                  className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-indigo-500 focus:ring-indigo-500"
+                                />
+                                <input
+                                  type="text"
+                                  value={item.label}
+                                  onChange={(e) => {
+                                    const updated = [...(landingPageData.menu_items || [])]
+                                    updated[index] = { ...item, label: e.target.value }
+                                    setLandingPageData({...landingPageData, menu_items: updated})
+                                  }}
+                                  placeholder="Label"
+                                  className="flex-1 px-2 py-1 bg-slate-800 border border-slate-600 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                />
+                                <input
+                                  type="text"
+                                  value={item.url}
+                                  onChange={(e) => {
+                                    const updated = [...(landingPageData.menu_items || [])]
+                                    updated[index] = { ...item, url: e.target.value }
+                                    setLandingPageData({...landingPageData, menu_items: updated})
+                                  }}
+                                  placeholder="URL or #section"
+                                  className="flex-1 px-2 py-1 bg-slate-800 border border-slate-600 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                />
+                                <button
+                                  onClick={() => {
+                                    const updated = (landingPageData.menu_items || []).filter((_: any, i: number) => i !== index)
+                                    setLandingPageData({...landingPageData, menu_items: updated})
+                                  }}
+                                  className="p-1 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                          <button
+                            onClick={() => {
+                              const updated = [...(landingPageData.menu_items || []), { label: '', url: '#', enabled: true }]
+                              setLandingPageData({...landingPageData, menu_items: updated})
+                            }}
+                            className="mt-2 flex items-center gap-1 px-3 py-1.5 text-sm bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 rounded-lg transition-colors"
+                          >
+                            <Plus className="w-4 h-4" />
+                            Add Menu Item
+                          </button>
+                        </div>
+
+                        {/* Right Side Utilities */}
+                        <div>
+                          <label className="block text-sm font-medium mb-2 text-slate-300">Right Side Utilities</label>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* Search */}
+                            <div className="bg-slate-800/50 p-3 rounded-lg">
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={landingPageData.show_search !== false}
+                                  onChange={(e) => setLandingPageData({...landingPageData, show_search: e.target.checked})}
+                                  className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-indigo-500 focus:ring-indigo-500"
+                                />
+                                <span className="text-sm text-slate-300">🔍 Search Bar</span>
+                              </label>
+                            </div>
+
+                            {/* My Account */}
+                            <div className="bg-slate-800/50 p-3 rounded-lg">
+                              <label className="flex items-center gap-2 cursor-pointer mb-2">
+                                <input
+                                  type="checkbox"
+                                  checked={landingPageData.show_account !== false}
+                                  onChange={(e) => setLandingPageData({...landingPageData, show_account: e.target.checked})}
+                                  className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-indigo-500 focus:ring-indigo-500"
+                                />
+                                <span className="text-sm text-slate-300">👤 My Account</span>
+                              </label>
+                              {landingPageData.show_account !== false && (
+                                <input
+                                  type="text"
+                                  value={landingPageData.account_url || '/account'}
+                                  onChange={(e) => setLandingPageData({...landingPageData, account_url: e.target.value})}
+                                  placeholder="/account"
+                                  className="w-full px-2 py-1 bg-slate-800 border border-slate-600 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                />
+                              )}
+                            </div>
+
+                            {/* Shopping Cart */}
+                            <div className="bg-slate-800/50 p-3 rounded-lg">
+                              <label className="flex items-center gap-2 cursor-pointer mb-2">
+                                <input
+                                  type="checkbox"
+                                  checked={landingPageData.show_cart !== false}
+                                  onChange={(e) => setLandingPageData({...landingPageData, show_cart: e.target.checked})}
+                                  className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-indigo-500 focus:ring-indigo-500"
+                                />
+                                <span className="text-sm text-slate-300">🛒 Shopping Cart</span>
+                              </label>
+                              {landingPageData.show_cart !== false && (
+                                <input
+                                  type="text"
+                                  value={landingPageData.cart_url || '/cart'}
+                                  onChange={(e) => setLandingPageData({...landingPageData, cart_url: e.target.value})}
+                                  placeholder="/cart"
+                                  className="w-full px-2 py-1 bg-slate-800 border border-slate-600 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Hero Section - Carousel Slides */}
+                    <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold text-violet-400">{t.heroSection || 'Hero Carousel'}</h3>
+                        <button
+                          onClick={() => {
+                            const slides = [...(landingPageData.hero_slides || [])]
+                            slides.push({ headline: '', subheadline: '', content: '', background_url: '', background_type: 'image', cta_text: 'Shop Now', cta_url: '#shop', text_align: 'center' })
+                            setLandingPageData({...landingPageData, hero_slides: slides})
+                          }}
+                          className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add Slide
+                        </button>
+                      </div>
+
+                      <div className="space-y-4">
+                        {(landingPageData.hero_slides || []).map((slide: { headline: string; subheadline: string; content?: string; background_url: string; background_type: string; cta_text: string; cta_url: string; text_align?: 'left' | 'center' | 'right' }, index: number) => (
+                          <div key={index} className="bg-slate-800/50 rounded-lg p-4 border border-slate-600">
+                            <div className="flex justify-between items-center mb-3">
+                              <span className="text-sm font-medium text-slate-300">Slide {index + 1}</span>
+                              {(landingPageData.hero_slides || []).length > 1 && (
+                                <button
+                                  onClick={() => {
+                                    const slides = [...(landingPageData.hero_slides || [])]
+                                    slides.splice(index, 1)
+                                    setLandingPageData({...landingPageData, hero_slides: slides})
+                                  }}
+                                  className="text-red-400 hover:text-red-300"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Background Upload */}
+                            <div className="mb-3">
+                              <label className="block text-xs text-slate-400 mb-1">Background Image/Video</label>
+                              <div className="flex items-center gap-3">
+                                {slide.background_url ? (
+                                  <div className="relative">
+                                    {slide.background_type === 'video' ? (
+                                      <video src={slide.background_url} className="h-16 w-28 object-cover rounded" muted />
+                                    ) : (
+                                      <img src={slide.background_url} alt="Background" className="h-16 w-28 object-cover rounded" />
+                                    )}
+                                    <button
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        slides[index] = { ...slide, background_url: '', background_type: 'image' }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                    <span className="absolute bottom-0.5 right-0.5 text-[10px] bg-black/60 text-white px-1 rounded">
+                                      {slide.background_type === 'video' ? 'VIDEO' : 'IMAGE'}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div className="h-16 w-28 bg-slate-800 border border-dashed border-slate-600 rounded flex items-center justify-center">
+                                    <Image className="w-6 h-6 text-slate-500" />
+                                  </div>
+                                )}
+                                <button
+                                  onClick={() => heroSlideInputRefs.current[index]?.click()}
+                                  disabled={heroSlideUploading === index}
+                                  className="px-3 py-1.5 bg-violet-600 text-white text-sm rounded hover:bg-violet-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                                >
+                                  {heroSlideUploading === index ? (
+                                    <>
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                      Uploading...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Upload className="w-4 h-4" />
+                                      Upload
+                                    </>
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    loadMediaFiles()
+                                    setShowMediaPicker(index)
+                                  }}
+                                  className="px-3 py-1.5 bg-slate-600 text-white text-sm rounded hover:bg-slate-500 transition-colors flex items-center gap-1.5"
+                                >
+                                  <Image className="w-4 h-4" />
+                                  Library
+                                </button>
+                                <input
+                                  ref={(el) => { heroSlideInputRefs.current[index] = el }}
+                                  type="file"
+                                  accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"
+                                  onChange={(e) => handleHeroSlideUpload(e, index)}
+                                  className="hidden"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Text Overlay */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs text-slate-400 mb-1">Headline</label>
+                                <input
+                                  type="text"
+                                  value={slide.headline || ''}
+                                  onChange={(e) => {
+                                    const slides = [...(landingPageData.hero_slides || [])]
+                                    slides[index] = { ...slide, headline: e.target.value }
+                                    setLandingPageData({...landingPageData, hero_slides: slides})
+                                  }}
+                                  placeholder="e.g., Transform Your Skin"
+                                  className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-slate-400 mb-1">Subheadline</label>
+                                <input
+                                  type="text"
+                                  value={slide.subheadline || ''}
+                                  onChange={(e) => {
+                                    const slides = [...(landingPageData.hero_slides || [])]
+                                    slides[index] = { ...slide, subheadline: e.target.value }
+                                    setLandingPageData({...landingPageData, hero_slides: slides})
+                                  }}
+                                  placeholder="e.g., Discover the secret"
+                                  className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                                />
+                              </div>
+                              <div className="md:col-span-2">
+                                <label className="block text-xs text-slate-400 mb-1">Content (optional)</label>
+                                <textarea
+                                  value={slide.content || ''}
+                                  onChange={(e) => {
+                                    const slides = [...(landingPageData.hero_slides || [])]
+                                    slides[index] = { ...slide, content: e.target.value }
+                                    setLandingPageData({...landingPageData, hero_slides: slides})
+                                  }}
+                                  placeholder="Additional text content for this slide..."
+                                  rows={2}
+                                  className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                                />
+                              </div>
+                              <div className="md:col-span-2">
+                                <label className="block text-xs text-slate-400 mb-1">Text Alignment</label>
+                                <div className="flex gap-2">
+                                  {(['left', 'center', 'right'] as const).map((align) => (
+                                    <button
+                                      key={align}
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        slides[index] = { ...slide, text_align: align }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className={`flex-1 px-3 py-1.5 text-sm rounded transition-colors ${
+                                        (slide.text_align || 'center') === align
+                                          ? 'bg-violet-600 text-white'
+                                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                      }`}
+                                    >
+                                      {align === 'left' && '◀ Left'}
+                                      {align === 'center' && '● Center'}
+                                      {align === 'right' && 'Right ▶'}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-xs text-slate-400 mb-1">CTA Button Text</label>
+                                <input
+                                  type="text"
+                                  value={slide.cta_text || ''}
+                                  onChange={(e) => {
+                                    const slides = [...(landingPageData.hero_slides || [])]
+                                    slides[index] = { ...slide, cta_text: e.target.value }
+                                    setLandingPageData({...landingPageData, hero_slides: slides})
+                                  }}
+                                  placeholder="e.g., Shop Now"
+                                  className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-slate-400 mb-1">CTA Button URL</label>
+                                <input
+                                  type="text"
+                                  value={slide.cta_url || ''}
+                                  onChange={(e) => {
+                                    const slides = [...(landingPageData.hero_slides || [])]
+                                    slides[index] = { ...slide, cta_url: e.target.value }
+                                    setLandingPageData({...landingPageData, hero_slides: slides})
+                                  }}
+                                  placeholder="e.g., #shop or /products"
+                                  className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Media Picker Modal */}
+                      {showMediaPicker !== null && (
+                        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+                          <div className="bg-slate-800 rounded-lg max-w-4xl w-full max-h-[80vh] overflow-hidden">
+                            <div className="flex justify-between items-center p-4 border-b border-slate-700">
+                              <h3 className="text-lg font-semibold text-white">Select from Image Library</h3>
+                              <button
+                                onClick={() => setShowMediaPicker(null)}
+                                className="text-slate-400 hover:text-white"
+                              >
+                                <X className="w-5 h-5" />
+                              </button>
+                            </div>
+                            <div className="p-4 overflow-y-auto max-h-[60vh]">
+                              {mediaLoading ? (
+                                <div className="flex items-center justify-center py-12">
+                                  <Loader2 className="w-8 h-8 animate-spin text-violet-400" />
+                                </div>
+                              ) : mediaFiles.length === 0 ? (
+                                <div className="text-center py-12 text-slate-400">
+                                  <Image className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                                  <p>No images in library</p>
+                                  <p className="text-sm">Upload images in the Image Library tab first</p>
+                                </div>
+                              ) : (
+                                <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+                                  {mediaFiles.filter(f => f.type.startsWith('image/') || f.type.startsWith('video/')).map((file) => (
+                                    <button
+                                      key={file.id}
+                                      onClick={() => selectMediaForHeroSlide(showMediaPicker, file)}
+                                      className="relative aspect-video bg-slate-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-violet-500 transition-all group"
+                                    >
+                                      {file.type.startsWith('video/') ? (
+                                        <video src={file.url} className="w-full h-full object-cover" muted />
+                                      ) : (
+                                        <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
+                                      )}
+                                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                                        <Check className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                      </div>
+                                      {file.type.startsWith('video/') && (
+                                        <span className="absolute bottom-1 right-1 text-[10px] bg-black/60 text-white px-1 rounded">VIDEO</span>
+                                      )}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Clinical Results Section */}
+                    <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold text-violet-400">{t.clinicalResults || 'Clinical Results'}</h3>
+                        <button
+                          onClick={() => setLandingPageData({...landingPageData, clinical_results: [...(landingPageData.clinical_results || []), {value: '', label: ''}]})}
+                          className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
+                        >
+                          <Plus className="w-4 h-4" /> {t.addResult || 'Add Result'}
+                        </button>
+                      </div>
+                      <div className="space-y-3">
+                        {(landingPageData.clinical_results || []).map((result: any, index: number) => (
+                          <div key={index} className="flex gap-3 items-center">
+                            <input
+                              type="text"
+                              value={result.value || ''}
+                              onChange={(e) => {
+                                const updated = [...landingPageData.clinical_results]
+                                updated[index] = {...result, value: e.target.value}
+                                setLandingPageData({...landingPageData, clinical_results: updated})
+                              }}
+                              placeholder={t.resultValue || 'Value (e.g., 94%)'}
+                              className="w-24 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                            />
+                            <input
+                              type="text"
+                              value={result.label || ''}
+                              onChange={(e) => {
+                                const updated = [...landingPageData.clinical_results]
+                                updated[index] = {...result, label: e.target.value}
+                                setLandingPageData({...landingPageData, clinical_results: updated})
+                              }}
+                              placeholder={t.resultLabel || 'Label (e.g., Improved)'}
+                              className="flex-1 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                            />
+                            <button
+                              onClick={() => {
+                                const updated = landingPageData.clinical_results.filter((_: any, i: number) => i !== index)
+                                setLandingPageData({...landingPageData, clinical_results: updated})
+                              }}
+                              className="text-red-400 hover:text-red-300"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Testimonials Section */}
+                    <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold text-violet-400">{t.testimonialsSection || 'Testimonials'}</h3>
+                        <button
+                          onClick={() => setLandingPageData({...landingPageData, testimonials: [...(landingPageData.testimonials || []), {name: '', age: '', text: '', rating: 5}]})}
+                          className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
+                        >
+                          <Plus className="w-4 h-4" /> {t.addTestimonial || 'Add Testimonial'}
+                        </button>
+                      </div>
+                      <div className="space-y-4">
+                        {(landingPageData.testimonials || []).map((testimonial: any, index: number) => (
+                          <div key={index} className="p-4 bg-slate-800 rounded-lg border border-slate-600">
+                            <div className="flex gap-3 mb-2">
+                              <input
+                                type="text"
+                                value={testimonial.name || ''}
+                                onChange={(e) => {
+                                  const updated = [...landingPageData.testimonials]
+                                  updated[index] = {...testimonial, name: e.target.value}
+                                  setLandingPageData({...landingPageData, testimonials: updated})
+                                }}
+                                placeholder={t.customerName || 'Customer Name'}
+                                className="w-32 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500"
+                              />
+                              <input
+                                type="text"
+                                value={testimonial.age || ''}
+                                onChange={(e) => {
+                                  const updated = [...landingPageData.testimonials]
+                                  updated[index] = {...testimonial, age: e.target.value}
+                                  setLandingPageData({...landingPageData, testimonials: updated})
+                                }}
+                                placeholder={t.customerAge || 'Age'}
+                                className="w-20 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500"
+                              />
+                              <button
+                                onClick={() => {
+                                  const updated = landingPageData.testimonials.filter((_: any, i: number) => i !== index)
+                                  setLandingPageData({...landingPageData, testimonials: updated})
+                                }}
+                                className="text-red-400 hover:text-red-300 ml-auto"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <textarea
+                              value={testimonial.text || ''}
+                              onChange={(e) => {
+                                const updated = [...landingPageData.testimonials]
+                                updated[index] = {...testimonial, text: e.target.value}
+                                setLandingPageData({...landingPageData, testimonials: updated})
+                              }}
+                              placeholder={t.testimonialText || 'Testimonial Text'}
+                              rows={2}
+                              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* FAQ Section */}
+                    <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold text-violet-400">{t.faqSection || 'FAQ Section'}</h3>
+                        <button
+                          onClick={() => setLandingPageData({...landingPageData, landing_faqs: [...(landingPageData.landing_faqs || []), {question: '', answer: ''}]})}
+                          className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
+                        >
+                          <Plus className="w-4 h-4" /> {t.addFaqItem || 'Add FAQ'}
+                        </button>
+                      </div>
+                      <div className="space-y-4">
+                        {(landingPageData.landing_faqs || []).map((faq: any, index: number) => (
+                          <div key={index} className="p-4 bg-slate-800 rounded-lg border border-slate-600">
+                            <div className="flex justify-between items-start mb-2">
+                              <input
+                                type="text"
+                                value={faq.question || ''}
+                                onChange={(e) => {
+                                  const updated = [...landingPageData.landing_faqs]
+                                  updated[index] = {...faq, question: e.target.value}
+                                  setLandingPageData({...landingPageData, landing_faqs: updated})
+                                }}
+                                placeholder="Question"
+                                className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm font-medium text-white placeholder-slate-500"
+                              />
+                              <button
+                                onClick={() => {
+                                  const updated = landingPageData.landing_faqs.filter((_: any, i: number) => i !== index)
+                                  setLandingPageData({...landingPageData, landing_faqs: updated})
+                                }}
+                                className="text-red-400 hover:text-red-300 ml-2"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <textarea
+                              value={faq.answer || ''}
+                              onChange={(e) => {
+                                const updated = [...landingPageData.landing_faqs]
+                                updated[index] = {...faq, answer: e.target.value}
+                                setLandingPageData({...landingPageData, landing_faqs: updated})
+                              }}
+                              placeholder="Answer"
+                              rows={2}
+                              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Trust Badges Section */}
+                    <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold text-violet-400">{t.trustBadges || 'Trust Badges'}</h3>
+                        <button
+                          onClick={() => setLandingPageData({...landingPageData, trust_badges: [...(landingPageData.trust_badges || []), {icon: '', label: ''}]})}
+                          className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
+                        >
+                          <Plus className="w-4 h-4" /> {t.addBadge || 'Add Badge'}
+                        </button>
+                      </div>
+                      <div className="space-y-3">
+                        {(landingPageData.trust_badges || []).map((badge: any, index: number) => (
+                          <div key={index} className="flex gap-3 items-center">
+                            <input
+                              type="text"
+                              value={badge.icon || ''}
+                              onChange={(e) => {
+                                const updated = [...landingPageData.trust_badges]
+                                updated[index] = {...badge, icon: e.target.value}
+                                setLandingPageData({...landingPageData, trust_badges: updated})
+                              }}
+                              placeholder={t.badgeIcon || 'Icon (emoji)'}
+                              className="w-16 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-center text-lg text-white placeholder-slate-500"
+                            />
+                            <input
+                              type="text"
+                              value={badge.label || ''}
+                              onChange={(e) => {
+                                const updated = [...landingPageData.trust_badges]
+                                updated[index] = {...badge, label: e.target.value}
+                                setLandingPageData({...landingPageData, trust_badges: updated})
+                              }}
+                              placeholder={t.badgeLabel || 'Label'}
+                              className="flex-1 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500"
+                            />
+                            <button
+                              onClick={() => {
+                                const updated = landingPageData.trust_badges.filter((_: any, i: number) => i !== index)
+                                setLandingPageData({...landingPageData, trust_badges: updated})
+                              }}
+                              className="text-red-400 hover:text-red-300"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Theme Colors & Footer */}
+                    <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
+                      <h3 className="text-lg font-semibold mb-4 text-violet-400">{t.themeColors || 'Theme Colors'}</h3>
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1 text-slate-300">{t.primaryColor || 'Primary Color'}</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="color"
+                              value={landingPageData.primary_color || '#4A90D9'}
+                              onChange={(e) => setLandingPageData({...landingPageData, primary_color: e.target.value})}
+                              className="w-12 h-10 border border-slate-600 rounded cursor-pointer bg-transparent"
+                            />
+                            <input
+                              type="text"
+                              value={landingPageData.primary_color || '#4A90D9'}
+                              onChange={(e) => setLandingPageData({...landingPageData, primary_color: e.target.value})}
+                              className="flex-1 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1 text-slate-300">{t.secondaryColor || 'Secondary Color'}</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="color"
+                              value={landingPageData.secondary_color || '#0D1B2A'}
+                              onChange={(e) => setLandingPageData({...landingPageData, secondary_color: e.target.value})}
+                              className="w-12 h-10 border border-slate-600 rounded cursor-pointer bg-transparent"
+                            />
+                            <input
+                              type="text"
+                              value={landingPageData.secondary_color || '#0D1B2A'}
+                              onChange={(e) => setLandingPageData({...landingPageData, secondary_color: e.target.value})}
+                              className="flex-1 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1 text-slate-300">{t.footerDisclaimer || 'Footer Disclaimer'}</label>
+                        <textarea
+                          value={landingPageData.footer_disclaimer || ''}
+                          onChange={(e) => setLandingPageData({...landingPageData, footer_disclaimer: e.target.value})}
+                          rows={2}
+                          className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Policies Section (Footnote) */}
+                    <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
+                      <h3 className="text-lg font-semibold mb-4 text-orange-400 flex items-center gap-2">
+                        <FileText className="w-5 h-5" />
+                        Policies & Legal
+                      </h3>
+                      <p className="text-sm text-slate-400 mb-4">Manage your store policies (Return Policy, Privacy Policy, Terms of Service, etc.)</p>
+                      <PolicyManager businessUnitId={businessUnitId} language={language} />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <p className="text-slate-400 mb-4">{t.noLandingPageYet || 'No landing page configured yet. Create one to customize what customers see.'}</p>
+                    <button
+                      onClick={() => setLandingPageData(getDefaultLandingPage())}
+                      className="bg-violet-600 hover:bg-violet-700 text-white px-6 py-2 rounded-lg"
+                    >
+                      {t.createLandingPage || 'Create Landing Page'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Media Library Tab Content */}
+            {activeSubTab === 'media' && (
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold flex items-center gap-2 text-white">
+                      <Image className="w-6 h-6 text-pink-400" />
+                      Image Library
+                    </h2>
+                    <p className="text-slate-400 mt-1">Upload and manage images and videos for your landing pages and products.</p>
+                  </div>
+                  <button
+                    onClick={() => mediaInputRef.current?.click()}
+                    disabled={mediaUploading}
+                    className="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white px-4 py-2 rounded-lg font-medium transition-all disabled:opacity-50"
+                  >
+                    {mediaUploading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4" />
+                        Upload Files
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Hidden file input */}
+                <input
+                  ref={mediaInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  multiple
+                  onChange={handleMediaUpload}
+                  className="hidden"
+                />
+
+                {/* Media Grid */}
+                {mediaLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-pink-500" />
+                    <span className="ml-3 text-slate-400">Loading media files...</span>
+                  </div>
+                ) : mediaFiles.length === 0 ? (
+                  <div className="text-center py-16 bg-slate-800/50 rounded-xl border-2 border-dashed border-slate-600">
+                    <Image className="w-16 h-16 mx-auto text-slate-500 mb-4" />
+                    <h3 className="text-xl font-semibold text-slate-300 mb-2">No media files yet</h3>
+                    <p className="text-slate-400 mb-6">Upload images and videos to use in your landing pages and products.</p>
+                    <button
+                      onClick={() => mediaInputRef.current?.click()}
+                      className="inline-flex items-center gap-2 bg-pink-600 hover:bg-pink-700 text-white px-6 py-3 rounded-lg font-medium transition-all"
+                    >
+                      <Upload className="w-5 h-5" />
+                      Upload Your First File
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {mediaFiles.map((file) => (
+                      <div key={file.id || file.name} className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 group">
+                        {/* Preview */}
+                        <div className="aspect-square relative bg-slate-900">
+                          {isImage(file.type) ? (
+                            <img
+                              src={file.url}
+                              alt={file.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : isVideo(file.type) ? (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <video
+                                src={file.url}
+                                className="max-w-full max-h-full"
+                                muted
+                                playsInline
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                                <Video className="w-12 h-12 text-white/80" />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <FileText className="w-12 h-12 text-slate-500" />
+                            </div>
+                          )}
+
+                          {/* Hover overlay */}
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => copyToClipboard(file.url)}
+                              className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                              title="Copy URL"
+                            >
+                              {copiedUrl === file.url ? (
+                                <Check className="w-5 h-5 text-green-400" />
+                              ) : (
+                                <Copy className="w-5 h-5 text-white" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => deleteMediaFile(file.name)}
+                              className="p-2 bg-red-500/20 hover:bg-red-500/40 rounded-lg transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-5 h-5 text-red-400" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* File info */}
+                        <div className="p-3">
+                          <p className="text-sm text-white truncate" title={file.name}>
+                            {file.name.replace(/^\d+_/, '')}
+                          </p>
+                          <p className="text-xs text-slate-400 mt-1">
+                            {formatFileSize(file.size)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Upload tips */}
+                <div className="mt-8 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+                  <h4 className="text-sm font-medium text-slate-300 mb-2">Supported formats</h4>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-2 py-1 bg-slate-700 rounded text-xs text-slate-300">JPG</span>
+                    <span className="px-2 py-1 bg-slate-700 rounded text-xs text-slate-300">PNG</span>
+                    <span className="px-2 py-1 bg-slate-700 rounded text-xs text-slate-300">GIF</span>
+                    <span className="px-2 py-1 bg-slate-700 rounded text-xs text-slate-300">WebP</span>
+                    <span className="px-2 py-1 bg-slate-700 rounded text-xs text-slate-300">SVG</span>
+                    <span className="px-2 py-1 bg-slate-700 rounded text-xs text-slate-300">MP4</span>
+                    <span className="px-2 py-1 bg-slate-700 rounded text-xs text-slate-300">WebM</span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-2">Maximum file size: 50MB</p>
+                </div>
+              </div>
             )}
           </>
         )}

@@ -38,8 +38,8 @@ async function ensureBucket() {
   if (!exists) {
     const { error } = await supabase.storage.createBucket(BUCKET_NAME, {
       public: true,
-      allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
-      fileSizeLimit: MAX_FILE_SIZE
+      allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm', 'video/quicktime'],
+      fileSizeLimit: 50 * 1024 * 1024 // 50MB for videos
     })
     if (error && !error.message.includes('already exists')) {
       console.error('Failed to create bucket:', error)
@@ -72,14 +72,17 @@ export async function POST(request: NextRequest) {
         businessUnitId = await resolveBusinessUnitId(buParam)
       }
 
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        return NextResponse.json({ error: 'Only image files are allowed' }, { status: 400 })
+      // Validate file type - allow images and videos
+      const isImage = file.type.startsWith('image/')
+      const isVideo = file.type.startsWith('video/')
+      if (!isImage && !isVideo) {
+        return NextResponse.json({ error: 'Only image or video files are allowed' }, { status: 400 })
       }
 
-      // Validate file size
-      if (file.size > MAX_FILE_SIZE) {
-        return NextResponse.json({ error: 'File size exceeds 5MB limit' }, { status: 400 })
+      // Validate file size (5MB for images, 50MB for videos)
+      const maxSize = isVideo ? 50 * 1024 * 1024 : MAX_FILE_SIZE
+      if (file.size > maxSize) {
+        return NextResponse.json({ error: `File size exceeds ${isVideo ? '50MB' : '5MB'} limit` }, { status: 400 })
       }
 
       const arrayBuffer = await file.arrayBuffer()

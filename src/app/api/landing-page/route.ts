@@ -1,0 +1,175 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+
+const supabase = createClient(supabaseUrl, supabaseKey)
+
+// Helper to resolve business unit ID from slug or ID
+async function resolveBusinessUnitId(businessUnitParam: string): Promise<string | null> {
+  // Check if it's a UUID
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (uuidRegex.test(businessUnitParam)) {
+    return businessUnitParam
+  }
+
+  // Look up by slug
+  const { data } = await supabase
+    .from('business_units')
+    .select('id')
+    .eq('slug', businessUnitParam)
+    .single()
+
+  return data?.id || null
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const businessUnitParam = searchParams.get('businessUnit')
+    const country = searchParams.get('country') || 'US'
+    const languageCode = searchParams.get('language') || 'en'
+
+    if (!businessUnitParam) {
+      return NextResponse.json({ error: 'businessUnit parameter required' }, { status: 400 })
+    }
+
+    const businessUnitId = await resolveBusinessUnitId(businessUnitParam)
+
+    if (!businessUnitId) {
+      return NextResponse.json({ error: 'Business unit not found' }, { status: 404 })
+    }
+
+    // Fetch the landing page for this business unit + country + language
+    const { data: landingPage, error } = await supabase
+      .from('landing_pages')
+      .select('*')
+      .eq('business_unit_id', businessUnitId)
+      .eq('country', country)
+      .eq('language_code', languageCode)
+      .eq('is_active', true)
+      .single()
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      console.error('Error fetching landing page:', error)
+      return NextResponse.json({ error: 'Failed to fetch landing page' }, { status: 500 })
+    }
+
+    // Also fetch business unit info
+    const { data: businessUnit } = await supabase
+      .from('business_units')
+      .select('id, name, slug')
+      .eq('id', businessUnitId)
+      .single()
+
+    // Fetch all available locales for this business unit
+    const { data: availableLocales } = await supabase
+      .from('landing_pages')
+      .select('country, language_code')
+      .eq('business_unit_id', businessUnitId)
+      .eq('is_active', true)
+
+    return NextResponse.json({
+      landingPage: landingPage || null,
+      businessUnit,
+      hasLandingPage: !!landingPage,
+      availableLocales: availableLocales || [],
+      currentLocale: { country, language: languageCode }
+    })
+
+  } catch (err) {
+    console.error('Landing page API error:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+// Create or update landing page
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    console.log('[LandingPage API] Received POST request')
+
+    // Remove id and business_unit_id from the data to prevent conflicts
+    const { businessUnitId, id, business_unit_id, created_at, updated_at, ...landingPageData } = body
+
+    // Get country and language from the data (required for locale-specific pages)
+    const country = landingPageData.country || 'US'
+    const languageCode = landingPageData.language_code || 'en'
+
+    console.log('[LandingPage API] businessUnitId:', businessUnitId)
+    console.log('[LandingPage API] Locale:', country, languageCode)
+
+    if (!businessUnitId) {
+      return NextResponse.json({ error: 'businessUnitId required' }, { status: 400 })
+    }
+
+    // Resolve businessUnitId (could be slug or UUID)
+    const resolvedBusinessUnitId = await resolveBusinessUnitId(businessUnitId)
+    if (!resolvedBusinessUnitId) {
+      return NextResponse.json({ error: 'Business unit not found' }, { status: 404 })
+    }
+
+    // Check if landing page exists for this business unit + country + language
+    const { data: existing, error: existingError } = await supabase
+      .from('landing_pages')
+      .select('id')
+      .eq('business_unit_id', resolvedBusinessUnitId)
+      .eq('country', country)
+      .eq('language_code', languageCode)
+      .single()
+
+    console.log('[LandingPage API] Existing landing page for locale:', existing?.id || 'none')
+
+    let result
+    if (existing) {
+      // Update existing locale-specific page
+      console.log('[LandingPage API] Updating existing landing page:', existing.id)
+      result = await supabase
+        .from('landing_pages')
+        .update({
+          ...landingPageData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existing.id)
+        .select()
+        .single()
+    } else {
+      // Create new locale-specific page
+      console.log('[LandingPage API] Creating new landing page for locale:', country, languageCode)
+      result = await supabase
+        .from('landing_pages')
+        .insert({
+          business_unit_id: resolvedBusinessUnitId,
+          ...landingPageData,
+          is_active: true
+        })
+        .select()
+        .single()
+    }
+
+    if (result.error) {
+      console.error('[LandingPage API] Supabase error:', JSON.stringify(result.error, null, 2))
+      return NextResponse.json({
+        error: 'Failed to save landing page',
+        details: result.error.message,
+        code: result.error.code
+      }, { status: 500 })
+    }
+
+    if (!result.data) {
+      console.error('[LandingPage API] No data returned from Supabase')
+      return NextResponse.json({
+        error: 'No data returned from database',
+        details: 'The save operation did not return any data'
+      }, { status: 500 })
+    }
+
+    console.log('[LandingPage API] Saved successfully for locale:', country, languageCode)
+    return NextResponse.json({ landingPage: result.data, success: true })
+
+  } catch (err) {
+    console.error('Landing page POST error:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
