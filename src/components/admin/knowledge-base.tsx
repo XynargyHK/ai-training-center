@@ -5,7 +5,8 @@ import {
   Package, Wrench, FileText, Plus, Edit, Trash2,
   Upload, Search, Grid, List,
   Loader2, X, BookOpen, Globe, Layout, Save, Image, Video, Copy, Check,
-  ChevronDown, ChevronUp, Zap, MessageSquare, Shield, ShoppingCart
+  ChevronDown, ChevronUp, Zap, MessageSquare, Shield, ShoppingCart,
+  AlignLeft, AlignCenter, AlignRight
 } from 'lucide-react'
 import PolicyManager from './policy-manager'
 import ProductCatalogManager from './product-catalog-manager'
@@ -607,13 +608,19 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
 
       const data = await response.json()
       if (data.url) {
-        const slides = [...(landingPageData.hero_slides || [])]
-        slides[slideIndex] = {
-          ...slides[slideIndex],
-          background_url: data.url,
-          background_type: isVideo ? 'video' : 'image'
+        // Handle static hero background
+        if (landingPageData.hero_type === 'static' && slideIndex === 0) {
+          setLandingPageData({ ...landingPageData, hero_static_bg: data.url })
+        } else {
+          // Handle carousel slides
+          const slides = [...(landingPageData.hero_slides || [])]
+          slides[slideIndex] = {
+            ...slides[slideIndex],
+            background_url: data.url,
+            background_type: isVideo ? 'video' : 'image'
+          }
+          setLandingPageData({ ...landingPageData, hero_slides: slides })
         }
-        setLandingPageData({ ...landingPageData, hero_slides: slides })
       }
     } catch (error: any) {
       console.error('Error uploading hero background:', error)
@@ -629,6 +636,15 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
   // Select media from library for hero slide
   const selectMediaForHeroSlide = (slideIndex: number, file: MediaFile) => {
     const isVideo = file.type.startsWith('video/')
+
+    // Handle static hero background
+    if (landingPageData.hero_type === 'static' && slideIndex === 0) {
+      setLandingPageData({ ...landingPageData, hero_static_bg: file.url })
+      setShowMediaPicker(null)
+      return
+    }
+
+    // Handle carousel slides
     const slides = [...(landingPageData.hero_slides || [])]
     slides[slideIndex] = {
       ...slides[slideIndex],
@@ -1859,30 +1875,6 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                     <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
                       <h3 className="text-lg font-semibold mb-4 text-indigo-400">Menu Bar</h3>
 
-                      {/* Visual Layout Preview */}
-                      <div className="bg-slate-800 rounded-lg p-3 mb-4 border border-slate-600">
-                        <p className="text-xs text-slate-500 mb-2">Layout Preview (Desktop)</p>
-                        <div className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-3">
-                            {landingPageData.logo_position === 'left' && (
-                              <span className="bg-indigo-500/30 text-indigo-300 px-2 py-1 rounded">Logo</span>
-                            )}
-                            <span className="text-slate-400">Menu Items →</span>
-                          </div>
-                          {landingPageData.logo_position === 'center' && (
-                            <span className="bg-indigo-500/30 text-indigo-300 px-2 py-1 rounded">Logo</span>
-                          )}
-                          <div className="flex items-center gap-2">
-                            {landingPageData.show_search && <span className="text-slate-400">🔍</span>}
-                            {landingPageData.show_account && <span className="text-slate-400">👤</span>}
-                            {landingPageData.show_cart && <span className="text-slate-400">🛒</span>}
-                          </div>
-                        </div>
-                        <p className="text-xs text-slate-500 mt-2">
-                          Mobile: {landingPageData.logo_position === 'left' ? 'Logo left, ☰ menu right' : 'Logo center, ☰ menu left'}
-                        </p>
-                      </div>
-
                       <div className="grid gap-6">
                         {/* Logo Settings Row */}
                         <div>
@@ -1911,7 +1903,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                             </div>
                             <div className="md:col-span-2">
                               <label className="block text-xs text-slate-400 mb-1">Logo Image</label>
-                              <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 {landingPageData.logo_url ? (
                                   <div className="relative">
                                     <img
@@ -1965,28 +1957,39 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                           <label className="block text-sm font-medium mb-2 text-slate-300">Menu Items (Left Side)</label>
                           <div className="space-y-2">
                             {(landingPageData.menu_items || []).map((item: { label: string; url: string; enabled: boolean }, index: number) => (
-                              <div key={index} className="flex items-center gap-2 bg-slate-800/50 p-2 rounded-lg">
-                                <input
-                                  type="checkbox"
-                                  checked={item.enabled}
-                                  onChange={(e) => {
-                                    const updated = [...(landingPageData.menu_items || [])]
-                                    updated[index] = { ...item, enabled: e.target.checked }
-                                    setLandingPageData({...landingPageData, menu_items: updated})
-                                  }}
-                                  className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-indigo-500 focus:ring-indigo-500"
-                                />
-                                <input
-                                  type="text"
-                                  value={item.label}
-                                  onChange={(e) => {
-                                    const updated = [...(landingPageData.menu_items || [])]
-                                    updated[index] = { ...item, label: e.target.value }
-                                    setLandingPageData({...landingPageData, menu_items: updated})
-                                  }}
-                                  placeholder="Label"
-                                  className="flex-1 px-2 py-1 bg-slate-800 border border-slate-600 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                />
+                              <div key={index} className="bg-slate-800/50 p-2 rounded-lg">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={item.enabled}
+                                    onChange={(e) => {
+                                      const updated = [...(landingPageData.menu_items || [])]
+                                      updated[index] = { ...item, enabled: e.target.checked }
+                                      setLandingPageData({...landingPageData, menu_items: updated})
+                                    }}
+                                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-indigo-500 focus:ring-indigo-500"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={item.label}
+                                    onChange={(e) => {
+                                      const updated = [...(landingPageData.menu_items || [])]
+                                      updated[index] = { ...item, label: e.target.value }
+                                      setLandingPageData({...landingPageData, menu_items: updated})
+                                    }}
+                                    placeholder="Label"
+                                    className="flex-1 px-2 py-1 bg-slate-800 border border-slate-600 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      const updated = (landingPageData.menu_items || []).filter((_: any, i: number) => i !== index)
+                                      setLandingPageData({...landingPageData, menu_items: updated})
+                                    }}
+                                    className="p-1 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded flex-shrink-0"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
                                 <input
                                   type="text"
                                   value={item.url}
@@ -1996,17 +1999,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                     setLandingPageData({...landingPageData, menu_items: updated})
                                   }}
                                   placeholder="URL or #section"
-                                  className="flex-1 px-2 py-1 bg-slate-800 border border-slate-600 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                  className="w-full px-2 py-1 bg-slate-800 border border-slate-600 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                 />
-                                <button
-                                  onClick={() => {
-                                    const updated = (landingPageData.menu_items || []).filter((_: any, i: number) => i !== index)
-                                    setLandingPageData({...landingPageData, menu_items: updated})
-                                  }}
-                                  className="p-1 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
                               </div>
                             ))}
                           </div>
@@ -2087,22 +2081,53 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                       </div>
                     </div>
 
-                    {/* Hero Section - Carousel Slides */}
+                    {/* Hero Section */}
                     <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold text-violet-400">{t.heroSection || 'Hero Carousel'}</h3>
-                        <button
-                          onClick={() => {
-                            const slides = [...(landingPageData.hero_slides || [])]
-                            slides.push({ headline: '', subheadline: '', content: '', background_url: '', background_type: 'image', cta_text: 'Shop Now', cta_url: '#shop', text_align: 'center' })
-                            setLandingPageData({...landingPageData, hero_slides: slides})
-                          }}
-                          className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Add Slide
-                        </button>
+                      <div className="mb-4">
+                        <h3 className="text-lg font-semibold text-violet-400 mb-3">{t.heroSection || 'Hero Section'}</h3>
+
+                        {/* Hero Type Selector */}
+                        <div className="flex gap-3 mb-4">
+                          <button
+                            onClick={() => setLandingPageData({...landingPageData, hero_type: 'carousel'})}
+                            className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
+                              (landingPageData.hero_type || 'carousel') === 'carousel'
+                                ? 'bg-violet-600 text-white'
+                                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                            }`}
+                          >
+                            📱 Horizontal Scroll Design
+                          </button>
+                          <button
+                            onClick={() => setLandingPageData({...landingPageData, hero_type: 'static'})}
+                            className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
+                              landingPageData.hero_type === 'static'
+                                ? 'bg-violet-600 text-white'
+                                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                            }`}
+                          >
+                            🖼️ Text/Image Box
+                          </button>
+                        </div>
                       </div>
+
+                      {/* Carousel Slides */}
+                      {(landingPageData.hero_type || 'carousel') === 'carousel' && (
+                        <div>
+                          <div className="flex justify-between items-center mb-4">
+                            <label className="text-sm font-medium text-slate-300">Carousel Slides</label>
+                            <button
+                              onClick={() => {
+                                const slides = [...(landingPageData.hero_slides || [])]
+                                slides.push({ headline: '', subheadline: '', content: '', background_url: '', background_type: 'image', cta_text: 'Shop Now', cta_url: '#shop', text_align: 'center' })
+                                setLandingPageData({...landingPageData, hero_slides: slides})
+                              }}
+                              className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Add Slide
+                            </button>
+                          </div>
 
                       <div className="space-y-4">
                         {(landingPageData.hero_slides || []).map((slide: { headline: string; subheadline: string; content?: string; background_url: string; background_type: string; cta_text: string; cta_url: string; text_align?: 'left' | 'center' | 'right' }, index: number) => (
@@ -2126,67 +2151,118 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                             {/* Background Upload */}
                             <div className="mb-3">
                               <label className="block text-xs text-slate-400 mb-1">Background Image/Video</label>
-                              <div className="flex items-center gap-3">
-                                {slide.background_url ? (
-                                  <div className="relative">
-                                    {slide.background_type === 'video' ? (
-                                      <video src={slide.background_url} className="h-16 w-28 object-cover rounded" muted />
-                                    ) : (
-                                      <img src={slide.background_url} alt="Background" className="h-16 w-28 object-cover rounded" />
-                                    )}
-                                    <button
-                                      onClick={() => {
-                                        const slides = [...(landingPageData.hero_slides || [])]
-                                        slides[index] = { ...slide, background_url: '', background_type: 'image' }
-                                        setLandingPageData({...landingPageData, hero_slides: slides})
-                                      }}
-                                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
-                                    <span className="absolute bottom-0.5 right-0.5 text-[10px] bg-black/60 text-white px-1 rounded">
-                                      {slide.background_type === 'video' ? 'VIDEO' : 'IMAGE'}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <div className="h-16 w-28 bg-slate-800 border border-dashed border-slate-600 rounded flex items-center justify-center">
-                                    <Image className="w-6 h-6 text-slate-500" />
-                                  </div>
-                                )}
-                                <button
-                                  onClick={() => heroSlideInputRefs.current[index]?.click()}
-                                  disabled={heroSlideUploading === index}
-                                  className="px-3 py-1.5 bg-violet-600 text-white text-sm rounded hover:bg-violet-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
-                                >
-                                  {heroSlideUploading === index ? (
-                                    <>
-                                      <Loader2 className="w-4 h-4 animate-spin" />
-                                      Uploading...
-                                    </>
+                              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  {slide.background_url ? (
+                                    <div className="relative">
+                                      {slide.background_type === 'video' ? (
+                                        <video src={slide.background_url} className="h-16 w-28 object-cover rounded" muted />
+                                      ) : (
+                                        <img src={slide.background_url} alt="Background" className="h-16 w-28 object-cover rounded" />
+                                      )}
+                                      <button
+                                        onClick={() => {
+                                          const slides = [...(landingPageData.hero_slides || [])]
+                                          slides[index] = { ...slide, background_url: '', background_type: 'image' }
+                                          setLandingPageData({...landingPageData, hero_slides: slides})
+                                        }}
+                                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                      <span className="absolute bottom-0.5 right-0.5 text-[10px] bg-black/60 text-white px-1 rounded">
+                                        {slide.background_type === 'video' ? 'VIDEO' : 'IMAGE'}
+                                      </span>
+                                    </div>
                                   ) : (
-                                    <>
-                                      <Upload className="w-4 h-4" />
-                                      Upload
-                                    </>
+                                    <div className="h-16 w-28 bg-slate-800 border border-dashed border-slate-600 rounded flex items-center justify-center">
+                                      <Image className="w-6 h-6 text-slate-500" />
+                                    </div>
                                   )}
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    loadMediaFiles()
-                                    setShowMediaPicker(index)
-                                  }}
-                                  className="px-3 py-1.5 bg-slate-600 text-white text-sm rounded hover:bg-slate-500 transition-colors flex items-center gap-1.5"
-                                >
-                                  <Image className="w-4 h-4" />
-                                  Library
-                                </button>
-                                <input
-                                  ref={(el) => { heroSlideInputRefs.current[index] = el }}
-                                  type="file"
-                                  accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"
-                                  onChange={(e) => handleHeroSlideUpload(e, index)}
-                                  className="hidden"
-                                />
+                                  <button
+                                    onClick={() => heroSlideInputRefs.current[index]?.click()}
+                                    disabled={heroSlideUploading === index}
+                                    className="px-3 py-1.5 bg-violet-600 text-white text-sm rounded hover:bg-violet-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                                  >
+                                    {heroSlideUploading === index ? (
+                                      <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Uploading...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Upload className="w-4 h-4" />
+                                        Upload
+                                      </>
+                                    )}
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      loadMediaFiles()
+                                      setShowMediaPicker(index)
+                                    }}
+                                    className="px-3 py-1.5 bg-slate-600 text-white text-sm rounded hover:bg-slate-500 transition-colors flex items-center gap-1.5"
+                                  >
+                                    <Image className="w-4 h-4" />
+                                    Library
+                                  </button>
+                                  <input
+                                    ref={(el) => { heroSlideInputRefs.current[index] = el }}
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"
+                                    onChange={(e) => handleHeroSlideUpload(e, index)}
+                                    className="hidden"
+                                  />
+                                </div>
+
+                                {/* Text Alignment Icons */}
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => {
+                                      const slides = [...(landingPageData.hero_slides || [])]
+                                      slides[index] = { ...slide, text_align: 'left' }
+                                      setLandingPageData({...landingPageData, hero_slides: slides})
+                                    }}
+                                    className={`p-2 rounded transition-colors ${
+                                      (slide.text_align || 'center') === 'left'
+                                        ? 'bg-violet-600 text-white'
+                                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                    }`}
+                                    title="Align Left"
+                                  >
+                                    <AlignLeft className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      const slides = [...(landingPageData.hero_slides || [])]
+                                      slides[index] = { ...slide, text_align: 'center' }
+                                      setLandingPageData({...landingPageData, hero_slides: slides})
+                                    }}
+                                    className={`p-2 rounded transition-colors ${
+                                      (slide.text_align || 'center') === 'center'
+                                        ? 'bg-violet-600 text-white'
+                                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                    }`}
+                                    title="Align Center"
+                                  >
+                                    <AlignCenter className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      const slides = [...(landingPageData.hero_slides || [])]
+                                      slides[index] = { ...slide, text_align: 'right' }
+                                      setLandingPageData({...landingPageData, hero_slides: slides})
+                                    }}
+                                    className={`p-2 rounded transition-colors ${
+                                      (slide.text_align || 'center') === 'right'
+                                        ? 'bg-violet-600 text-white'
+                                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                    }`}
+                                    title="Align Right"
+                                  >
+                                    <AlignRight className="w-4 h-4" />
+                                  </button>
+                                </div>
                               </div>
                             </div>
 
@@ -2230,33 +2306,9 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                     setLandingPageData({...landingPageData, hero_slides: slides})
                                   }}
                                   placeholder="Additional text content for this slide..."
-                                  rows={2}
-                                  className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                                  rows={3}
+                                  className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500 resize-y break-words whitespace-pre-wrap"
                                 />
-                              </div>
-                              <div className="md:col-span-2">
-                                <label className="block text-xs text-slate-400 mb-1">Text Alignment</label>
-                                <div className="flex gap-2">
-                                  {(['left', 'center', 'right'] as const).map((align) => (
-                                    <button
-                                      key={align}
-                                      onClick={() => {
-                                        const slides = [...(landingPageData.hero_slides || [])]
-                                        slides[index] = { ...slide, text_align: align }
-                                        setLandingPageData({...landingPageData, hero_slides: slides})
-                                      }}
-                                      className={`flex-1 px-3 py-1.5 text-sm rounded transition-colors ${
-                                        (slide.text_align || 'center') === align
-                                          ? 'bg-violet-600 text-white'
-                                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                      }`}
-                                    >
-                                      {align === 'left' && '◀ Left'}
-                                      {align === 'center' && '● Center'}
-                                      {align === 'right' && 'Right ▶'}
-                                    </button>
-                                  ))}
-                                </div>
                               </div>
                               <div>
                                 <label className="block text-xs text-slate-400 mb-1">CTA Button Text</label>
@@ -2290,6 +2342,165 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                           </div>
                         ))}
                       </div>
+                        </div>
+                      )}
+
+                      {/* Static Text/Image Box */}
+                      {landingPageData.hero_type === 'static' && (
+                        <div>
+                          <label className="text-sm font-medium text-slate-300 mb-3 block">Static Banner</label>
+                          <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-600 space-y-3">
+                            {/* Background Upload */}
+                            <div>
+                              <label className="block text-xs text-slate-400 mb-1">Background Image</label>
+                              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  {landingPageData.hero_static_bg ? (
+                                    <div className="relative">
+                                      <img src={landingPageData.hero_static_bg} className="h-16 w-28 object-cover rounded" />
+                                      <button
+                                        onClick={() => setLandingPageData({...landingPageData, hero_static_bg: ''})}
+                                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="h-16 w-28 bg-slate-800 border border-dashed border-slate-600 rounded flex items-center justify-center">
+                                      <Image className="w-6 h-6 text-slate-500" />
+                                    </div>
+                                  )}
+                                  <button
+                                    onClick={() => heroSlideInputRefs.current[0]?.click()}
+                                    disabled={heroSlideUploading === 0}
+                                    className="px-3 py-1.5 bg-violet-600 text-white text-sm rounded hover:bg-violet-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                                  >
+                                    {heroSlideUploading === 0 ? (
+                                      <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Uploading...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Upload className="w-4 h-4" />
+                                        Upload
+                                      </>
+                                    )}
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      loadMediaFiles()
+                                      setShowMediaPicker(0)
+                                    }}
+                                    className="px-3 py-1.5 bg-slate-600 text-white text-sm rounded hover:bg-slate-500 transition-colors flex items-center gap-1.5"
+                                  >
+                                    <Image className="w-4 h-4" />
+                                    Library
+                                  </button>
+                                  <input
+                                    ref={(el) => { heroSlideInputRefs.current[0] = el }}
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/webp,image/gif"
+                                    onChange={(e) => handleHeroSlideUpload(e, 0)}
+                                    className="hidden"
+                                  />
+                                </div>
+
+                                {/* Text Alignment Icons */}
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => setLandingPageData({...landingPageData, hero_static_align: 'left'})}
+                                    className={`p-2 rounded transition-colors ${
+                                      (landingPageData.hero_static_align || 'center') === 'left'
+                                        ? 'bg-violet-600 text-white'
+                                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                    }`}
+                                    title="Align Left"
+                                  >
+                                    <AlignLeft className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => setLandingPageData({...landingPageData, hero_static_align: 'center'})}
+                                    className={`p-2 rounded transition-colors ${
+                                      (landingPageData.hero_static_align || 'center') === 'center'
+                                        ? 'bg-violet-600 text-white'
+                                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                    }`}
+                                    title="Align Center"
+                                  >
+                                    <AlignCenter className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => setLandingPageData({...landingPageData, hero_static_align: 'right'})}
+                                    className={`p-2 rounded transition-colors ${
+                                      (landingPageData.hero_static_align || 'center') === 'right'
+                                        ? 'bg-violet-600 text-white'
+                                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                    }`}
+                                    title="Align Right"
+                                  >
+                                    <AlignRight className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Text Content */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs text-slate-400 mb-1">Headline</label>
+                                <input
+                                  type="text"
+                                  value={landingPageData.hero_static_headline || ''}
+                                  onChange={(e) => setLandingPageData({...landingPageData, hero_static_headline: e.target.value})}
+                                  placeholder="e.g., Transform Your Skin"
+                                  className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-slate-400 mb-1">Subheadline</label>
+                                <input
+                                  type="text"
+                                  value={landingPageData.hero_static_subheadline || ''}
+                                  onChange={(e) => setLandingPageData({...landingPageData, hero_static_subheadline: e.target.value})}
+                                  placeholder="e.g., Discover the secret"
+                                  className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                                />
+                              </div>
+                              <div className="md:col-span-2">
+                                <label className="block text-xs text-slate-400 mb-1">Content</label>
+                                <textarea
+                                  value={landingPageData.hero_static_content || ''}
+                                  onChange={(e) => setLandingPageData({...landingPageData, hero_static_content: e.target.value})}
+                                  placeholder="Additional text content..."
+                                  rows={5}
+                                  className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500 resize-y break-words whitespace-pre-wrap"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-slate-400 mb-1">CTA Button Text</label>
+                                <input
+                                  type="text"
+                                  value={landingPageData.hero_static_cta_text || ''}
+                                  onChange={(e) => setLandingPageData({...landingPageData, hero_static_cta_text: e.target.value})}
+                                  placeholder="e.g., Shop Now"
+                                  className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-slate-400 mb-1">CTA Button URL</label>
+                                <input
+                                  type="text"
+                                  value={landingPageData.hero_static_cta_url || ''}
+                                  onChange={(e) => setLandingPageData({...landingPageData, hero_static_cta_url: e.target.value})}
+                                  placeholder="e.g., #shop or /products"
+                                  className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Media Picker Modal */}
                       {showMediaPicker !== null && (
@@ -2472,8 +2683,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         setLandingPageData({...landingPageData, pain_points: updated})
                                       }}
                                       placeholder="Description..."
-                                      rows={2}
-                                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 text-sm"
+                                      rows={3}
+                                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 text-sm resize-y break-words whitespace-pre-wrap"
                                     />
                                   </div>
                                   <button
@@ -2538,8 +2749,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                       setLandingPageData({...landingPageData, story_blocks: updated})
                                     }}
                                     placeholder={block.type === 'quote' ? 'Enter quote...' : 'Enter story text...'}
-                                    rows={3}
-                                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 text-sm"
+                                    rows={4}
+                                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 text-sm resize-y break-words whitespace-pre-wrap"
                                   />
                                   {block.type === 'quote' && (
                                     <input
@@ -2714,8 +2925,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         setLandingPageData({...landingPageData, solution_steps: updated})
                                       }}
                                       placeholder="Step description..."
-                                      rows={2}
-                                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 text-sm"
+                                      rows={3}
+                                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 text-sm resize-y break-words whitespace-pre-wrap"
                                     />
                                   </div>
                                   <button
@@ -2790,8 +3001,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                       setLandingPageData({...landingPageData, solution_features: updated})
                                     }}
                                     placeholder="Description..."
-                                    rows={2}
-                                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 text-sm"
+                                    rows={3}
+                                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 text-sm resize-y break-words whitespace-pre-wrap"
                                   />
                                 </div>
                               ))}
@@ -2964,8 +3175,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         setLandingPageData({...landingPageData, expert_quotes: updated})
                                       }}
                                       placeholder="Expert quote..."
-                                      rows={2}
-                                      className="w-full px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                                      rows={3}
+                                      className="w-full px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-white text-sm resize-y break-words whitespace-pre-wrap"
                                     />
                                   </div>
                                 ))}
@@ -3070,8 +3281,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                 setLandingPageData({...landingPageData, testimonials: updated})
                               }}
                               placeholder={t.testimonialText || 'Testimonial Text'}
-                              rows={2}
-                              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500"
+                              rows={3}
+                              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500 resize-y break-words whitespace-pre-wrap"
                             />
                           </div>
                         ))}
@@ -3122,8 +3333,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                 setLandingPageData({...landingPageData, landing_faqs: updated})
                               }}
                               placeholder="Answer"
-                              rows={2}
-                              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500"
+                              rows={3}
+                              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500 resize-y break-words whitespace-pre-wrap"
                             />
                           </div>
                         ))}

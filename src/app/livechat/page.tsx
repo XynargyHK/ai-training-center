@@ -59,7 +59,15 @@ interface LandingPageData {
   account_url?: string
   cart_url?: string
   // Hero section
+  hero_type?: 'carousel' | 'static'
   hero_slides?: HeroSlide[]
+  hero_static_bg?: string
+  hero_static_headline?: string
+  hero_static_subheadline?: string
+  hero_static_content?: string
+  hero_static_cta_text?: string
+  hero_static_cta_url?: string
+  hero_static_align?: 'left' | 'center' | 'right'
   hero_headline: string // Legacy
   hero_subheadline?: string
   hero_product_name?: string
@@ -399,119 +407,176 @@ function LandingPageContent() {
       </header>
 
       {/* Hero Section - Carousel */}
-      {(() => {
-        const heroSlides = landingPage.hero_slides && landingPage.hero_slides.length > 0
-          ? landingPage.hero_slides
-          : [{ headline: landingPage.hero_headline, subheadline: landingPage.hero_subheadline || '', background_url: '', background_type: 'image' as const, cta_text: landingPage.hero_cta_text || 'Shop Now', cta_url: '#shop' }]
-        const currentSlide = heroSlides[currentHeroSlide] || heroSlides[0]
+      {(landingPage.hero_slides && landingPage.hero_slides.length > 0) && (() => {
+          const heroSlides = landingPage.hero_slides
+          const currentSlide = heroSlides[currentHeroSlide] || heroSlides[0]
 
-        return (
-          <section className="relative w-full h-[500px] md:h-[600px] overflow-hidden">
-            {/* Background */}
-            {currentSlide.background_url ? (
-              currentSlide.background_type === 'video' ? (
-                <video
-                  key={currentSlide.background_url}
-                  src={currentSlide.background_url}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-              ) : (
-                <img
-                  key={currentSlide.background_url}
-                  src={currentSlide.background_url}
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-              )
-            ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200" />
-            )}
-
-            {/* Overlay for text readability */}
-            <div className="absolute inset-0 bg-black/30" />
-
-            {/* Content */}
-            <div className={`relative z-10 h-full flex items-center ${
-              currentSlide.text_align === 'left' ? 'justify-start' :
-              currentSlide.text_align === 'right' ? 'justify-end' :
-              'justify-center'
-            }`}>
-              <div className={`px-4 md:px-12 max-w-4xl ${
-                currentSlide.text_align === 'left' ? 'text-left' :
-                currentSlide.text_align === 'right' ? 'text-right' :
-                'text-center'
-              }`}>
-                {currentSlide.headline && (
-                  <h1 className={`text-3xl md:text-5xl lg:text-6xl font-light tracking-[0.2em] uppercase text-white leading-tight mb-4 drop-shadow-lg ${headlineFont.className}`}>
-                    {currentSlide.headline}
-                  </h1>
-                )}
-                {currentSlide.subheadline && (
-                  <p className={`text-lg md:text-xl font-light tracking-[0.15em] uppercase text-white/90 mb-4 drop-shadow ${headlineFont.className}`}>
-                    {currentSlide.subheadline}
-                  </p>
-                )}
-                {currentSlide.content && (
-                  <p className={`text-base md:text-lg font-light text-white/80 mb-8 drop-shadow max-w-2xl ${
-                    currentSlide.text_align === 'center' ? 'mx-auto' :
-                    currentSlide.text_align === 'right' ? 'ml-auto' : ''
-                  } ${serifFont.className}`}>
-                    {currentSlide.content}
-                  </p>
-                )}
-                {!currentSlide.content && currentSlide.subheadline && (
-                  <div className="mb-4" />
-                )}
-                {currentSlide.cta_text && (
-                  <Link
-                    href={buildUrl(currentSlide.cta_url || '/livechat/shop')}
-                    className={`inline-block px-8 py-3 bg-white text-black text-sm font-bold tracking-[0.15em] uppercase hover:bg-black hover:text-white transition-colors ${headlineFont.className}`}
-                  >
-                    {currentSlide.cta_text}
-                  </Link>
-                )}
-              </div>
-            </div>
-
-            {/* Navigation Arrows */}
-            {heroSlides.length > 1 && (
-              <>
-                <button
-                  onClick={() => setCurrentHeroSlide(prev => prev === 0 ? heroSlides.length - 1 : prev - 1)}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 flex items-center justify-center bg-white/20 hover:bg-white/40 transition-colors rounded-full backdrop-blur-sm"
-                >
-                  <ChevronLeft className="w-6 h-6 text-white" />
-                </button>
-                <button
-                  onClick={() => setCurrentHeroSlide(prev => prev === heroSlides.length - 1 ? 0 : prev + 1)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 flex items-center justify-center bg-white/20 hover:bg-white/40 transition-colors rounded-full backdrop-blur-sm"
-                >
-                  <ChevronRight className="w-6 h-6 text-white" />
-                </button>
-              </>
-            )}
-
-            {/* Slide Indicators */}
-            {heroSlides.length > 1 && (
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
-                {heroSlides.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentHeroSlide(index)}
-                    className={`w-2 h-2 rounded-full transition-colors ${
-                      index === currentHeroSlide ? 'bg-white' : 'bg-white/40'
-                    }`}
+          return (
+            <section className="relative w-full h-[500px] md:h-[600px] overflow-hidden">
+              {/* Background */}
+              {currentSlide.background_url ? (
+                currentSlide.background_type === 'video' ? (
+                  <video
+                    key={currentSlide.background_url}
+                    src={currentSlide.background_url}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="absolute inset-0 w-full h-full object-cover"
                   />
-                ))}
+                ) : (
+                  <img
+                    key={currentSlide.background_url}
+                    src={currentSlide.background_url}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                )
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200" />
+              )}
+
+              {/* Overlay for text readability */}
+              <div className="absolute inset-0 bg-black/30" />
+
+              {/* Content */}
+              <div className={`relative z-10 h-full flex items-center ${
+                currentSlide.text_align === 'left' ? 'justify-start' :
+                currentSlide.text_align === 'right' ? 'justify-end' :
+                'justify-center'
+              }`}>
+                <div className={`px-4 md:px-12 max-w-4xl ${
+                  currentSlide.text_align === 'left' ? 'text-left' :
+                  currentSlide.text_align === 'right' ? 'text-right' :
+                  'text-center'
+                }`}>
+                  {currentSlide.headline && (
+                    <h1 className={`text-3xl md:text-5xl lg:text-6xl font-light tracking-[0.2em] uppercase text-white leading-tight mb-4 drop-shadow-lg ${headlineFont.className}`}>
+                      {currentSlide.headline}
+                    </h1>
+                  )}
+                  {currentSlide.subheadline && (
+                    <p className={`text-lg md:text-xl font-light tracking-[0.15em] uppercase text-white/90 mb-4 drop-shadow ${headlineFont.className}`}>
+                      {currentSlide.subheadline}
+                    </p>
+                  )}
+                  {currentSlide.content && (
+                    <p className={`text-base md:text-lg font-light text-white/80 mb-8 drop-shadow max-w-2xl whitespace-pre-wrap ${
+                      currentSlide.text_align === 'center' ? 'mx-auto' :
+                      currentSlide.text_align === 'right' ? 'ml-auto' : ''
+                    } ${serifFont.className}`}>
+                      {currentSlide.content}
+                    </p>
+                  )}
+                  {!currentSlide.content && currentSlide.subheadline && (
+                    <div className="mb-4" />
+                  )}
+                  {currentSlide.cta_text && (
+                    <Link
+                      href={buildUrl(currentSlide.cta_url || '/livechat/shop')}
+                      className={`inline-block px-8 py-3 bg-white text-black text-sm font-bold tracking-[0.15em] uppercase hover:bg-black hover:text-white transition-colors ${headlineFont.className}`}
+                    >
+                      {currentSlide.cta_text}
+                    </Link>
+                  )}
+                </div>
               </div>
-            )}
-          </section>
-        )
-      })()}
+
+              {/* Navigation Arrows */}
+              {heroSlides.length > 1 && (
+                <>
+                  <button
+                    onClick={() => setCurrentHeroSlide(prev => prev === 0 ? heroSlides.length - 1 : prev - 1)}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 flex items-center justify-center bg-white/20 hover:bg-white/40 transition-colors rounded-full backdrop-blur-sm"
+                  >
+                    <ChevronLeft className="w-6 h-6 text-white" />
+                  </button>
+                  <button
+                    onClick={() => setCurrentHeroSlide(prev => prev === heroSlides.length - 1 ? 0 : prev + 1)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 flex items-center justify-center bg-white/20 hover:bg-white/40 transition-colors rounded-full backdrop-blur-sm"
+                  >
+                    <ChevronRight className="w-6 h-6 text-white" />
+                  </button>
+                </>
+              )}
+
+              {/* Slide Indicators */}
+              {heroSlides.length > 1 && (
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+                  {heroSlides.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentHeroSlide(index)}
+                      className={`w-2 h-2 rounded-full transition-colors ${
+                        index === currentHeroSlide ? 'bg-white' : 'bg-white/40'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          )
+        })()}
+
+      {/* Static Text/Image Box Section */}
+      {(landingPage.hero_static_headline || landingPage.hero_static_subheadline || landingPage.hero_static_content || landingPage.hero_static_bg || landingPage.hero_static_cta_text) && (
+        <section className="relative w-full h-[500px] md:h-[600px] overflow-hidden">
+          {/* Background */}
+          {landingPage.hero_static_bg ? (
+            <img
+              src={landingPage.hero_static_bg}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200" />
+          )}
+
+          {/* Overlay for text readability */}
+          <div className="absolute inset-0 bg-black/30" />
+
+          {/* Content */}
+          <div className={`relative z-10 h-full flex items-center ${
+            landingPage.hero_static_align === 'left' ? 'justify-start' :
+            landingPage.hero_static_align === 'right' ? 'justify-end' :
+            'justify-center'
+          }`}>
+            <div className={`px-4 md:px-12 max-w-4xl ${
+              landingPage.hero_static_align === 'left' ? 'text-left' :
+              landingPage.hero_static_align === 'right' ? 'text-right' :
+              'text-center'
+            }`}>
+              {landingPage.hero_static_headline && (
+                <h1 className={`text-3xl md:text-5xl lg:text-6xl font-light tracking-[0.2em] uppercase text-white leading-tight mb-4 drop-shadow-lg ${headlineFont.className}`}>
+                  {landingPage.hero_static_headline}
+                </h1>
+              )}
+              {landingPage.hero_static_subheadline && (
+                <p className={`text-lg md:text-xl font-light tracking-[0.15em] uppercase text-white/90 mb-4 drop-shadow ${headlineFont.className}`}>
+                  {landingPage.hero_static_subheadline}
+                </p>
+              )}
+              {landingPage.hero_static_content && (
+                <p className={`text-base md:text-lg font-light text-white/80 mb-8 drop-shadow max-w-2xl whitespace-pre-wrap ${
+                  landingPage.hero_static_align === 'center' ? 'mx-auto' :
+                  landingPage.hero_static_align === 'right' ? 'ml-auto' : ''
+                } ${serifFont.className}`}>
+                  {landingPage.hero_static_content}
+                </p>
+              )}
+              {landingPage.hero_static_cta_text && (
+                <Link
+                  href={buildUrl(landingPage.hero_static_cta_url || '/livechat/shop')}
+                  className={`inline-block px-8 py-3 bg-white text-black text-sm font-bold tracking-[0.15em] uppercase hover:bg-black hover:text-white transition-colors ${headlineFont.className}`}
+                >
+                  {landingPage.hero_static_cta_text}
+                </Link>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Clinical Results */}
       {landingPage.clinical_results && landingPage.clinical_results.length > 0 && (
