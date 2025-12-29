@@ -108,6 +108,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
   const [heroSlideUploading, setHeroSlideUploading] = useState<number | null>(null)
   const heroSlideInputRefs = useRef<(HTMLInputElement | null)[]>([])
   const [showMediaPicker, setShowMediaPicker] = useState<number | null>(null) // slide index or null
+  const [showFontMenu, setShowFontMenu] = useState<string | null>(null) // font menu key or null
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null)
 
   // File refs
@@ -2313,13 +2314,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                       <button
                                         onClick={() => {
                                           const key = `sizeMenu_${index}_headline`
-                                          setShowMediaPicker(showMediaPicker === key ? null : key as any)
+                                          setShowFontMenu(showFontMenu === key ? null : key)
                                         }}
                                         className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
                                       >
                                         {Math.round(parseFloat(slide.headline_font_size || '3.75') * 16) || 60}
                                       </button>
-                                      {showMediaPicker === `sizeMenu_${index}_headline` && (
+                                      {showFontMenu === `sizeMenu_${index}_headline` && (
                                         <div className="absolute left-0 mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
                                           {[24, 32, 40, 48, 56, 64, 72, 80, 96, 112, 128].map(size => (
                                             <button
@@ -2328,7 +2329,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                                 const slides = [...(landingPageData.hero_slides || [])]
                                                 slides[index] = { ...slide, headline_font_size: `${size / 16}rem` }
                                                 setLandingPageData({...landingPageData, hero_slides: slides})
-                                                setShowMediaPicker(null)
+                                                setShowFontMenu(null)
                                               }}
                                               className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
                                                 Math.round(parseFloat(slide.headline_font_size || '3.75') * 16) === size ? 'bg-violet-600 text-white' : 'text-slate-200'
@@ -2345,13 +2346,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                       <button
                                         onClick={() => {
                                           const key = `fontMenu_${index}_headline`
-                                          setShowMediaPicker(showMediaPicker === key ? null : key as any)
+                                          setShowFontMenu(showFontMenu === key ? null : key)
                                         }}
                                         className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
                                       >
                                         {(slide.headline_font_family || 'Josefin Sans').split(' ')[0]}
                                       </button>
-                                      {showMediaPicker === `fontMenu_${index}_headline` && (
+                                      {showFontMenu === `fontMenu_${index}_headline` && (
                                         <div className="absolute left-0 mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50">
                                           {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
                                             <button
@@ -2360,7 +2361,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                                 const slides = [...(landingPageData.hero_slides || [])]
                                                 slides[index] = { ...slide, headline_font_family: font }
                                                 setLandingPageData({...landingPageData, hero_slides: slides})
-                                                setShowMediaPicker(null)
+                                                setShowFontMenu(null)
                                               }}
                                               className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
                                                 (slide.headline_font_family || 'Josefin Sans') === font ? 'bg-violet-600 text-white' : 'text-slate-200'
@@ -2395,13 +2396,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                       <button
                                         onClick={() => {
                                           const key = `sizeMenu_${index}_subheadline`
-                                          setShowMediaPicker(showMediaPicker === key ? null : key as any)
+                                          setShowFontMenu(showFontMenu === key ? null : key)
                                         }}
                                         className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
                                       >
                                         {Math.round(parseFloat(slide.subheadline_font_size || '1.25') * 16) || 20}
                                       </button>
-                                      {showMediaPicker === `sizeMenu_${index}_subheadline` && (
+                                      {showFontMenu === `sizeMenu_${index}_subheadline` && (
                                         <div className="absolute left-0 mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
                                           {[12, 14, 16, 18, 20, 24, 28, 32, 36, 40].map(size => (
                                             <button
@@ -2410,7 +2411,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                                 const slides = [...(landingPageData.hero_slides || [])]
                                                 slides[index] = { ...slide, subheadline_font_size: `${size / 16}rem` }
                                                 setLandingPageData({...landingPageData, hero_slides: slides})
-                                                setShowMediaPicker(null)
+                                                setShowFontMenu(null)
                                               }}
                                               className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
                                                 Math.round(parseFloat(slide.subheadline_font_size || '1.25') * 16) === size ? 'bg-violet-600 text-white' : 'text-slate-200'
@@ -2427,13 +2428,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                       <button
                                         onClick={() => {
                                           const key = `fontMenu_${index}_subheadline`
-                                          setShowMediaPicker(showMediaPicker === key ? null : key as any)
+                                          setShowFontMenu(showFontMenu === key ? null : key)
                                         }}
                                         className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
                                       >
                                         {(slide.subheadline_font_family || 'Josefin Sans').split(' ')[0]}
                                       </button>
-                                      {showMediaPicker === `fontMenu_${index}_subheadline` && (
+                                      {showFontMenu === `fontMenu_${index}_subheadline` && (
                                         <div className="absolute left-0 mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50">
                                           {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
                                             <button
@@ -2442,7 +2443,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                                 const slides = [...(landingPageData.hero_slides || [])]
                                                 slides[index] = { ...slide, subheadline_font_family: font }
                                                 setLandingPageData({...landingPageData, hero_slides: slides})
-                                                setShowMediaPicker(null)
+                                                setShowFontMenu(null)
                                               }}
                                               className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
                                                 (slide.subheadline_font_family || 'Josefin Sans') === font ? 'bg-violet-600 text-white' : 'text-slate-200'
@@ -2477,13 +2478,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                       <button
                                         onClick={() => {
                                           const key = `sizeMenu_${index}_content`
-                                          setShowMediaPicker(showMediaPicker === key ? null : key as any)
+                                          setShowFontMenu(showFontMenu === key ? null : key)
                                         }}
                                         className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
                                       >
                                         {Math.round(parseFloat(slide.content_font_size || '1.125') * 16) || 18}
                                       </button>
-                                      {showMediaPicker === `sizeMenu_${index}_content` && (
+                                      {showFontMenu === `sizeMenu_${index}_content` && (
                                         <div className="absolute left-0 mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
                                           {[12, 14, 16, 18, 20, 24, 28, 32].map(size => (
                                             <button
@@ -2492,7 +2493,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                                 const slides = [...(landingPageData.hero_slides || [])]
                                                 slides[index] = { ...slide, content_font_size: `${size / 16}rem` }
                                                 setLandingPageData({...landingPageData, hero_slides: slides})
-                                                setShowMediaPicker(null)
+                                                setShowFontMenu(null)
                                               }}
                                               className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
                                                 Math.round(parseFloat(slide.content_font_size || '1.125') * 16) === size ? 'bg-violet-600 text-white' : 'text-slate-200'
@@ -2509,13 +2510,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                       <button
                                         onClick={() => {
                                           const key = `fontMenu_${index}_content`
-                                          setShowMediaPicker(showMediaPicker === key ? null : key as any)
+                                          setShowFontMenu(showFontMenu === key ? null : key)
                                         }}
                                         className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
                                       >
                                         {(slide.content_font_family || 'Cormorant Garamond').split(' ')[0]}
                                       </button>
-                                      {showMediaPicker === `fontMenu_${index}_content` && (
+                                      {showFontMenu === `fontMenu_${index}_content` && (
                                         <div className="absolute left-0 mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50">
                                           {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
                                             <button
@@ -2524,7 +2525,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                                 const slides = [...(landingPageData.hero_slides || [])]
                                                 slides[index] = { ...slide, content_font_family: font }
                                                 setLandingPageData({...landingPageData, hero_slides: slides})
-                                                setShowMediaPicker(null)
+                                                setShowFontMenu(null)
                                               }}
                                               className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
                                                 (slide.content_font_family || 'Cormorant Garamond') === font ? 'bg-violet-600 text-white' : 'text-slate-200'
