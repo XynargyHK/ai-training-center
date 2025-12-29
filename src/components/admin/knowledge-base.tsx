@@ -2134,18 +2134,54 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                           <div key={index} className="bg-slate-800/50 rounded-lg p-4 border border-slate-600">
                             <div className="flex justify-between items-center mb-3">
                               <span className="text-sm font-medium text-slate-300">Slide {index + 1}</span>
-                              {(landingPageData.hero_slides || []).length > 1 && (
-                                <button
-                                  onClick={() => {
-                                    const slides = [...(landingPageData.hero_slides || [])]
-                                    slides.splice(index, 1)
-                                    setLandingPageData({...landingPageData, hero_slides: slides})
-                                  }}
-                                  className="text-red-400 hover:text-red-300"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              )}
+                              <div className="flex items-center gap-2">
+                                {/* Move Up */}
+                                {index > 0 && (
+                                  <button
+                                    onClick={() => {
+                                      const slides = [...(landingPageData.hero_slides || [])]
+                                      const temp = slides[index]
+                                      slides[index] = slides[index - 1]
+                                      slides[index - 1] = temp
+                                      setLandingPageData({...landingPageData, hero_slides: slides})
+                                    }}
+                                    className="text-slate-400 hover:text-slate-200"
+                                    title="Move up"
+                                  >
+                                    <ChevronUp className="w-4 h-4" />
+                                  </button>
+                                )}
+                                {/* Move Down */}
+                                {index < (landingPageData.hero_slides || []).length - 1 && (
+                                  <button
+                                    onClick={() => {
+                                      const slides = [...(landingPageData.hero_slides || [])]
+                                      const temp = slides[index]
+                                      slides[index] = slides[index + 1]
+                                      slides[index + 1] = temp
+                                      setLandingPageData({...landingPageData, hero_slides: slides})
+                                    }}
+                                    className="text-slate-400 hover:text-slate-200"
+                                    title="Move down"
+                                  >
+                                    <ChevronDown className="w-4 h-4" />
+                                  </button>
+                                )}
+                                {/* Delete */}
+                                {(landingPageData.hero_slides || []).length > 1 && (
+                                  <button
+                                    onClick={() => {
+                                      const slides = [...(landingPageData.hero_slides || [])]
+                                      slides.splice(index, 1)
+                                      setLandingPageData({...landingPageData, hero_slides: slides})
+                                    }}
+                                    className="text-red-400 hover:text-red-300"
+                                    title="Delete slide"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
                             </div>
 
                             {/* Background Upload */}
@@ -2281,6 +2317,52 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                   placeholder="e.g., Transform Your Skin"
                                   className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
                                 />
+                                <div className="flex items-center gap-2 mt-2">
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        const currentSize = parseFloat(slide.headline_font_size || '3.75') || 3.75
+                                        slides[index] = { ...slide, headline_font_size: `${Math.max(1, currentSize - 0.25)}rem` }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className="p-1 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
+                                      title="Smaller font"
+                                    >
+                                      A-
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        const currentSize = parseFloat(slide.headline_font_size || '3.75') || 3.75
+                                        slides[index] = { ...slide, headline_font_size: `${Math.min(10, currentSize + 0.25)}rem` }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className="p-1 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
+                                      title="Larger font"
+                                    >
+                                      A+
+                                    </button>
+                                  </div>
+                                  <select
+                                    value={slide.headline_font_family || 'Josefin Sans'}
+                                    onChange={(e) => {
+                                      const slides = [...(landingPageData.hero_slides || [])]
+                                      slides[index] = { ...slide, headline_font_family: e.target.value }
+                                      setLandingPageData({...landingPageData, hero_slides: slides})
+                                    }}
+                                    className="flex-1 px-2 py-1 text-xs bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:ring-1 focus:ring-violet-500"
+                                  >
+                                    <option value="Josefin Sans">Josefin Sans (Current)</option>
+                                    <option value="Cormorant Garamond">Cormorant Garamond</option>
+                                    <option value="Playfair Display">Playfair Display</option>
+                                    <option value="Montserrat">Montserrat</option>
+                                    <option value="Inter">Inter</option>
+                                    <option value="Lora">Lora</option>
+                                    <option value="Raleway">Raleway</option>
+                                    <option value="Open Sans">Open Sans</option>
+                                  </select>
+                                </div>
                               </div>
                               <div>
                                 <label className="block text-xs text-slate-400 mb-1">Subheadline</label>

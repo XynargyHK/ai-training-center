@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { Star, Check, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ShoppingCart, Sparkles, Shield, Truck, RotateCcw, Menu, X, User, MessageCircle, Search } from 'lucide-react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Cormorant_Garamond, Josefin_Sans } from 'next/font/google'
+import { Cormorant_Garamond, Josefin_Sans, Playfair_Display, Montserrat, Inter, Lora, Raleway, Open_Sans } from 'next/font/google'
 
 // Elegant serif font for body text and logo
 const serifFont = Cormorant_Garamond({
@@ -19,6 +19,58 @@ const headlineFont = Josefin_Sans({
   weight: ['300', '400', '500', '600'],
   display: 'swap',
 })
+
+// Additional popular fonts
+const playfairFont = Playfair_Display({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+})
+
+const montserratFont = Montserrat({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  display: 'swap',
+})
+
+const interFont = Inter({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  display: 'swap',
+})
+
+const loraFont = Lora({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+})
+
+const ralewayFont = Raleway({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  display: 'swap',
+})
+
+const openSansFont = Open_Sans({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  display: 'swap',
+})
+
+// Font mapping helper
+const getFontClass = (fontFamily?: string) => {
+  switch (fontFamily) {
+    case 'Playfair Display': return playfairFont.className
+    case 'Montserrat': return montserratFont.className
+    case 'Inter': return interFont.className
+    case 'Lora': return loraFont.className
+    case 'Raleway': return ralewayFont.className
+    case 'Open Sans': return openSansFont.className
+    case 'Josefin Sans': return headlineFont.className
+    case 'Cormorant Garamond': return serifFont.className
+    default: return headlineFont.className
+  }
+}
 
 interface BusinessUnit {
   id: string
@@ -41,6 +93,12 @@ interface HeroSlide {
   cta_text: string
   cta_url: string
   text_align?: 'left' | 'center' | 'right'
+  headline_font_size?: string
+  headline_font_family?: string
+  subheadline_font_size?: string
+  subheadline_font_family?: string
+  content_font_size?: string
+  content_font_family?: string
 }
 
 interface LandingPageData {
@@ -68,6 +126,12 @@ interface LandingPageData {
   hero_static_cta_text?: string
   hero_static_cta_url?: string
   hero_static_align?: 'left' | 'center' | 'right'
+  hero_static_headline_font_size?: string
+  hero_static_headline_font_family?: string
+  hero_static_subheadline_font_size?: string
+  hero_static_subheadline_font_family?: string
+  hero_static_content_font_size?: string
+  hero_static_content_font_family?: string
   hero_headline: string // Legacy
   hero_subheadline?: string
   hero_product_name?: string
@@ -118,6 +182,20 @@ function LandingPageContent() {
 
   // Hero carousel state
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0)
+
+  // Auto-scroll hero carousel every 5 seconds
+  useEffect(() => {
+    const heroSlides = landingPage?.hero_slides || []
+    if (heroSlides.length <= 1) return
+
+    const interval = setInterval(() => {
+      setCurrentHeroSlide((prev) =>
+        prev >= heroSlides.length - 1 ? 0 : prev + 1
+      )
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [landingPage?.hero_slides])
 
   // Load landing page content
   useEffect(() => {
@@ -452,20 +530,29 @@ function LandingPageContent() {
                   'text-center'
                 }`}>
                   {currentSlide.headline && (
-                    <h1 className={`text-3xl md:text-5xl lg:text-6xl font-light tracking-[0.2em] uppercase text-white leading-tight mb-4 drop-shadow-lg ${headlineFont.className}`}>
+                    <h1
+                      className={`font-light tracking-[0.2em] uppercase text-white leading-tight mb-4 drop-shadow-lg ${getFontClass(currentSlide.headline_font_family)}`}
+                      style={{ fontSize: currentSlide.headline_font_size || 'clamp(1.875rem, 5vw, 3.75rem)' }}
+                    >
                       {currentSlide.headline}
                     </h1>
                   )}
                   {currentSlide.subheadline && (
-                    <p className={`text-lg md:text-xl font-light tracking-[0.15em] uppercase text-white/90 mb-4 drop-shadow ${headlineFont.className}`}>
+                    <p
+                      className={`font-light tracking-[0.15em] uppercase text-white/90 mb-4 drop-shadow ${getFontClass(currentSlide.subheadline_font_family)}`}
+                      style={{ fontSize: currentSlide.subheadline_font_size || 'clamp(1.125rem, 2.5vw, 1.25rem)' }}
+                    >
                       {currentSlide.subheadline}
                     </p>
                   )}
                   {currentSlide.content && (
-                    <p className={`text-base md:text-lg font-light text-white/80 mb-8 drop-shadow max-w-2xl whitespace-pre-wrap ${
-                      currentSlide.text_align === 'center' ? 'mx-auto' :
-                      currentSlide.text_align === 'right' ? 'ml-auto' : ''
-                    } ${serifFont.className}`}>
+                    <p
+                      className={`font-light text-white/80 mb-8 drop-shadow max-w-2xl whitespace-pre-wrap ${
+                        currentSlide.text_align === 'center' ? 'mx-auto' :
+                        currentSlide.text_align === 'right' ? 'ml-auto' : ''
+                      } ${getFontClass(currentSlide.content_font_family)}`}
+                      style={{ fontSize: currentSlide.content_font_size || 'clamp(1rem, 2vw, 1.125rem)' }}
+                    >
                       {currentSlide.content}
                     </p>
                   )}
@@ -488,13 +575,13 @@ function LandingPageContent() {
                 <>
                   <button
                     onClick={() => setCurrentHeroSlide(prev => prev === 0 ? heroSlides.length - 1 : prev - 1)}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 flex items-center justify-center bg-white/20 hover:bg-white/40 transition-colors rounded-full backdrop-blur-sm"
+                    className="absolute left-4 bottom-6 z-20 w-12 h-12 flex items-center justify-center bg-white/20 hover:bg-white/40 transition-colors rounded-full backdrop-blur-sm"
                   >
                     <ChevronLeft className="w-6 h-6 text-white" />
                   </button>
                   <button
                     onClick={() => setCurrentHeroSlide(prev => prev === heroSlides.length - 1 ? 0 : prev + 1)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 flex items-center justify-center bg-white/20 hover:bg-white/40 transition-colors rounded-full backdrop-blur-sm"
+                    className="absolute right-4 bottom-6 z-20 w-12 h-12 flex items-center justify-center bg-white/20 hover:bg-white/40 transition-colors rounded-full backdrop-blur-sm"
                   >
                     <ChevronRight className="w-6 h-6 text-white" />
                   </button>
@@ -548,20 +635,29 @@ function LandingPageContent() {
               'text-center'
             }`}>
               {landingPage.hero_static_headline && (
-                <h1 className={`text-3xl md:text-5xl lg:text-6xl font-light tracking-[0.2em] uppercase text-white leading-tight mb-4 drop-shadow-lg ${headlineFont.className}`}>
+                <h1
+                  className={`font-light tracking-[0.2em] uppercase text-white leading-tight mb-4 drop-shadow-lg ${getFontClass(landingPage.hero_static_headline_font_family)}`}
+                  style={{ fontSize: landingPage.hero_static_headline_font_size || 'clamp(1.875rem, 5vw, 3.75rem)' }}
+                >
                   {landingPage.hero_static_headline}
                 </h1>
               )}
               {landingPage.hero_static_subheadline && (
-                <p className={`text-lg md:text-xl font-light tracking-[0.15em] uppercase text-white/90 mb-4 drop-shadow ${headlineFont.className}`}>
+                <p
+                  className={`font-light tracking-[0.15em] uppercase text-white/90 mb-4 drop-shadow ${getFontClass(landingPage.hero_static_subheadline_font_family)}`}
+                  style={{ fontSize: landingPage.hero_static_subheadline_font_size || 'clamp(1.125rem, 2.5vw, 1.25rem)' }}
+                >
                   {landingPage.hero_static_subheadline}
                 </p>
               )}
               {landingPage.hero_static_content && (
-                <p className={`text-base md:text-lg font-light text-white/80 mb-8 drop-shadow max-w-2xl whitespace-pre-wrap ${
-                  landingPage.hero_static_align === 'center' ? 'mx-auto' :
-                  landingPage.hero_static_align === 'right' ? 'ml-auto' : ''
-                } ${serifFont.className}`}>
+                <p
+                  className={`font-light text-white/80 mb-8 drop-shadow max-w-2xl whitespace-pre-wrap ${
+                    landingPage.hero_static_align === 'center' ? 'mx-auto' :
+                    landingPage.hero_static_align === 'right' ? 'ml-auto' : ''
+                  } ${getFontClass(landingPage.hero_static_content_font_family)}`}
+                  style={{ fontSize: landingPage.hero_static_content_font_size || 'clamp(1rem, 2vw, 1.125rem)' }}
+                >
                   {landingPage.hero_static_content}
                 </p>
               )}
