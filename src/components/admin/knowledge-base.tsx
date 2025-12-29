@@ -2305,46 +2305,54 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                             {/* Text Overlay */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               <div>
-                                <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-2 mb-1">
                                   <label className="text-xs text-slate-400">Headline</label>
                                   <div className="flex items-center gap-1">
-                                    <button
-                                      onClick={() => {
-                                        const slides = [...(landingPageData.hero_slides || [])]
-                                        const currentSize = parseFloat(slide.headline_font_size || '3.75') || 3.75
-                                        slides[index] = { ...slide, headline_font_size: `${Math.max(1, currentSize - 0.25)}rem` }
-                                        setLandingPageData({...landingPageData, hero_slides: slides})
-                                      }}
-                                      className="px-1.5 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
-                                      title="Smaller font"
-                                    >
-                                      A-
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        const slides = [...(landingPageData.hero_slides || [])]
-                                        const currentSize = parseFloat(slide.headline_font_size || '3.75') || 3.75
-                                        slides[index] = { ...slide, headline_font_size: `${Math.min(10, currentSize + 0.25)}rem` }
-                                        setLandingPageData({...landingPageData, hero_slides: slides})
-                                      }}
-                                      className="px-1.5 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
-                                      title="Larger font"
-                                    >
-                                      A+
-                                    </button>
+                                    {/* Font Size Dropdown */}
+                                    <div className="relative">
+                                      <button
+                                        onClick={() => {
+                                          const key = `sizeMenu_${index}_headline`
+                                          setShowMediaPicker(showMediaPicker === key ? null : key as any)
+                                        }}
+                                        className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+                                      >
+                                        {Math.round(parseFloat(slide.headline_font_size || '3.75') * 16) || 60}
+                                      </button>
+                                      {showMediaPicker === `sizeMenu_${index}_headline` && (
+                                        <div className="absolute left-0 mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+                                          {[24, 32, 40, 48, 56, 64, 72, 80, 96, 112, 128].map(size => (
+                                            <button
+                                              key={size}
+                                              onClick={() => {
+                                                const slides = [...(landingPageData.hero_slides || [])]
+                                                slides[index] = { ...slide, headline_font_size: `${size / 16}rem` }
+                                                setLandingPageData({...landingPageData, hero_slides: slides})
+                                                setShowMediaPicker(null)
+                                              }}
+                                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
+                                                Math.round(parseFloat(slide.headline_font_size || '3.75') * 16) === size ? 'bg-violet-600 text-white' : 'text-slate-200'
+                                              }`}
+                                            >
+                                              {size}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                    {/* Font Family Dropdown */}
                                     <div className="relative">
                                       <button
                                         onClick={() => {
                                           const key = `fontMenu_${index}_headline`
                                           setShowMediaPicker(showMediaPicker === key ? null : key as any)
                                         }}
-                                        className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded flex items-center gap-1"
-                                        title="Font family"
+                                        className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
                                       >
-                                        Aa
+                                        {(slide.headline_font_family || 'Josefin Sans').split(' ')[0]}
                                       </button>
                                       {showMediaPicker === `fontMenu_${index}_headline` && (
-                                        <div className="absolute right-0 mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50">
+                                        <div className="absolute left-0 mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50">
                                           {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
                                             <button
                                               key={font}
@@ -2379,46 +2387,54 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                 />
                               </div>
                               <div>
-                                <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-2 mb-1">
                                   <label className="text-xs text-slate-400">Subheadline</label>
                                   <div className="flex items-center gap-1">
-                                    <button
-                                      onClick={() => {
-                                        const slides = [...(landingPageData.hero_slides || [])]
-                                        const currentSize = parseFloat(slide.subheadline_font_size || '1.25') || 1.25
-                                        slides[index] = { ...slide, subheadline_font_size: `${Math.max(0.5, currentSize - 0.125)}rem` }
-                                        setLandingPageData({...landingPageData, hero_slides: slides})
-                                      }}
-                                      className="px-1.5 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
-                                      title="Smaller font"
-                                    >
-                                      A-
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        const slides = [...(landingPageData.hero_slides || [])]
-                                        const currentSize = parseFloat(slide.subheadline_font_size || '1.25') || 1.25
-                                        slides[index] = { ...slide, subheadline_font_size: `${Math.min(5, currentSize + 0.125)}rem` }
-                                        setLandingPageData({...landingPageData, hero_slides: slides})
-                                      }}
-                                      className="px-1.5 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
-                                      title="Larger font"
-                                    >
-                                      A+
-                                    </button>
+                                    {/* Font Size Dropdown */}
+                                    <div className="relative">
+                                      <button
+                                        onClick={() => {
+                                          const key = `sizeMenu_${index}_subheadline`
+                                          setShowMediaPicker(showMediaPicker === key ? null : key as any)
+                                        }}
+                                        className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+                                      >
+                                        {Math.round(parseFloat(slide.subheadline_font_size || '1.25') * 16) || 20}
+                                      </button>
+                                      {showMediaPicker === `sizeMenu_${index}_subheadline` && (
+                                        <div className="absolute left-0 mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+                                          {[12, 14, 16, 18, 20, 24, 28, 32, 36, 40].map(size => (
+                                            <button
+                                              key={size}
+                                              onClick={() => {
+                                                const slides = [...(landingPageData.hero_slides || [])]
+                                                slides[index] = { ...slide, subheadline_font_size: `${size / 16}rem` }
+                                                setLandingPageData({...landingPageData, hero_slides: slides})
+                                                setShowMediaPicker(null)
+                                              }}
+                                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
+                                                Math.round(parseFloat(slide.subheadline_font_size || '1.25') * 16) === size ? 'bg-violet-600 text-white' : 'text-slate-200'
+                                              }`}
+                                            >
+                                              {size}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                    {/* Font Family Dropdown */}
                                     <div className="relative">
                                       <button
                                         onClick={() => {
                                           const key = `fontMenu_${index}_subheadline`
                                           setShowMediaPicker(showMediaPicker === key ? null : key as any)
                                         }}
-                                        className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded flex items-center gap-1"
-                                        title="Font family"
+                                        className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
                                       >
-                                        Aa
+                                        {(slide.subheadline_font_family || 'Josefin Sans').split(' ')[0]}
                                       </button>
                                       {showMediaPicker === `fontMenu_${index}_subheadline` && (
-                                        <div className="absolute right-0 mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50">
+                                        <div className="absolute left-0 mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50">
                                           {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
                                             <button
                                               key={font}
@@ -2453,46 +2469,54 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                 />
                               </div>
                               <div className="md:col-span-2">
-                                <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-2 mb-1">
                                   <label className="text-xs text-slate-400">Content (optional)</label>
                                   <div className="flex items-center gap-1">
-                                    <button
-                                      onClick={() => {
-                                        const slides = [...(landingPageData.hero_slides || [])]
-                                        const currentSize = parseFloat(slide.content_font_size || '1.125') || 1.125
-                                        slides[index] = { ...slide, content_font_size: `${Math.max(0.5, currentSize - 0.125)}rem` }
-                                        setLandingPageData({...landingPageData, hero_slides: slides})
-                                      }}
-                                      className="px-1.5 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
-                                      title="Smaller font"
-                                    >
-                                      A-
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        const slides = [...(landingPageData.hero_slides || [])]
-                                        const currentSize = parseFloat(slide.content_font_size || '1.125') || 1.125
-                                        slides[index] = { ...slide, content_font_size: `${Math.min(3, currentSize + 0.125)}rem` }
-                                        setLandingPageData({...landingPageData, hero_slides: slides})
-                                      }}
-                                      className="px-1.5 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
-                                      title="Larger font"
-                                    >
-                                      A+
-                                    </button>
+                                    {/* Font Size Dropdown */}
+                                    <div className="relative">
+                                      <button
+                                        onClick={() => {
+                                          const key = `sizeMenu_${index}_content`
+                                          setShowMediaPicker(showMediaPicker === key ? null : key as any)
+                                        }}
+                                        className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+                                      >
+                                        {Math.round(parseFloat(slide.content_font_size || '1.125') * 16) || 18}
+                                      </button>
+                                      {showMediaPicker === `sizeMenu_${index}_content` && (
+                                        <div className="absolute left-0 mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+                                          {[12, 14, 16, 18, 20, 24, 28, 32].map(size => (
+                                            <button
+                                              key={size}
+                                              onClick={() => {
+                                                const slides = [...(landingPageData.hero_slides || [])]
+                                                slides[index] = { ...slide, content_font_size: `${size / 16}rem` }
+                                                setLandingPageData({...landingPageData, hero_slides: slides})
+                                                setShowMediaPicker(null)
+                                              }}
+                                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
+                                                Math.round(parseFloat(slide.content_font_size || '1.125') * 16) === size ? 'bg-violet-600 text-white' : 'text-slate-200'
+                                              }`}
+                                            >
+                                              {size}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                    {/* Font Family Dropdown */}
                                     <div className="relative">
                                       <button
                                         onClick={() => {
                                           const key = `fontMenu_${index}_content`
                                           setShowMediaPicker(showMediaPicker === key ? null : key as any)
                                         }}
-                                        className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded flex items-center gap-1"
-                                        title="Font family"
+                                        className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
                                       >
-                                        Aa
+                                        {(slide.content_font_family || 'Cormorant Garamond').split(' ')[0]}
                                       </button>
                                       {showMediaPicker === `fontMenu_${index}_content` && (
-                                        <div className="absolute right-0 mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50">
+                                        <div className="absolute left-0 mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50">
                                           {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
                                             <button
                                               key={font}
