@@ -2305,19 +2305,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                             {/* Text Overlay */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               <div>
-                                <label className="block text-xs text-slate-400 mb-1">Headline</label>
-                                <input
-                                  type="text"
-                                  value={slide.headline || ''}
-                                  onChange={(e) => {
-                                    const slides = [...(landingPageData.hero_slides || [])]
-                                    slides[index] = { ...slide, headline: e.target.value }
-                                    setLandingPageData({...landingPageData, hero_slides: slides})
-                                  }}
-                                  placeholder="e.g., Transform Your Skin"
-                                  className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
-                                />
-                                <div className="flex items-center gap-2 mt-2">
+                                <div className="flex items-center justify-between mb-1">
+                                  <label className="text-xs text-slate-400">Headline</label>
                                   <div className="flex items-center gap-1">
                                     <button
                                       onClick={() => {
@@ -2326,7 +2315,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         slides[index] = { ...slide, headline_font_size: `${Math.max(1, currentSize - 0.25)}rem` }
                                         setLandingPageData({...landingPageData, hero_slides: slides})
                                       }}
-                                      className="p-1 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
+                                      className="px-1.5 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
                                       title="Smaller font"
                                     >
                                       A-
@@ -2338,34 +2327,119 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         slides[index] = { ...slide, headline_font_size: `${Math.min(10, currentSize + 0.25)}rem` }
                                         setLandingPageData({...landingPageData, hero_slides: slides})
                                       }}
-                                      className="p-1 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
+                                      className="px-1.5 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
                                       title="Larger font"
                                     >
                                       A+
                                     </button>
+                                    <div className="relative">
+                                      <button
+                                        onClick={() => {
+                                          const key = `fontMenu_${index}_headline`
+                                          setShowMediaPicker(showMediaPicker === key ? null : key as any)
+                                        }}
+                                        className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded flex items-center gap-1"
+                                        title="Font family"
+                                      >
+                                        Aa
+                                      </button>
+                                      {showMediaPicker === `fontMenu_${index}_headline` && (
+                                        <div className="absolute right-0 mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50">
+                                          {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
+                                            <button
+                                              key={font}
+                                              onClick={() => {
+                                                const slides = [...(landingPageData.hero_slides || [])]
+                                                slides[index] = { ...slide, headline_font_family: font }
+                                                setLandingPageData({...landingPageData, hero_slides: slides})
+                                                setShowMediaPicker(null)
+                                              }}
+                                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
+                                                (slide.headline_font_family || 'Josefin Sans') === font ? 'bg-violet-600 text-white' : 'text-slate-200'
+                                              }`}
+                                            >
+                                              {font}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
-                                  <select
-                                    value={slide.headline_font_family || 'Josefin Sans'}
-                                    onChange={(e) => {
-                                      const slides = [...(landingPageData.hero_slides || [])]
-                                      slides[index] = { ...slide, headline_font_family: e.target.value }
-                                      setLandingPageData({...landingPageData, hero_slides: slides})
-                                    }}
-                                    className="flex-1 px-2 py-1 text-xs bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:ring-1 focus:ring-violet-500"
-                                  >
-                                    <option value="Josefin Sans">Josefin Sans (Current)</option>
-                                    <option value="Cormorant Garamond">Cormorant Garamond</option>
-                                    <option value="Playfair Display">Playfair Display</option>
-                                    <option value="Montserrat">Montserrat</option>
-                                    <option value="Inter">Inter</option>
-                                    <option value="Lora">Lora</option>
-                                    <option value="Raleway">Raleway</option>
-                                    <option value="Open Sans">Open Sans</option>
-                                  </select>
                                 </div>
+                                <input
+                                  type="text"
+                                  value={slide.headline || ''}
+                                  onChange={(e) => {
+                                    const slides = [...(landingPageData.hero_slides || [])]
+                                    slides[index] = { ...slide, headline: e.target.value }
+                                    setLandingPageData({...landingPageData, hero_slides: slides})
+                                  }}
+                                  placeholder="e.g., Transform Your Skin"
+                                  className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                                />
                               </div>
                               <div>
-                                <label className="block text-xs text-slate-400 mb-1">Subheadline</label>
+                                <div className="flex items-center justify-between mb-1">
+                                  <label className="text-xs text-slate-400">Subheadline</label>
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        const currentSize = parseFloat(slide.subheadline_font_size || '1.25') || 1.25
+                                        slides[index] = { ...slide, subheadline_font_size: `${Math.max(0.5, currentSize - 0.125)}rem` }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className="px-1.5 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
+                                      title="Smaller font"
+                                    >
+                                      A-
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        const currentSize = parseFloat(slide.subheadline_font_size || '1.25') || 1.25
+                                        slides[index] = { ...slide, subheadline_font_size: `${Math.min(5, currentSize + 0.125)}rem` }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className="px-1.5 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
+                                      title="Larger font"
+                                    >
+                                      A+
+                                    </button>
+                                    <div className="relative">
+                                      <button
+                                        onClick={() => {
+                                          const key = `fontMenu_${index}_subheadline`
+                                          setShowMediaPicker(showMediaPicker === key ? null : key as any)
+                                        }}
+                                        className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded flex items-center gap-1"
+                                        title="Font family"
+                                      >
+                                        Aa
+                                      </button>
+                                      {showMediaPicker === `fontMenu_${index}_subheadline` && (
+                                        <div className="absolute right-0 mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50">
+                                          {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
+                                            <button
+                                              key={font}
+                                              onClick={() => {
+                                                const slides = [...(landingPageData.hero_slides || [])]
+                                                slides[index] = { ...slide, subheadline_font_family: font }
+                                                setLandingPageData({...landingPageData, hero_slides: slides})
+                                                setShowMediaPicker(null)
+                                              }}
+                                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
+                                                (slide.subheadline_font_family || 'Josefin Sans') === font ? 'bg-violet-600 text-white' : 'text-slate-200'
+                                              }`}
+                                            >
+                                              {font}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
                                 <input
                                   type="text"
                                   value={slide.subheadline || ''}
@@ -2379,7 +2453,67 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                 />
                               </div>
                               <div className="md:col-span-2">
-                                <label className="block text-xs text-slate-400 mb-1">Content (optional)</label>
+                                <div className="flex items-center justify-between mb-1">
+                                  <label className="text-xs text-slate-400">Content (optional)</label>
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        const currentSize = parseFloat(slide.content_font_size || '1.125') || 1.125
+                                        slides[index] = { ...slide, content_font_size: `${Math.max(0.5, currentSize - 0.125)}rem` }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className="px-1.5 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
+                                      title="Smaller font"
+                                    >
+                                      A-
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        const currentSize = parseFloat(slide.content_font_size || '1.125') || 1.125
+                                        slides[index] = { ...slide, content_font_size: `${Math.min(3, currentSize + 0.125)}rem` }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className="px-1.5 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
+                                      title="Larger font"
+                                    >
+                                      A+
+                                    </button>
+                                    <div className="relative">
+                                      <button
+                                        onClick={() => {
+                                          const key = `fontMenu_${index}_content`
+                                          setShowMediaPicker(showMediaPicker === key ? null : key as any)
+                                        }}
+                                        className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded flex items-center gap-1"
+                                        title="Font family"
+                                      >
+                                        Aa
+                                      </button>
+                                      {showMediaPicker === `fontMenu_${index}_content` && (
+                                        <div className="absolute right-0 mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50">
+                                          {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
+                                            <button
+                                              key={font}
+                                              onClick={() => {
+                                                const slides = [...(landingPageData.hero_slides || [])]
+                                                slides[index] = { ...slide, content_font_family: font }
+                                                setLandingPageData({...landingPageData, hero_slides: slides})
+                                                setShowMediaPicker(null)
+                                              }}
+                                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
+                                                (slide.content_font_family || 'Cormorant Garamond') === font ? 'bg-violet-600 text-white' : 'text-slate-200'
+                                              }`}
+                                            >
+                                              {font}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
                                 <textarea
                                   value={slide.content || ''}
                                   onChange={(e) => {
@@ -2530,7 +2664,61 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                             {/* Text Content */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               <div>
-                                <label className="block text-xs text-slate-400 mb-1">Headline</label>
+                                <div className="flex items-center justify-between mb-1">
+                                  <label className="text-xs text-slate-400">Headline</label>
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => {
+                                        const currentSize = parseFloat(landingPageData.hero_static_headline_font_size || '3.75') || 3.75
+                                        setLandingPageData({...landingPageData, hero_static_headline_font_size: `${Math.max(1, currentSize - 0.25)}rem`})
+                                      }}
+                                      className="px-1.5 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
+                                      title="Smaller font"
+                                    >
+                                      A-
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const currentSize = parseFloat(landingPageData.hero_static_headline_font_size || '3.75') || 3.75
+                                        setLandingPageData({...landingPageData, hero_static_headline_font_size: `${Math.min(10, currentSize + 0.25)}rem`})
+                                      }}
+                                      className="px-1.5 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
+                                      title="Larger font"
+                                    >
+                                      A+
+                                    </button>
+                                    <div className="relative">
+                                      <button
+                                        onClick={() => {
+                                          const key = 'fontMenu_static_headline'
+                                          setShowMediaPicker(showMediaPicker === key ? null : key as any)
+                                        }}
+                                        className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
+                                        title="Font family"
+                                      >
+                                        Aa
+                                      </button>
+                                      {showMediaPicker === 'fontMenu_static_headline' && (
+                                        <div className="absolute right-0 mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50">
+                                          {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
+                                            <button
+                                              key={font}
+                                              onClick={() => {
+                                                setLandingPageData({...landingPageData, hero_static_headline_font_family: font})
+                                                setShowMediaPicker(null)
+                                              }}
+                                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
+                                                (landingPageData.hero_static_headline_font_family || 'Josefin Sans') === font ? 'bg-violet-600 text-white' : 'text-slate-200'
+                                              }`}
+                                            >
+                                              {font}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
                                 <input
                                   type="text"
                                   value={landingPageData.hero_static_headline || ''}
@@ -2540,7 +2728,61 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                 />
                               </div>
                               <div>
-                                <label className="block text-xs text-slate-400 mb-1">Subheadline</label>
+                                <div className="flex items-center justify-between mb-1">
+                                  <label className="text-xs text-slate-400">Subheadline</label>
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => {
+                                        const currentSize = parseFloat(landingPageData.hero_static_subheadline_font_size || '1.25') || 1.25
+                                        setLandingPageData({...landingPageData, hero_static_subheadline_font_size: `${Math.max(0.5, currentSize - 0.125)}rem`})
+                                      }}
+                                      className="px-1.5 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
+                                      title="Smaller font"
+                                    >
+                                      A-
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const currentSize = parseFloat(landingPageData.hero_static_subheadline_font_size || '1.25') || 1.25
+                                        setLandingPageData({...landingPageData, hero_static_subheadline_font_size: `${Math.min(5, currentSize + 0.125)}rem`})
+                                      }}
+                                      className="px-1.5 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
+                                      title="Larger font"
+                                    >
+                                      A+
+                                    </button>
+                                    <div className="relative">
+                                      <button
+                                        onClick={() => {
+                                          const key = 'fontMenu_static_subheadline'
+                                          setShowMediaPicker(showMediaPicker === key ? null : key as any)
+                                        }}
+                                        className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
+                                        title="Font family"
+                                      >
+                                        Aa
+                                      </button>
+                                      {showMediaPicker === 'fontMenu_static_subheadline' && (
+                                        <div className="absolute right-0 mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50">
+                                          {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
+                                            <button
+                                              key={font}
+                                              onClick={() => {
+                                                setLandingPageData({...landingPageData, hero_static_subheadline_font_family: font})
+                                                setShowMediaPicker(null)
+                                              }}
+                                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
+                                                (landingPageData.hero_static_subheadline_font_family || 'Josefin Sans') === font ? 'bg-violet-600 text-white' : 'text-slate-200'
+                                              }`}
+                                            >
+                                              {font}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
                                 <input
                                   type="text"
                                   value={landingPageData.hero_static_subheadline || ''}
@@ -2550,7 +2792,61 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                 />
                               </div>
                               <div className="md:col-span-2">
-                                <label className="block text-xs text-slate-400 mb-1">Content</label>
+                                <div className="flex items-center justify-between mb-1">
+                                  <label className="text-xs text-slate-400">Content</label>
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => {
+                                        const currentSize = parseFloat(landingPageData.hero_static_content_font_size || '1.125') || 1.125
+                                        setLandingPageData({...landingPageData, hero_static_content_font_size: `${Math.max(0.5, currentSize - 0.125)}rem`})
+                                      }}
+                                      className="px-1.5 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
+                                      title="Smaller font"
+                                    >
+                                      A-
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const currentSize = parseFloat(landingPageData.hero_static_content_font_size || '1.125') || 1.125
+                                        setLandingPageData({...landingPageData, hero_static_content_font_size: `${Math.min(3, currentSize + 0.125)}rem`})
+                                      }}
+                                      className="px-1.5 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
+                                      title="Larger font"
+                                    >
+                                      A+
+                                    </button>
+                                    <div className="relative">
+                                      <button
+                                        onClick={() => {
+                                          const key = 'fontMenu_static_content'
+                                          setShowMediaPicker(showMediaPicker === key ? null : key as any)
+                                        }}
+                                        className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
+                                        title="Font family"
+                                      >
+                                        Aa
+                                      </button>
+                                      {showMediaPicker === 'fontMenu_static_content' && (
+                                        <div className="absolute right-0 mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50">
+                                          {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
+                                            <button
+                                              key={font}
+                                              onClick={() => {
+                                                setLandingPageData({...landingPageData, hero_static_content_font_family: font})
+                                                setShowMediaPicker(null)
+                                              }}
+                                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
+                                                (landingPageData.hero_static_content_font_family || 'Cormorant Garamond') === font ? 'bg-violet-600 text-white' : 'text-slate-200'
+                                              }`}
+                                            >
+                                              {font}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
                                 <textarea
                                   value={landingPageData.hero_static_content || ''}
                                   onChange={(e) => setLandingPageData({...landingPageData, hero_static_content: e.target.value})}
