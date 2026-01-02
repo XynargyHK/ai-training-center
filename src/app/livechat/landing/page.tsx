@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Star, Check, ChevronDown, ChevronUp, ShoppingCart, Sparkles, Shield, Truck, RotateCcw, Menu, X, User, Loader2 } from 'lucide-react'
 import Image from 'next/image'
@@ -105,7 +105,7 @@ const pricingOptions = [
   }
 ]
 
-export default function LandingPage() {
+function LandingPageContent() {
   const searchParams = useSearchParams()
   const businessUnit = searchParams.get('businessUnit') || 'skincoach'
 
@@ -665,5 +665,17 @@ export default function LandingPage() {
         <p className="text-gray-500">© 2024 SkinCoach. All rights reserved.</p>
       </footer>
     </div>
+  )
+}
+
+export default function LandingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+      </div>
+    }>
+      <LandingPageContent />
+    </Suspense>
   )
 }
