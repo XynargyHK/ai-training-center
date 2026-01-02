@@ -6,11 +6,16 @@ import {
   Upload, Search, Grid, List,
   Loader2, X, BookOpen, Globe, Layout, Save, Image, Video, Copy, Check,
   ChevronDown, ChevronUp, Zap, MessageSquare, Shield, ShoppingCart,
-  AlignLeft, AlignCenter, AlignRight
+  AlignLeft, AlignCenter, AlignRight, Menu, Sparkles, Bold, Italic
 } from 'lucide-react'
 import PolicyManager from './policy-manager'
 import ProductCatalogManager from './product-catalog-manager'
 import { type Language, getTranslation } from '@/lib/translations'
+import BlockManager from './landing-page/BlockManager'
+import BlockPreview from './landing-page/BlockPreview'
+import { createNewBlock } from './landing-page/block-registry'
+import type { LandingPageBlock } from '@/types/landing-page-blocks'
+import TextEditorControls from './landing-page/TextEditorControls'
 
 // Types
 interface Service {
@@ -85,10 +90,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
   const [selectedCountry, setSelectedCountry] = useState('US')
   const [selectedLangCode, setSelectedLangCode] = useState('en')
   const [availableLocales, setAvailableLocales] = useState<{country: string, language_code: string}[]>([])
+  const [products, setProducts] = useState<any[]>([])
   // Collapsible section state for landing page editor
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
-    header: false,
+    announcement: false,
+    menuBar: false,
     hero: false,
+    header: false,
     problem: true,
     solution: true,
     proof: true,
@@ -109,7 +117,27 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
   const heroSlideInputRefs = useRef<(HTMLInputElement | null)[]>([])
   const [showMediaPicker, setShowMediaPicker] = useState<number | null>(null) // slide index or null
   const [showFontMenu, setShowFontMenu] = useState<string | null>(null) // font menu key or null
+  const [showColorPicker, setShowColorPicker] = useState<string | null>(null) // color picker key or null
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null)
+  const [showAddBlockMenu, setShowAddBlockMenu] = useState(false)
+
+  // Color palette for text colors
+  const COLOR_PALETTE = [
+    { name: 'White', value: '#ffffff' },
+    { name: 'Black', value: '#000000' },
+    { name: 'Dark Gray', value: '#374151' },
+    { name: 'Gray', value: '#6b7280' },
+    { name: 'Light Gray', value: '#d1d5db' },
+    { name: 'Slate', value: '#1e293b' },
+    { name: 'Red', value: '#ef4444' },
+    { name: 'Orange', value: '#f97316' },
+    { name: 'Yellow', value: '#eab308' },
+    { name: 'Green', value: '#22c55e' },
+    { name: 'Blue', value: '#3b82f6' },
+    { name: 'Purple', value: '#a855f7' },
+    { name: 'Pink', value: '#ec4899' },
+    { name: 'Gold', value: '#d97706' },
+  ]
 
   // File refs
   const pdfInputRef = useRef<HTMLInputElement>(null)
@@ -120,6 +148,24 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
   useEffect(() => {
     loadData()
   }, [businessUnitId, activeSubTab])
+
+  // Fetch products for pricing plan linking
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch(`/api/shop/products?businessUnit=${businessUnitId}`)
+        const data = await response.json()
+        if (data.products) {
+          setProducts(data.products)
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error)
+      }
+    }
+    if (businessUnitId) {
+      fetchProducts()
+    }
+  }, [businessUnitId])
 
   const loadData = async () => {
     setIsLoading(true)
@@ -179,10 +225,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
             subheadline: landingPage.hero_subheadline || '',
             content: '',
             background_url: '',
+            background_color: '#1e293b',
             background_type: 'image',
             cta_text: landingPage.hero_cta_text || 'Shop Now',
             cta_url: '#shop',
-            text_align: 'center'
+            text_align: 'center',
+            is_carousel: true
           }]
         }
         setLandingPageData(landingPage)
@@ -300,7 +348,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
     logo_position: 'left', // 'left' or 'center'
     menu_items: [
       { label: 'Home', url: '#', enabled: true },
-      { label: 'Shop', url: '#shop', enabled: true },
+      { label: 'Micro Infusion System', url: '/livechat', enabled: true },
       { label: 'About', url: '#about', enabled: false },
       { label: 'Contact', url: '#contact', enabled: false },
     ],
@@ -315,7 +363,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
     // SECTION 1: HERO SECTION - First impression
     // ═══════════════════════════════════════════════════════════════════
     hero_slides: [
-      { headline: '', subheadline: '', content: '', background_url: '', background_type: 'image', cta_text: 'Shop Now', cta_url: '#shop', text_align: 'center' }
+      { headline: '', subheadline: '', content: '', background_url: '', background_color: '#1e293b', background_type: 'image', cta_text: 'Shop Now', cta_url: '#shop', text_align: 'center', is_carousel: true }
     ],
     hero_headline: '', // Legacy - kept for backwards compatibility
     hero_subheadline: '',
@@ -408,6 +456,27 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
     is_active: true
   })
 
+  // Handle adding a new block
+  const handleAddBlock = (blockType: string) => {
+    const blocks = landingPageData.blocks || []
+    const newBlock = createNewBlock(blockType, `New ${blockType} block`, blocks.length)
+    if (newBlock) {
+      setLandingPageData({
+        ...landingPageData,
+        blocks: [...blocks, newBlock]
+      })
+      setShowAddBlockMenu(false)
+    }
+  }
+
+  // Handle updating blocks
+  const handleBlocksChange = (updatedBlocks: LandingPageBlock[]) => {
+    setLandingPageData({
+      ...landingPageData,
+      blocks: updatedBlocks
+    })
+  }
+
   const saveLandingPage = async () => {
     console.log('[DEBUG v2] saveLandingPage called')
     if (!businessUnitId || !landingPageData) {
@@ -426,6 +495,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
       console.log('[DEBUG v2] businessUnitId:', businessUnitId)
       console.log('[DEBUG v2] payload keys:', Object.keys(payload))
       console.log('[DEBUG v2] announcements:', payload.announcements)
+      console.log('[DEBUG v2] blocks count:', payload.blocks?.length || 0)
 
       console.log('[DEBUG v2] Sending POST to /api/landing-page')
       const response = await fetch('/api/landing-page', {
@@ -1612,6 +1682,98 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                         <Globe className="w-4 h-4" />
                         Preview
                       </button>
+
+                      {/* Add Block Button */}
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowAddBlockMenu(!showAddBlockMenu)}
+                          className="flex items-center gap-1.5 bg-violet-600 hover:bg-violet-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add Block
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {showAddBlockMenu && (
+                          <div className="fixed md:absolute left-4 right-4 md:left-auto md:right-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-2 w-auto md:w-64 max-w-xs mx-auto bg-slate-800 border border-slate-600 rounded-lg shadow-2xl z-50 overflow-hidden">
+                            <div className="p-2 border-b border-slate-600">
+                              <p className="text-xs text-slate-400 font-medium">Select Block Type</p>
+                            </div>
+                            <div className="py-1">
+                              {/* Split Block */}
+                              <button
+                                onClick={() => handleAddBlock('split')}
+                                className="w-full px-3 py-2.5 hover:bg-slate-700 transition-colors flex items-center gap-3 text-left"
+                              >
+                                <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-2xl">⬌</span>
+                                </div>
+                                <div className="flex-1">
+                                  <div className="text-sm font-medium text-white">Split</div>
+                                  <div className="text-xs text-slate-400">Text alongside image</div>
+                                </div>
+                              </button>
+
+                              {/* Card Block */}
+                              <button
+                                onClick={() => handleAddBlock('card')}
+                                className="w-full px-3 py-2.5 hover:bg-slate-700 transition-colors flex items-center gap-3 text-left"
+                              >
+                                <div className="w-10 h-10 rounded-lg bg-pink-500/20 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-2xl">💬</span>
+                                </div>
+                                <div className="flex-1">
+                                  <div className="text-sm font-medium text-white">Card</div>
+                                  <div className="text-xs text-slate-400">Testimonials & reviews grid</div>
+                                </div>
+                              </button>
+
+                              {/* Accordion Block */}
+                              <button
+                                onClick={() => handleAddBlock('accordion')}
+                                className="w-full px-3 py-2.5 hover:bg-slate-700 transition-colors flex items-center gap-3 text-left"
+                              >
+                                <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-2xl">▼</span>
+                                </div>
+                                <div className="flex-1">
+                                  <div className="text-sm font-medium text-white">Accordion</div>
+                                  <div className="text-xs text-slate-400">Expandable FAQ sections</div>
+                                </div>
+                              </button>
+
+                              {/* Pricing Table Block */}
+                              <button
+                                onClick={() => handleAddBlock('pricing')}
+                                className="w-full px-3 py-2.5 hover:bg-slate-700 transition-colors flex items-center gap-3 text-left"
+                              >
+                                <div className="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-2xl">💰</span>
+                                </div>
+                                <div className="flex-1">
+                                  <div className="text-sm font-medium text-white">Pricing Table</div>
+                                  <div className="text-xs text-slate-400">Pricing comparison with discounts</div>
+                                </div>
+                              </button>
+
+                              {/* Testimonials Block */}
+                              <button
+                                onClick={() => handleAddBlock('testimonials')}
+                                className="w-full px-3 py-2.5 hover:bg-slate-700 transition-colors flex items-center gap-3 text-left"
+                              >
+                                <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-2xl">⭐</span>
+                                </div>
+                                <div className="flex-1">
+                                  <div className="text-sm font-medium text-white">Testimonials</div>
+                                  <div className="text-xs text-slate-400">Customer reviews carousel</div>
+                                </div>
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
                       <button
                         onClick={async () => {
                           if (!hasLandingPage) {
@@ -1784,13 +1946,33 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                     </div>
 
                     {/* Announcement Section */}
-                    <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
-                      <div className="flex justify-between items-center mb-4">
-                        <div>
-                          <h3 className="text-lg font-semibold text-amber-400">Announcement Banner</h3>
-                          <p className="text-sm text-slate-400 mt-1">Add multiple announcements that rotate every 5 seconds</p>
+                    <div className="bg-gradient-to-r from-amber-900/20 to-slate-800/50 rounded-lg border border-amber-500/30">
+                      <button
+                        onClick={() => toggleSection('announcement')}
+                        className="w-full flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors rounded-t-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                            <MessageSquare className="w-5 h-5 text-amber-400" />
+                          </div>
+                          <div className="text-left">
+                            <h3 className="text-lg font-semibold text-amber-400">Announcement Banner</h3>
+                            <p className="text-xs text-slate-400">Rotating announcements (5s interval)</p>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-slate-400">
+                            {(landingPageData.announcements || []).length} announcements
+                          </span>
+                          {collapsedSections.announcement ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronUp className="w-5 h-5 text-slate-400" />}
+                        </div>
+                      </button>
+
+                      {!collapsedSections.announcement && (
+                        <div className="p-6 pt-2 space-y-4 border-t border-slate-600/50">
+                          <div className="flex justify-between items-center">
+                            <p className="text-sm text-slate-400">Add announcements that rotate every 5 seconds</p>
+                            <div className="flex items-center gap-2">
                           <select
                             onChange={(e) => {
                               if (e.target.value) {
@@ -1825,10 +2007,10 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                           >
                             <Plus className="w-4 h-4" /> Custom
                           </button>
-                        </div>
-                      </div>
+                            </div>
+                          </div>
 
-                      {(!landingPageData.announcements || landingPageData.announcements.length === 0) ? (
+                          {(!landingPageData.announcements || landingPageData.announcements.length === 0) ? (
                         <div className="text-center py-6 bg-slate-800/50 rounded-lg border border-dashed border-slate-600">
                           <p className="text-slate-400 mb-3">No announcements yet</p>
                           <p className="text-slate-500 text-sm">Select from suggestions above or add a custom announcement</p>
@@ -1869,14 +2051,36 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                             <span>*</span> Remember to click "Save" to save your changes.
                           </p>
                         </div>
+                          )}
+                        </div>
                       )}
                     </div>
 
                     {/* Menu Bar Section */}
-                    <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
-                      <h3 className="text-lg font-semibold mb-4 text-indigo-400">Menu Bar</h3>
+                    <div className="bg-gradient-to-r from-indigo-900/20 to-slate-800/50 rounded-lg border border-indigo-500/30">
+                      <button
+                        onClick={() => toggleSection('menuBar')}
+                        className="w-full flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors rounded-t-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
+                            <Menu className="w-5 h-5 text-indigo-400" />
+                          </div>
+                          <div className="text-left">
+                            <h3 className="text-lg font-semibold text-indigo-400">Menu Bar</h3>
+                            <p className="text-xs text-slate-400">Logo, navigation links & utilities</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-slate-400">
+                            {(landingPageData.menu_items || []).length} menu items
+                          </span>
+                          {collapsedSections.menuBar ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronUp className="w-5 h-5 text-slate-400" />}
+                        </div>
+                      </button>
 
-                      <div className="grid gap-6">
+                      {!collapsedSections.menuBar && (
+                        <div className="p-6 pt-2 space-y-6 border-t border-slate-600/50">
                         {/* Logo Settings Row */}
                         <div>
                           <label className="block text-sm font-medium mb-2 text-slate-300">Logo Settings</label>
@@ -2079,48 +2283,40 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                             </div>
                           </div>
                         </div>
-                      </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Hero Section */}
-                    <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
-                      <div className="mb-4">
-                        <h3 className="text-lg font-semibold text-violet-400 mb-3">{t.heroSection || 'Hero Section'}</h3>
-
-                        {/* Hero Type Selector */}
-                        <div className="flex gap-3 mb-4">
-                          <button
-                            onClick={() => setLandingPageData({...landingPageData, hero_type: 'carousel'})}
-                            className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
-                              (landingPageData.hero_type || 'carousel') === 'carousel'
-                                ? 'bg-violet-600 text-white'
-                                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                            }`}
-                          >
-                            📱 Horizontal Scroll Design
-                          </button>
-                          <button
-                            onClick={() => setLandingPageData({...landingPageData, hero_type: 'static'})}
-                            className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
-                              landingPageData.hero_type === 'static'
-                                ? 'bg-violet-600 text-white'
-                                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                            }`}
-                          >
-                            🖼️ Text/Image Box
-                          </button>
+                    <div className="bg-gradient-to-r from-violet-900/20 to-slate-800/50 rounded-lg border border-violet-500/30">
+                      <button
+                        onClick={() => toggleSection('hero')}
+                        className="w-full flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors rounded-t-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                            <Sparkles className="w-5 h-5 text-violet-400" />
+                          </div>
+                          <div className="text-left">
+                            <h3 className="text-lg font-semibold text-violet-400">Hero Banner</h3>
+                            <p className="text-xs text-slate-400">Carousel with {(landingPageData.hero_slides || []).length} slides</p>
+                          </div>
                         </div>
-                      </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-slate-400">📱 Horizontal Scroll</span>
+                          {collapsedSections.hero ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronUp className="w-5 h-5 text-slate-400" />}
+                        </div>
+                      </button>
 
-                      {/* Carousel Slides */}
-                      {(landingPageData.hero_type || 'carousel') === 'carousel' && (
-                        <div>
+                      {!collapsedSections.hero && (
+                        <div className="p-6 pt-2 space-y-4 border-t border-slate-600/50">
+                          {/* Carousel Slides */}
                           <div className="flex justify-between items-center mb-4">
                             <label className="text-sm font-medium text-slate-300">Carousel Slides</label>
                             <button
                               onClick={() => {
                                 const slides = [...(landingPageData.hero_slides || [])]
-                                slides.push({ headline: '', subheadline: '', content: '', background_url: '', background_type: 'image', cta_text: 'Shop Now', cta_url: '#shop', text_align: 'center' })
+                                slides.push({ headline: '', subheadline: '', content: '', background_url: '', background_color: '#1e293b', background_type: 'image', cta_text: 'Shop Now', cta_url: '#shop', text_align: 'center', is_carousel: true })
                                 setLandingPageData({...landingPageData, hero_slides: slides})
                               }}
                               className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
@@ -2134,7 +2330,76 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                         {(landingPageData.hero_slides || []).map((slide: { headline: string; subheadline: string; content?: string; background_url: string; background_type: string; cta_text: string; cta_url: string; text_align?: 'left' | 'center' | 'right' }, index: number) => (
                           <div key={index} className="bg-slate-800/50 rounded-lg p-4 border border-slate-600">
                             <div className="flex justify-between items-center mb-3">
-                              <span className="text-sm font-medium text-slate-300">Slide {index + 1}</span>
+                              <div className="flex items-center gap-3">
+                                <span className="text-sm font-medium text-slate-300">Slide {index + 1}</span>
+                                {/* Carousel Toggle */}
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={slide.is_carousel !== false} // Default to true for backwards compatibility
+                                    onChange={(e) => {
+                                      const slides = [...(landingPageData.hero_slides || [])]
+                                      slides[index] = { ...slide, is_carousel: e.target.checked }
+                                      setLandingPageData({...landingPageData, hero_slides: slides})
+                                    }}
+                                    className="w-4 h-4 rounded border-slate-600 text-violet-600 focus:ring-violet-500"
+                                  />
+                                  <span className="text-xs text-slate-400">
+                                    {slide.is_carousel !== false ? 'Carousel' : 'Static Banner'}
+                                  </span>
+                                </label>
+                                {/* Price Banner Toggle */}
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={slide.is_price_banner === true}
+                                    onChange={(e) => {
+                                      const slides = [...(landingPageData.hero_slides || [])]
+                                      slides[index] = {
+                                        ...slide,
+                                        is_price_banner: e.target.checked,
+                                        // Auto-set as static banner when price banner is enabled
+                                        is_carousel: e.target.checked ? false : slide.is_carousel,
+                                        // Initialize default pricing fields if enabling
+                                        ...(e.target.checked ? {
+                                          features: slide.features || ['Feature 1', 'Feature 2', 'Feature 3'],
+                                          plans: slide.plans || [
+                                            { title: '1 Month (2 Treatments)', original_price: 99, discounted_price: 79 },
+                                            { title: '3 Months (6 Treatments)', original_price: 199, discounted_price: 149 },
+                                            { title: '6 Months (12 Treatments)', original_price: 299, discounted_price: 199 }
+                                          ],
+                                          currency_symbol: slide.currency_symbol || '$',
+                                          plan_heading: slide.plan_heading || 'Choose Your Plan',
+                                          background_color: slide.background_color || '#ffffff',
+                                          // Set default fonts if not already set
+                                          headline_font_family: slide.headline_font_family || 'Josefin Sans',
+                                          headline_font_size: slide.headline_font_size || '2.5rem',
+                                          headline_color: slide.headline_color || '#000000',
+                                          subheadline_font_family: slide.subheadline_font_family || 'Josefin Sans',
+                                          subheadline_font_size: slide.subheadline_font_size || '1.25rem',
+                                          subheadline_color: slide.subheadline_color || '#000000',
+                                          content_font_family: slide.content_font_family || 'Cormorant Garamond',
+                                          content_font_size: slide.content_font_size || '1rem',
+                                          content_color: slide.content_color || '#374151',
+                                          // Price and plan title styling
+                                          price_font_family: slide.price_font_family || 'Josefin Sans',
+                                          price_font_size: slide.price_font_size || '2.5rem',
+                                          price_color: slide.price_color || '#000000',
+                                          plan_title_font_family: slide.plan_title_font_family || 'Cormorant Garamond',
+                                          plan_title_font_size: slide.plan_title_font_size || '1rem',
+                                          plan_title_color: slide.plan_title_color || '#1f2937',
+                                          cta_text: slide.cta_text || 'Buy Now & SAVE'
+                                        } : {})
+                                      }
+                                      setLandingPageData({...landingPageData, hero_slides: slides})
+                                    }}
+                                    className="w-4 h-4 rounded border-slate-600 text-violet-600 focus:ring-violet-500"
+                                  />
+                                  <span className="text-xs text-slate-400">
+                                    {slide.is_price_banner ? '💰 Price Banner' : 'Price Banner'}
+                                  </span>
+                                </label>
+                              </div>
                               <div className="flex items-center gap-2">
                                 {/* Move Up */}
                                 {index > 0 && (
@@ -2185,9 +2450,10 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                               </div>
                             </div>
 
-                            {/* Background Upload */}
-                            <div className="mb-3">
-                              <label className="block text-xs text-slate-400 mb-1">Background Image/Video</label>
+                            {/* Background Upload - Hidden for price banners */}
+                            {!slide.is_price_banner && (
+                              <div className="mb-3">
+                                <label className="block text-xs text-slate-400 mb-1">Background Image/Video</label>
                               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   {slide.background_url ? (
@@ -2243,6 +2509,49 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                     <Image className="w-4 h-4" />
                                     Library
                                   </button>
+                                  {/* Background Color Picker */}
+                                  <div className="relative">
+                                    <button
+                                      onClick={() => {
+                                        const key = `bgColor_${index}`
+                                        setShowColorPicker(showColorPicker === key ? null : key)
+                                      }}
+                                      className="px-3 py-1.5 bg-slate-600 text-white text-sm rounded hover:bg-slate-500 transition-colors flex items-center gap-1.5"
+                                      title="Background Color"
+                                    >
+                                      <div
+                                        className="w-4 h-4 rounded border border-white"
+                                        style={{ backgroundColor: slide.background_color || '#1e293b' }}
+                                      />
+                                      BG
+                                    </button>
+                                    {showColorPicker === `bgColor_${index}` && (
+                                      <div className="fixed md:absolute left-4 right-4 md:left-auto md:right-auto top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 z-50 mt-0 md:mt-1 bg-slate-800 border border-slate-600 rounded-lg p-3 shadow-xl max-w-xs mx-auto">
+                                        <div className="grid grid-cols-7 gap-2 mb-2">
+                                          {COLOR_PALETTE.map((color) => (
+                                            <button
+                                              key={color.value}
+                                              onClick={() => {
+                                                const slides = [...(landingPageData.hero_slides || [])]
+                                                slides[index] = { ...slide, background_color: color.value }
+                                                setLandingPageData({...landingPageData, hero_slides: slides})
+                                                setShowColorPicker(null)
+                                              }}
+                                              className="w-7 h-7 rounded border-2 border-slate-600 hover:border-violet-400 transition-colors"
+                                              style={{ backgroundColor: color.value }}
+                                              title={color.name}
+                                            />
+                                          ))}
+                                        </div>
+                                        <button
+                                          onClick={() => setShowColorPicker(null)}
+                                          className="w-full text-xs text-slate-400 hover:text-slate-200"
+                                        >
+                                          Close
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
                                   <input
                                     ref={(el) => { heroSlideInputRefs.current[index] = el }}
                                     type="file"
@@ -2252,62 +2561,146 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                   />
                                 </div>
 
-                                {/* Text Alignment Icons */}
-                                <div className="flex items-center gap-2">
+                              </div>
+                              </div>
+                            )}
+
+                            {/* Background Color - For Price Banners */}
+                            {slide.is_price_banner && (
+                              <div className="mb-3">
+                                <label className="block text-xs text-slate-400 mb-1">Background Color</label>
+                                <div className="relative">
                                   <button
                                     onClick={() => {
-                                      const slides = [...(landingPageData.hero_slides || [])]
-                                      slides[index] = { ...slide, text_align: 'left' }
-                                      setLandingPageData({...landingPageData, hero_slides: slides})
+                                      const key = `priceBgColor_${index}`
+                                      setShowColorPicker(showColorPicker === key ? null : key)
                                     }}
-                                    className={`p-2 rounded transition-colors ${
-                                      (slide.text_align || 'center') === 'left'
-                                        ? 'bg-violet-600 text-white'
-                                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                    }`}
-                                    title="Align Left"
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-slate-600 text-white text-sm rounded hover:bg-slate-500 transition-colors"
+                                    title="Background Color"
                                   >
-                                    <AlignLeft className="w-4 h-4" />
+                                    <div
+                                      className="w-6 h-6 rounded border border-white"
+                                      style={{ backgroundColor: slide.background_color || '#ffffff' }}
+                                    />
+                                    <span>{slide.background_color || '#ffffff'}</span>
                                   </button>
-                                  <button
-                                    onClick={() => {
-                                      const slides = [...(landingPageData.hero_slides || [])]
-                                      slides[index] = { ...slide, text_align: 'center' }
-                                      setLandingPageData({...landingPageData, hero_slides: slides})
-                                    }}
-                                    className={`p-2 rounded transition-colors ${
-                                      (slide.text_align || 'center') === 'center'
-                                        ? 'bg-violet-600 text-white'
-                                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                    }`}
-                                    title="Align Center"
-                                  >
-                                    <AlignCenter className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      const slides = [...(landingPageData.hero_slides || [])]
-                                      slides[index] = { ...slide, text_align: 'right' }
-                                      setLandingPageData({...landingPageData, hero_slides: slides})
-                                    }}
-                                    className={`p-2 rounded transition-colors ${
-                                      (slide.text_align || 'center') === 'right'
-                                        ? 'bg-violet-600 text-white'
-                                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                    }`}
-                                    title="Align Right"
-                                  >
-                                    <AlignRight className="w-4 h-4" />
-                                  </button>
+                                  {showColorPicker === `priceBgColor_${index}` && (
+                                    <div className="fixed md:absolute left-4 right-4 md:left-auto md:right-auto top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 z-50 mt-0 md:mt-1 bg-slate-800 border border-slate-600 rounded-lg p-3 shadow-xl max-w-xs mx-auto">
+                                      <div className="grid grid-cols-7 gap-2 mb-2">
+                                        {COLOR_PALETTE.map((color) => (
+                                          <button
+                                            key={color.value}
+                                            onClick={() => {
+                                              const slides = [...(landingPageData.hero_slides || [])]
+                                              slides[index] = { ...slide, background_color: color.value }
+                                              setLandingPageData({...landingPageData, hero_slides: slides})
+                                              setShowColorPicker(null)
+                                            }}
+                                            className="w-7 h-7 rounded border-2 border-slate-600 hover:border-violet-400 transition-colors"
+                                            style={{ backgroundColor: color.value }}
+                                            title={color.name}
+                                          />
+                                        ))}
+                                      </div>
+                                      <button
+                                        onClick={() => setShowColorPicker(null)}
+                                        className="w-full text-xs text-slate-400 hover:text-slate-200"
+                                      >
+                                        Close
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
-                            </div>
+                            )}
 
                             {/* Text Overlay */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               <div>
                                 <div className="flex items-center gap-2 mb-1">
                                   <label className="text-xs text-slate-400">Headline</label>
+                                  <div className="flex items-center gap-1">
+                                    {/* Alignment buttons */}
+                                    <button
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        slides[index] = { ...slide, headline_text_align: 'left' }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className={`p-1 rounded ${
+                                        (slide.headline_text_align || 'center') === 'left'
+                                          ? 'bg-violet-600 text-white'
+                                          : 'text-slate-400 hover:text-slate-200'
+                                      }`}
+                                      title="Align Left"
+                                    >
+                                      <AlignLeft className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        slides[index] = { ...slide, headline_text_align: 'center' }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className={`p-1 rounded ${
+                                        (slide.headline_text_align || 'center') === 'center'
+                                          ? 'bg-violet-600 text-white'
+                                          : 'text-slate-400 hover:text-slate-200'
+                                      }`}
+                                      title="Align Center"
+                                    >
+                                      <AlignCenter className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        slides[index] = { ...slide, headline_text_align: 'right' }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className={`p-1 rounded ${
+                                        (slide.headline_text_align || 'center') === 'right'
+                                          ? 'bg-violet-600 text-white'
+                                          : 'text-slate-400 hover:text-slate-200'
+                                      }`}
+                                      title="Align Right"
+                                    >
+                                      <AlignRight className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    {/* Bold button */}
+                                    <button
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        slides[index] = { ...slide, headline_bold: !slide.headline_bold }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className={`p-1 rounded ${
+                                        slide.headline_bold
+                                          ? 'bg-violet-600 text-white'
+                                          : 'text-slate-400 hover:text-slate-200'
+                                      }`}
+                                      title="Bold"
+                                    >
+                                      <Bold className="w-3 h-3" />
+                                    </button>
+                                    {/* Italic button */}
+                                    <button
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        slides[index] = { ...slide, headline_italic: !slide.headline_italic }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className={`p-1 rounded ${
+                                        slide.headline_italic
+                                          ? 'bg-violet-600 text-white'
+                                          : 'text-slate-400 hover:text-slate-200'
+                                      }`}
+                                      title="Italic"
+                                    >
+                                      <Italic className="w-3 h-3" />
+                                    </button>
+                                  </div>
                                   <div className="flex items-center gap-1">
                                     {/* Font Size Dropdown */}
                                     <div className="relative">
@@ -2321,7 +2714,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         {Math.round(parseFloat(slide.headline_font_size || '3.75') * 16) || 60}
                                       </button>
                                       {showFontMenu === `sizeMenu_${index}_headline` && (
-                                        <div className="absolute left-0 mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+                                        <div className="fixed md:absolute left-4 md:left-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
                                           {[24, 32, 40, 48, 56, 64, 72, 80, 96, 112, 128].map(size => (
                                             <button
                                               key={size}
@@ -2353,7 +2746,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         {(slide.headline_font_family || 'Josefin Sans').split(' ')[0]}
                                       </button>
                                       {showFontMenu === `fontMenu_${index}_headline` && (
-                                        <div className="absolute left-0 mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50">
+                                        <div className="fixed md:absolute left-4 md:left-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-1 w-40 max-w-[calc(100vw-2rem)] bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-64 overflow-y-auto">
                                           {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
                                             <button
                                               key={font}
@@ -2370,6 +2763,41 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                               {font}
                                             </button>
                                           ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                    {/* Color Picker */}
+                                    <div className="relative">
+                                      <button
+                                        onClick={() => {
+                                          const key = `colorPicker_${index}_headline`
+                                          setShowColorPicker(showColorPicker === key ? null : key)
+                                        }}
+                                        className="w-7 h-7 rounded border border-slate-600 cursor-pointer hover:scale-110 transition-transform"
+                                        style={{ backgroundColor: slide.headline_color || '#ffffff' }}
+                                        title="Headline color"
+                                      />
+                                      {showColorPicker === `colorPicker_${index}_headline` && (
+                                        <div className="fixed md:absolute left-4 right-4 md:left-auto md:right-0 top-1/2 -translate-y-1/2 md:top-full md:translate-y-0 mt-0 md:mt-2 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50 max-w-xs mx-auto">
+                                          <div className="grid grid-cols-7 gap-2">
+                                            {COLOR_PALETTE.map((color) => (
+                                              <button
+                                                key={color.value}
+                                                onClick={() => {
+                                                  const slides = [...(landingPageData.hero_slides || [])]
+                                                  slides[index] = { ...slide, headline_color: color.value }
+                                                  setLandingPageData({...landingPageData, hero_slides: slides})
+                                                  setShowColorPicker(null)
+                                                }}
+                                                className="w-7 h-7 rounded border-2 hover:scale-110 transition-transform"
+                                                style={{
+                                                  backgroundColor: color.value,
+                                                  borderColor: (slide.headline_color || '#ffffff') === color.value ? '#a855f7' : '#475569'
+                                                }}
+                                                title={color.name}
+                                              />
+                                            ))}
+                                          </div>
                                         </div>
                                       )}
                                     </div>
@@ -2391,6 +2819,88 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                 <div className="flex items-center gap-2 mb-1">
                                   <label className="text-xs text-slate-400">Subheadline</label>
                                   <div className="flex items-center gap-1">
+                                    {/* Alignment buttons */}
+                                    <button
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        slides[index] = { ...slide, subheadline_text_align: 'left' }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className={`p-1 rounded ${
+                                        (slide.subheadline_text_align || 'center') === 'left'
+                                          ? 'bg-violet-600 text-white'
+                                          : 'text-slate-400 hover:text-slate-200'
+                                      }`}
+                                      title="Align Left"
+                                    >
+                                      <AlignLeft className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        slides[index] = { ...slide, subheadline_text_align: 'center' }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className={`p-1 rounded ${
+                                        (slide.subheadline_text_align || 'center') === 'center'
+                                          ? 'bg-violet-600 text-white'
+                                          : 'text-slate-400 hover:text-slate-200'
+                                      }`}
+                                      title="Align Center"
+                                    >
+                                      <AlignCenter className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        slides[index] = { ...slide, subheadline_text_align: 'right' }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className={`p-1 rounded ${
+                                        (slide.subheadline_text_align || 'center') === 'right'
+                                          ? 'bg-violet-600 text-white'
+                                          : 'text-slate-400 hover:text-slate-200'
+                                      }`}
+                                      title="Align Right"
+                                    >
+                                      <AlignRight className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    {/* Bold button */}
+                                    <button
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        slides[index] = { ...slide, subheadline_bold: !slide.subheadline_bold }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className={`p-1 rounded ${
+                                        slide.subheadline_bold
+                                          ? 'bg-violet-600 text-white'
+                                          : 'text-slate-400 hover:text-slate-200'
+                                      }`}
+                                      title="Bold"
+                                    >
+                                      <Bold className="w-3 h-3" />
+                                    </button>
+                                    {/* Italic button */}
+                                    <button
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        slides[index] = { ...slide, subheadline_italic: !slide.subheadline_italic }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className={`p-1 rounded ${
+                                        slide.subheadline_italic
+                                          ? 'bg-violet-600 text-white'
+                                          : 'text-slate-400 hover:text-slate-200'
+                                      }`}
+                                      title="Italic"
+                                    >
+                                      <Italic className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                  <div className="flex items-center gap-1">
                                     {/* Font Size Dropdown */}
                                     <div className="relative">
                                       <button
@@ -2403,7 +2913,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         {Math.round(parseFloat(slide.subheadline_font_size || '1.25') * 16) || 20}
                                       </button>
                                       {showFontMenu === `sizeMenu_${index}_subheadline` && (
-                                        <div className="absolute left-0 mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+                                        <div className="fixed md:absolute left-4 md:left-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
                                           {[12, 14, 16, 18, 20, 24, 28, 32, 36, 40].map(size => (
                                             <button
                                               key={size}
@@ -2435,7 +2945,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         {(slide.subheadline_font_family || 'Josefin Sans').split(' ')[0]}
                                       </button>
                                       {showFontMenu === `fontMenu_${index}_subheadline` && (
-                                        <div className="absolute left-0 mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50">
+                                        <div className="fixed md:absolute left-4 md:left-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-1 w-40 max-w-[calc(100vw-2rem)] bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-64 overflow-y-auto">
                                           {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
                                             <button
                                               key={font}
@@ -2455,6 +2965,41 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         </div>
                                       )}
                                     </div>
+                                    {/* Color Picker */}
+                                    <div className="relative">
+                                      <button
+                                        onClick={() => {
+                                          const key = `colorPicker_${index}_subheadline`
+                                          setShowColorPicker(showColorPicker === key ? null : key)
+                                        }}
+                                        className="w-7 h-7 rounded border border-slate-600 cursor-pointer hover:scale-110 transition-transform"
+                                        style={{ backgroundColor: slide.subheadline_color || '#ffffff' }}
+                                        title="Subheadline color"
+                                      />
+                                      {showColorPicker === `colorPicker_${index}_subheadline` && (
+                                        <div className="fixed md:absolute left-4 right-4 md:left-auto md:right-0 top-1/2 -translate-y-1/2 md:top-full md:translate-y-0 mt-0 md:mt-2 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50 max-w-xs mx-auto">
+                                          <div className="grid grid-cols-7 gap-2">
+                                            {COLOR_PALETTE.map((color) => (
+                                              <button
+                                                key={color.value}
+                                                onClick={() => {
+                                                  const slides = [...(landingPageData.hero_slides || [])]
+                                                  slides[index] = { ...slide, subheadline_color: color.value }
+                                                  setLandingPageData({...landingPageData, hero_slides: slides})
+                                                  setShowColorPicker(null)
+                                                }}
+                                                className="w-7 h-7 rounded border-2 hover:scale-110 transition-transform"
+                                                style={{
+                                                  backgroundColor: color.value,
+                                                  borderColor: (slide.subheadline_color || '#ffffff') === color.value ? '#a855f7' : '#475569'
+                                                }}
+                                                title={color.name}
+                                              />
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                                 <input
@@ -2471,7 +3016,89 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                               </div>
                               <div className="md:col-span-2">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <label className="text-xs text-slate-400">Content (optional)</label>
+                                  <label className="text-xs text-slate-400">{slide.is_price_banner ? 'Features' : 'Content (optional)'}</label>
+                                  <div className="flex items-center gap-1">
+                                    {/* Alignment buttons */}
+                                    <button
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        slides[index] = { ...slide, content_text_align: 'left' }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className={`p-1 rounded ${
+                                        (slide.content_text_align || 'center') === 'left'
+                                          ? 'bg-violet-600 text-white'
+                                          : 'text-slate-400 hover:text-slate-200'
+                                      }`}
+                                      title="Align Left"
+                                    >
+                                      <AlignLeft className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        slides[index] = { ...slide, content_text_align: 'center' }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className={`p-1 rounded ${
+                                        (slide.content_text_align || 'center') === 'center'
+                                          ? 'bg-violet-600 text-white'
+                                          : 'text-slate-400 hover:text-slate-200'
+                                      }`}
+                                      title="Align Center"
+                                    >
+                                      <AlignCenter className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        slides[index] = { ...slide, content_text_align: 'right' }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className={`p-1 rounded ${
+                                        (slide.content_text_align || 'center') === 'right'
+                                          ? 'bg-violet-600 text-white'
+                                          : 'text-slate-400 hover:text-slate-200'
+                                      }`}
+                                      title="Align Right"
+                                    >
+                                      <AlignRight className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    {/* Bold button */}
+                                    <button
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        slides[index] = { ...slide, content_bold: !slide.content_bold }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className={`p-1 rounded ${
+                                        slide.content_bold
+                                          ? 'bg-violet-600 text-white'
+                                          : 'text-slate-400 hover:text-slate-200'
+                                      }`}
+                                      title="Bold"
+                                    >
+                                      <Bold className="w-3 h-3" />
+                                    </button>
+                                    {/* Italic button */}
+                                    <button
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        slides[index] = { ...slide, content_italic: !slide.content_italic }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className={`p-1 rounded ${
+                                        slide.content_italic
+                                          ? 'bg-violet-600 text-white'
+                                          : 'text-slate-400 hover:text-slate-200'
+                                      }`}
+                                      title="Italic"
+                                    >
+                                      <Italic className="w-3 h-3" />
+                                    </button>
+                                  </div>
                                   <div className="flex items-center gap-1">
                                     {/* Font Size Dropdown */}
                                     <div className="relative">
@@ -2485,7 +3112,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         {Math.round(parseFloat(slide.content_font_size || '1.125') * 16) || 18}
                                       </button>
                                       {showFontMenu === `sizeMenu_${index}_content` && (
-                                        <div className="absolute left-0 mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+                                        <div className="fixed md:absolute left-4 md:left-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
                                           {[12, 14, 16, 18, 20, 24, 28, 32].map(size => (
                                             <button
                                               key={size}
@@ -2517,7 +3144,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         {(slide.content_font_family || 'Cormorant Garamond').split(' ')[0]}
                                       </button>
                                       {showFontMenu === `fontMenu_${index}_content` && (
-                                        <div className="absolute left-0 mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50">
+                                        <div className="fixed md:absolute left-4 md:left-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-1 w-40 max-w-[calc(100vw-2rem)] bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-64 overflow-y-auto">
                                           {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
                                             <button
                                               key={font}
@@ -2537,371 +3164,356 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         </div>
                                       )}
                                     </div>
+                                    {/* Color Picker */}
+                                    <div className="relative">
+                                      <button
+                                        onClick={() => {
+                                          const key = `colorPicker_${index}_content`
+                                          setShowColorPicker(showColorPicker === key ? null : key)
+                                        }}
+                                        className="w-7 h-7 rounded border border-slate-600 cursor-pointer hover:scale-110 transition-transform"
+                                        style={{ backgroundColor: slide.content_color || '#ffffff' }}
+                                        title="Content color"
+                                      />
+                                      {showColorPicker === `colorPicker_${index}_content` && (
+                                        <div className="fixed md:absolute left-4 right-4 md:left-auto md:right-0 top-1/2 -translate-y-1/2 md:top-full md:translate-y-0 mt-0 md:mt-2 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50 max-w-xs mx-auto">
+                                          <div className="grid grid-cols-7 gap-2">
+                                            {COLOR_PALETTE.map((color) => (
+                                              <button
+                                                key={color.value}
+                                                onClick={() => {
+                                                  const slides = [...(landingPageData.hero_slides || [])]
+                                                  slides[index] = { ...slide, content_color: color.value }
+                                                  setLandingPageData({...landingPageData, hero_slides: slides})
+                                                  setShowColorPicker(null)
+                                                }}
+                                                className="w-7 h-7 rounded border-2 hover:scale-110 transition-transform"
+                                                style={{
+                                                  backgroundColor: color.value,
+                                                  borderColor: (slide.content_color || '#ffffff') === color.value ? '#a855f7' : '#475569'
+                                                }}
+                                                title={color.name}
+                                              />
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
-                                <textarea
-                                  value={slide.content || ''}
-                                  onChange={(e) => {
-                                    const slides = [...(landingPageData.hero_slides || [])]
-                                    slides[index] = { ...slide, content: e.target.value }
-                                    setLandingPageData({...landingPageData, hero_slides: slides})
-                                  }}
-                                  placeholder="Additional text content for this slide..."
-                                  rows={3}
-                                  className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500 resize-y break-words whitespace-pre-wrap"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs text-slate-400 mb-1">CTA Button Text</label>
-                                <input
-                                  type="text"
-                                  value={slide.cta_text || ''}
-                                  onChange={(e) => {
-                                    const slides = [...(landingPageData.hero_slides || [])]
-                                    slides[index] = { ...slide, cta_text: e.target.value }
-                                    setLandingPageData({...landingPageData, hero_slides: slides})
-                                  }}
-                                  placeholder="e.g., Shop Now"
-                                  className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs text-slate-400 mb-1">CTA Button URL</label>
-                                <input
-                                  type="text"
-                                  value={slide.cta_url || ''}
-                                  onChange={(e) => {
-                                    const slides = [...(landingPageData.hero_slides || [])]
-                                    slides[index] = { ...slide, cta_url: e.target.value }
-                                    setLandingPageData({...landingPageData, hero_slides: slides})
-                                  }}
-                                  placeholder="e.g., #shop or /products"
-                                  className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                        </div>
-                      )}
-
-                      {/* Static Text/Image Box */}
-                      {landingPageData.hero_type === 'static' && (
-                        <div>
-                          <label className="text-sm font-medium text-slate-300 mb-3 block">Static Banner</label>
-                          <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-600 space-y-3">
-                            {/* Background Upload */}
-                            <div>
-                              <label className="block text-xs text-slate-400 mb-1">Background Image</label>
-                              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  {landingPageData.hero_static_bg ? (
-                                    <div className="relative">
-                                      <img src={landingPageData.hero_static_bg} className="h-16 w-28 object-cover rounded" />
-                                      <button
-                                        onClick={() => setLandingPageData({...landingPageData, hero_static_bg: ''})}
-                                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
-                                      >
-                                        <X className="w-3 h-3" />
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    <div className="h-16 w-28 bg-slate-800 border border-dashed border-slate-600 rounded flex items-center justify-center">
-                                      <Image className="w-6 h-6 text-slate-500" />
-                                    </div>
-                                  )}
-                                  <button
-                                    onClick={() => heroSlideInputRefs.current[0]?.click()}
-                                    disabled={heroSlideUploading === 0}
-                                    className="px-3 py-1.5 bg-violet-600 text-white text-sm rounded hover:bg-violet-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
-                                  >
-                                    {heroSlideUploading === 0 ? (
-                                      <>
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        Uploading...
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Upload className="w-4 h-4" />
-                                        Upload
-                                      </>
-                                    )}
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      loadMediaFiles()
-                                      setShowMediaPicker(0)
+                                {slide.is_price_banner ? (
+                                  /* Features list for price banners */
+                                  <div className="space-y-2">
+                                    {(slide.features || []).map((feature: string, fIndex: number) => (
+                                      <div key={fIndex} className="flex gap-2">
+                                        <input
+                                          type="text"
+                                          value={feature}
+                                          onChange={(e) => {
+                                            const slides = [...(landingPageData.hero_slides || [])]
+                                            const features = [...(slide.features || [])]
+                                            features[fIndex] = e.target.value
+                                            slides[index] = { ...slide, features }
+                                            setLandingPageData({...landingPageData, hero_slides: slides})
+                                          }}
+                                          placeholder="Feature description"
+                                          className="flex-1 px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                                        />
+                                        <button
+                                          onClick={() => {
+                                            const slides = [...(landingPageData.hero_slides || [])]
+                                            const features = [...(slide.features || [])]
+                                            features.splice(fIndex, 1)
+                                            slides[index] = { ...slide, features }
+                                            setLandingPageData({...landingPageData, hero_slides: slides})
+                                          }}
+                                          className="text-red-400 hover:text-red-300 p-1.5"
+                                          title="Remove feature"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                    ))}
+                                    <button
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        const features = [...(slide.features || []), 'New Feature']
+                                        slides[index] = { ...slide, features }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
+                                    >
+                                      <Plus className="w-4 h-4" />
+                                      Add Feature
+                                    </button>
+                                  </div>
+                                ) : (
+                                  /* Regular content textarea for normal slides */
+                                  <textarea
+                                    value={slide.content || ''}
+                                    onChange={(e) => {
+                                      const slides = [...(landingPageData.hero_slides || [])]
+                                      slides[index] = { ...slide, content: e.target.value }
+                                      setLandingPageData({...landingPageData, hero_slides: slides})
                                     }}
-                                    className="px-3 py-1.5 bg-slate-600 text-white text-sm rounded hover:bg-slate-500 transition-colors flex items-center gap-1.5"
-                                  >
-                                    <Image className="w-4 h-4" />
-                                    Library
-                                  </button>
+                                    placeholder="Additional text content for this slide..."
+                                    rows={3}
+                                    className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500 resize-y break-words whitespace-pre-wrap"
+                                  />
+                                )}
+                              </div>
+                              {/* CTA Button - Hidden for price banners */}
+                              {!slide.is_price_banner && (
+                                <>
+                                  <div>
+                                    <label className="block text-xs text-slate-400 mb-1">CTA Button Text</label>
+                                    <input
+                                      type="text"
+                                      value={slide.cta_text || ''}
+                                      onChange={(e) => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        slides[index] = { ...slide, cta_text: e.target.value }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      placeholder="e.g., Shop Now"
+                                      className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs text-slate-400 mb-1">CTA Button URL</label>
+                                    <input
+                                      type="text"
+                                      value={slide.cta_url || ''}
+                                      onChange={(e) => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        slides[index] = { ...slide, cta_url: e.target.value }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      placeholder="e.g., #shop or /products"
+                                      className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                                    />
+                                  </div>
+                                </>
+                              )}
+                            </div>
+
+                            {/* Pricing Fields - Only for Price Banners */}
+                            {slide.is_price_banner && (
+                              <div className="mt-4 pt-4 border-t border-slate-600">
+                                {/* Price Options Heading */}
+                                <div className="mb-3">
+                                  <label className="block text-xs text-slate-400 mb-1">Price Options Heading</label>
                                   <input
-                                    ref={(el) => { heroSlideInputRefs.current[0] = el }}
-                                    type="file"
-                                    accept="image/png,image/jpeg,image/webp,image/gif"
-                                    onChange={(e) => handleHeroSlideUpload(e, 0)}
-                                    className="hidden"
+                                    type="text"
+                                    value={slide.plan_heading || 'Choose Your Plan'}
+                                    onChange={(e) => {
+                                      const slides = [...(landingPageData.hero_slides || [])]
+                                      slides[index] = { ...slide, plan_heading: e.target.value }
+                                      setLandingPageData({...landingPageData, hero_slides: slides})
+                                    }}
+                                    placeholder="Choose Your Plan"
+                                    className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm"
                                   />
                                 </div>
 
-                                {/* Text Alignment Icons */}
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    onClick={() => setLandingPageData({...landingPageData, hero_static_align: 'left'})}
-                                    className={`p-2 rounded transition-colors ${
-                                      (landingPageData.hero_static_align || 'center') === 'left'
-                                        ? 'bg-violet-600 text-white'
-                                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                    }`}
-                                    title="Align Left"
-                                  >
-                                    <AlignLeft className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => setLandingPageData({...landingPageData, hero_static_align: 'center'})}
-                                    className={`p-2 rounded transition-colors ${
-                                      (landingPageData.hero_static_align || 'center') === 'center'
-                                        ? 'bg-violet-600 text-white'
-                                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                    }`}
-                                    title="Align Center"
-                                  >
-                                    <AlignCenter className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => setLandingPageData({...landingPageData, hero_static_align: 'right'})}
-                                    className={`p-2 rounded transition-colors ${
-                                      (landingPageData.hero_static_align || 'center') === 'right'
-                                        ? 'bg-violet-600 text-white'
-                                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                    }`}
-                                    title="Align Right"
-                                  >
-                                    <AlignRight className="w-4 h-4" />
-                                  </button>
+                                {/* Price Text Styling */}
+                                <div className="mb-3">
+                                  <TextEditorControls
+                                    label="Price Display"
+                                    value=""
+                                    onChange={() => {}}
+                                    hideTextInput
+                                    fontSize={slide.price_font_size}
+                                    onFontSizeChange={(size) => {
+                                      const slides = [...(landingPageData.hero_slides || [])]
+                                      slides[index] = { ...slide, price_font_size: size }
+                                      setLandingPageData({...landingPageData, hero_slides: slides})
+                                    }}
+                                    fontFamily={slide.price_font_family}
+                                    onFontFamilyChange={(family) => {
+                                      const slides = [...(landingPageData.hero_slides || [])]
+                                      slides[index] = { ...slide, price_font_family: family }
+                                      setLandingPageData({...landingPageData, hero_slides: slides})
+                                    }}
+                                    color={slide.price_color}
+                                    onColorChange={(color) => {
+                                      const slides = [...(landingPageData.hero_slides || [])]
+                                      slides[index] = { ...slide, price_color: color }
+                                      setLandingPageData({...landingPageData, hero_slides: slides})
+                                    }}
+                                  />
                                 </div>
-                              </div>
-                            </div>
 
-                            {/* Text Content */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                              <div>
-                                <div className="flex items-center justify-between mb-1">
-                                  <label className="text-xs text-slate-400">Headline</label>
-                                  <div className="flex items-center gap-1">
-                                    <button
-                                      onClick={() => {
-                                        const currentSize = parseFloat(landingPageData.hero_static_headline_font_size || '3.75') || 3.75
-                                        setLandingPageData({...landingPageData, hero_static_headline_font_size: `${Math.max(1, currentSize - 0.25)}rem`})
-                                      }}
-                                      className="px-1.5 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
-                                      title="Smaller font"
-                                    >
-                                      A-
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        const currentSize = parseFloat(landingPageData.hero_static_headline_font_size || '3.75') || 3.75
-                                        setLandingPageData({...landingPageData, hero_static_headline_font_size: `${Math.min(10, currentSize + 0.25)}rem`})
-                                      }}
-                                      className="px-1.5 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
-                                      title="Larger font"
-                                    >
-                                      A+
-                                    </button>
-                                    <div className="relative">
-                                      <button
-                                        onClick={() => {
-                                          const key = 'fontMenu_static_headline'
-                                          setShowMediaPicker(showMediaPicker === key ? null : key as any)
-                                        }}
-                                        className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
-                                        title="Font family"
-                                      >
-                                        Aa
-                                      </button>
-                                      {showMediaPicker === 'fontMenu_static_headline' && (
-                                        <div className="absolute right-0 mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50">
-                                          {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
+                                {/* Plan Title Text Styling */}
+                                <div className="mb-3">
+                                  <TextEditorControls
+                                    label="Plan Options Text"
+                                    value=""
+                                    onChange={() => {}}
+                                    hideTextInput
+                                    fontSize={slide.plan_title_font_size}
+                                    onFontSizeChange={(size) => {
+                                      const slides = [...(landingPageData.hero_slides || [])]
+                                      slides[index] = { ...slide, plan_title_font_size: size }
+                                      setLandingPageData({...landingPageData, hero_slides: slides})
+                                    }}
+                                    fontFamily={slide.plan_title_font_family}
+                                    onFontFamilyChange={(family) => {
+                                      const slides = [...(landingPageData.hero_slides || [])]
+                                      slides[index] = { ...slide, plan_title_font_family: family }
+                                      setLandingPageData({...landingPageData, hero_slides: slides})
+                                    }}
+                                    color={slide.plan_title_color}
+                                    onColorChange={(color) => {
+                                      const slides = [...(landingPageData.hero_slides || [])]
+                                      slides[index] = { ...slide, plan_title_color: color }
+                                      setLandingPageData({...landingPageData, hero_slides: slides})
+                                    }}
+                                  />
+                                </div>
+
+                                {/* Prices */}
+                                <div>
+                                  <label className="block text-xs text-slate-400 mb-2">Prices</label>
+                                  <div className="space-y-3">
+                                    {(slide.plans || []).map((plan: any, pIndex: number) => (
+                                      <div key={pIndex} className="bg-slate-700/50 rounded p-3 border border-slate-600">
+                                        <div className="flex justify-between items-center mb-2">
+                                          <span className="text-xs font-medium text-slate-300">Price {pIndex + 1}</span>
+                                          {(slide.plans || []).length > 1 && (
                                             <button
-                                              key={font}
                                               onClick={() => {
-                                                setLandingPageData({...landingPageData, hero_static_headline_font_family: font})
-                                                setShowMediaPicker(null)
+                                                const slides = [...(landingPageData.hero_slides || [])]
+                                                const plans = [...(slide.plans || [])]
+                                                plans.splice(pIndex, 1)
+                                                slides[index] = { ...slide, plans }
+                                                setLandingPageData({...landingPageData, hero_slides: slides})
                                               }}
-                                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                                                (landingPageData.hero_static_headline_font_family || 'Josefin Sans') === font ? 'bg-violet-600 text-white' : 'text-slate-200'
-                                              }`}
+                                              className="text-red-400 hover:text-red-300"
+                                              title="Delete price"
                                             >
-                                              {font}
+                                              <Trash2 className="w-3 h-3" />
                                             </button>
-                                          ))}
+                                          )}
                                         </div>
-                                      )}
-                                    </div>
+                                        <div className="space-y-2">
+                                          <input
+                                            type="text"
+                                            value={plan.title || ''}
+                                            onChange={(e) => {
+                                              const slides = [...(landingPageData.hero_slides || [])]
+                                              const plans = [...(slide.plans || [])]
+                                              plans[pIndex] = { ...plan, title: e.target.value }
+                                              slides[index] = { ...slide, plans }
+                                              setLandingPageData({...landingPageData, hero_slides: slides})
+                                            }}
+                                            placeholder="Price title"
+                                            className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-xs"
+                                          />
+                                          <div className="grid grid-cols-2 gap-2">
+                                            <input
+                                              type="number"
+                                              value={plan.original_price || 0}
+                                              onChange={(e) => {
+                                                const slides = [...(landingPageData.hero_slides || [])]
+                                                const plans = [...(slide.plans || [])]
+                                                plans[pIndex] = { ...plan, original_price: parseFloat(e.target.value) || 0 }
+                                                slides[index] = { ...slide, plans }
+                                                setLandingPageData({...landingPageData, hero_slides: slides})
+                                              }}
+                                              placeholder="Original"
+                                              className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-xs"
+                                            />
+                                            <input
+                                              type="number"
+                                              value={plan.discounted_price || 0}
+                                              onChange={(e) => {
+                                                const slides = [...(landingPageData.hero_slides || [])]
+                                                const plans = [...(slide.plans || [])]
+                                                plans[pIndex] = { ...plan, discounted_price: parseFloat(e.target.value) || 0 }
+                                                slides[index] = { ...slide, plans }
+                                                setLandingPageData({...landingPageData, hero_slides: slides})
+                                              }}
+                                              placeholder="Discounted"
+                                              className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-xs"
+                                            />
+                                          </div>
+                                          <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                                            <input
+                                              type="checkbox"
+                                              checked={plan.popular || false}
+                                              onChange={(e) => {
+                                                const slides = [...(landingPageData.hero_slides || [])]
+                                                const plans = [...(slide.plans || [])]
+                                                plans[pIndex] = { ...plan, popular: e.target.checked }
+                                                slides[index] = { ...slide, plans }
+                                                setLandingPageData({...landingPageData, hero_slides: slides})
+                                              }}
+                                              className="w-4 h-4 text-violet-600 bg-slate-700 border-slate-500 rounded focus:ring-violet-500"
+                                            />
+                                            <span>Most Popular</span>
+                                          </label>
+                                          <div className="mt-2">
+                                            <label className="block text-xs text-slate-400 mb-1">Link to Product (optional)</label>
+                                            <select
+                                              value={plan.product_id || ''}
+                                              onChange={(e) => {
+                                                const slides = [...(landingPageData.hero_slides || [])]
+                                                const plans = [...(slide.plans || [])]
+                                                plans[pIndex] = { ...plan, product_id: e.target.value || undefined }
+                                                slides[index] = { ...slide, plans }
+                                                setLandingPageData({...landingPageData, hero_slides: slides})
+                                              }}
+                                              className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-xs"
+                                            >
+                                              <option value="">No product linked</option>
+                                              {products.map(product => (
+                                                <option key={product.id} value={product.id}>
+                                                  {product.title}
+                                                </option>
+                                              ))}
+                                            </select>
+                                            <p className="text-xs text-slate-500 mt-1">Link to show product image & description in cart</p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                    <button
+                                      onClick={() => {
+                                        const slides = [...(landingPageData.hero_slides || [])]
+                                        const plans = [...(slide.plans || []), { title: 'New Price', original_price: 100, discounted_price: 80, popular: false }]
+                                        slides[index] = { ...slide, plans }
+                                        setLandingPageData({...landingPageData, hero_slides: slides})
+                                      }}
+                                      className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
+                                    >
+                                      <Plus className="w-4 h-4" />
+                                      Add Price
+                                    </button>
                                   </div>
                                 </div>
-                                <input
-                                  type="text"
-                                  value={landingPageData.hero_static_headline || ''}
-                                  onChange={(e) => setLandingPageData({...landingPageData, hero_static_headline: e.target.value})}
-                                  placeholder="e.g., Transform Your Skin"
-                                  className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
-                                />
-                              </div>
-                              <div>
-                                <div className="flex items-center justify-between mb-1">
-                                  <label className="text-xs text-slate-400">Subheadline</label>
-                                  <div className="flex items-center gap-1">
-                                    <button
-                                      onClick={() => {
-                                        const currentSize = parseFloat(landingPageData.hero_static_subheadline_font_size || '1.25') || 1.25
-                                        setLandingPageData({...landingPageData, hero_static_subheadline_font_size: `${Math.max(0.5, currentSize - 0.125)}rem`})
-                                      }}
-                                      className="px-1.5 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
-                                      title="Smaller font"
-                                    >
-                                      A-
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        const currentSize = parseFloat(landingPageData.hero_static_subheadline_font_size || '1.25') || 1.25
-                                        setLandingPageData({...landingPageData, hero_static_subheadline_font_size: `${Math.min(5, currentSize + 0.125)}rem`})
-                                      }}
-                                      className="px-1.5 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
-                                      title="Larger font"
-                                    >
-                                      A+
-                                    </button>
-                                    <div className="relative">
-                                      <button
-                                        onClick={() => {
-                                          const key = 'fontMenu_static_subheadline'
-                                          setShowMediaPicker(showMediaPicker === key ? null : key as any)
-                                        }}
-                                        className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
-                                        title="Font family"
-                                      >
-                                        Aa
-                                      </button>
-                                      {showMediaPicker === 'fontMenu_static_subheadline' && (
-                                        <div className="absolute right-0 mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50">
-                                          {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
-                                            <button
-                                              key={font}
-                                              onClick={() => {
-                                                setLandingPageData({...landingPageData, hero_static_subheadline_font_family: font})
-                                                setShowMediaPicker(null)
-                                              }}
-                                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                                                (landingPageData.hero_static_subheadline_font_family || 'Josefin Sans') === font ? 'bg-violet-600 text-white' : 'text-slate-200'
-                                              }`}
-                                            >
-                                              {font}
-                                            </button>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
+
+                                {/* CTA Button Text */}
+                                <div className="mt-3">
+                                  <label className="block text-xs text-slate-400 mb-1">CTA Button Text</label>
+                                  <input
+                                    type="text"
+                                    value={slide.cta_text || ''}
+                                    onChange={(e) => {
+                                      const slides = [...(landingPageData.hero_slides || [])]
+                                      slides[index] = { ...slide, cta_text: e.target.value }
+                                      setLandingPageData({...landingPageData, hero_slides: slides})
+                                    }}
+                                    placeholder="Buy Now & SAVE"
+                                    className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm"
+                                  />
+                                  <p className="text-xs text-slate-400 mt-1">The discount % will be auto-calculated</p>
                                 </div>
-                                <input
-                                  type="text"
-                                  value={landingPageData.hero_static_subheadline || ''}
-                                  onChange={(e) => setLandingPageData({...landingPageData, hero_static_subheadline: e.target.value})}
-                                  placeholder="e.g., Discover the secret"
-                                  className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
-                                />
                               </div>
-                              <div className="md:col-span-2">
-                                <div className="flex items-center justify-between mb-1">
-                                  <label className="text-xs text-slate-400">Content</label>
-                                  <div className="flex items-center gap-1">
-                                    <button
-                                      onClick={() => {
-                                        const currentSize = parseFloat(landingPageData.hero_static_content_font_size || '1.125') || 1.125
-                                        setLandingPageData({...landingPageData, hero_static_content_font_size: `${Math.max(0.5, currentSize - 0.125)}rem`})
-                                      }}
-                                      className="px-1.5 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
-                                      title="Smaller font"
-                                    >
-                                      A-
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        const currentSize = parseFloat(landingPageData.hero_static_content_font_size || '1.125') || 1.125
-                                        setLandingPageData({...landingPageData, hero_static_content_font_size: `${Math.min(3, currentSize + 0.125)}rem`})
-                                      }}
-                                      className="px-1.5 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
-                                      title="Larger font"
-                                    >
-                                      A+
-                                    </button>
-                                    <div className="relative">
-                                      <button
-                                        onClick={() => {
-                                          const key = 'fontMenu_static_content'
-                                          setShowMediaPicker(showMediaPicker === key ? null : key as any)
-                                        }}
-                                        className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
-                                        title="Font family"
-                                      >
-                                        Aa
-                                      </button>
-                                      {showMediaPicker === 'fontMenu_static_content' && (
-                                        <div className="absolute right-0 mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50">
-                                          {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
-                                            <button
-                                              key={font}
-                                              onClick={() => {
-                                                setLandingPageData({...landingPageData, hero_static_content_font_family: font})
-                                                setShowMediaPicker(null)
-                                              }}
-                                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                                                (landingPageData.hero_static_content_font_family || 'Cormorant Garamond') === font ? 'bg-violet-600 text-white' : 'text-slate-200'
-                                              }`}
-                                            >
-                                              {font}
-                                            </button>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                                <textarea
-                                  value={landingPageData.hero_static_content || ''}
-                                  onChange={(e) => setLandingPageData({...landingPageData, hero_static_content: e.target.value})}
-                                  placeholder="Additional text content..."
-                                  rows={5}
-                                  className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500 resize-y break-words whitespace-pre-wrap"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs text-slate-400 mb-1">CTA Button Text</label>
-                                <input
-                                  type="text"
-                                  value={landingPageData.hero_static_cta_text || ''}
-                                  onChange={(e) => setLandingPageData({...landingPageData, hero_static_cta_text: e.target.value})}
-                                  placeholder="e.g., Shop Now"
-                                  className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs text-slate-400 mb-1">CTA Button URL</label>
-                                <input
-                                  type="text"
-                                  value={landingPageData.hero_static_cta_url || ''}
-                                  onChange={(e) => setLandingPageData({...landingPageData, hero_static_cta_url: e.target.value})}
-                                  placeholder="e.g., #shop or /products"
-                                  className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
-                                />
-                              </div>
-                            </div>
+                            )}
                           </div>
+                        ))}
+                      </div>
                         </div>
                       )}
 
@@ -2958,1155 +3570,16 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                       )}
                     </div>
 
-                    {/* ═══════════════════════════════════════════════════════════════════ */}
-                    {/* SECTION 2: PROBLEM / STORY - Make user feel understood */}
-                    {/* ═══════════════════════════════════════════════════════════════════ */}
-                    <div className="bg-gradient-to-r from-rose-900/20 to-slate-800/50 rounded-lg border border-rose-500/30">
-                      <button
-                        onClick={() => toggleSection('problem')}
-                        className="w-full flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors rounded-t-lg"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-rose-500/20 flex items-center justify-center">
-                            <MessageSquare className="w-5 h-5 text-rose-400" />
-                          </div>
-                          <div className="text-left">
-                            <h3 className="text-lg font-semibold text-rose-400">2️⃣ Problem / Story</h3>
-                            <p className="text-xs text-slate-400">Make user feel understood</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <label className="flex items-center gap-2 text-sm">
-                            <input
-                              type="checkbox"
-                              checked={landingPageData.problem_section_enabled || false}
-                              onChange={(e) => {
-                                e.stopPropagation()
-                                setLandingPageData({...landingPageData, problem_section_enabled: e.target.checked})
-                              }}
-                              className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-rose-500 focus:ring-rose-500"
-                            />
-                            <span className="text-slate-300">Enabled</span>
-                          </label>
-                          {collapsedSections.problem ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronUp className="w-5 h-5 text-slate-400" />}
-                        </div>
-                      </button>
-
-                      {!collapsedSections.problem && (
-                        <div className="p-6 pt-2 space-y-4 border-t border-slate-600/50">
-                          {/* Variant Selector */}
-                          <div>
-                            <label className="block text-sm text-slate-400 mb-2">Variant Style</label>
-                            <div className="flex gap-2">
-                              {['emotional', 'fear-based', 'aspirational', 'educational'].map(variant => (
-                                <button
-                                  key={variant}
-                                  onClick={() => setLandingPageData({...landingPageData, problem_variant: variant})}
-                                  className={`px-3 py-1.5 text-sm rounded capitalize ${
-                                    (landingPageData.problem_variant || 'emotional') === variant
-                                      ? 'bg-rose-600 text-white'
-                                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                  }`}
-                                >
-                                  {variant}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Headline & Subheadline */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm text-slate-400 mb-1">Headline</label>
-                              <input
-                                type="text"
-                                value={landingPageData.problem_headline || ''}
-                                onChange={(e) => setLandingPageData({...landingPageData, problem_headline: e.target.value})}
-                                placeholder="e.g., Tired of..."
-                                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm text-slate-400 mb-1">Subheadline</label>
-                              <input
-                                type="text"
-                                value={landingPageData.problem_subheadline || ''}
-                                onChange={(e) => setLandingPageData({...landingPageData, problem_subheadline: e.target.value})}
-                                placeholder="e.g., You're not alone..."
-                                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Pain Points */}
-                          <div>
-                            <div className="flex justify-between items-center mb-2">
-                              <label className="text-sm text-slate-400">Pain Points</label>
-                              <button
-                                onClick={() => setLandingPageData({
-                                  ...landingPageData,
-                                  pain_points: [...(landingPageData.pain_points || []), { icon: '😓', title: '', description: '' }]
-                                })}
-                                className="text-sm text-rose-400 hover:text-rose-300 flex items-center gap-1"
-                              >
-                                <Plus className="w-4 h-4" /> Add Pain Point
-                              </button>
-                            </div>
-                            <div className="space-y-3">
-                              {(landingPageData.pain_points || []).map((point: any, index: number) => (
-                                <div key={index} className="flex gap-3 items-start bg-slate-800/50 p-3 rounded-lg">
-                                  <input
-                                    type="text"
-                                    value={point.icon || ''}
-                                    onChange={(e) => {
-                                      const updated = [...(landingPageData.pain_points || [])]
-                                      updated[index] = {...point, icon: e.target.value}
-                                      setLandingPageData({...landingPageData, pain_points: updated})
-                                    }}
-                                    placeholder="😓"
-                                    className="w-12 px-2 py-2 bg-slate-700 border border-slate-600 rounded text-center text-lg"
-                                  />
-                                  <div className="flex-1 space-y-2">
-                                    <input
-                                      type="text"
-                                      value={point.title || ''}
-                                      onChange={(e) => {
-                                        const updated = [...(landingPageData.pain_points || [])]
-                                        updated[index] = {...point, title: e.target.value}
-                                        setLandingPageData({...landingPageData, pain_points: updated})
-                                      }}
-                                      placeholder="Pain point title..."
-                                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 text-sm"
-                                    />
-                                    <textarea
-                                      value={point.description || ''}
-                                      onChange={(e) => {
-                                        const updated = [...(landingPageData.pain_points || [])]
-                                        updated[index] = {...point, description: e.target.value}
-                                        setLandingPageData({...landingPageData, pain_points: updated})
-                                      }}
-                                      placeholder="Description..."
-                                      rows={3}
-                                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 text-sm resize-y break-words whitespace-pre-wrap"
-                                    />
-                                  </div>
-                                  <button
-                                    onClick={() => {
-                                      const updated = (landingPageData.pain_points || []).filter((_: any, i: number) => i !== index)
-                                      setLandingPageData({...landingPageData, pain_points: updated})
-                                    }}
-                                    className="text-red-400 hover:text-red-300 p-1"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Story Blocks */}
-                          <div>
-                            <div className="flex justify-between items-center mb-2">
-                              <label className="text-sm text-slate-400">Story Blocks</label>
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => setLandingPageData({
-                                    ...landingPageData,
-                                    story_blocks: [...(landingPageData.story_blocks || []), { type: 'text', content: '' }]
-                                  })}
-                                  className="text-sm text-rose-400 hover:text-rose-300 flex items-center gap-1"
-                                >
-                                  <Plus className="w-4 h-4" /> Text
-                                </button>
-                                <button
-                                  onClick={() => setLandingPageData({
-                                    ...landingPageData,
-                                    story_blocks: [...(landingPageData.story_blocks || []), { type: 'quote', content: '', author: '' }]
-                                  })}
-                                  className="text-sm text-rose-400 hover:text-rose-300 flex items-center gap-1"
-                                >
-                                  <Plus className="w-4 h-4" /> Quote
-                                </button>
-                              </div>
-                            </div>
-                            <div className="space-y-3">
-                              {(landingPageData.story_blocks || []).map((block: any, index: number) => (
-                                <div key={index} className="bg-slate-800/50 p-3 rounded-lg">
-                                  <div className="flex justify-between items-center mb-2">
-                                    <span className="text-xs text-slate-500 uppercase">{block.type}</span>
-                                    <button
-                                      onClick={() => {
-                                        const updated = (landingPageData.story_blocks || []).filter((_: any, i: number) => i !== index)
-                                        setLandingPageData({...landingPageData, story_blocks: updated})
-                                      }}
-                                      className="text-red-400 hover:text-red-300"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                  <textarea
-                                    value={block.content || ''}
-                                    onChange={(e) => {
-                                      const updated = [...(landingPageData.story_blocks || [])]
-                                      updated[index] = {...block, content: e.target.value}
-                                      setLandingPageData({...landingPageData, story_blocks: updated})
-                                    }}
-                                    placeholder={block.type === 'quote' ? 'Enter quote...' : 'Enter story text...'}
-                                    rows={4}
-                                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 text-sm resize-y break-words whitespace-pre-wrap"
-                                  />
-                                  {block.type === 'quote' && (
-                                    <input
-                                      type="text"
-                                      value={block.author || ''}
-                                      onChange={(e) => {
-                                        const updated = [...(landingPageData.story_blocks || [])]
-                                        updated[index] = {...block, author: e.target.value}
-                                        setLandingPageData({...landingPageData, story_blocks: updated})
-                                      }}
-                                      placeholder="- Author name"
-                                      className="w-full mt-2 px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 text-sm"
-                                    />
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* ═══════════════════════════════════════════════════════════════════ */}
-                    {/* SECTION 3: SOLUTION / HOW IT WORKS - Explain the idea */}
-                    {/* ═══════════════════════════════════════════════════════════════════ */}
-                    <div className="bg-gradient-to-r from-emerald-900/20 to-slate-800/50 rounded-lg border border-emerald-500/30">
-                      <button
-                        onClick={() => toggleSection('solution')}
-                        className="w-full flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors rounded-t-lg"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                            <Zap className="w-5 h-5 text-emerald-400" />
-                          </div>
-                          <div className="text-left">
-                            <h3 className="text-lg font-semibold text-emerald-400">3️⃣ Solution / How It Works</h3>
-                            <p className="text-xs text-slate-400">Explain the idea</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <label className="flex items-center gap-2 text-sm">
-                            <input
-                              type="checkbox"
-                              checked={landingPageData.solution_section_enabled || false}
-                              onChange={(e) => {
-                                e.stopPropagation()
-                                setLandingPageData({...landingPageData, solution_section_enabled: e.target.checked})
-                              }}
-                              className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-emerald-500 focus:ring-emerald-500"
-                            />
-                            <span className="text-slate-300">Enabled</span>
-                          </label>
-                          {collapsedSections.solution ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronUp className="w-5 h-5 text-slate-400" />}
-                        </div>
-                      </button>
-
-                      {!collapsedSections.solution && (
-                        <div className="p-6 pt-2 space-y-4 border-t border-slate-600/50">
-                          {/* Variant Selector */}
-                          <div>
-                            <label className="block text-sm text-slate-400 mb-2">Variant Style</label>
-                            <div className="flex gap-2">
-                              {['3-step', 'visual-cards', 'video-based'].map(variant => (
-                                <button
-                                  key={variant}
-                                  onClick={() => setLandingPageData({...landingPageData, solution_variant: variant})}
-                                  className={`px-3 py-1.5 text-sm rounded capitalize ${
-                                    (landingPageData.solution_variant || '3-step') === variant
-                                      ? 'bg-emerald-600 text-white'
-                                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                  }`}
-                                >
-                                  {variant}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Headline & Subheadline */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm text-slate-400 mb-1">Headline</label>
-                              <input
-                                type="text"
-                                value={landingPageData.solution_headline || ''}
-                                onChange={(e) => setLandingPageData({...landingPageData, solution_headline: e.target.value})}
-                                placeholder="e.g., How It Works"
-                                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm text-slate-400 mb-1">Subheadline</label>
-                              <input
-                                type="text"
-                                value={landingPageData.solution_subheadline || ''}
-                                onChange={(e) => setLandingPageData({...landingPageData, solution_subheadline: e.target.value})}
-                                placeholder="e.g., Simple 3-step process..."
-                                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Video URL (for video-based variant) */}
-                          {landingPageData.solution_variant === 'video-based' && (
-                            <div>
-                              <label className="block text-sm text-slate-400 mb-1">Video URL</label>
-                              <input
-                                type="text"
-                                value={landingPageData.solution_video_url || ''}
-                                onChange={(e) => setLandingPageData({...landingPageData, solution_video_url: e.target.value})}
-                                placeholder="https://youtube.com/... or video file URL"
-                                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500"
-                              />
-                            </div>
-                          )}
-
-                          {/* Solution Steps */}
-                          <div>
-                            <div className="flex justify-between items-center mb-2">
-                              <label className="text-sm text-slate-400">Steps</label>
-                              <button
-                                onClick={() => setLandingPageData({
-                                  ...landingPageData,
-                                  solution_steps: [...(landingPageData.solution_steps || []), {
-                                    step_number: (landingPageData.solution_steps || []).length + 1,
-                                    icon: '✨',
-                                    title: '',
-                                    description: ''
-                                  }]
-                                })}
-                                className="text-sm text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
-                              >
-                                <Plus className="w-4 h-4" /> Add Step
-                              </button>
-                            </div>
-                            <div className="space-y-3">
-                              {(landingPageData.solution_steps || []).map((step: any, index: number) => (
-                                <div key={index} className="flex gap-3 items-start bg-slate-800/50 p-3 rounded-lg">
-                                  <div className="flex flex-col items-center gap-1">
-                                    <span className="w-8 h-8 bg-emerald-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                                      {step.step_number || index + 1}
-                                    </span>
-                                    <input
-                                      type="text"
-                                      value={step.icon || ''}
-                                      onChange={(e) => {
-                                        const updated = [...(landingPageData.solution_steps || [])]
-                                        updated[index] = {...step, icon: e.target.value}
-                                        setLandingPageData({...landingPageData, solution_steps: updated})
-                                      }}
-                                      placeholder="✨"
-                                      className="w-10 px-1 py-1 bg-slate-700 border border-slate-600 rounded text-center text-lg"
-                                    />
-                                  </div>
-                                  <div className="flex-1 space-y-2">
-                                    <input
-                                      type="text"
-                                      value={step.title || ''}
-                                      onChange={(e) => {
-                                        const updated = [...(landingPageData.solution_steps || [])]
-                                        updated[index] = {...step, title: e.target.value}
-                                        setLandingPageData({...landingPageData, solution_steps: updated})
-                                      }}
-                                      placeholder="Step title..."
-                                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 text-sm font-medium"
-                                    />
-                                    <textarea
-                                      value={step.description || ''}
-                                      onChange={(e) => {
-                                        const updated = [...(landingPageData.solution_steps || [])]
-                                        updated[index] = {...step, description: e.target.value}
-                                        setLandingPageData({...landingPageData, solution_steps: updated})
-                                      }}
-                                      placeholder="Step description..."
-                                      rows={3}
-                                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 text-sm resize-y break-words whitespace-pre-wrap"
-                                    />
-                                  </div>
-                                  <button
-                                    onClick={() => {
-                                      const updated = (landingPageData.solution_steps || []).filter((_: any, i: number) => i !== index)
-                                      setLandingPageData({...landingPageData, solution_steps: updated})
-                                    }}
-                                    className="text-red-400 hover:text-red-300 p-1"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Solution Features */}
-                          <div>
-                            <div className="flex justify-between items-center mb-2">
-                              <label className="text-sm text-slate-400">Feature Highlights</label>
-                              <button
-                                onClick={() => setLandingPageData({
-                                  ...landingPageData,
-                                  solution_features: [...(landingPageData.solution_features || []), { icon: '⭐', title: '', description: '', benefits: [] }]
-                                })}
-                                className="text-sm text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
-                              >
-                                <Plus className="w-4 h-4" /> Add Feature
-                              </button>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                              {(landingPageData.solution_features || []).map((feature: any, index: number) => (
-                                <div key={index} className="bg-slate-800/50 p-3 rounded-lg">
-                                  <div className="flex justify-between items-start mb-2">
-                                    <input
-                                      type="text"
-                                      value={feature.icon || ''}
-                                      onChange={(e) => {
-                                        const updated = [...(landingPageData.solution_features || [])]
-                                        updated[index] = {...feature, icon: e.target.value}
-                                        setLandingPageData({...landingPageData, solution_features: updated})
-                                      }}
-                                      placeholder="⭐"
-                                      className="w-10 px-1 py-1 bg-slate-700 border border-slate-600 rounded text-center text-lg"
-                                    />
-                                    <button
-                                      onClick={() => {
-                                        const updated = (landingPageData.solution_features || []).filter((_: any, i: number) => i !== index)
-                                        setLandingPageData({...landingPageData, solution_features: updated})
-                                      }}
-                                      className="text-red-400 hover:text-red-300"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                  <input
-                                    type="text"
-                                    value={feature.title || ''}
-                                    onChange={(e) => {
-                                      const updated = [...(landingPageData.solution_features || [])]
-                                      updated[index] = {...feature, title: e.target.value}
-                                      setLandingPageData({...landingPageData, solution_features: updated})
-                                    }}
-                                    placeholder="Feature title..."
-                                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 text-sm mb-2"
-                                  />
-                                  <textarea
-                                    value={feature.description || ''}
-                                    onChange={(e) => {
-                                      const updated = [...(landingPageData.solution_features || [])]
-                                      updated[index] = {...feature, description: e.target.value}
-                                      setLandingPageData({...landingPageData, solution_features: updated})
-                                    }}
-                                    placeholder="Description..."
-                                    rows={3}
-                                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-500 text-sm resize-y break-words whitespace-pre-wrap"
-                                  />
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* ═══════════════════════════════════════════════════════════════════ */}
-                    {/* SECTION 4: PROOF / TRUST - Build credibility */}
-                    {/* ═══════════════════════════════════════════════════════════════════ */}
-                    <div className="bg-gradient-to-r from-blue-900/20 to-slate-800/50 rounded-lg border border-blue-500/30">
-                      <button
-                        onClick={() => toggleSection('proof')}
-                        className="w-full flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors rounded-t-lg"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                            <Shield className="w-5 h-5 text-blue-400" />
-                          </div>
-                          <div className="text-left">
-                            <h3 className="text-lg font-semibold text-blue-400">4️⃣ Proof / Trust</h3>
-                            <p className="text-xs text-slate-400">Build credibility</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <label className="flex items-center gap-2 text-sm">
-                            <input
-                              type="checkbox"
-                              checked={landingPageData.proof_section_enabled !== false}
-                              onChange={(e) => {
-                                e.stopPropagation()
-                                setLandingPageData({...landingPageData, proof_section_enabled: e.target.checked})
-                              }}
-                              className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-blue-500"
-                            />
-                            <span className="text-slate-300">Enabled</span>
-                          </label>
-                          {collapsedSections.proof ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronUp className="w-5 h-5 text-slate-400" />}
-                        </div>
-                      </button>
-
-                      {!collapsedSections.proof && (
-                        <div className="p-6 pt-2 space-y-4 border-t border-slate-600/50">
-                          {/* Variant Selector */}
-                          <div>
-                            <label className="block text-sm text-slate-400 mb-2">Primary Proof Type</label>
-                            <div className="flex gap-2">
-                              {['social', 'clinical', 'expert'].map(variant => (
-                                <button
-                                  key={variant}
-                                  onClick={() => setLandingPageData({...landingPageData, proof_variant: variant})}
-                                  className={`px-3 py-1.5 text-sm rounded capitalize ${
-                                    (landingPageData.proof_variant || 'social') === variant
-                                      ? 'bg-blue-600 text-white'
-                                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                  }`}
-                                >
-                                  {variant === 'social' ? 'Social Proof' : variant === 'clinical' ? 'Clinical Proof' : 'Expert Quotes'}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Sub-sections within Proof */}
-                          <div className="space-y-4">
-                            {/* Clinical Results - nested */}
-                            <div className="bg-slate-800/50 rounded-lg p-4">
-                              <div className="flex justify-between items-center mb-3">
-                                <h4 className="text-sm font-semibold text-blue-300">📊 Clinical Results</h4>
-                                <button
-                                  onClick={() => setLandingPageData({...landingPageData, clinical_results: [...(landingPageData.clinical_results || []), {value: '', label: ''}]})}
-                                  className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
-                                >
-                                  <Plus className="w-3 h-3" /> Add
-                                </button>
-                              </div>
-                              <div className="space-y-2">
-                                {(landingPageData.clinical_results || []).map((result: any, index: number) => (
-                                  <div key={index} className="flex gap-2 items-center">
-                                    <input
-                                      type="text"
-                                      value={result.value || ''}
-                                      onChange={(e) => {
-                                        const updated = [...landingPageData.clinical_results]
-                                        updated[index] = {...result, value: e.target.value}
-                                        setLandingPageData({...landingPageData, clinical_results: updated})
-                                      }}
-                                      placeholder="94%"
-                                      className="w-20 px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-white text-sm"
-                                    />
-                                    <input
-                                      type="text"
-                                      value={result.label || ''}
-                                      onChange={(e) => {
-                                        const updated = [...landingPageData.clinical_results]
-                                        updated[index] = {...result, label: e.target.value}
-                                        setLandingPageData({...landingPageData, clinical_results: updated})
-                                      }}
-                                      placeholder="saw improvement"
-                                      className="flex-1 px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-white text-sm"
-                                    />
-                                    <button
-                                      onClick={() => {
-                                        const updated = landingPageData.clinical_results.filter((_: any, i: number) => i !== index)
-                                        setLandingPageData({...landingPageData, clinical_results: updated})
-                                      }}
-                                      className="text-red-400 hover:text-red-300"
-                                    >
-                                      <Trash2 className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Expert Quotes - nested */}
-                            <div className="bg-slate-800/50 rounded-lg p-4">
-                              <div className="flex justify-between items-center mb-3">
-                                <h4 className="text-sm font-semibold text-blue-300">👨‍⚕️ Expert Quotes</h4>
-                                <button
-                                  onClick={() => setLandingPageData({...landingPageData, expert_quotes: [...(landingPageData.expert_quotes || []), {name: '', title: '', quote: ''}]})}
-                                  className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
-                                >
-                                  <Plus className="w-3 h-3" /> Add
-                                </button>
-                              </div>
-                              <div className="space-y-3">
-                                {(landingPageData.expert_quotes || []).map((expert: any, index: number) => (
-                                  <div key={index} className="bg-slate-700/50 p-3 rounded-lg">
-                                    <div className="flex gap-2 mb-2">
-                                      <input
-                                        type="text"
-                                        value={expert.name || ''}
-                                        onChange={(e) => {
-                                          const updated = [...(landingPageData.expert_quotes || [])]
-                                          updated[index] = {...expert, name: e.target.value}
-                                          setLandingPageData({...landingPageData, expert_quotes: updated})
-                                        }}
-                                        placeholder="Dr. Jane Smith"
-                                        className="flex-1 px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-white text-sm"
-                                      />
-                                      <input
-                                        type="text"
-                                        value={expert.title || ''}
-                                        onChange={(e) => {
-                                          const updated = [...(landingPageData.expert_quotes || [])]
-                                          updated[index] = {...expert, title: e.target.value}
-                                          setLandingPageData({...landingPageData, expert_quotes: updated})
-                                        }}
-                                        placeholder="Dermatologist"
-                                        className="flex-1 px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-white text-sm"
-                                      />
-                                      <button
-                                        onClick={() => {
-                                          const updated = (landingPageData.expert_quotes || []).filter((_: any, i: number) => i !== index)
-                                          setLandingPageData({...landingPageData, expert_quotes: updated})
-                                        }}
-                                        className="text-red-400 hover:text-red-300"
-                                      >
-                                        <Trash2 className="w-3 h-3" />
-                                      </button>
-                                    </div>
-                                    <textarea
-                                      value={expert.quote || ''}
-                                      onChange={(e) => {
-                                        const updated = [...(landingPageData.expert_quotes || [])]
-                                        updated[index] = {...expert, quote: e.target.value}
-                                        setLandingPageData({...landingPageData, expert_quotes: updated})
-                                      }}
-                                      placeholder="Expert quote..."
-                                      rows={3}
-                                      className="w-full px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-white text-sm resize-y break-words whitespace-pre-wrap"
-                                    />
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Partner Logos - nested */}
-                            <div className="bg-slate-800/50 rounded-lg p-4">
-                              <div className="flex justify-between items-center mb-3">
-                                <h4 className="text-sm font-semibold text-blue-300">🏢 Partner/Press Logos</h4>
-                                <button
-                                  onClick={() => setLandingPageData({...landingPageData, partner_logos: [...(landingPageData.partner_logos || []), {name: '', image_url: ''}]})}
-                                  className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
-                                >
-                                  <Plus className="w-3 h-3" /> Add
-                                </button>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2">
-                                {(landingPageData.partner_logos || []).map((logo: any, index: number) => (
-                                  <div key={index} className="flex gap-2 items-center">
-                                    <input
-                                      type="text"
-                                      value={logo.name || ''}
-                                      onChange={(e) => {
-                                        const updated = [...(landingPageData.partner_logos || [])]
-                                        updated[index] = {...logo, name: e.target.value}
-                                        setLandingPageData({...landingPageData, partner_logos: updated})
-                                      }}
-                                      placeholder="Partner name"
-                                      className="flex-1 px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-white text-sm"
-                                    />
-                                    <button
-                                      onClick={() => {
-                                        const updated = (landingPageData.partner_logos || []).filter((_: any, i: number) => i !== index)
-                                        setLandingPageData({...landingPageData, partner_logos: updated})
-                                      }}
-                                      className="text-red-400 hover:text-red-300"
-                                    >
-                                      <Trash2 className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Testimonials Section (under Proof) */}
-                    <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold text-violet-400">{t.testimonialsSection || 'Testimonials'}</h3>
-                        <button
-                          onClick={() => setLandingPageData({...landingPageData, testimonials: [...(landingPageData.testimonials || []), {name: '', age: '', text: '', rating: 5}]})}
-                          className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
-                        >
-                          <Plus className="w-4 h-4" /> {t.addTestimonial || 'Add Testimonial'}
-                        </button>
-                      </div>
-                      <div className="space-y-4">
-                        {(landingPageData.testimonials || []).map((testimonial: any, index: number) => (
-                          <div key={index} className="p-4 bg-slate-800 rounded-lg border border-slate-600">
-                            <div className="flex gap-3 mb-2">
-                              <input
-                                type="text"
-                                value={testimonial.name || ''}
-                                onChange={(e) => {
-                                  const updated = [...landingPageData.testimonials]
-                                  updated[index] = {...testimonial, name: e.target.value}
-                                  setLandingPageData({...landingPageData, testimonials: updated})
-                                }}
-                                placeholder={t.customerName || 'Customer Name'}
-                                className="w-32 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500"
-                              />
-                              <input
-                                type="text"
-                                value={testimonial.age || ''}
-                                onChange={(e) => {
-                                  const updated = [...landingPageData.testimonials]
-                                  updated[index] = {...testimonial, age: e.target.value}
-                                  setLandingPageData({...landingPageData, testimonials: updated})
-                                }}
-                                placeholder={t.customerAge || 'Age'}
-                                className="w-20 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500"
-                              />
-                              <button
-                                onClick={() => {
-                                  const updated = landingPageData.testimonials.filter((_: any, i: number) => i !== index)
-                                  setLandingPageData({...landingPageData, testimonials: updated})
-                                }}
-                                className="text-red-400 hover:text-red-300 ml-auto"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                            <textarea
-                              value={testimonial.text || ''}
-                              onChange={(e) => {
-                                const updated = [...landingPageData.testimonials]
-                                updated[index] = {...testimonial, text: e.target.value}
-                                setLandingPageData({...landingPageData, testimonials: updated})
-                              }}
-                              placeholder={t.testimonialText || 'Testimonial Text'}
-                              rows={3}
-                              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500 resize-y break-words whitespace-pre-wrap"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* FAQ Section */}
-                    <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold text-violet-400">{t.faqSection || 'FAQ Section'}</h3>
-                        <button
-                          onClick={() => setLandingPageData({...landingPageData, landing_faqs: [...(landingPageData.landing_faqs || []), {question: '', answer: ''}]})}
-                          className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
-                        >
-                          <Plus className="w-4 h-4" /> {t.addFaqItem || 'Add FAQ'}
-                        </button>
-                      </div>
-                      <div className="space-y-4">
-                        {(landingPageData.landing_faqs || []).map((faq: any, index: number) => (
-                          <div key={index} className="p-4 bg-slate-800 rounded-lg border border-slate-600">
-                            <div className="flex justify-between items-start mb-2">
-                              <input
-                                type="text"
-                                value={faq.question || ''}
-                                onChange={(e) => {
-                                  const updated = [...landingPageData.landing_faqs]
-                                  updated[index] = {...faq, question: e.target.value}
-                                  setLandingPageData({...landingPageData, landing_faqs: updated})
-                                }}
-                                placeholder="Question"
-                                className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm font-medium text-white placeholder-slate-500"
-                              />
-                              <button
-                                onClick={() => {
-                                  const updated = landingPageData.landing_faqs.filter((_: any, i: number) => i !== index)
-                                  setLandingPageData({...landingPageData, landing_faqs: updated})
-                                }}
-                                className="text-red-400 hover:text-red-300 ml-2"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                            <textarea
-                              value={faq.answer || ''}
-                              onChange={(e) => {
-                                const updated = [...landingPageData.landing_faqs]
-                                updated[index] = {...faq, answer: e.target.value}
-                                setLandingPageData({...landingPageData, landing_faqs: updated})
-                              }}
-                              placeholder="Answer"
-                              rows={3}
-                              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-sm text-white placeholder-slate-500 resize-y break-words whitespace-pre-wrap"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Trust Badges Section */}
-                    <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold text-violet-400">{t.trustBadges || 'Trust Badges'}</h3>
-                        <button
-                          onClick={() => setLandingPageData({...landingPageData, trust_badges: [...(landingPageData.trust_badges || []), {icon: '', label: ''}]})}
-                          className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
-                        >
-                          <Plus className="w-4 h-4" /> {t.addBadge || 'Add Badge'}
-                        </button>
-                      </div>
-                      <div className="space-y-3">
-                        {(landingPageData.trust_badges || []).map((badge: any, index: number) => (
-                          <div key={index} className="flex gap-3 items-center">
-                            <input
-                              type="text"
-                              value={badge.icon || ''}
-                              onChange={(e) => {
-                                const updated = [...landingPageData.trust_badges]
-                                updated[index] = {...badge, icon: e.target.value}
-                                setLandingPageData({...landingPageData, trust_badges: updated})
-                              }}
-                              placeholder={t.badgeIcon || 'Icon (emoji)'}
-                              className="w-16 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-center text-lg text-white placeholder-slate-500"
-                            />
-                            <input
-                              type="text"
-                              value={badge.label || ''}
-                              onChange={(e) => {
-                                const updated = [...landingPageData.trust_badges]
-                                updated[index] = {...badge, label: e.target.value}
-                                setLandingPageData({...landingPageData, trust_badges: updated})
-                              }}
-                              placeholder={t.badgeLabel || 'Label'}
-                              className="flex-1 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500"
-                            />
-                            <button
-                              onClick={() => {
-                                const updated = landingPageData.trust_badges.filter((_: any, i: number) => i !== index)
-                                setLandingPageData({...landingPageData, trust_badges: updated})
-                              }}
-                              className="text-red-400 hover:text-red-300"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* ═══════════════════════════════════════════════════════════════════ */}
-                    {/* SECTION 5: CTA / OFFER - Drive action */}
-                    {/* ═══════════════════════════════════════════════════════════════════ */}
-                    <div className="bg-gradient-to-r from-amber-900/20 to-slate-800/50 rounded-lg border border-amber-500/30">
-                      <button
-                        onClick={() => toggleSection('offer')}
-                        className="w-full flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors rounded-t-lg"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                            <ShoppingCart className="w-5 h-5 text-amber-400" />
-                          </div>
-                          <div className="text-left">
-                            <h3 className="text-lg font-semibold text-amber-400">5️⃣ CTA / Offer</h3>
-                            <p className="text-xs text-slate-400">Drive action</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <label className="flex items-center gap-2 text-sm">
-                            <input
-                              type="checkbox"
-                              checked={landingPageData.offer_section_enabled !== false}
-                              onChange={(e) => {
-                                e.stopPropagation()
-                                setLandingPageData({...landingPageData, offer_section_enabled: e.target.checked})
-                              }}
-                              className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-amber-500 focus:ring-amber-500"
-                            />
-                            <span className="text-slate-300">Enabled</span>
-                          </label>
-                          {collapsedSections.offer ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronUp className="w-5 h-5 text-slate-400" />}
-                        </div>
-                      </button>
-
-                      {!collapsedSections.offer && (
-                        <div className="p-6 pt-2 space-y-4 border-t border-slate-600/50">
-                          {/* Variant Selector */}
-                          <div>
-                            <label className="block text-sm text-slate-400 mb-2">CTA Type</label>
-                            <div className="flex gap-2">
-                              {['buy', 'book', 'quiz', 'contact'].map(variant => (
-                                <button
-                                  key={variant}
-                                  onClick={() => setLandingPageData({...landingPageData, offer_variant: variant})}
-                                  className={`px-3 py-1.5 text-sm rounded capitalize ${
-                                    (landingPageData.offer_variant || 'buy') === variant
-                                      ? 'bg-amber-600 text-white'
-                                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                  }`}
-                                >
-                                  {variant === 'buy' ? '🛒 Buy' : variant === 'book' ? '📅 Book' : variant === 'quiz' ? '📝 Quiz' : '📧 Contact'}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Headline & Subheadline */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm text-slate-400 mb-1">Offer Headline</label>
-                              <input
-                                type="text"
-                                value={landingPageData.offer_headline || ''}
-                                onChange={(e) => setLandingPageData({...landingPageData, offer_headline: e.target.value})}
-                                placeholder="e.g., Special Launch Offer"
-                                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm text-slate-400 mb-1">Offer Subheadline</label>
-                              <input
-                                type="text"
-                                value={landingPageData.offer_subheadline || ''}
-                                onChange={(e) => setLandingPageData({...landingPageData, offer_subheadline: e.target.value})}
-                                placeholder="e.g., Limited time only..."
-                                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500"
-                              />
-                            </div>
-                          </div>
-
-                          {/* CTA Button */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm text-slate-400 mb-1">CTA Button Text</label>
-                              <input
-                                type="text"
-                                value={landingPageData.offer_cta_text || ''}
-                                onChange={(e) => setLandingPageData({...landingPageData, offer_cta_text: e.target.value})}
-                                placeholder="e.g., Buy Now"
-                                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm text-slate-400 mb-1">CTA Button URL</label>
-                              <input
-                                type="text"
-                                value={landingPageData.offer_cta_url || ''}
-                                onChange={(e) => setLandingPageData({...landingPageData, offer_cta_url: e.target.value})}
-                                placeholder="e.g., #shop or /checkout"
-                                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Urgency & Guarantee */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm text-slate-400 mb-1">Urgency Text</label>
-                              <input
-                                type="text"
-                                value={landingPageData.offer_urgency_text || ''}
-                                onChange={(e) => setLandingPageData({...landingPageData, offer_urgency_text: e.target.value})}
-                                placeholder="e.g., Only 5 left in stock!"
-                                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm text-slate-400 mb-1">Guarantee Text</label>
-                              <input
-                                type="text"
-                                value={landingPageData.guarantee_text || ''}
-                                onChange={(e) => setLandingPageData({...landingPageData, guarantee_text: e.target.value})}
-                                placeholder="e.g., 30-Day Money Back Guarantee"
-                                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Pricing Section (nested) */}
-                          <div className="bg-slate-800/50 rounded-lg p-4">
-                            <div className="flex justify-between items-center mb-3">
-                              <h4 className="text-sm font-semibold text-amber-300">💰 Pricing Options</h4>
-                              <button
-                                onClick={() => setLandingPageData({
-                                  ...landingPageData,
-                                  pricing_options: [...(landingPageData.pricing_options || []), {
-                                    id: `option-${Date.now()}`,
-                                    label: '',
-                                    originalPrice: 0,
-                                    salePrice: 0,
-                                    discount: 0,
-                                    popular: false
-                                  }]
-                                })}
-                                className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300"
-                              >
-                                <Plus className="w-3 h-3" /> Add Option
-                              </button>
-                            </div>
-                            <div className="space-y-3">
-                              {(landingPageData.pricing_options || []).map((option: any, index: number) => (
-                                <div key={index} className="bg-slate-700/50 p-3 rounded-lg">
-                                  <div className="flex gap-2 items-center mb-2">
-                                    <input
-                                      type="text"
-                                      value={option.label || ''}
-                                      onChange={(e) => {
-                                        const updated = [...(landingPageData.pricing_options || [])]
-                                        updated[index] = {...option, label: e.target.value}
-                                        setLandingPageData({...landingPageData, pricing_options: updated})
-                                      }}
-                                      placeholder="Package name"
-                                      className="flex-1 px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-white text-sm"
-                                    />
-                                    <label className="flex items-center gap-1 text-xs text-slate-300">
-                                      <input
-                                        type="checkbox"
-                                        checked={option.popular || false}
-                                        onChange={(e) => {
-                                          const updated = [...(landingPageData.pricing_options || [])]
-                                          updated[index] = {...option, popular: e.target.checked}
-                                          setLandingPageData({...landingPageData, pricing_options: updated})
-                                        }}
-                                        className="w-3 h-3"
-                                      />
-                                      Popular
-                                    </label>
-                                    <button
-                                      onClick={() => {
-                                        const updated = (landingPageData.pricing_options || []).filter((_: any, i: number) => i !== index)
-                                        setLandingPageData({...landingPageData, pricing_options: updated})
-                                      }}
-                                      className="text-red-400 hover:text-red-300"
-                                    >
-                                      <Trash2 className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                  <div className="grid grid-cols-3 gap-2">
-                                    <div>
-                                      <label className="block text-xs text-slate-500 mb-1">Original $</label>
-                                      <input
-                                        type="number"
-                                        value={option.originalPrice || 0}
-                                        onChange={(e) => {
-                                          const updated = [...(landingPageData.pricing_options || [])]
-                                          const original = parseFloat(e.target.value) || 0
-                                          const sale = option.salePrice || 0
-                                          const discount = original > 0 ? Math.round((1 - sale / original) * 100) : 0
-                                          updated[index] = {...option, originalPrice: original, discount}
-                                          setLandingPageData({...landingPageData, pricing_options: updated})
-                                        }}
-                                        className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white text-sm"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="block text-xs text-slate-500 mb-1">Sale $</label>
-                                      <input
-                                        type="number"
-                                        value={option.salePrice || 0}
-                                        onChange={(e) => {
-                                          const updated = [...(landingPageData.pricing_options || [])]
-                                          const sale = parseFloat(e.target.value) || 0
-                                          const original = option.originalPrice || 0
-                                          const discount = original > 0 ? Math.round((1 - sale / original) * 100) : 0
-                                          updated[index] = {...option, salePrice: sale, discount}
-                                          setLandingPageData({...landingPageData, pricing_options: updated})
-                                        }}
-                                        className="w-full px-2 py-1 bg-slate-700 border border-slate-600 rounded text-white text-sm"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="block text-xs text-slate-500 mb-1">Discount %</label>
-                                      <input
-                                        type="number"
-                                        value={option.discount || 0}
-                                        readOnly
-                                        className="w-full px-2 py-1 bg-slate-600 border border-slate-600 rounded text-slate-300 text-sm"
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Sold Indicator */}
-                          <div className="flex items-center gap-4">
-                            <label className="flex items-center gap-2 text-sm">
-                              <input
-                                type="checkbox"
-                                checked={landingPageData.show_sold_indicator || false}
-                                onChange={(e) => setLandingPageData({...landingPageData, show_sold_indicator: e.target.checked})}
-                                className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-amber-500"
-                              />
-                              <span className="text-slate-300">Show Sold Indicator</span>
-                            </label>
-                            {landingPageData.show_sold_indicator && (
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="100"
-                                  value={landingPageData.sold_percentage || 0}
-                                  onChange={(e) => setLandingPageData({...landingPageData, sold_percentage: parseInt(e.target.value) || 0})}
-                                  className="w-16 px-2 py-1 bg-slate-800 border border-slate-600 rounded text-white text-sm"
-                                />
-                                <span className="text-slate-400 text-sm">% Sold</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Theme Colors & Footer */}
-                    <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
-                      <h3 className="text-lg font-semibold mb-4 text-violet-400">{t.themeColors || 'Theme Colors'}</h3>
-                      <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                          <label className="block text-sm font-medium mb-1 text-slate-300">{t.primaryColor || 'Primary Color'}</label>
-                          <div className="flex gap-2">
-                            <input
-                              type="color"
-                              value={landingPageData.primary_color || '#4A90D9'}
-                              onChange={(e) => setLandingPageData({...landingPageData, primary_color: e.target.value})}
-                              className="w-12 h-10 border border-slate-600 rounded cursor-pointer bg-transparent"
-                            />
-                            <input
-                              type="text"
-                              value={landingPageData.primary_color || '#4A90D9'}
-                              onChange={(e) => setLandingPageData({...landingPageData, primary_color: e.target.value})}
-                              className="flex-1 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-1 text-slate-300">{t.secondaryColor || 'Secondary Color'}</label>
-                          <div className="flex gap-2">
-                            <input
-                              type="color"
-                              value={landingPageData.secondary_color || '#0D1B2A'}
-                              onChange={(e) => setLandingPageData({...landingPageData, secondary_color: e.target.value})}
-                              className="w-12 h-10 border border-slate-600 rounded cursor-pointer bg-transparent"
-                            />
-                            <input
-                              type="text"
-                              value={landingPageData.secondary_color || '#0D1B2A'}
-                              onChange={(e) => setLandingPageData({...landingPageData, secondary_color: e.target.value})}
-                              className="flex-1 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1 text-slate-300">{t.footerDisclaimer || 'Footer Disclaimer'}</label>
-                        <textarea
-                          value={landingPageData.footer_disclaimer || ''}
-                          onChange={(e) => setLandingPageData({...landingPageData, footer_disclaimer: e.target.value})}
-                          rows={2}
-                          className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    {/* Added Blocks */}
+                    {landingPageData.blocks && landingPageData.blocks.length > 0 && (
+                      <>
+                        <BlockManager
+                          blocks={landingPageData.blocks}
+                          onChange={handleBlocksChange}
+                          businessUnitId={businessUnitId}
                         />
-                      </div>
-                    </div>
+                      </>
+                    )}
 
                     {/* Policies Section (Footnote) */}
                     <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
