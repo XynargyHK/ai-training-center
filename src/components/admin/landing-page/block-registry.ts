@@ -183,6 +183,30 @@ export const BLOCK_TYPES: Record<string, BlockTypeConfig> = {
         }
       ]
     }
+  },
+
+  steps: {
+    type: 'steps',
+    label: 'Steps / How To',
+    icon: '📝',
+    description: 'Step-by-step instructions with images - perfect for tutorials',
+    category: 'content',
+    defaultData: {
+      heading: 'HOW TO USE',
+      heading_font_size: '2.5rem',
+      heading_font_family: 'Josefin Sans',
+      heading_color: '#000000',
+      background_color: '#ffffff',
+      overall_layout: 'vertical',
+      steps: [
+        {
+          image_url: '',
+          video_url: '',
+          text_content: 'Step 1 instructions go here...',
+          text_position: 'right'
+        }
+      ]
+    }
   }
 }
 

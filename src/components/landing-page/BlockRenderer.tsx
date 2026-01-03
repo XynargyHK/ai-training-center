@@ -5,6 +5,7 @@ import SplitBlock from './blocks/SplitBlock'
 import PricingBlock from './blocks/PricingBlock'
 import TestimonialsBlock from './blocks/TestimonialsBlock'
 import AccordionBlock from './blocks/AccordionBlock'
+import StepsBlock from './blocks/StepsBlock'
 
 interface BlockRendererProps {
   blocks: LandingPageBlock[]
@@ -49,6 +50,9 @@ export default function BlockRenderer({ blocks }: BlockRendererProps) {
 
           case 'accordion':
             return <AccordionBlock key={block.id} data={block.data as any} />
+
+          case 'steps':
+            return <StepsBlock key={block.id} data={block.data as any} />
 
           default:
             // Silently skip unknown block types (legacy blocks or removed types)

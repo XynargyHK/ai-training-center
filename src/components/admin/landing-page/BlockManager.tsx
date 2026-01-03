@@ -12,6 +12,7 @@ import CardBlockEditor from './blocks/CardBlockEditor'
 import AccordionBlockEditor from './blocks/AccordionBlockEditor'
 import PricingBlockEditor from './blocks/PricingBlockEditor'
 import TestimonialsBlockEditor from './blocks/TestimonialsBlockEditor'
+import StepsBlockEditor from './blocks/StepsBlockEditor'
 
 interface BlockManagerProps {
   blocks: LandingPageBlock[]
@@ -99,6 +100,15 @@ export default function BlockManager({ blocks, onChange, businessUnitId }: Block
       case 'testimonials':
         return (
           <TestimonialsBlockEditor
+            block={block}
+            onUpdate={(updatedBlock) => handleUpdateBlock(index, updatedBlock)}
+            businessUnitId={businessUnitId}
+          />
+        )
+
+      case 'steps':
+        return (
+          <StepsBlockEditor
             block={block}
             onUpdate={(updatedBlock) => handleUpdateBlock(index, updatedBlock)}
             businessUnitId={businessUnitId}
