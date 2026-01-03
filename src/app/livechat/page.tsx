@@ -1291,7 +1291,10 @@ function LandingPageContent() {
         </section>
       )}
 
-      {/* Cart Sidebar */}
+        </>
+      )}
+
+      {/* Cart Sidebar - Always render regardless of blocks */}
       {showCartSidebar && (
         <div className="fixed inset-0 z-50 bg-black/50" onClick={() => setShowCartSidebar(false)}>
           <div
@@ -1381,9 +1384,6 @@ function LandingPageContent() {
             )}
           </div>
         </div>
-      )}
-
-        </>
       )}
 
       {/* Checkout Modal - Always render regardless of blocks */}
