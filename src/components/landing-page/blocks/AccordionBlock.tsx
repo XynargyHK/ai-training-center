@@ -1,0 +1,100 @@
+'use client'
+
+import { useState } from 'react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
+import { getFontClass } from '@/lib/fonts'
+
+interface AccordionItem {
+  title: string
+  content: string
+}
+
+interface AccordionBlockData {
+  heading?: string
+  heading_font_size?: string
+  heading_font_family?: string
+  heading_color?: string
+  items: AccordionItem[]
+  background_color?: string
+}
+
+interface AccordionBlockProps {
+  data: AccordionBlockData
+}
+
+export default function AccordionBlock({ data }: AccordionBlockProps) {
+  const {
+    heading = 'Frequently Asked Questions',
+    heading_font_size = '2.5rem',
+    heading_font_family = 'Josefin Sans',
+    heading_color = '#000000',
+    items = [],
+    background_color = '#ffffff'
+  } = data
+
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
+
+  const toggleItem = (index: number) => {
+    setExpandedIndex(expandedIndex === index ? null : index)
+  }
+
+  if (!items || items.length === 0) {
+    return null
+  }
+
+  return (
+    <section
+      className="py-16 px-4"
+      style={{ backgroundColor: background_color }}
+    >
+      <div className="max-w-4xl mx-auto">
+        {/* Heading */}
+        {heading && (
+          <h2
+            className={`text-center font-light tracking-[0.2em] uppercase leading-tight mb-12 ${getFontClass(heading_font_family)}`}
+            style={{
+              fontSize: heading_font_size,
+              color: heading_color
+            }}
+          >
+            {heading}
+          </h2>
+        )}
+
+        {/* Accordion Items */}
+        <div className="space-y-3">
+          {items.map((item, index) => (
+            <div
+              key={index}
+              className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow"
+            >
+              <button
+                onClick={() => toggleItem(index)}
+                className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
+              >
+                <span className={`font-semibold text-gray-900 pr-4 ${getFontClass('Josefin Sans')}`}>
+                  {item.title}
+                </span>
+                <span className="flex-shrink-0">
+                  {expandedIndex === index ? (
+                    <ChevronUp className="w-5 h-5 text-gray-600" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-gray-600" />
+                  )}
+                </span>
+              </button>
+
+              {expandedIndex === index && (
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                  <p className={`text-gray-700 leading-relaxed whitespace-pre-wrap ${getFontClass('Cormorant Garamond')}`}>
+                    {item.content}
+                  </p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
