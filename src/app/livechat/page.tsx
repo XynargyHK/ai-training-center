@@ -1457,7 +1457,10 @@ function LandingPageContent() {
         </div>
       )}
 
-      {/* Checkout Modal */}
+        </>
+      )}
+
+      {/* Checkout Modal - Always render regardless of blocks */}
       <CheckoutModal
         isOpen={showCheckoutModal}
         onClose={() => setShowCheckoutModal(false)}
@@ -1468,15 +1471,13 @@ function LandingPageContent() {
         bodyFont={bodyFont}
       />
 
-      {/* AI Coach Floating Button */}
+      {/* AI Coach Floating Button - Always render regardless of blocks */}
       {aiStaffList.length > 0 && (
         <AICoach
           businessUnit={businessUnitParam}
           aiStaffList={aiStaffList}
           initialOpen={false}
         />
-      )}
-        </>
       )}
 
       {/* Footer */}
