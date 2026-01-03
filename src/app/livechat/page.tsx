@@ -1,76 +1,13 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { Star, Check, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ShoppingCart, Sparkles, Shield, Truck, RotateCcw, Menu, X, User, MessageCircle, Search } from 'lucide-react'
+import { Star, Check, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ShoppingCart, Sparkles, Shield, Truck, RotateCcw, Menu, X, User, Search, Trash2 } from 'lucide-react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
-import { Cormorant_Garamond, Josefin_Sans, Playfair_Display, Montserrat, Inter, Lora, Raleway, Open_Sans } from 'next/font/google'
-
-// Elegant serif font for body text and logo
-const serifFont = Cormorant_Garamond({
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600'],
-  display: 'swap',
-})
-
-// Elegant geometric sans-serif for headlines (Chanel-like)
-const headlineFont = Josefin_Sans({
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600'],
-  display: 'swap',
-})
-
-// Additional popular fonts
-const playfairFont = Playfair_Display({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  display: 'swap',
-})
-
-const montserratFont = Montserrat({
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
-  display: 'swap',
-})
-
-const interFont = Inter({
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
-  display: 'swap',
-})
-
-const loraFont = Lora({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  display: 'swap',
-})
-
-const ralewayFont = Raleway({
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
-  display: 'swap',
-})
-
-const openSansFont = Open_Sans({
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
-  display: 'swap',
-})
-
-// Font mapping helper
-const getFontClass = (fontFamily?: string) => {
-  switch (fontFamily) {
-    case 'Playfair Display': return playfairFont.className
-    case 'Montserrat': return montserratFont.className
-    case 'Inter': return interFont.className
-    case 'Lora': return loraFont.className
-    case 'Raleway': return ralewayFont.className
-    case 'Open Sans': return openSansFont.className
-    case 'Josefin Sans': return headlineFont.className
-    case 'Cormorant Garamond': return serifFont.className
-    default: return headlineFont.className
-  }
-}
+import { useSearchParams, useRouter } from 'next/navigation'
+import { serifFont, headlineFont, getFontClass } from '@/lib/fonts'
+import BlockRenderer from '@/components/landing-page/BlockRenderer'
+import CheckoutModal from '@/components/shop/checkout-modal'
+import AICoach from '@/components/ui/ai-coach'
 
 interface BusinessUnit {
   id: string
@@ -84,21 +21,61 @@ interface MenuItem {
   enabled: boolean
 }
 
+interface PricingPlan {
+  title: string
+  original_price: number
+  discounted_price: number
+  popular?: boolean
+  product_id?: string // Link to actual product in database
+}
+
 interface HeroSlide {
   headline: string
   subheadline: string
   content?: string
   background_url: string
   background_type: 'image' | 'video'
+  background_color?: string // Fallback background color when no image/video
   cta_text: string
   cta_url: string
   text_align?: 'left' | 'center' | 'right'
+  is_carousel?: boolean // If true, show in carousel; if false, show as static banner below
   headline_font_size?: string
   headline_font_family?: string
   subheadline_font_size?: string
   subheadline_font_family?: string
   content_font_size?: string
   content_font_family?: string
+  // Price Banner fields
+  is_price_banner?: boolean // If true, render as pricing table
+  features?: string[] // Product features (uses content field styling)
+  plans?: PricingPlan[] // Pricing plans
+  currency_symbol?: string
+  plan_heading?: string // "Choose Your Plan" heading
+  plan_heading_font_size?: string
+  plan_heading_font_family?: string
+  plan_heading_color?: string
+  // Price display styling
+  price_font_size?: string
+  price_font_family?: string
+  price_color?: string
+  // Plan title styling (radio button labels)
+  plan_title_font_size?: string
+  plan_title_font_family?: string
+  plan_title_color?: string
+  // Additional text styling fields for price banner
+  headline_color?: string
+  headline_bold?: boolean
+  headline_italic?: boolean
+  headline_text_align?: 'left' | 'center' | 'right'
+  subheadline_color?: string
+  subheadline_bold?: boolean
+  subheadline_italic?: boolean
+  subheadline_text_align?: 'left' | 'center' | 'right'
+  content_color?: string
+  content_bold?: boolean
+  content_italic?: boolean
+  content_text_align?: 'left' | 'center' | 'right'
 }
 
 interface LandingPageData {
@@ -164,9 +141,232 @@ interface LandingPageData {
   secondary_color?: string
 }
 
+// Price Banner Component
+function PriceBannerContent({ slide, onAddToCart }: { slide: HeroSlide; onAddToCart: (product: any) => void }) {
+  const searchParams = useSearchParams()
+  const businessUnitParam = searchParams.get('businessUnit') || ''
+  const [selectedPlanIndex, setSelectedPlanIndex] = useState(0)
+
+  const plans = slide.plans || []
+  const features = slide.features || []
+  const selectedPlan = plans[selectedPlanIndex] || plans[0] || {
+    title: '',
+    original_price: 0,
+    discounted_price: 0
+  }
+
+  // Calculate discount percentage
+  const discountPercentage = selectedPlan.original_price > 0
+    ? Math.round(((selectedPlan.original_price - selectedPlan.discounted_price) / selectedPlan.original_price) * 100)
+    : 0
+
+  const currencySymbol = slide.currency_symbol || '$'
+
+  // Add selected plan to cart
+  const handleAddToCart = async () => {
+    let planProduct
+
+    // If plan has product_id, fetch actual product data
+    if (selectedPlan.product_id) {
+      try {
+        const response = await fetch(`/api/shop/products?businessUnit=${businessUnitParam}`)
+        const data = await response.json()
+        const product = data.products?.find((p: any) => p.id === selectedPlan.product_id)
+
+        if (product) {
+          planProduct = {
+            id: product.id,
+            title: product.title,
+            description: product.description || '',
+            cost_price: selectedPlan.discounted_price, // Use plan pricing
+            compare_at_price: selectedPlan.original_price,
+            thumbnail: product.thumbnail || '',
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching product:', error)
+      }
+    }
+
+    // Fallback: Create a product object from the selected plan
+    if (!planProduct) {
+      planProduct = {
+        id: `plan-${selectedPlanIndex}`,
+        title: selectedPlan.title,
+        description: slide.features?.join(', ') || '',
+        cost_price: selectedPlan.discounted_price,
+        compare_at_price: selectedPlan.original_price,
+        thumbnail: slide.background_url || '',
+      }
+    }
+
+    onAddToCart(planProduct)
+  }
+
+  return (
+    <div className="px-4 md:px-12 max-w-2xl w-full">
+      {/* Product Name (Headline) */}
+      {slide.headline && (
+        <h2
+          className={`text-center font-light tracking-[0.2em] uppercase leading-tight mb-6 ${getFontClass(slide.headline_font_family)}`}
+          style={{
+            fontSize: slide.headline_font_size || 'clamp(1.875rem, 5vw, 2.5rem)',
+            color: slide.headline_color || '#000000',
+            fontWeight: slide.headline_bold ? 'bold' : undefined,
+            fontStyle: slide.headline_italic ? 'italic' : undefined
+          }}
+        >
+          {slide.headline}
+        </h2>
+      )}
+
+      {/* Pricing Display - Discounted LEFT, Original RIGHT */}
+      <div className="flex items-center justify-center gap-4 mb-6">
+        {/* Discounted Price */}
+        <div
+          className={`font-bold ${getFontClass(slide.price_font_family)}`}
+          style={{
+            fontSize: slide.price_font_size || '2.5rem',
+            color: slide.price_color || slide.headline_color || '#000000'
+          }}
+        >
+          {currencySymbol}{selectedPlan.discounted_price}
+        </div>
+
+        {/* Original Price (Strikethrough) */}
+        {selectedPlan.original_price > selectedPlan.discounted_price && (
+          <div
+            className={`line-through ${getFontClass(slide.price_font_family)}`}
+            style={{
+              fontSize: slide.price_font_size ? `calc(${slide.price_font_size} * 0.6)` : '1.5rem',
+              color: slide.subheadline_color || '#6b7280'
+            }}
+          >
+            {currencySymbol}{selectedPlan.original_price}
+          </div>
+        )}
+      </div>
+
+      {/* Features (using Content styling) */}
+      {features.length > 0 && (
+        <ul className="space-y-2 mb-8 max-w-md mx-auto">
+          {features.map((feature, index) => (
+            <li key={index} className="flex items-start gap-2">
+              <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+              <span
+                className={`font-light ${getFontClass(slide.content_font_family)}`}
+                style={{
+                  fontSize: slide.content_font_size || 'clamp(1rem, 2vw, 1.125rem)',
+                  color: slide.content_color || '#374151',
+                  fontWeight: slide.content_bold ? 'bold' : undefined,
+                  fontStyle: slide.content_italic ? 'italic' : undefined
+                }}
+              >
+                {feature}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* Plan Heading (Subheadline styling) */}
+      {slide.plan_heading && (
+        <h3
+          className={`text-center font-light tracking-[0.15em] uppercase mb-4 ${getFontClass(slide.plan_heading_font_family || slide.subheadline_font_family)}`}
+          style={{
+            fontSize: slide.plan_heading_font_size || slide.subheadline_font_size || 'clamp(1.125rem, 2.5vw, 1.25rem)',
+            color: slide.plan_heading_color || slide.subheadline_color || '#000000',
+          }}
+        >
+          {slide.plan_heading}
+        </h3>
+      )}
+
+      {/* Plan Options - Radio Buttons */}
+      {plans.length > 0 && (
+        <div className="space-y-3 mb-6">
+          {plans.map((plan, index) => (
+            <label
+              key={index}
+              className={`relative flex items-center gap-3 p-4 border-2 cursor-pointer transition-all ${
+                selectedPlanIndex === index
+                  ? 'border-black bg-gray-100'
+                  : 'border-gray-200 bg-white hover:border-gray-300'
+              }`}
+              onClick={() => setSelectedPlanIndex(index)}
+            >
+              {/* Most Popular Badge */}
+              {plan.popular && (
+                <div className={`absolute -top-2.5 right-4 bg-black text-white text-xs px-3 py-1 rounded-full font-semibold tracking-wider ${getFontClass(slide.subheadline_font_family)}`}>
+                  MOST POPULAR
+                </div>
+              )}
+
+              {/* Radio Button */}
+              <input
+                type="radio"
+                name="pricing-plan"
+                checked={selectedPlanIndex === index}
+                onChange={() => setSelectedPlanIndex(index)}
+                className="w-5 h-5 text-violet-600 focus:ring-violet-500"
+              />
+
+              {/* Plan Title */}
+              <span
+                className={`flex-1 font-medium ${getFontClass(slide.plan_title_font_family)}`}
+                style={{
+                  fontSize: slide.plan_title_font_size || '1rem',
+                  color: slide.plan_title_color || slide.content_color || '#1f2937'
+                }}
+              >
+                {plan.title}
+              </span>
+            </label>
+          ))}
+        </div>
+      )}
+
+      {/* CTA Button with Auto-Calculated Discount */}
+      {slide.cta_text && (
+        <div className="text-center">
+          <button
+            onClick={handleAddToCart}
+            className={`px-8 py-4 bg-black hover:bg-gray-800 text-white font-bold text-lg transition-colors shadow-lg tracking-wider uppercase ${getFontClass(slide.headline_font_family)}`}
+          >
+            {slide.cta_text} {discountPercentage > 0 && `${discountPercentage}%`}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface CartItem {
+  product: {
+    id: string
+    title: string
+    description?: string
+    cost_price?: number
+    compare_at_price?: number
+    thumbnail?: string
+  }
+  quantity: number
+}
+
+interface AIStaff {
+  id: string
+  name: string
+  role: 'coach' | 'sales' | 'customer-service' | 'scientist'
+  createdAt: Date
+  trainingMemory: {[key: string]: string[]}
+  totalSessions: number
+}
+
 function LandingPageContent() {
   const searchParams = useSearchParams()
   const businessUnitParam = searchParams.get('businessUnit') || ''
+  const countryParam = searchParams.get('country') || 'US'
+  const langParam = searchParams.get('lang') || searchParams.get('language') || 'en'
 
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [selectedPricing, setSelectedPricing] = useState<string>('')
@@ -176,6 +376,14 @@ function LandingPageContent() {
   const [loading, setLoading] = useState(true)
   const [hasLandingPage, setHasLandingPage] = useState(false)
 
+  // Cart state
+  const [cart, setCart] = useState<CartItem[]>([])
+  const [showCartSidebar, setShowCartSidebar] = useState(false)
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false)
+
+  // AI Staff state
+  const [aiStaffList, setAiStaffList] = useState<AIStaff[]>([])
+
   // Announcement rotation state
   const [currentAnnouncementIndex, setCurrentAnnouncementIndex] = useState(0)
   const [isAnimating, setIsAnimating] = useState(false)
@@ -183,14 +391,36 @@ function LandingPageContent() {
   // Hero carousel state
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0)
 
+  // Load cart from localStorage
+  useEffect(() => {
+    if (!businessUnitParam) return
+    const savedCart = localStorage.getItem(`shop_cart_${businessUnitParam}`)
+    if (savedCart) {
+      try {
+        setCart(JSON.parse(savedCart))
+      } catch (e) {
+        console.error('Error loading cart:', e)
+      }
+    }
+  }, [businessUnitParam])
+
+  // Save cart to localStorage
+  useEffect(() => {
+    if (businessUnitParam) {
+      localStorage.setItem(`shop_cart_${businessUnitParam}`, JSON.stringify(cart))
+    }
+  }, [cart, businessUnitParam])
+
   // Auto-scroll hero carousel every 5 seconds
   useEffect(() => {
     const heroSlides = landingPage?.hero_slides || []
-    if (heroSlides.length <= 1) return
+    // Only auto-scroll carousel slides
+    const carouselSlides = heroSlides.filter(slide => slide.is_carousel !== false)
+    if (carouselSlides.length <= 1) return
 
     const interval = setInterval(() => {
       setCurrentHeroSlide((prev) =>
-        prev >= heroSlides.length - 1 ? 0 : prev + 1
+        prev >= carouselSlides.length - 1 ? 0 : prev + 1
       )
     }, 5000)
 
@@ -206,13 +436,17 @@ function LandingPageContent() {
       }
 
       try {
-        const response = await fetch(`/api/landing-page?businessUnit=${businessUnitParam}`)
+        const apiUrl = `/api/landing-page?businessUnit=${businessUnitParam}&country=${countryParam}&language=${langParam}`
+        console.log('[LiveChat Preview] Fetching from:', apiUrl)
+        const response = await fetch(apiUrl)
         const data = await response.json()
 
         if (data.businessUnit) {
           setBusinessUnit(data.businessUnit)
         }
         if (data.landingPage) {
+          console.log('[LiveChat Preview] Loaded landing page data')
+          console.log('[LiveChat Preview] Blocks count:', data.landingPage.blocks?.length || 0)
           setLandingPage(data.landingPage)
           setHasLandingPage(true)
           // Set initial pricing selection
@@ -228,6 +462,24 @@ function LandingPageContent() {
       }
     }
     loadLandingPage()
+  }, [businessUnitParam, countryParam, langParam])
+
+  // Load AI Staff
+  useEffect(() => {
+    async function loadAIData() {
+      if (!businessUnitParam) return
+
+      try {
+        const { loadAIStaff } = await import('@/lib/api-client')
+        const staff = await loadAIStaff(businessUnitParam)
+        if (staff && staff.length > 0) {
+          setAiStaffList(staff)
+        }
+      } catch (error) {
+        console.error('Failed to load AI staff:', error)
+      }
+    }
+    loadAIData()
   }, [businessUnitParam])
 
   // Rotate announcements every 5 seconds
@@ -286,8 +538,50 @@ function LandingPageContent() {
   const accountUrl = landingPage?.account_url || '/account'
   const cartUrl = landingPage?.cart_url || '/cart'
 
+  // Cart functions
+  const addToCart = (product: any) => {
+    setCart(prev => {
+      const existingIndex = prev.findIndex(item => item.product.id === product.id)
+      if (existingIndex >= 0) {
+        const updated = [...prev]
+        updated[existingIndex].quantity += 1
+        return updated
+      }
+      return [...prev, { product, quantity: 1 }]
+    })
+    setShowCartSidebar(true)
+  }
+
+  const removeFromCart = (productId: string) => {
+    setCart(prev => prev.filter(item => item.product.id !== productId))
+  }
+
+  const updateQuantity = (productId: string, quantity: number) => {
+    setCart(prev =>
+      prev.map(item =>
+        item.product.id === productId ? { ...item, quantity } : item
+      )
+    )
+  }
+
+  const handleCheckoutSuccess = (orderId: string) => {
+    // Clear cart
+    setCart([])
+    // Close modals
+    setShowCheckoutModal(false)
+    setShowCartSidebar(false)
+  }
+
+  const cartTotal = cart.reduce((sum, item) => sum + ((item.product.cost_price || 0) * item.quantity), 0)
+  const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0)
+
   const primaryColor = landingPage?.primary_color || '#4A90D9'
   const secondaryColor = landingPage?.secondary_color || '#0D1B2A'
+
+  // Get font settings from landing page (use first hero slide as reference)
+  const heroSlide = landingPage?.hero_slides?.[0]
+  const headingFont = heroSlide?.headline_font_family || 'Josefin Sans'
+  const bodyFont = heroSlide?.subheadline_font_family || 'Cormorant Garamond'
 
   if (loading) {
     return (
@@ -433,12 +727,17 @@ function LandingPageContent() {
 
               {/* Cart */}
               {showCart && (
-                <Link href={buildUrl(cartUrl)} className="relative p-2 text-black hover:opacity-80 transition-colors">
+                <button
+                  onClick={() => setShowCartSidebar(true)}
+                  className="relative p-2 text-black hover:opacity-80 transition-colors"
+                >
                   <ShoppingCart className="w-5 h-5" />
-                  <span className="absolute -top-1 -right-1 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: primaryColor }}>
-                    0
-                  </span>
-                </Link>
+                  {cartItemCount > 0 && (
+                    <span className="absolute -top-1 -right-1 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: primaryColor }}>
+                      {cartItemCount}
+                    </span>
+                  )}
+                </button>
               )}
 
               {/* Mobile menu button on right (if logo_position is 'left') */}
@@ -486,8 +785,14 @@ function LandingPageContent() {
 
       {/* Hero Section - Carousel */}
       {(landingPage.hero_slides && landingPage.hero_slides.length > 0) && (() => {
-          const heroSlides = landingPage.hero_slides
-          const currentSlide = heroSlides[currentHeroSlide] || heroSlides[0]
+          // Separate slides into carousel and static
+          const carouselSlides = landingPage.hero_slides.filter(slide => slide.is_carousel !== false)
+          const staticSlides = landingPage.hero_slides.filter(slide => slide.is_carousel === false)
+
+          // Only show carousel section if there are carousel slides
+          if (carouselSlides.length === 0) return null
+
+          const currentSlide = carouselSlides[currentHeroSlide] || carouselSlides[0]
 
           return (
             <section className="relative w-full h-[500px] md:h-[600px] overflow-hidden">
@@ -512,46 +817,67 @@ function LandingPageContent() {
                   />
                 )
               ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200" />
+                <div
+                  className="absolute inset-0"
+                  style={{ backgroundColor: currentSlide.background_color || '#1e293b' }}
+                />
               )}
 
-              {/* Overlay for text readability */}
-              <div className="absolute inset-0 bg-black/30" />
+              {/* Overlay for text readability - only when there's an image/video */}
+              {currentSlide.background_url && (
+                <div className="absolute inset-0 bg-black/30" />
+              )}
 
               {/* Content */}
-              <div className={`relative z-10 h-full flex items-center ${
-                currentSlide.text_align === 'left' ? 'justify-start' :
-                currentSlide.text_align === 'right' ? 'justify-end' :
-                'justify-center'
-              }`}>
-                <div className={`px-4 md:px-12 max-w-4xl ${
-                  currentSlide.text_align === 'left' ? 'text-left' :
-                  currentSlide.text_align === 'right' ? 'text-right' :
-                  'text-center'
-                }`}>
+              <div className="relative z-10 h-full flex items-center justify-center">
+                <div className="px-4 md:px-12 max-w-4xl w-full">
                   {currentSlide.headline && (
                     <h1
-                      className={`font-light tracking-[0.2em] uppercase text-white leading-tight mb-4 drop-shadow-lg ${getFontClass(currentSlide.headline_font_family)}`}
-                      style={{ fontSize: currentSlide.headline_font_size || 'clamp(1.875rem, 5vw, 3.75rem)' }}
+                      className={`font-light tracking-[0.2em] uppercase leading-tight mb-4 drop-shadow-lg ${getFontClass(currentSlide.headline_font_family)} ${
+                        (currentSlide.headline_text_align || 'center') === 'left' ? 'text-left' :
+                        (currentSlide.headline_text_align || 'center') === 'right' ? 'text-right' :
+                        'text-center'
+                      }`}
+                      style={{
+                        fontSize: currentSlide.headline_font_size || 'clamp(1.875rem, 5vw, 3.75rem)',
+                        color: currentSlide.headline_color || '#ffffff',
+                        fontWeight: currentSlide.headline_bold ? 'bold' : undefined,
+                        fontStyle: currentSlide.headline_italic ? 'italic' : undefined
+                      }}
                     >
                       {currentSlide.headline}
                     </h1>
                   )}
                   {currentSlide.subheadline && (
                     <p
-                      className={`font-light tracking-[0.15em] uppercase text-white/90 mb-4 drop-shadow ${getFontClass(currentSlide.subheadline_font_family)}`}
-                      style={{ fontSize: currentSlide.subheadline_font_size || 'clamp(1.125rem, 2.5vw, 1.25rem)' }}
+                      className={`font-light tracking-[0.15em] uppercase mb-4 drop-shadow ${getFontClass(currentSlide.subheadline_font_family)} ${
+                        (currentSlide.subheadline_text_align || 'center') === 'left' ? 'text-left' :
+                        (currentSlide.subheadline_text_align || 'center') === 'right' ? 'text-right' :
+                        'text-center'
+                      }`}
+                      style={{
+                        fontSize: currentSlide.subheadline_font_size || 'clamp(1.125rem, 2.5vw, 1.25rem)',
+                        color: currentSlide.subheadline_color || '#ffffff',
+                        fontWeight: currentSlide.subheadline_bold ? 'bold' : undefined,
+                        fontStyle: currentSlide.subheadline_italic ? 'italic' : undefined
+                      }}
                     >
                       {currentSlide.subheadline}
                     </p>
                   )}
                   {currentSlide.content && (
                     <p
-                      className={`font-light text-white/80 mb-8 drop-shadow max-w-2xl whitespace-pre-wrap ${
-                        currentSlide.text_align === 'center' ? 'mx-auto' :
-                        currentSlide.text_align === 'right' ? 'ml-auto' : ''
-                      } ${getFontClass(currentSlide.content_font_family)}`}
-                      style={{ fontSize: currentSlide.content_font_size || 'clamp(1rem, 2vw, 1.125rem)' }}
+                      className={`font-light mb-8 drop-shadow max-w-2xl whitespace-pre-wrap ${getFontClass(currentSlide.content_font_family)} ${
+                        (currentSlide.content_text_align || 'center') === 'left' ? 'text-left' :
+                        (currentSlide.content_text_align || 'center') === 'right' ? 'text-right mr-0 ml-auto' :
+                        'text-center mx-auto'
+                      }`}
+                      style={{
+                        fontSize: currentSlide.content_font_size || 'clamp(1rem, 2vw, 1.125rem)',
+                        color: currentSlide.content_color || '#ffffff',
+                        fontWeight: currentSlide.content_bold ? 'bold' : undefined,
+                        fontStyle: currentSlide.content_italic ? 'italic' : undefined
+                      }}
                     >
                       {currentSlide.content}
                     </p>
@@ -560,27 +886,33 @@ function LandingPageContent() {
                     <div className="mb-4" />
                   )}
                   {currentSlide.cta_text && (
-                    <Link
-                      href={buildUrl(currentSlide.cta_url || '/livechat/shop')}
-                      className={`inline-block px-8 py-3 bg-white text-black text-sm font-bold tracking-[0.15em] uppercase hover:bg-black hover:text-white transition-colors ${headlineFont.className}`}
-                    >
-                      {currentSlide.cta_text}
-                    </Link>
+                    <div className={`${
+                      (currentSlide.content_text_align || 'center') === 'left' ? 'text-left' :
+                      (currentSlide.content_text_align || 'center') === 'right' ? 'text-right' :
+                      'text-center'
+                    }`}>
+                      <Link
+                        href={buildUrl(currentSlide.cta_url || '/livechat/shop')}
+                        className={`inline-block px-8 py-3 bg-white text-black text-sm font-bold tracking-[0.15em] uppercase hover:bg-black hover:text-white transition-colors ${headlineFont.className}`}
+                      >
+                        {currentSlide.cta_text}
+                      </Link>
+                    </div>
                   )}
                 </div>
               </div>
 
               {/* Navigation Arrows */}
-              {heroSlides.length > 1 && (
+              {carouselSlides.length > 1 && (
                 <>
                   <button
-                    onClick={() => setCurrentHeroSlide(prev => prev === 0 ? heroSlides.length - 1 : prev - 1)}
+                    onClick={() => setCurrentHeroSlide(prev => prev === 0 ? carouselSlides.length - 1 : prev - 1)}
                     className="absolute left-4 bottom-6 z-20 w-12 h-12 flex items-center justify-center bg-white/20 hover:bg-white/40 transition-colors rounded-full backdrop-blur-sm"
                   >
                     <ChevronLeft className="w-6 h-6 text-white" />
                   </button>
                   <button
-                    onClick={() => setCurrentHeroSlide(prev => prev === heroSlides.length - 1 ? 0 : prev + 1)}
+                    onClick={() => setCurrentHeroSlide(prev => prev === carouselSlides.length - 1 ? 0 : prev + 1)}
                     className="absolute right-4 bottom-6 z-20 w-12 h-12 flex items-center justify-center bg-white/20 hover:bg-white/40 transition-colors rounded-full backdrop-blur-sm"
                   >
                     <ChevronRight className="w-6 h-6 text-white" />
@@ -589,9 +921,9 @@ function LandingPageContent() {
               )}
 
               {/* Slide Indicators */}
-              {heroSlides.length > 1 && (
+              {carouselSlides.length > 1 && (
                 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
-                  {heroSlides.map((_, index) => (
+                  {carouselSlides.map((_, index) => (
                     <button
                       key={index}
                       onClick={() => setCurrentHeroSlide(index)}
@@ -606,75 +938,136 @@ function LandingPageContent() {
           )
         })()}
 
-      {/* Static Text/Image Box Section */}
-      {(landingPage.hero_static_headline || landingPage.hero_static_subheadline || landingPage.hero_static_content || landingPage.hero_static_bg || landingPage.hero_static_cta_text) && (
-        <section className="relative w-full h-[500px] md:h-[600px] overflow-hidden">
-          {/* Background */}
-          {landingPage.hero_static_bg ? (
-            <img
-              src={landingPage.hero_static_bg}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200" />
-          )}
+      {/* Static Hero Banners - Below Carousel */}
+      {(landingPage.hero_slides && landingPage.hero_slides.length > 0) && (() => {
+          const staticSlides = landingPage.hero_slides.filter(slide => slide.is_carousel === false)
 
-          {/* Overlay for text readability */}
-          <div className="absolute inset-0 bg-black/30" />
+          if (staticSlides.length === 0) return null
 
-          {/* Content */}
-          <div className={`relative z-10 h-full flex items-center ${
-            landingPage.hero_static_align === 'left' ? 'justify-start' :
-            landingPage.hero_static_align === 'right' ? 'justify-end' :
-            'justify-center'
-          }`}>
-            <div className={`px-4 md:px-12 max-w-4xl ${
-              landingPage.hero_static_align === 'left' ? 'text-left' :
-              landingPage.hero_static_align === 'right' ? 'text-right' :
-              'text-center'
-            }`}>
-              {landingPage.hero_static_headline && (
-                <h1
-                  className={`font-light tracking-[0.2em] uppercase text-white leading-tight mb-4 drop-shadow-lg ${getFontClass(landingPage.hero_static_headline_font_family)}`}
-                  style={{ fontSize: landingPage.hero_static_headline_font_size || 'clamp(1.875rem, 5vw, 3.75rem)' }}
-                >
-                  {landingPage.hero_static_headline}
-                </h1>
-              )}
-              {landingPage.hero_static_subheadline && (
-                <p
-                  className={`font-light tracking-[0.15em] uppercase text-white/90 mb-4 drop-shadow ${getFontClass(landingPage.hero_static_subheadline_font_family)}`}
-                  style={{ fontSize: landingPage.hero_static_subheadline_font_size || 'clamp(1.125rem, 2.5vw, 1.25rem)' }}
-                >
-                  {landingPage.hero_static_subheadline}
-                </p>
-              )}
-              {landingPage.hero_static_content && (
-                <p
-                  className={`font-light text-white/80 mb-8 drop-shadow max-w-2xl whitespace-pre-wrap ${
-                    landingPage.hero_static_align === 'center' ? 'mx-auto' :
-                    landingPage.hero_static_align === 'right' ? 'ml-auto' : ''
-                  } ${getFontClass(landingPage.hero_static_content_font_family)}`}
-                  style={{ fontSize: landingPage.hero_static_content_font_size || 'clamp(1rem, 2vw, 1.125rem)' }}
-                >
-                  {landingPage.hero_static_content}
-                </p>
-              )}
-              {landingPage.hero_static_cta_text && (
-                <Link
-                  href={buildUrl(landingPage.hero_static_cta_url || '/livechat/shop')}
-                  className={`inline-block px-8 py-3 bg-white text-black text-sm font-bold tracking-[0.15em] uppercase hover:bg-black hover:text-white transition-colors ${headlineFont.className}`}
-                >
-                  {landingPage.hero_static_cta_text}
-                </Link>
-              )}
-            </div>
-          </div>
-        </section>
-      )}
+          return (
+            <>
+              {staticSlides.map((slide, index) => (
+                <section key={index} className="relative w-full py-8 md:py-12 overflow-hidden">
+                  {/* Background */}
+                  {slide.background_url ? (
+                    slide.background_type === 'video' ? (
+                      <video
+                        src={slide.background_url}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    ) : (
+                      <img
+                        src={slide.background_url}
+                        alt=""
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    )
+                  ) : (
+                    <div
+                      className="absolute inset-0"
+                      style={{ backgroundColor: slide.background_color || (slide.is_price_banner ? '#ffffff' : '#1e293b') }}
+                    />
+                  )}
 
-      {/* Clinical Results */}
+                  {/* Overlay for text readability - only when there's an image/video */}
+                  {slide.background_url && (
+                    <div className="absolute inset-0 bg-black/30" />
+                  )}
+
+                  {/* Content */}
+                  <div className="relative z-10 h-full flex items-center justify-center">
+                    {slide.is_price_banner ? (
+                      <PriceBannerContent slide={slide} onAddToCart={addToCart} />
+                    ) : (
+                      <div className="px-4 md:px-12 max-w-4xl w-full">
+                        {slide.headline && (
+                          <h2
+                            className={`font-light tracking-[0.2em] uppercase leading-tight mb-4 drop-shadow-lg ${getFontClass(slide.headline_font_family)} ${
+                              (slide.headline_text_align || 'center') === 'left' ? 'text-left' :
+                              (slide.headline_text_align || 'center') === 'right' ? 'text-right' :
+                              'text-center'
+                            }`}
+                            style={{
+                              fontSize: slide.headline_font_size || 'clamp(1.875rem, 5vw, 3.75rem)',
+                              color: slide.headline_color || '#ffffff',
+                              fontWeight: slide.headline_bold ? 'bold' : undefined,
+                              fontStyle: slide.headline_italic ? 'italic' : undefined
+                            }}
+                          >
+                            {slide.headline}
+                          </h2>
+                        )}
+                        {slide.subheadline && (
+                          <p
+                            className={`font-light tracking-[0.15em] uppercase mb-4 drop-shadow ${getFontClass(slide.subheadline_font_family)} ${
+                              (slide.subheadline_text_align || 'center') === 'left' ? 'text-left' :
+                              (slide.subheadline_text_align || 'center') === 'right' ? 'text-right' :
+                              'text-center'
+                            }`}
+                            style={{
+                              fontSize: slide.subheadline_font_size || 'clamp(1.125rem, 2.5vw, 1.25rem)',
+                              color: slide.subheadline_color || '#ffffff',
+                              fontWeight: slide.subheadline_bold ? 'bold' : undefined,
+                              fontStyle: slide.subheadline_italic ? 'italic' : undefined
+                            }}
+                          >
+                            {slide.subheadline}
+                          </p>
+                        )}
+                        {slide.content && (
+                          <p
+                            className={`font-light mb-8 drop-shadow max-w-2xl whitespace-pre-wrap ${getFontClass(slide.content_font_family)} ${
+                              (slide.content_text_align || 'center') === 'left' ? 'text-left' :
+                              (slide.content_text_align || 'center') === 'right' ? 'text-right mr-0 ml-auto' :
+                              'text-center mx-auto'
+                            }`}
+                            style={{
+                              fontSize: slide.content_font_size || 'clamp(1rem, 2vw, 1.125rem)',
+                              color: slide.content_color || '#ffffff',
+                              fontWeight: slide.content_bold ? 'bold' : undefined,
+                              fontStyle: slide.content_italic ? 'italic' : undefined
+                            }}
+                          >
+                            {slide.content}
+                          </p>
+                        )}
+                        {!slide.content && slide.subheadline && (
+                          <div className="mb-4" />
+                        )}
+                        {slide.cta_text && (
+                          <div className={`${
+                            (slide.content_text_align || 'center') === 'left' ? 'text-left' :
+                            (slide.content_text_align || 'center') === 'right' ? 'text-right' :
+                            'text-center'
+                          }`}>
+                            <Link
+                              href={buildUrl(slide.cta_url || '/livechat/shop')}
+                              className={`inline-block px-8 py-3 bg-white text-black text-sm font-bold tracking-[0.15em] uppercase hover:bg-black hover:text-white transition-colors ${headlineFont.className}`}
+                            >
+                              {slide.cta_text}
+                            </Link>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </section>
+              ))}
+            </>
+          )
+        })()}
+
+      {/* Dynamic Blocks */}
+      {landingPage.blocks && landingPage.blocks.length > 0 ? (
+        <BlockRenderer blocks={landingPage.blocks} />
+      ) : (
+        <>
+          {/* Fallback: Show old landing page schema content */}
+          {/* Clinical Results */}
       {landingPage.clinical_results && landingPage.clinical_results.length > 0 && (
         <section className="py-16 px-4 text-white" style={{ backgroundColor: secondaryColor }}>
           <div className="max-w-4xl mx-auto">
@@ -970,6 +1363,120 @@ function LandingPageContent() {
             </div>
           </div>
         </section>
+      )}
+
+      {/* Cart Sidebar */}
+      {showCartSidebar && (
+        <div className="fixed inset-0 z-50 bg-black/50" onClick={() => setShowCartSidebar(false)}>
+          <div
+            className="absolute right-0 top-0 h-full w-full md:w-96 bg-white shadow-xl flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Cart Header */}
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className={`text-lg font-light tracking-[0.2em] uppercase ${getFontClass(headingFont)}`}>Shopping Cart ({cartItemCount})</h2>
+              <button
+                onClick={() => setShowCartSidebar(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Cart Items */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {cart.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                  <ShoppingCart className="w-16 h-16 mb-4" />
+                  <p className={`text-gray-500 font-light ${getFontClass(bodyFont)}`}>Your cart is empty</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {cart.map(item => (
+                    <div key={item.product.id} className="flex gap-4 pb-4 border-b border-gray-200">
+                      <div className="w-20 h-20 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
+                        {item.product.thumbnail ? (
+                          <img src={item.product.thumbnail} alt={item.product.title} className="w-full h-full object-cover rounded" />
+                        ) : (
+                          <span className="text-3xl">🧴</span>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className={`font-medium text-sm ${getFontClass(headingFont)}`}>{item.product.title}</h3>
+                        {item.product.description && (
+                          <p className={`text-xs text-gray-600 mt-1 font-light ${getFontClass(bodyFont)}`}>{item.product.description}</p>
+                        )}
+                        <div className="flex items-center gap-2 mt-2">
+                          <button
+                            onClick={() => updateQuantity(item.product.id, Math.max(1, item.quantity - 1))}
+                            className={`w-6 h-6 rounded border border-gray-300 flex items-center justify-center text-sm font-light ${getFontClass(bodyFont)}`}
+                          >
+                            -
+                          </button>
+                          <span className={`text-sm font-light ${getFontClass(bodyFont)}`}>{item.quantity}</span>
+                          <button
+                            onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                            className={`w-6 h-6 rounded border border-gray-300 flex items-center justify-center text-sm font-light ${getFontClass(bodyFont)}`}
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end justify-between">
+                        <button
+                          onClick={() => removeFromCart(item.product.id)}
+                          className="text-red-500 hover:text-red-700 p-1 transition-colors"
+                          title="Remove from cart"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                        <span className={`font-bold ${getFontClass(headingFont)}`}>${((item.product.cost_price || 0) * item.quantity).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Cart Footer */}
+            {cart.length > 0 && (
+              <div className="p-4 border-t border-gray-200 bg-white">
+                <div className="flex justify-between mb-4">
+                  <span className={`font-light tracking-[0.15em] uppercase ${getFontClass(headingFont)}`}>Total:</span>
+                  <span className={`font-bold ${getFontClass(headingFont)}`}>${cartTotal.toFixed(2)}</span>
+                </div>
+                <button
+                  onClick={() => setShowCheckoutModal(true)}
+                  className={`block w-full px-6 py-3 bg-black text-white text-center font-bold tracking-[0.15em] uppercase hover:bg-gray-800 transition-colors shadow-lg ${getFontClass(headingFont)}`}
+                >
+                  Proceed to Checkout
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Checkout Modal */}
+      <CheckoutModal
+        isOpen={showCheckoutModal}
+        onClose={() => setShowCheckoutModal(false)}
+        cart={cart}
+        onSuccess={handleCheckoutSuccess}
+        businessUnitParam={businessUnitParam}
+        headingFont={headingFont}
+        bodyFont={bodyFont}
+      />
+
+      {/* AI Coach Floating Button */}
+      {aiStaffList.length > 0 && (
+        <AICoach
+          businessUnit={businessUnitParam}
+          aiStaffList={aiStaffList}
+          initialOpen={false}
+        />
+      )}
+        </>
       )}
 
       {/* Footer */}
