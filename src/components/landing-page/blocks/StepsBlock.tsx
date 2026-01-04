@@ -118,6 +118,7 @@ export default function StepsBlock({ data }: StepsBlockProps) {
                             muted
                             loop
                             playsInline
+                            preload="auto"
                             className="h-auto rounded"
                             style={{ width: step.image_width || '400px' }}
                           />
@@ -167,6 +168,7 @@ export default function StepsBlock({ data }: StepsBlockProps) {
                             muted
                             loop
                             playsInline
+                            preload="auto"
                             className="h-auto rounded"
                             style={{ width: step.image_width || '400px' }}
                           />
