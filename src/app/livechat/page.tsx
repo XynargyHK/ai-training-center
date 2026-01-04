@@ -947,7 +947,7 @@ function LandingPageContent() {
           return (
             <>
               {staticSlides.map((slide, index) => (
-                <section key={index} className="relative w-full py-8 md:py-12 overflow-hidden">
+                <section key={index} className="relative w-full pt-8 pb-4 md:pt-12 md:pb-6 overflow-hidden">
                   {/* Background */}
                   {slide.background_url ? (
                     slide.background_type === 'video' ? (

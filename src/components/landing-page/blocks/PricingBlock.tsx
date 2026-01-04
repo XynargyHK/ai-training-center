@@ -168,7 +168,7 @@ export default function PricingBlock({ data }: PricingBlockProps) {
         {/* Product Name */}
         {product_name && (
           <h2
-            className={`text-center font-light tracking-[0.2em] uppercase leading-tight mb-6 ${getFontClass(product_name_font_family)}`}
+            className={`text-center font-light tracking-[0.2em] uppercase leading-tight mb-6 drop-shadow-lg ${getFontClass(product_name_font_family)}`}
             style={{
               fontSize: product_name_font_size,
               color: product_name_color
@@ -200,7 +200,7 @@ export default function PricingBlock({ data }: PricingBlockProps) {
               <li key={index} className="flex items-start gap-2">
                 <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                 <span
-                  className={`font-light ${getFontClass(features_font_family)}`}
+                  className={getFontClass(features_font_family)}
                   style={{
                     fontSize: features_font_size,
                     color: features_color
@@ -216,7 +216,7 @@ export default function PricingBlock({ data }: PricingBlockProps) {
         {/* Plan Heading */}
         {plan_heading && (
           <h3
-            className={`text-center font-light tracking-[0.15em] uppercase mb-4 ${getFontClass(plan_heading_font_family)}`}
+            className={`text-center font-light tracking-[0.15em] uppercase mb-4 drop-shadow ${getFontClass(plan_heading_font_family)}`}
             style={{
               fontSize: plan_heading_font_size,
               color: plan_heading_color

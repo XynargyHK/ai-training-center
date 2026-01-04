@@ -5,6 +5,7 @@ export const serifFont = Cormorant_Garamond({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600'],
   display: 'swap',
+  variable: '--font-serif',
 })
 
 // Elegant geometric sans-serif for headlines (Chanel-like)
@@ -12,6 +13,7 @@ export const headlineFont = Josefin_Sans({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600'],
   display: 'swap',
+  variable: '--font-headline',
 })
 
 // Additional popular fonts
@@ -19,36 +21,42 @@ export const playfairFont = Playfair_Display({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   display: 'swap',
+  variable: '--font-playfair',
 })
 
 export const montserratFont = Montserrat({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600', '700'],
   display: 'swap',
+  variable: '--font-montserrat',
 })
 
 export const interFont = Inter({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600', '700'],
   display: 'swap',
+  variable: '--font-inter',
 })
 
 export const loraFont = Lora({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   display: 'swap',
+  variable: '--font-lora',
 })
 
 export const ralewayFont = Raleway({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600', '700'],
   display: 'swap',
+  variable: '--font-raleway',
 })
 
 export const openSansFont = Open_Sans({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600', '700'],
   display: 'swap',
+  variable: '--font-open-sans',
 })
 
 // Font mapping helper

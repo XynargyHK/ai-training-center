@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { serifFont, headlineFont, playfairFont, montserratFont, interFont, loraFont, ralewayFont, openSansFont } from '@/lib/fonts'
 
 export const metadata: Metadata = {
   title: "BNI AI Center",
@@ -12,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${serifFont.variable} ${headlineFont.variable} ${playfairFont.variable} ${montserratFont.variable} ${interFont.variable} ${loraFont.variable} ${ralewayFont.variable} ${openSansFont.variable}`}>
       <body className="antialiased bg-gray-50">
         {children}
       </body>

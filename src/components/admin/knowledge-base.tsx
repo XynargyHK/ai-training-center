@@ -233,6 +233,84 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
             is_carousel: true
           }]
         }
+
+        // Initialize missing font fields for all slides to prevent undefined values
+        if (landingPage.hero_slides) {
+          landingPage.hero_slides = landingPage.hero_slides.map(slide => ({
+            ...slide,
+            // Headline
+            headline_font_family: slide.headline_font_family || 'Josefin Sans',
+            headline_font_size: slide.headline_font_size || '2.5rem',
+            headline_color: slide.headline_color || '#000000',
+            headline_bold: slide.headline_bold ?? false,
+            headline_italic: slide.headline_italic ?? false,
+            headline_text_align: slide.headline_text_align || 'center',
+            // Subheadline
+            subheadline_font_family: slide.subheadline_font_family || 'Josefin Sans',
+            subheadline_font_size: slide.subheadline_font_size || '1.25rem',
+            subheadline_color: slide.subheadline_color || '#000000',
+            subheadline_bold: slide.subheadline_bold ?? false,
+            subheadline_italic: slide.subheadline_italic ?? false,
+            subheadline_text_align: slide.subheadline_text_align || 'center',
+            // Content/Features
+            content_font_family: slide.content_font_family || 'Cormorant Garamond',
+            content_font_size: slide.content_font_size || '1.125rem',
+            content_color: slide.content_color || '#374151',
+            content_bold: slide.content_bold ?? false,
+            content_italic: slide.content_italic ?? false,
+            content_text_align: slide.content_text_align || 'left'
+          }))
+        }
+
+        // Initialize missing font fields for blocks to prevent undefined values
+        if (landingPage.blocks) {
+          landingPage.blocks = landingPage.blocks.map(block => {
+            if (block.type === 'steps' && block.data?.steps) {
+              return {
+                ...block,
+                data: {
+                  ...block.data,
+                  steps: block.data.steps.map(step => ({
+                    ...step,
+                    text_font_family: step.text_font_family || 'Cormorant Garamond',
+                    text_font_size: step.text_font_size || '1.125rem',
+                    text_color: step.text_color || '#374151',
+                    text_bold: step.text_bold ?? false,
+                    text_italic: step.text_italic ?? false,
+                    text_align: step.text_align || 'left'
+                  }))
+                }
+              }
+            }
+            if (block.type === 'accordion') {
+              return {
+                ...block,
+                data: {
+                  ...block.data,
+                  heading: block.data?.heading || 'Frequently Asked Questions',
+                  heading_font_size: block.data?.heading_font_size || '2.5rem',
+                  heading_font_family: block.data?.heading_font_family || 'Josefin Sans',
+                  heading_color: block.data?.heading_color || '#000000',
+                  items: (block.data?.items || []).map((item: any) => ({
+                    ...item,
+                    title_font_size: item.title_font_size || '1rem',
+                    title_font_family: item.title_font_family || 'Josefin Sans',
+                    title_color: item.title_color || '#111827',
+                    title_bold: item.title_bold ?? false,
+                    title_italic: item.title_italic ?? false,
+                    content_font_size: item.content_font_size || '1rem',
+                    content_font_family: item.content_font_family || 'Cormorant Garamond',
+                    content_color: item.content_color || '#374151',
+                    content_bold: item.content_bold ?? false,
+                    content_italic: item.content_italic ?? false
+                  }))
+                }
+              }
+            }
+            return block
+          })
+        }
+
         setLandingPageData(landingPage)
         setHasLandingPage(true)
       } else {

@@ -1,14 +1,22 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Upload, Image as ImageIcon, Loader2, X, ChevronUp, ChevronDown, Plus, Trash2, Bold, Italic, Underline } from 'lucide-react'
+import { Upload, X, ChevronUp, ChevronDown, Plus, Trash2, Image, Loader2 } from 'lucide-react'
 import type { LandingPageBlock } from '@/types/landing-page-blocks'
+import UniversalTextEditor from '../UniversalTextEditor'
 
 interface Step {
-  image_url?: string
-  video_url?: string
+  background_url?: string
+  background_type?: 'image' | 'video'
+  image_width?: string
   text_content: string
   text_position: 'left' | 'right' | 'above' | 'below'
+  text_font_size?: string
+  text_font_family?: string
+  text_color?: string
+  text_bold?: boolean
+  text_italic?: boolean
+  text_align?: 'left' | 'center' | 'right'
 }
 
 interface StepsBlockData {
@@ -31,7 +39,7 @@ interface StepsBlockEditorProps {
 export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, businessUnitId }: StepsBlockEditorProps) {
   const data = (block.data as StepsBlockData) || { steps: [] }
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null)
-  const fileInputRefs = useRef<{ [key: number]: HTMLInputElement | null }>({})
+  const stepInputRefs = useRef<(HTMLInputElement | null)[]>([])
 
   const updateData = (updates: Partial<StepsBlockData>) => {
     onUpdate({
@@ -48,10 +56,17 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
 
   const addStep = () => {
     const newSteps = [...(data.steps || []), {
-      image_url: '',
-      video_url: '',
+      background_url: '',
+      background_type: 'image' as const,
+      image_width: '400px',
       text_content: '',
-      text_position: 'right' as const
+      text_position: 'right' as const,
+      text_font_size: '1rem',
+      text_font_family: 'Cormorant Garamond',
+      text_color: '#000000',
+      text_bold: false,
+      text_italic: false,
+      text_align: 'left' as const
     }]
     updateData({ steps: newSteps })
   }
@@ -70,114 +85,80 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
     updateData({ steps: newSteps })
   }
 
-  const handleMediaUpload = async (stepIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  // Upload handler - EXACT copy from hero banner
+  const handleStepUpload = async (e: React.ChangeEvent<HTMLInputElement>, stepIndex: number) => {
     const file = e.target.files?.[0]
-    if (!file || !businessUnitId) return
+    if (!file) return
+
+    // Validate file type - allow images and videos
+    const isImage = file.type.startsWith('image/')
+    const isVideo = file.type.startsWith('video/')
+
+    if (!isImage && !isVideo) {
+      alert('Please select an image or video file')
+      return
+    }
+
+    // Validate file size (max 10MB for images, 50MB for videos)
+    const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024
+    if (file.size > maxSize) {
+      alert(`File must be less than ${isVideo ? '50MB' : '10MB'}`)
+      return
+    }
 
     setUploadingIndex(stepIndex)
     try {
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('businessUnit', businessUnitId)
+      formData.append('businessUnitId', businessUnitId!)
 
-      const response = await fetch('/api/media-library', {
+      const response = await fetch('/api/ecommerce/upload-image', {
         method: 'POST',
         body: formData
       })
 
-      if (!response.ok) throw new Error('Upload failed')
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Upload failed')
+      }
 
-      const result = await response.json()
-      const isVideo = file.type.startsWith('video/')
-
-      updateStep(stepIndex, isVideo
-        ? { video_url: result.file.url, image_url: '' }
-        : { image_url: result.file.url, video_url: '' }
-      )
-    } catch (error) {
-      console.error('Upload error:', error)
-      alert('Failed to upload media')
+      const responseData = await response.json()
+      if (responseData.url) {
+        const steps = [...(data.steps || [])]
+        steps[stepIndex] = {
+          ...steps[stepIndex],
+          background_url: responseData.url,
+          background_type: isVideo ? 'video' : 'image'
+        }
+        updateData({ steps })
+      }
+    } catch (error: any) {
+      console.error('Error uploading step background:', error)
+      alert(`Failed to upload: ${error.message}`)
     } finally {
       setUploadingIndex(null)
+      if (stepInputRefs.current[stepIndex]) {
+        stepInputRefs.current[stepIndex]!.value = ''
+      }
     }
-  }
-
-  const applyFormatting = (stepIndex: number, format: 'bold' | 'italic' | 'underline') => {
-    const selection = window.getSelection()
-    if (!selection || selection.rangeCount === 0) return
-
-    const range = selection.getRangeAt(0)
-    const selectedText = range.toString()
-
-    if (!selectedText) return
-
-    let formattedText = ''
-    switch (format) {
-      case 'bold':
-        formattedText = `<strong>${selectedText}</strong>`
-        break
-      case 'italic':
-        formattedText = `<em>${selectedText}</em>`
-        break
-      case 'underline':
-        formattedText = `<u>${selectedText}</u>`
-        break
-    }
-
-    // Replace selection with formatted text
-    const step = data.steps[stepIndex]
-    const currentContent = step.text_content || ''
-
-    // Simple approach: append formatted text (you can enhance this)
-    const newContent = currentContent + formattedText
-    updateStep(stepIndex, { text_content: newContent })
   }
 
   return (
     <div className="space-y-6">
-      {/* Heading Settings */}
-      <div className="space-y-3">
-        <label className="block text-sm font-medium text-slate-300">Heading</label>
-        <input
-          type="text"
-          value={data.heading || 'HOW TO USE'}
-          onChange={(e) => updateData({ heading: e.target.value })}
-          placeholder="HOW TO USE"
-          className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white"
+      {/* Heading Settings - Using UniversalTextEditor */}
+      <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-600">
+        <UniversalTextEditor
+          label="Heading"
+          value={data.heading || ''}
+          onChange={(value) => updateData({ heading: value })}
+          fontSize={data.heading_font_size || '2.5rem'}
+          onFontSizeChange={(value) => updateData({ heading_font_size: value })}
+          fontFamily={data.heading_font_family || 'Josefin Sans'}
+          onFontFamilyChange={(value) => updateData({ heading_font_family: value })}
+          color={data.heading_color || '#000000'}
+          onColorChange={(value) => updateData({ heading_color: value })}
+          placeholder="e.g., HOW TO USE"
         />
-
-        <div className="grid grid-cols-3 gap-3">
-          <div>
-            <label className="block text-xs text-slate-400 mb-1">Font Size</label>
-            <input
-              type="text"
-              value={data.heading_font_size || '2.5rem'}
-              onChange={(e) => updateData({ heading_font_size: e.target.value })}
-              placeholder="2.5rem"
-              className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-slate-400 mb-1">Font Family</label>
-            <select
-              value={data.heading_font_family || 'Josefin Sans'}
-              onChange={(e) => updateData({ heading_font_family: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white text-sm"
-            >
-              <option value="Josefin Sans">Josefin Sans</option>
-              <option value="Cormorant Garamond">Cormorant Garamond</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-slate-400 mb-1">Color</label>
-            <input
-              type="color"
-              value={data.heading_color || '#000000'}
-              onChange={(e) => updateData({ heading_color: e.target.value })}
-              className="w-full h-10 bg-slate-800 border border-slate-600 rounded-lg"
-            />
-          </div>
-        </div>
       </div>
 
       {/* Overall Layout */}
@@ -265,60 +246,86 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
               </div>
             </div>
 
-            {/* Media Upload */}
-            <div>
-              <label className="block text-xs text-slate-400 mb-2">Image or Video</label>
-              <div className="flex flex-col gap-2">
-                {(step.image_url || step.video_url) && (
-                  <div className="relative inline-block">
-                    {step.video_url ? (
-                      <video src={step.video_url} controls className="w-32 h-32 object-cover rounded-lg" />
+            {/* Background Upload - EXACT copy from hero banner */}
+            <div className="mb-3">
+              <label className="block text-xs text-slate-400 mb-1">Background Image/Video</label>
+              <div className="flex items-center gap-2 flex-wrap">
+                {step.background_url ? (
+                  <div className="relative">
+                    {step.background_type === 'video' ? (
+                      <video src={step.background_url} className="h-16 w-28 object-cover rounded" muted />
                     ) : (
-                      <img src={step.image_url} alt={`Step ${index + 1}`} className="w-32 h-32 object-cover rounded-lg" />
+                      <img src={step.background_url} alt="Background" className="h-16 w-28 object-cover rounded" />
                     )}
                     <button
-                      onClick={() => updateStep(index, { image_url: '', video_url: '' })}
-                      className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1"
+                      onClick={() => updateStep(index, { background_url: '', background_type: 'image' })}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
                     >
                       <X className="w-3 h-3" />
                     </button>
+                    <span className="absolute bottom-0.5 right-0.5 text-[10px] bg-black/60 text-white px-1 rounded">
+                      {step.background_type === 'video' ? 'VIDEO' : 'IMAGE'}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="h-16 w-28 bg-slate-800 border border-dashed border-slate-600 rounded flex items-center justify-center">
+                    <Image className="w-6 h-6 text-slate-500" />
                   </div>
                 )}
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => fileInputRefs.current[index]?.click()}
-                    disabled={uploadingIndex === index}
-                    className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm flex items-center gap-2"
-                  >
-                    {uploadingIndex === index ? (
+                <button
+                  onClick={() => stepInputRefs.current[index]?.click()}
+                  disabled={uploadingIndex === index}
+                  className="px-3 py-1.5 bg-violet-600 text-white text-sm rounded hover:bg-violet-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {uploadingIndex === index ? (
+                    <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
                       <Upload className="w-4 h-4" />
-                    )}
-                    Upload
-                  </button>
-                  {onMediaLibraryOpen && (
-                    <button
-                      onClick={() => onMediaLibraryOpen((url) => {
-                        const isVideo = url.match(/\.(mp4|webm|mov)$/i)
-                        updateStep(index, isVideo ? { video_url: url, image_url: '' } : { image_url: url, video_url: '' })
-                      })}
-                      className="px-3 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg text-sm flex items-center gap-2"
-                    >
-                      <ImageIcon className="w-4 h-4" />
-                      Library
-                    </button>
+                      Upload
+                    </>
                   )}
-                </div>
-
+                </button>
                 <input
-                  ref={(el) => { fileInputRefs.current[index] = el }}
+                  ref={(el) => { stepInputRefs.current[index] = el }}
                   type="file"
-                  accept="image/*,video/*"
-                  onChange={(e) => handleMediaUpload(index, e)}
+                  accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"
+                  onChange={(e) => handleStepUpload(e, index)}
                   className="hidden"
                 />
+                {/* Image Size Controls */}
+                {step.background_url && (
+                  <>
+                    <button
+                      onClick={() => {
+                        const currentWidth = parseInt((step.image_width || '400px').replace('px', ''))
+                        const newWidth = currentWidth - 20
+                        updateStep(index, { image_width: `${newWidth}px` })
+                      }}
+                      className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm"
+                      title="Smaller"
+                    >
+                      -
+                    </button>
+                    <span className="text-xs text-slate-300">
+                      {parseInt((step.image_width || '400px').replace('px', ''))}px
+                    </span>
+                    <button
+                      onClick={() => {
+                        const currentWidth = parseInt((step.image_width || '400px').replace('px', ''))
+                        const newWidth = currentWidth + 20
+                        updateStep(index, { image_width: `${newWidth}px` })
+                      }}
+                      className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm"
+                      title="Bigger"
+                    >
+                      +
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 
@@ -342,44 +349,27 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
               </div>
             </div>
 
-            {/* Text Content with Rich Text Editor */}
-            <div>
-              <label className="block text-xs text-slate-400 mb-2">Text Content</label>
-
-              {/* Simple Rich Text Toolbar */}
-              <div className="flex gap-2 mb-2 p-2 bg-slate-700 rounded-lg">
-                <button
-                  onClick={() => applyFormatting(index, 'bold')}
-                  className="p-1 hover:bg-slate-600 rounded text-white"
-                  title="Bold"
-                >
-                  <Bold className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => applyFormatting(index, 'italic')}
-                  className="p-1 hover:bg-slate-600 rounded text-white"
-                  title="Italic"
-                >
-                  <Italic className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => applyFormatting(index, 'underline')}
-                  className="p-1 hover:bg-slate-600 rounded text-white"
-                  title="Underline"
-                >
-                  <Underline className="w-4 h-4" />
-                </button>
-              </div>
-
-              <textarea
-                value={step.text_content || ''}
-                onChange={(e) => updateStep(index, { text_content: e.target.value })}
-                placeholder="Enter step instructions..."
-                rows={3}
-                className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-y font-light"
-              />
-              <p className="text-xs text-slate-500 mt-1">You can use HTML tags: &lt;strong&gt;, &lt;em&gt;, &lt;u&gt;, &lt;br&gt;</p>
-            </div>
+            {/* Text Content - Using Universal Text Editor */}
+            <UniversalTextEditor
+              label="Text Content"
+              value={step.text_content || ''}
+              onChange={(value) => updateStep(index, { text_content: value })}
+              fontSize={step.text_font_size || '1rem'}
+              onFontSizeChange={(value) => updateStep(index, { text_font_size: value })}
+              fontFamily={step.text_font_family || 'Cormorant Garamond'}
+              onFontFamilyChange={(value) => updateStep(index, { text_font_family: value })}
+              color={step.text_color || '#000000'}
+              onColorChange={(value) => updateStep(index, { text_color: value })}
+              bold={step.text_bold}
+              onBoldChange={(value) => updateStep(index, { text_bold: value })}
+              italic={step.text_italic}
+              onItalicChange={(value) => updateStep(index, { text_italic: value })}
+              textAlign={step.text_align || 'left'}
+              onTextAlignChange={(value) => updateStep(index, { text_align: value })}
+              placeholder="Enter step instructions..."
+              multiline={true}
+              rows={3}
+            />
           </div>
         ))}
 

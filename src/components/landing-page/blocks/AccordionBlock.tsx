@@ -6,7 +6,17 @@ import { getFontClass } from '@/lib/fonts'
 
 interface AccordionItem {
   title: string
+  title_font_size?: string
+  title_font_family?: string
+  title_color?: string
+  title_bold?: boolean
+  title_italic?: boolean
   content: string
+  content_font_size?: string
+  content_font_family?: string
+  content_color?: string
+  content_bold?: boolean
+  content_italic?: boolean
 }
 
 interface AccordionBlockData {
@@ -51,7 +61,7 @@ export default function AccordionBlock({ data }: AccordionBlockProps) {
         {/* Heading */}
         {heading && (
           <h2
-            className={`text-center font-light tracking-[0.2em] uppercase leading-tight mb-12 ${getFontClass(heading_font_family)}`}
+            className={`text-center font-light tracking-[0.2em] uppercase leading-tight mb-12 drop-shadow-lg ${getFontClass(heading_font_family)}`}
             style={{
               fontSize: heading_font_size,
               color: heading_color
@@ -72,7 +82,15 @@ export default function AccordionBlock({ data }: AccordionBlockProps) {
                 onClick={() => toggleItem(index)}
                 className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
               >
-                <span className={`font-semibold text-gray-900 pr-4 ${getFontClass('Josefin Sans')}`}>
+                <span
+                  className={`pr-4 ${getFontClass(item.title_font_family || 'Josefin Sans')}`}
+                  style={{
+                    fontSize: item.title_font_size || '1rem',
+                    color: item.title_color || '#111827',
+                    fontWeight: item.title_bold ? 'bold' : 600,
+                    fontStyle: item.title_italic ? 'italic' : undefined
+                  }}
+                >
                   {item.title}
                 </span>
                 <span className="flex-shrink-0">
@@ -86,7 +104,15 @@ export default function AccordionBlock({ data }: AccordionBlockProps) {
 
               {expandedIndex === index && (
                 <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-                  <p className={`text-gray-700 leading-relaxed whitespace-pre-wrap ${getFontClass('Cormorant Garamond')}`}>
+                  <p
+                    className={`font-light leading-relaxed whitespace-pre-wrap ${getFontClass(item.content_font_family || 'Cormorant Garamond')}`}
+                    style={{
+                      fontSize: item.content_font_size || '1rem',
+                      color: item.content_color || '#374151',
+                      fontWeight: item.content_bold ? 'bold' : undefined,
+                      fontStyle: item.content_italic ? 'italic' : undefined
+                    }}
+                  >
                     {item.content}
                   </p>
                 </div>
