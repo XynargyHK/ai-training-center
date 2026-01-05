@@ -1,5 +1,7 @@
 'use client'
 
+import { useState } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { getFontClass } from '@/lib/fonts'
 
 interface Step {
@@ -48,9 +50,19 @@ export default function StepsBlock({ data }: StepsBlockProps) {
     steps = []
   } = data
 
+  const [currentIndex, setCurrentIndex] = useState(0)
+
   // Helper function to preserve line breaks
   const preserveLineBreaks = (text: string) => {
     return text.replace(/\n/g, '<br>')
+  }
+
+  const goToPrevious = () => {
+    setCurrentIndex(prev => (prev - 1 + steps.length) % steps.length)
+  }
+
+  const goToNext = () => {
+    setCurrentIndex(prev => (prev + 1) % steps.length)
   }
 
   if (!steps || steps.length === 0) {
@@ -77,13 +89,36 @@ export default function StepsBlock({ data }: StepsBlockProps) {
         )}
 
         {/* Steps Container */}
-        <div className={`
-          ${overall_layout === 'horizontal'
-            ? 'flex flex-row gap-2 overflow-x-auto'
-            : 'space-y-4'
-          }
-        `}>
-          {steps.map((step, index) => {
+        {overall_layout === 'horizontal' ? (
+          <div className="relative">
+            {/* Navigation Buttons */}
+            {steps.length > 1 && (
+              <>
+                <button
+                  onClick={goToPrevious}
+                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-12 z-10 bg-black text-white p-3 rounded-full hover:bg-gray-800 transition-colors shadow-lg"
+                  aria-label="Previous step"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+
+                <button
+                  onClick={goToNext}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-12 z-10 bg-black text-white p-3 rounded-full hover:bg-gray-800 transition-colors shadow-lg"
+                  aria-label="Next step"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              </>
+            )}
+
+            {/* Horizontal Slider */}
+            <div className="overflow-hidden">
+              <div
+                className="flex transition-transform duration-500 ease-out"
+                style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+              >
+                {steps.map((step, index) => {
             const isTextLeft = step.text_position === 'left'
             const isTextRight = step.text_position === 'right'
             const isTextAbove = step.text_position === 'above'
@@ -113,9 +148,7 @@ export default function StepsBlock({ data }: StepsBlockProps) {
             return (
               <div
                 key={index}
-                className={`
-                  ${overall_layout === 'horizontal' ? 'flex-shrink-0 w-64' : 'w-full'}
-                `}
+                className="flex-shrink-0 w-full"
               >
                 {/* Vertical text above/below OR Horizontal text left/right */}
                 {(isTextAbove || isTextBelow) ? (
@@ -270,7 +303,196 @@ export default function StepsBlock({ data }: StepsBlockProps) {
               </div>
             )
           })}
-        </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          // Vertical Layout
+          <div className="space-y-4">
+            {steps.map((step, index) => {
+              const isTextLeft = step.text_position === 'left'
+              const isTextRight = step.text_position === 'right'
+              const isTextAbove = step.text_position === 'above'
+              const isTextBelow = step.text_position === 'below'
+              const isMediaVideo = step.background_type === 'video'
+
+              // Subheadline styling
+              const subheadlineClassName = `font-light tracking-[0.15em] uppercase drop-shadow ${getFontClass(step.subheadline_font_family)}`
+              const subheadlineStyle: React.CSSProperties = {
+                fontSize: step.subheadline_font_size || '1.5rem',
+                color: step.subheadline_color || '#000000',
+                fontWeight: step.subheadline_bold ? 'bold' : undefined,
+                fontStyle: step.subheadline_italic ? 'italic' : undefined,
+                textAlign: step.subheadline_align || 'left'
+              }
+
+              // Text styling - same as Features
+              const textClassName = `font-light ${getFontClass(step.text_font_family)}`
+              const textStyle: React.CSSProperties = {
+                fontSize: step.text_font_size || 'clamp(1rem, 2vw, 1.125rem)',
+                color: step.text_color || '#374151',
+                fontWeight: step.text_bold ? 'bold' : undefined,
+                fontStyle: step.text_italic ? 'italic' : undefined,
+                textAlign: step.text_align || 'left'
+              }
+
+              return (
+                <div key={index} className="w-full">
+                  {/* Vertical text above/below OR Horizontal text left/right */}
+                  {(isTextAbove || isTextBelow) ? (
+                    // Stacked layout
+                    <div className="flex flex-col gap-1">
+                      {/* Text Above */}
+                      {isTextAbove && (
+                        <div className="space-y-2">
+                          {/* Subheadline */}
+                          {step.subheadline && (
+                            <h3
+                              className={subheadlineClassName}
+                              style={subheadlineStyle}
+                            >
+                              {step.subheadline}
+                            </h3>
+                          )}
+                          {/* Text Content */}
+                          <div
+                            className={textClassName}
+                            style={textStyle}
+                            dangerouslySetInnerHTML={{ __html: preserveLineBreaks(step.text_content) }}
+                          />
+                        </div>
+                      )}
+
+                      {/* Media */}
+                      <div className="flex justify-center">
+                        {step.background_url ? (
+                          isMediaVideo ? (
+                            <video
+                              src={step.background_url}
+                              autoPlay
+                              muted
+                              loop
+                              playsInline
+                              preload="auto"
+                              className="h-auto rounded"
+                              style={{ width: step.image_width || '400px' }}
+                            />
+                          ) : (
+                            <img
+                              src={step.background_url}
+                              alt={`Step ${index + 1}`}
+                              className="h-auto rounded"
+                              style={{ width: step.image_width || '400px' }}
+                            />
+                          )
+                        ) : (
+                          <div className="w-full max-w-2xl aspect-video bg-gray-200 rounded-lg flex items-center justify-center">
+                            <span className="text-gray-400">No media</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Text Below */}
+                      {isTextBelow && (
+                        <div className="space-y-2">
+                          {/* Subheadline */}
+                          {step.subheadline && (
+                            <h3
+                              className={subheadlineClassName}
+                              style={subheadlineStyle}
+                            >
+                              {step.subheadline}
+                            </h3>
+                          )}
+                          {/* Text Content */}
+                          <div
+                            className={textClassName}
+                            style={textStyle}
+                            dangerouslySetInnerHTML={{ __html: preserveLineBreaks(step.text_content) }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    // Side-by-side layout
+                    <div className="flex flex-row gap-2 items-start">
+                      {/* Text Left */}
+                      {isTextLeft && (
+                        <div className="flex-1 space-y-2">
+                          {/* Subheadline */}
+                          {step.subheadline && (
+                            <h3
+                              className={subheadlineClassName}
+                              style={subheadlineStyle}
+                            >
+                              {step.subheadline}
+                            </h3>
+                          )}
+                          {/* Text Content */}
+                          <div
+                            className={textClassName}
+                            style={textStyle}
+                            dangerouslySetInnerHTML={{ __html: preserveLineBreaks(step.text_content) }}
+                          />
+                        </div>
+                      )}
+
+                      {/* Media */}
+                      <div className="flex-shrink-0">
+                        {step.background_url ? (
+                          isMediaVideo ? (
+                            <video
+                              src={step.background_url}
+                              autoPlay
+                              muted
+                              loop
+                              playsInline
+                              preload="auto"
+                              className="h-auto rounded"
+                              style={{ width: step.image_width || '400px' }}
+                            />
+                          ) : (
+                            <img
+                              src={step.background_url}
+                              alt={`Step ${index + 1}`}
+                              className="h-auto rounded"
+                              style={{ width: step.image_width || '400px' }}
+                            />
+                          )
+                        ) : (
+                          <div className="aspect-video bg-gray-200 rounded flex items-center justify-center" style={{ width: step.image_width || '400px' }}>
+                            <span className="text-gray-400">No media</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Text Right */}
+                      {isTextRight && (
+                        <div className="flex-1 space-y-2">
+                          {/* Subheadline */}
+                          {step.subheadline && (
+                            <h3
+                              className={subheadlineClassName}
+                              style={subheadlineStyle}
+                            >
+                              {step.subheadline}
+                            </h3>
+                          )}
+                          {/* Text Content */}
+                          <div
+                            className={textClassName}
+                            style={textStyle}
+                            dangerouslySetInnerHTML={{ __html: preserveLineBreaks(step.text_content) }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </section>
   )
