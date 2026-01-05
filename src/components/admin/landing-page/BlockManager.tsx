@@ -14,6 +14,7 @@ import PricingBlockEditor from './blocks/PricingBlockEditor'
 import TestimonialsBlockEditor from './blocks/TestimonialsBlockEditor'
 import StepsBlockEditor from './blocks/StepsBlockEditor'
 import StaticBannerBlockEditor from './blocks/StaticBannerBlockEditor'
+import PoliciesBlockEditor from './blocks/PoliciesBlockEditor'
 
 interface BlockManagerProps {
   blocks: LandingPageBlock[]
@@ -1396,6 +1397,14 @@ export default function BlockManager({ blocks, onChange, businessUnitId }: Block
             block={block}
             onUpdate={(updatedBlock) => handleUpdateBlock(index, updatedBlock)}
             businessUnitId={businessUnitId}
+          />
+        )
+
+      case 'policies':
+        return (
+          <PoliciesBlockEditor
+            block={block}
+            onUpdate={(updatedBlock) => handleUpdateBlock(index, updatedBlock)}
           />
         )
 

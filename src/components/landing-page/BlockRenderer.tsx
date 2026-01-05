@@ -7,6 +7,7 @@ import AccordionBlock from './blocks/AccordionBlock'
 import StepsBlock from './blocks/StepsBlock'
 import PricingBlock from './blocks/PricingBlock'
 import StaticBannerBlock from './blocks/StaticBannerBlock'
+import PoliciesBlock from './blocks/PoliciesBlock'
 
 interface BlockRendererProps {
   blocks: LandingPageBlock[]
@@ -58,6 +59,9 @@ export default function BlockRenderer({ blocks, onAddToCart }: BlockRendererProp
 
           case 'static_banner':
             return <StaticBannerBlock key={block.id} data={block.data as any} />
+
+          case 'policies':
+            return <PoliciesBlock key={block.id} data={block.data as any} />
 
           default:
             // Silently skip unknown block types (legacy blocks or removed types)

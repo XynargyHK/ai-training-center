@@ -250,6 +250,42 @@ export const BLOCK_TYPES: Record<string, BlockTypeConfig> = {
       cta_text: 'SHOP NOW',
       cta_url: '/livechat/shop'
     }
+  },
+
+  policies: {
+    type: 'policies',
+    label: 'Policies',
+    icon: '📜',
+    description: 'Legal policies - Terms of Service, Privacy, Refund, Shipping',
+    category: 'content',
+    defaultData: {
+      company_name: '',
+      brand_name: '',
+      website_url: '',
+      contact_email: '',
+      contact_address: '',
+      governing_state: '',
+      effective_date: '',
+      liability_cap: '$500',
+      refund_days: '30',
+      refund_processing_days: '7-10',
+      warranty_months: '12',
+      restocking_fee: '$10',
+      return_address: '',
+      processing_days: '1-3',
+      domestic_shipping_days: '2-5 business days',
+      international_shipping_days: '7-14 business days',
+      free_shipping_threshold: '$50',
+      shipping_carriers: 'USPS, DHL, FedEx',
+      cutoff_time: '2:00 PM EST',
+      warehouse_location: 'United States',
+      policies: {
+        terms_of_service: { enabled: true, content: '' },
+        privacy_policy: { enabled: true, content: '' },
+        refund_policy: { enabled: true, content: '' },
+        shipping_policy: { enabled: true, content: '' }
+      }
+    }
   }
 }
 
