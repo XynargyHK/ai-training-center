@@ -263,31 +263,45 @@ export async function deleteTrainingScenario(id: string) {
 }
 
 export async function loadTrainingSessions(businessUnitId?: string) {
-  const url = businessUnitId
-    ? `/api/training?action=load_sessions&businessUnitId=${encodeURIComponent(businessUnitId)}`
-    : '/api/training?action=load_sessions'
-  const res = await fetch(url)
-  const json = await res.json()
-  if (!res.ok) throw new Error(json.error || 'Failed to load sessions')
-  return json.data
+  try {
+    const url = businessUnitId
+      ? `/api/training?action=load_sessions&businessUnitId=${encodeURIComponent(businessUnitId)}`
+      : '/api/training?action=load_sessions'
+    const res = await fetch(url)
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error || 'Failed to load sessions')
+    return json.data
+  } catch (error) {
+    // API endpoint doesn't exist yet, return empty array
+    console.warn('Training sessions API not available:', error)
+    return []
+  }
 }
 
 export async function saveTrainingSession(session: any, businessUnitId?: string) {
-  const res = await fetch('/api/training', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'save_session', data: session, businessUnitId })
-  })
-  const json = await res.json()
-  if (!res.ok) throw new Error(json.error || 'Failed to save session')
+  try {
+    const res = await fetch('/api/training', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'save_session', data: session, businessUnitId })
+    })
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error || 'Failed to save session')
+  } catch (error) {
+    console.warn('Training sessions API not available:', error)
+  }
 }
 
 export async function deleteTrainingSession(id: string) {
-  const res = await fetch(`/api/training?action=delete_session&id=${id}`, {
-    method: 'DELETE'
-  })
-  const json = await res.json()
-  if (!res.ok) throw new Error(json.error || 'Failed to delete session')
+  try {
+    const res = await fetch(`/api/training?action=delete_session&id=${id}`, {
+      method: 'DELETE'
+    })
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error || 'Failed to delete session')
+  } catch (error) {
+    console.warn('Training sessions API not available:', error)
+  }
 }
 
 // ============================================
