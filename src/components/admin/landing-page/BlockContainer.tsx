@@ -75,9 +75,10 @@ export default function BlockContainer({
               <h3 className="text-white font-medium">{block.name}</h3>
               <button
                 onClick={() => setIsEditingName(true)}
-                className="text-slate-500 hover:text-slate-300 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="text-slate-400 hover:text-violet-400 p-1 transition-colors"
+                title="Edit block name"
               >
-                <Edit2 className="w-3 h-3" />
+                <Edit2 className="w-4 h-4" />
               </button>
             </div>
           )}
