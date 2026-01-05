@@ -62,7 +62,7 @@ export default function StepsBlock({ data }: StepsBlockProps) {
       className="py-4 px-2"
       style={{ backgroundColor: background_color }}
     >
-      <div className="w-full">
+      <div className="max-w-4xl mx-auto">
         {/* Heading */}
         {heading && (
           <h2
