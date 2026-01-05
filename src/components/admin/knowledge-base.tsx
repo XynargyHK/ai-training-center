@@ -272,6 +272,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                   ...block.data,
                   steps: block.data.steps.map(step => ({
                     ...step,
+                    subheadline: step.subheadline || '',
+                    subheadline_font_size: step.subheadline_font_size || '1.5rem',
+                    subheadline_font_family: step.subheadline_font_family || 'Josefin Sans',
+                    subheadline_color: step.subheadline_color || '#000000',
+                    subheadline_bold: step.subheadline_bold ?? false,
+                    subheadline_italic: step.subheadline_italic ?? false,
+                    subheadline_align: step.subheadline_align || 'left',
                     text_font_family: step.text_font_family || 'Cormorant Garamond',
                     text_font_size: step.text_font_size || '1.125rem',
                     text_color: step.text_color || '#374151',

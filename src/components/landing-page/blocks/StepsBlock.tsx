@@ -6,6 +6,13 @@ interface Step {
   background_url?: string
   background_type?: 'image' | 'video'
   image_width?: string
+  subheadline?: string
+  subheadline_font_size?: string
+  subheadline_font_family?: string
+  subheadline_color?: string
+  subheadline_bold?: boolean
+  subheadline_italic?: boolean
+  subheadline_align?: 'left' | 'center' | 'right'
   text_content: string
   text_position: 'left' | 'right' | 'above' | 'below'
   text_font_size?: string
@@ -40,6 +47,11 @@ export default function StepsBlock({ data }: StepsBlockProps) {
     overall_layout = 'vertical',
     steps = []
   } = data
+
+  // Helper function to preserve line breaks
+  const preserveLineBreaks = (text: string) => {
+    return text.replace(/\n/g, '<br>')
+  }
 
   if (!steps || steps.length === 0) {
     return null
@@ -78,6 +90,16 @@ export default function StepsBlock({ data }: StepsBlockProps) {
             const isTextBelow = step.text_position === 'below'
             const isMediaVideo = step.background_type === 'video'
 
+            // Subheadline styling
+            const subheadlineClassName = `font-light tracking-[0.15em] uppercase drop-shadow ${getFontClass(step.subheadline_font_family)}`
+            const subheadlineStyle: React.CSSProperties = {
+              fontSize: step.subheadline_font_size || '1.5rem',
+              color: step.subheadline_color || '#000000',
+              fontWeight: step.subheadline_bold ? 'bold' : undefined,
+              fontStyle: step.subheadline_italic ? 'italic' : undefined,
+              textAlign: step.subheadline_align || 'left'
+            }
+
             // Text styling - same as Features
             const textClassName = `font-light ${getFontClass(step.text_font_family)}`
             const textStyle: React.CSSProperties = {
@@ -101,11 +123,23 @@ export default function StepsBlock({ data }: StepsBlockProps) {
                   <div className="flex flex-col gap-1">
                     {/* Text Above */}
                     {isTextAbove && (
-                      <span
-                        className={textClassName}
-                        style={textStyle}
-                        dangerouslySetInnerHTML={{ __html: step.text_content }}
-                      />
+                      <div className="space-y-2">
+                        {/* Subheadline */}
+                        {step.subheadline && (
+                          <h3
+                            className={subheadlineClassName}
+                            style={subheadlineStyle}
+                          >
+                            {step.subheadline}
+                          </h3>
+                        )}
+                        {/* Text Content */}
+                        <div
+                          className={textClassName}
+                          style={textStyle}
+                          dangerouslySetInnerHTML={{ __html: preserveLineBreaks(step.text_content) }}
+                        />
+                      </div>
                     )}
 
                     {/* Media */}
@@ -139,11 +173,23 @@ export default function StepsBlock({ data }: StepsBlockProps) {
 
                     {/* Text Below */}
                     {isTextBelow && (
-                      <span
-                        className={textClassName}
-                        style={textStyle}
-                        dangerouslySetInnerHTML={{ __html: step.text_content }}
-                      />
+                      <div className="space-y-2">
+                        {/* Subheadline */}
+                        {step.subheadline && (
+                          <h3
+                            className={subheadlineClassName}
+                            style={subheadlineStyle}
+                          >
+                            {step.subheadline}
+                          </h3>
+                        )}
+                        {/* Text Content */}
+                        <div
+                          className={textClassName}
+                          style={textStyle}
+                          dangerouslySetInnerHTML={{ __html: preserveLineBreaks(step.text_content) }}
+                        />
+                      </div>
                     )}
                   </div>
                 ) : (
@@ -151,11 +197,23 @@ export default function StepsBlock({ data }: StepsBlockProps) {
                   <div className="flex flex-row gap-2 items-start">
                     {/* Text Left */}
                     {isTextLeft && (
-                      <span
-                        className={`flex-1 ${textClassName}`}
-                        style={textStyle}
-                        dangerouslySetInnerHTML={{ __html: step.text_content }}
-                      />
+                      <div className="flex-1 space-y-2">
+                        {/* Subheadline */}
+                        {step.subheadline && (
+                          <h3
+                            className={subheadlineClassName}
+                            style={subheadlineStyle}
+                          >
+                            {step.subheadline}
+                          </h3>
+                        )}
+                        {/* Text Content */}
+                        <div
+                          className={textClassName}
+                          style={textStyle}
+                          dangerouslySetInnerHTML={{ __html: preserveLineBreaks(step.text_content) }}
+                        />
+                      </div>
                     )}
 
                     {/* Media */}
@@ -189,11 +247,23 @@ export default function StepsBlock({ data }: StepsBlockProps) {
 
                     {/* Text Right */}
                     {isTextRight && (
-                      <span
-                        className={`flex-1 ${textClassName}`}
-                        style={textStyle}
-                        dangerouslySetInnerHTML={{ __html: step.text_content }}
-                      />
+                      <div className="flex-1 space-y-2">
+                        {/* Subheadline */}
+                        {step.subheadline && (
+                          <h3
+                            className={subheadlineClassName}
+                            style={subheadlineStyle}
+                          >
+                            {step.subheadline}
+                          </h3>
+                        )}
+                        {/* Text Content */}
+                        <div
+                          className={textClassName}
+                          style={textStyle}
+                          dangerouslySetInnerHTML={{ __html: preserveLineBreaks(step.text_content) }}
+                        />
+                      </div>
                     )}
                   </div>
                 )}

@@ -9,6 +9,13 @@ interface Step {
   background_url?: string
   background_type?: 'image' | 'video'
   image_width?: string
+  subheadline?: string
+  subheadline_font_size?: string
+  subheadline_font_family?: string
+  subheadline_color?: string
+  subheadline_bold?: boolean
+  subheadline_italic?: boolean
+  subheadline_align?: 'left' | 'center' | 'right'
   text_content: string
   text_position: 'left' | 'right' | 'above' | 'below'
   text_font_size?: string
@@ -59,6 +66,13 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
       background_url: '',
       background_type: 'image' as const,
       image_width: '400px',
+      subheadline: '',
+      subheadline_font_size: '1.5rem',
+      subheadline_font_family: 'Josefin Sans',
+      subheadline_color: '#000000',
+      subheadline_bold: false,
+      subheadline_italic: false,
+      subheadline_align: 'left' as const,
       text_content: '',
       text_position: 'right' as const,
       text_font_size: '1rem',
@@ -348,6 +362,26 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
                 ))}
               </div>
             </div>
+
+            {/* Subheadline */}
+            <UniversalTextEditor
+              label="Subheadline"
+              value={step.subheadline || ''}
+              onChange={(value) => updateStep(index, { subheadline: value })}
+              fontSize={step.subheadline_font_size || '1.5rem'}
+              onFontSizeChange={(value) => updateStep(index, { subheadline_font_size: value })}
+              fontFamily={step.subheadline_font_family || 'Josefin Sans'}
+              onFontFamilyChange={(value) => updateStep(index, { subheadline_font_family: value })}
+              color={step.subheadline_color || '#000000'}
+              onColorChange={(value) => updateStep(index, { subheadline_color: value })}
+              bold={step.subheadline_bold}
+              onBoldChange={(value) => updateStep(index, { subheadline_bold: value })}
+              italic={step.subheadline_italic}
+              onItalicChange={(value) => updateStep(index, { subheadline_italic: value })}
+              textAlign={step.subheadline_align || 'left'}
+              onTextAlignChange={(value) => updateStep(index, { subheadline_align: value })}
+              placeholder="e.g., Step 1: Cleanse"
+            />
 
             {/* Text Content - Using Universal Text Editor */}
             <UniversalTextEditor
