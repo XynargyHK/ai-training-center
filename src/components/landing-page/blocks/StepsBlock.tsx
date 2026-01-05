@@ -148,7 +148,7 @@ export default function StepsBlock({ data }: StepsBlockProps) {
             return (
               <div
                 key={index}
-                className="flex-shrink-0 w-full"
+                className="flex-shrink-0 w-full p-6 border border-gray-200 rounded-lg bg-white shadow-sm"
               >
                 {/* Vertical text above/below OR Horizontal text left/right */}
                 {(isTextAbove || isTextBelow) ? (
@@ -337,7 +337,7 @@ export default function StepsBlock({ data }: StepsBlockProps) {
               }
 
               return (
-                <div key={index} className="w-full">
+                <div key={index} className="w-full p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
                   {/* Vertical text above/below OR Horizontal text left/right */}
                   {(isTextAbove || isTextBelow) ? (
                     // Stacked layout
