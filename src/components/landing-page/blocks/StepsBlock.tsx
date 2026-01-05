@@ -1,7 +1,5 @@
 'use client'
 
-import { useState } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { getFontClass } from '@/lib/fonts'
 
 interface Step {
@@ -50,19 +48,9 @@ export default function StepsBlock({ data }: StepsBlockProps) {
     steps = []
   } = data
 
-  const [currentIndex, setCurrentIndex] = useState(0)
-
   // Helper function to preserve line breaks
   const preserveLineBreaks = (text: string) => {
     return text.replace(/\n/g, '<br>')
-  }
-
-  const goToPrevious = () => {
-    setCurrentIndex(prev => (prev - 1 + steps.length) % steps.length)
-  }
-
-  const goToNext = () => {
-    setCurrentIndex(prev => (prev + 1) % steps.length)
   }
 
   if (!steps || steps.length === 0) {
@@ -90,35 +78,9 @@ export default function StepsBlock({ data }: StepsBlockProps) {
 
         {/* Steps Container */}
         {overall_layout === 'horizontal' ? (
-          <div className="relative">
-            {/* Navigation Buttons */}
-            {steps.length > 1 && (
-              <>
-                <button
-                  onClick={goToPrevious}
-                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-12 z-10 bg-black text-white p-3 rounded-full hover:bg-gray-800 transition-colors shadow-lg"
-                  aria-label="Previous step"
-                >
-                  <ChevronLeft className="w-6 h-6" />
-                </button>
-
-                <button
-                  onClick={goToNext}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-12 z-10 bg-black text-white p-3 rounded-full hover:bg-gray-800 transition-colors shadow-lg"
-                  aria-label="Next step"
-                >
-                  <ChevronRight className="w-6 h-6" />
-                </button>
-              </>
-            )}
-
-            {/* Horizontal Slider */}
-            <div className="overflow-hidden">
-              <div
-                className="flex transition-transform duration-500 ease-out"
-                style={{ transform: `translateX(-${currentIndex * 100}%)` }}
-              >
-                {steps.map((step, index) => {
+          <div className="overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="flex gap-4">
+              {steps.map((step, index) => {
             const isTextLeft = step.text_position === 'left'
             const isTextRight = step.text_position === 'right'
             const isTextAbove = step.text_position === 'above'
@@ -148,7 +110,8 @@ export default function StepsBlock({ data }: StepsBlockProps) {
             return (
               <div
                 key={index}
-                className="flex-shrink-0 w-full p-6 border border-gray-200 rounded-lg bg-white shadow-sm"
+                className="flex-shrink-0 snap-center p-6 border border-gray-200 rounded-lg bg-white shadow-sm"
+                style={{ width: `calc(${step.image_width || '400px'} + 3rem)` }}
               >
                 {/* Vertical text above/below OR Horizontal text left/right */}
                 {(isTextAbove || isTextBelow) ? (
@@ -303,7 +266,6 @@ export default function StepsBlock({ data }: StepsBlockProps) {
               </div>
             )
           })}
-              </div>
             </div>
           </div>
         ) : (
