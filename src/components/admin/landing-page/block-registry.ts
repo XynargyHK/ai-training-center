@@ -75,9 +75,9 @@ export const BLOCK_TYPES: Record<string, BlockTypeConfig> = {
 
   pricing: {
     type: 'pricing',
-    label: 'Pricing Table',
+    label: 'Price',
     icon: '💰',
-    description: 'Simple pricing selector with plan options',
+    description: 'Product pricing with plan options',
     category: 'content',
     defaultData: {
       // Product name
@@ -187,9 +187,9 @@ export const BLOCK_TYPES: Record<string, BlockTypeConfig> = {
 
   steps: {
     type: 'steps',
-    label: 'Steps / How To',
+    label: 'Text/Image Grid',
     icon: '📝',
-    description: 'Step-by-step instructions with images - perfect for tutorials',
+    description: 'Flexible grid layout combining text and images - vertical or horizontal',
     category: 'content',
     defaultData: {
       heading: 'HOW TO USE',
@@ -200,12 +200,55 @@ export const BLOCK_TYPES: Record<string, BlockTypeConfig> = {
       overall_layout: 'vertical',
       steps: [
         {
-          image_url: '',
-          video_url: '',
+          background_url: '',
+          background_type: 'image',
+          image_width: '400px',
           text_content: 'Step 1 instructions go here...',
-          text_position: 'right'
+          text_position: 'right',
+          text_font_size: '1rem',
+          text_font_family: 'Cormorant Garamond',
+          text_color: '#000000',
+          text_bold: false,
+          text_italic: false,
+          text_align: 'left'
         }
       ]
+    }
+  },
+
+  static_banner: {
+    type: 'static_banner',
+    label: 'Static Banner',
+    icon: '🖼️',
+    description: 'Full-width banner with background image/video and text overlay',
+    category: 'content',
+    defaultData: {
+      background_url: '',
+      background_type: 'image',
+      background_color: '#1e293b',
+      headline: 'Your Headline Here',
+      headline_font_size: 'clamp(1.875rem, 5vw, 3.75rem)',
+      headline_font_family: 'Josefin Sans',
+      headline_color: '#ffffff',
+      headline_bold: false,
+      headline_italic: false,
+      headline_text_align: 'center',
+      subheadline: 'Your Subheadline',
+      subheadline_font_size: 'clamp(1.125rem, 2.5vw, 1.25rem)',
+      subheadline_font_family: 'Josefin Sans',
+      subheadline_color: '#ffffff',
+      subheadline_bold: false,
+      subheadline_italic: false,
+      subheadline_text_align: 'center',
+      content: '',
+      content_font_size: 'clamp(1rem, 2vw, 1.125rem)',
+      content_font_family: 'Josefin Sans',
+      content_color: '#ffffff',
+      content_bold: false,
+      content_italic: false,
+      content_text_align: 'center',
+      cta_text: 'SHOP NOW',
+      cta_url: '/livechat/shop'
     }
   }
 }

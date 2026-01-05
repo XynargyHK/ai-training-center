@@ -18,7 +18,10 @@ export async function GET(request: NextRequest) {
         .single()
 
       if (buError || !businessUnit) {
-        return NextResponse.json({ error: 'Invalid business unit' }, { status: 400 })
+        // For new business units or invalid slugs, return empty staff list
+        // This handles the case when a new business unit was just created
+        console.log(`Business unit '${businessUnitSlug}' not found, returning empty staff list`)
+        return NextResponse.json({ data: [] })
       }
       businessUnitId = businessUnit.id
     }

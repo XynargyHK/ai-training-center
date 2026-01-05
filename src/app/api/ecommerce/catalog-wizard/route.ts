@@ -93,6 +93,25 @@ const INDUSTRY_TEMPLATES: Record<string, {
       { name: 'Accessory', handle: 'accessory', is_addon: true },
     ]
   },
+  'factory-outlet': {
+    name: 'Factory Outlet',
+    categories: [
+      { name: 'Clearance', handle: 'clearance', description: 'Final clearance items' },
+      { name: 'Overstock', handle: 'overstock', description: 'Excess inventory' },
+      { name: 'Seconds', handle: 'seconds', description: 'Minor imperfection items' },
+      { name: 'Sample Sale', handle: 'sample-sale', description: 'Sample products' },
+      { name: 'End of Season', handle: 'end-of-season', description: 'Seasonal closeouts' },
+      { name: 'Bundle Deals', handle: 'bundle-deals', description: 'Multi-pack savings' },
+    ],
+    productTypes: [
+      { name: 'First Quality', handle: 'first-quality', is_addon: false },
+      { name: 'Second Quality', handle: 'second-quality', is_addon: false },
+      { name: 'Sample', handle: 'sample', is_addon: false },
+      { name: 'Overstock', handle: 'overstock', is_addon: false },
+      { name: 'Bundle', handle: 'bundle', is_addon: false },
+      { name: 'Add-on', handle: 'addon', is_addon: true },
+    ]
+  },
   'electronics': {
     name: 'Electronics & Tech',
     categories: [
@@ -107,6 +126,143 @@ const INDUSTRY_TEMPLATES: Record<string, {
       { name: 'Accessory', handle: 'accessory', is_addon: true },
       { name: 'Software', handle: 'software', is_addon: true },
       { name: 'Bundle', handle: 'bundle', is_addon: false },
+    ]
+  },
+  'grocery': {
+    name: 'Grocery & Supermarket',
+    categories: [
+      { name: 'Fresh Produce', handle: 'fresh-produce' },
+      { name: 'Dairy & Eggs', handle: 'dairy-eggs' },
+      { name: 'Meat & Seafood', handle: 'meat-seafood' },
+      { name: 'Bakery', handle: 'bakery' },
+      { name: 'Frozen Foods', handle: 'frozen' },
+      { name: 'Pantry', handle: 'pantry' },
+      { name: 'Beverages', handle: 'beverages' },
+      { name: 'Snacks', handle: 'snacks' },
+    ],
+    productTypes: [
+      { name: 'Fresh Item', handle: 'fresh', is_addon: false },
+      { name: 'Packaged Item', handle: 'packaged', is_addon: false },
+      { name: 'Frozen Item', handle: 'frozen', is_addon: false },
+      { name: 'Beverage', handle: 'beverage', is_addon: false },
+      { name: 'Bundle', handle: 'bundle', is_addon: false },
+    ]
+  },
+  'bakery': {
+    name: 'Bakery & Pastry',
+    categories: [
+      { name: 'Bread', handle: 'bread' },
+      { name: 'Cakes', handle: 'cakes' },
+      { name: 'Pastries', handle: 'pastries' },
+      { name: 'Cookies', handle: 'cookies' },
+      { name: 'Seasonal', handle: 'seasonal' },
+    ],
+    productTypes: [
+      { name: 'Daily Bake', handle: 'daily-bake', is_addon: false },
+      { name: 'Special Order', handle: 'special-order', is_addon: false },
+      { name: 'Topping', handle: 'topping', is_addon: true },
+      { name: 'Add-on', handle: 'addon', is_addon: true },
+    ]
+  },
+  'jewelry': {
+    name: 'Jewelry Store',
+    categories: [
+      { name: 'Rings', handle: 'rings' },
+      { name: 'Necklaces', handle: 'necklaces' },
+      { name: 'Earrings', handle: 'earrings' },
+      { name: 'Bracelets', handle: 'bracelets' },
+      { name: 'Watches', handle: 'watches' },
+      { name: 'Fine Jewelry', handle: 'fine-jewelry' },
+    ],
+    productTypes: [
+      { name: 'Fine Jewelry', handle: 'fine', is_addon: false },
+      { name: 'Fashion Jewelry', handle: 'fashion', is_addon: false },
+      { name: 'Watch', handle: 'watch', is_addon: false },
+      { name: 'Gift Box', handle: 'gift-box', is_addon: true },
+      { name: 'Chain', handle: 'chain', is_addon: true },
+    ]
+  },
+  'furniture': {
+    name: 'Furniture Store',
+    categories: [
+      { name: 'Living Room', handle: 'living-room' },
+      { name: 'Bedroom', handle: 'bedroom' },
+      { name: 'Dining', handle: 'dining' },
+      { name: 'Office', handle: 'office' },
+      { name: 'Outdoor', handle: 'outdoor' },
+    ],
+    productTypes: [
+      { name: 'Furniture', handle: 'furniture', is_addon: false },
+      { name: 'Accessory', handle: 'accessory', is_addon: true },
+      { name: 'Set', handle: 'set', is_addon: false },
+      { name: 'Add-on Part', handle: 'addon-part', is_addon: true },
+    ]
+  },
+  'pharmacy': {
+    name: 'Pharmacy & Health',
+    categories: [
+      { name: 'Medications', handle: 'medications' },
+      { name: 'Vitamins & Supplements', handle: 'vitamins' },
+      { name: 'Personal Care', handle: 'personal-care' },
+      { name: 'First Aid', handle: 'first-aid' },
+      { name: 'Baby Care', handle: 'baby-care' },
+    ],
+    productTypes: [
+      { name: 'OTC Medicine', handle: 'otc', is_addon: false },
+      { name: 'Supplement', handle: 'supplement', is_addon: false },
+      { name: 'Personal Care', handle: 'personal-care', is_addon: false },
+      { name: 'Device', handle: 'device', is_addon: false },
+      { name: 'Bundle', handle: 'bundle', is_addon: false },
+    ]
+  },
+  'pet-store': {
+    name: 'Pet Store',
+    categories: [
+      { name: 'Dogs', handle: 'dogs' },
+      { name: 'Cats', handle: 'cats' },
+      { name: 'Fish & Aquatic', handle: 'fish' },
+      { name: 'Birds', handle: 'birds' },
+      { name: 'Small Pets', handle: 'small-pets' },
+    ],
+    productTypes: [
+      { name: 'Food', handle: 'food', is_addon: false },
+      { name: 'Treat', handle: 'treat', is_addon: true },
+      { name: 'Toy', handle: 'toy', is_addon: true },
+      { name: 'Accessory', handle: 'accessory', is_addon: false },
+      { name: 'Health', handle: 'health', is_addon: false },
+    ]
+  },
+  'liquor': {
+    name: 'Liquor & Wine Store',
+    categories: [
+      { name: 'Wine', handle: 'wine' },
+      { name: 'Beer', handle: 'beer' },
+      { name: 'Spirits', handle: 'spirits' },
+      { name: 'Champagne', handle: 'champagne' },
+      { name: 'Non-Alcoholic', handle: 'non-alcoholic' },
+    ],
+    productTypes: [
+      { name: 'Wine', handle: 'wine', is_addon: false },
+      { name: 'Beer', handle: 'beer', is_addon: false },
+      { name: 'Spirit', handle: 'spirit', is_addon: false },
+      { name: 'Gift Set', handle: 'gift-set', is_addon: false },
+      { name: 'Accessory', handle: 'accessory', is_addon: true },
+    ]
+  },
+  'spa-salon': {
+    name: 'Spa & Salon',
+    categories: [
+      { name: 'Hair Services', handle: 'hair' },
+      { name: 'Skin Services', handle: 'skin' },
+      { name: 'Nail Services', handle: 'nail' },
+      { name: 'Massage', handle: 'massage' },
+      { name: 'Packages', handle: 'packages' },
+    ],
+    productTypes: [
+      { name: 'Service', handle: 'service', is_addon: false },
+      { name: 'Add-on Service', handle: 'addon-service', is_addon: true },
+      { name: 'Package', handle: 'package', is_addon: false },
+      { name: 'Product', handle: 'product', is_addon: false },
     ]
   },
   'general': {
@@ -370,6 +526,138 @@ async function handleApplyTemplate(businessUnitId: string, industry: string) {
   })
 }
 
+// Industry-specific extraction schemas
+const INDUSTRY_EXTRACTION_SCHEMAS: Record<string, string> = {
+  'apparel': `{
+    "title": "Product Name",
+    "title_en": "English name if different",
+    "tagline": "Short marketing tagline",
+    "description": "Full description",
+    "price": 99.99,
+    "original_price": 129.99,
+    "currency": "USD",
+    "sku": "SKU-123",
+    "category_suggestion": "Jackets, Tops, Bottoms, etc.",
+    "colors": ["Black", "Navy"],
+    "sizes": ["S", "M", "L", "XL"],
+    "materials": "100% Polyester",
+    "features": ["Waterproof", "Breathable"],
+    "images": ["url1", "url2"]
+  }`,
+  'skincare': `{
+    "title": "Product Name",
+    "tagline": "Short tagline",
+    "description": "Full description",
+    "price": 99.99,
+    "original_price": 129.99,
+    "currency": "USD",
+    "sku": "SKU-123",
+    "category_suggestion": "Face, Body, Eye, etc.",
+    "volume": "30ml",
+    "ingredients": "Water, Glycerin, Niacinamide...",
+    "key_actives": "Vitamin C, Retinol, Hyaluronic Acid",
+    "skin_type": "All skin types",
+    "concerns": ["Anti-aging", "Hydration", "Brightening"],
+    "how_to_use": "Apply morning and evening...",
+    "benefits": "Reduces wrinkles, improves texture",
+    "images": ["url1", "url2"]
+  }`,
+  'restaurant': `{
+    "title": "Dish Name",
+    "description": "Dish description",
+    "price": 15.99,
+    "currency": "USD",
+    "category_suggestion": "Appetizers, Main Course, etc.",
+    "ingredients": "Chicken, vegetables, sauce",
+    "allergens": ["Gluten", "Dairy"],
+    "dietary": ["Vegetarian", "Gluten-free"],
+    "spice_level": "Medium",
+    "calories": 450,
+    "serving_size": "1 plate",
+    "images": ["url1"]
+  }`,
+  'electronics': `{
+    "title": "Product Name",
+    "title_en": "English name if different",
+    "tagline": "Marketing tagline",
+    "description": "Full description",
+    "price": 299.99,
+    "original_price": 399.99,
+    "currency": "USD",
+    "sku": "SKU-123",
+    "category_suggestion": "Computers, Mobile, Audio, etc.",
+    "brand": "Brand Name",
+    "model": "Model Number",
+    "specs": {
+      "processor": "Intel i7",
+      "ram": "16GB",
+      "storage": "512GB SSD"
+    },
+    "features": ["Wireless", "Bluetooth 5.0"],
+    "warranty": "2 years",
+    "in_box": ["Device", "Charger", "Manual"],
+    "images": ["url1", "url2"]
+  }`,
+  'florist': `{
+    "title": "Arrangement Name",
+    "tagline": "Short description",
+    "description": "Full description",
+    "price": 49.99,
+    "currency": "USD",
+    "category_suggestion": "Bouquets, Arrangements, Plants",
+    "flowers": ["Roses", "Lilies", "Carnations"],
+    "colors": ["Red", "Pink", "White"],
+    "size": "Medium",
+    "vase_included": true,
+    "occasion": ["Birthday", "Anniversary", "Sympathy"],
+    "care_instructions": "Keep in cool place...",
+    "images": ["url1"]
+  }`,
+  'general': `{
+    "title": "Product Name",
+    "tagline": "Short tagline",
+    "description": "Full description",
+    "price": 29.99,
+    "original_price": 39.99,
+    "currency": "USD",
+    "sku": "SKU-123",
+    "category_suggestion": "Category name",
+    "brand": "Brand if applicable",
+    "features": ["Feature 1", "Feature 2"],
+    "specs": "Any specifications",
+    "images": ["url1"]
+  }`
+}
+
+// Detect industry from URL or content
+function detectIndustryFromUrl(url: string, content: string): string {
+  const lower = (url + ' ' + content).toLowerCase()
+
+  if (lower.includes('skincare') || lower.includes('beauty') || lower.includes('serum') ||
+      lower.includes('moisturizer') || lower.includes('cleanser') || lower.includes('cosmetic')) {
+    return 'skincare'
+  }
+  if (lower.includes('restaurant') || lower.includes('menu') || lower.includes('dish') ||
+      lower.includes('food') || lower.includes('cuisine') || lower.includes('dine')) {
+    return 'restaurant'
+  }
+  if (lower.includes('apparel') || lower.includes('clothing') || lower.includes('jacket') ||
+      lower.includes('shirt') || lower.includes('pants') || lower.includes('dress') ||
+      lower.includes('sportswear') || lower.includes('fashion') || lower.includes('wear')) {
+    return 'apparel'
+  }
+  if (lower.includes('electronics') || lower.includes('computer') || lower.includes('phone') ||
+      lower.includes('laptop') || lower.includes('gadget') || lower.includes('tech')) {
+    return 'electronics'
+  }
+  if (lower.includes('flower') || lower.includes('florist') || lower.includes('bouquet') ||
+      lower.includes('arrangement') || lower.includes('roses')) {
+    return 'florist'
+  }
+
+  return 'general'
+}
+
 // Extract products from URL
 async function handleExtractFromUrl(businessUnitId: string, url: string) {
   const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
@@ -379,12 +667,28 @@ async function handleExtractFromUrl(businessUnitId: string, url: string) {
   try {
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
       }
     })
     pageContent = await response.text()
   } catch (error) {
     return NextResponse.json({ error: 'Could not fetch URL' }, { status: 400 })
+  }
+
+  // Extract JSON-LD structured data if present (common in e-commerce)
+  const jsonLdMatches = pageContent.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi)
+  let structuredData = ''
+  if (jsonLdMatches) {
+    structuredData = jsonLdMatches.map(m => m.replace(/<\/?script[^>]*>/gi, '')).join('\n')
+  }
+
+  // Also look for product data in script tags (many sites embed product JSON)
+  const productJsonMatch = pageContent.match(/var\s+product\s*=\s*(\{[\s\S]*?\});/i) ||
+                           pageContent.match(/"product"\s*:\s*(\{[\s\S]*?\})/i)
+  if (productJsonMatch) {
+    structuredData += '\n' + productJsonMatch[1]
   }
 
   // Strip HTML to text
@@ -394,30 +698,34 @@ async function handleExtractFromUrl(businessUnitId: string, url: string) {
     .replace(/<[^>]+>/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
-    .substring(0, 15000)
+    .substring(0, 12000)
 
-  const prompt = `Extract product information from this webpage content.
+  // Detect industry type
+  const detectedIndustry = detectIndustryFromUrl(url, textContent.substring(0, 2000))
+  const extractionSchema = INDUSTRY_EXTRACTION_SCHEMAS[detectedIndustry] || INDUSTRY_EXTRACTION_SCHEMAS['general']
+
+  // Extract SKU from URL if present
+  const urlSkuMatch = url.match(/\/product\/([A-Z0-9]+)/i) || url.match(/\/([A-Z]{2,3}[0-9]{5,})/i)
+  const urlSku = urlSkuMatch ? urlSkuMatch[1] : ''
+
+  const prompt = `Extract product information from this webpage.
 
 URL: ${url}
-Content: ${textContent}
+Detected Industry: ${detectedIndustry.toUpperCase()}
+${urlSku ? `SKU from URL: ${urlSku}` : ''}
 
-Extract any products found and return as JSON array:
-[
-  {
-    "title": "Product Name",
-    "tagline": "Short tagline if found",
-    "description": "Product description",
-    "price": 99.99,
-    "sku": "SKU-123",
-    "category_suggestion": "suggested category name",
-    "ingredients": "if applicable",
-    "benefits": "key benefits if found",
-    "images": ["image URL if found"]
-  }
-]
+${structuredData ? `Structured Data Found:\n${structuredData.substring(0, 5000)}\n` : ''}
 
-If this is a single product page, return array with one product.
-If this is a category/listing page, extract multiple products.
+Page Content:
+${textContent}
+
+Extract product details using this ${detectedIndustry.toUpperCase()} schema:
+${extractionSchema}
+
+Return as JSON array with products matching the schema above.
+Include ALL relevant fields for this industry type.
+If a field doesn't apply or isn't found, omit it.
+
 Return ONLY the JSON array, no explanation.`
 
   const result = await model.generateContent(prompt)
@@ -431,13 +739,15 @@ Return ONLY the JSON array, no explanation.`
     return NextResponse.json({
       success: true,
       url,
+      detectedIndustry,
       extractedProducts: products,
       productCount: products.length
     })
   } catch (parseError) {
     return NextResponse.json({
       success: false,
-      error: 'Could not parse product information',
+      error: 'Could not parse product information. The page may use JavaScript rendering.',
+      suggestion: 'Try copying product details and pasting them in the text input instead.',
       rawResponse: responseText.substring(0, 500)
     }, { status: 422 })
   }
@@ -500,28 +810,51 @@ async function handleCreateProductsBatch(businessUnitId: string, products: any[]
 
   for (const product of products) {
     try {
-      const handle = product.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+      const title = product.title || product.title_en || 'Untitled Product'
+      const handle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+
+      // Build metadata with all extracted fields
+      const metadata: any = {
+        imported: true,
+        import_date: new Date().toISOString()
+      }
+
+      // Pricing
+      if (product.price) metadata.price = product.price
+      if (product.original_price) metadata.original_price = product.original_price
+      if (product.currency) metadata.currency = product.currency
+      if (product.sku) metadata.sku = product.sku
+
+      // Apparel-specific fields
+      if (product.colors?.length) metadata.colors = product.colors
+      if (product.sizes?.length) metadata.sizes = product.sizes
+      if (product.materials) metadata.materials = product.materials
+      if (product.features?.length) metadata.features = product.features
+
+      // Build description including features if present
+      let fullDescription = product.description || ''
+      if (product.features?.length && !fullDescription.includes(product.features[0])) {
+        fullDescription += '\n\nFeatures:\n• ' + product.features.join('\n• ')
+      }
+      if (product.materials && !fullDescription.includes(product.materials)) {
+        fullDescription += '\n\nMaterials: ' + product.materials
+      }
 
       const { data, error } = await supabase
         .from('products')
         .insert({
           business_unit_id: businessUnitId,
-          title: product.title,
+          title: title,
           handle,
-          subtitle: product.tagline || null,
-          description: product.description || null,
+          subtitle: product.tagline || product.title_en || null,
+          description: fullDescription || null,
           thumbnail: product.images?.[0] || null,
           status: 'draft',
           tagline: product.tagline || null,
-          hero_benefit: product.benefits || null,
-          key_actives: product.key_actives || null,
+          hero_benefit: product.features?.slice(0, 3).join(', ') || product.benefits || null,
+          key_actives: product.materials || product.key_actives || null,
           ingredients: product.ingredients || null,
-          metadata: {
-            price: product.price,
-            sku: product.sku,
-            imported: true,
-            import_date: new Date().toISOString()
-          }
+          metadata
         })
         .select()
         .single()
@@ -546,20 +879,47 @@ async function handleCreateProductsBatch(businessUnitId: string, products: any[]
 function detectIndustryFromText(text: string): string | null {
   const lower = text.toLowerCase()
 
+  if (lower.includes('factory outlet') || lower.includes('clearance') || lower.includes('overstock') || lower.includes('seconds')) {
+    return 'factory-outlet'
+  }
   if (lower.includes('skin') || lower.includes('beauty') || lower.includes('cosmetic') || lower.includes('serum')) {
     return 'skincare'
   }
-  if (lower.includes('restaurant') || lower.includes('food') || lower.includes('cafe') || lower.includes('menu')) {
+  if (lower.includes('restaurant') || lower.includes('food') || lower.includes('cafe') || lower.includes('menu') || lower.includes('dine')) {
     return 'restaurant'
   }
   if (lower.includes('flower') || lower.includes('florist') || lower.includes('bouquet')) {
     return 'florist'
   }
-  if (lower.includes('cloth') || lower.includes('fashion') || lower.includes('apparel') || lower.includes('wear')) {
+  if (lower.includes('cloth') || lower.includes('fashion') || lower.includes('apparel') || lower.includes('wear') || lower.includes('garment')) {
     return 'apparel'
   }
-  if (lower.includes('electronic') || lower.includes('tech') || lower.includes('computer') || lower.includes('phone')) {
+  if (lower.includes('electronic') || lower.includes('tech') || lower.includes('computer') || lower.includes('phone') || lower.includes('gadget')) {
     return 'electronics'
+  }
+  if (lower.includes('grocery') || lower.includes('supermarket') || lower.includes('produce') || lower.includes('fresh')) {
+    return 'grocery'
+  }
+  if (lower.includes('bakery') || lower.includes('bread') || lower.includes('pastry') || lower.includes('cake')) {
+    return 'bakery'
+  }
+  if (lower.includes('jewelry') || lower.includes('jewellery') || lower.includes('ring') || lower.includes('necklace') || lower.includes('watch')) {
+    return 'jewelry'
+  }
+  if (lower.includes('furniture') || lower.includes('sofa') || lower.includes('table') || lower.includes('chair') || lower.includes('bed')) {
+    return 'furniture'
+  }
+  if (lower.includes('pharmacy') || lower.includes('drug') || lower.includes('medicine') || lower.includes('vitamin') || lower.includes('health')) {
+    return 'pharmacy'
+  }
+  if (lower.includes('pet') || lower.includes('dog') || lower.includes('cat') || lower.includes('animal')) {
+    return 'pet-store'
+  }
+  if (lower.includes('liquor') || lower.includes('wine') || lower.includes('beer') || lower.includes('spirits') || lower.includes('alcohol')) {
+    return 'liquor'
+  }
+  if (lower.includes('spa') || lower.includes('salon') || lower.includes('massage') || lower.includes('hair')) {
+    return 'spa-salon'
   }
 
   return null

@@ -357,9 +357,9 @@ If you cannot find any policies, return an empty array: []`
     try {
       extractedItems = JSON.parse(text)
     } catch (parseError) {
-      console.error('Failed to parse AI response:', text)
+      console.error('Failed to parse AI response:', text.substring(0, 500))
       return NextResponse.json(
-        { success: false, error: 'Failed to parse extracted data from document' },
+        { success: false, error: 'Failed to parse extracted data from document. The AI could not understand the document structure. Try a clearer PDF or a different file format.' },
         { status: 500 }
       )
     }
@@ -443,8 +443,22 @@ If you cannot find any policies, return an empty array: []`
 
   } catch (error: any) {
     console.error('Document upload error:', error)
+    // Provide more helpful error messages
+    let errorMessage = error.message || 'Failed to process document'
+
+    // Check for common Gemini API errors
+    if (errorMessage.includes('SAFETY') || errorMessage.includes('blocked')) {
+      errorMessage = 'The document was blocked by content safety filters. Try a different file.'
+    } else if (errorMessage.includes('too large') || errorMessage.includes('size')) {
+      errorMessage = 'The file is too large. Please try a smaller PDF (under 20MB).'
+    } else if (errorMessage.includes('quota') || errorMessage.includes('rate')) {
+      errorMessage = 'API rate limit reached. Please wait a moment and try again.'
+    } else if (errorMessage.includes('invalid') || errorMessage.includes('format')) {
+      errorMessage = 'The PDF format could not be read. Try saving as a new PDF or converting to a different format.'
+    }
+
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to process document' },
+      { success: false, error: errorMessage },
       { status: 500 }
     )
   }

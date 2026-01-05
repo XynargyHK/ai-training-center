@@ -3,78 +3,104 @@
 import { useState } from 'react'
 import { Check } from 'lucide-react'
 import { getFontClass } from '@/lib/fonts'
-import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 
-interface Plan {
+interface PricingPlan {
   title: string
   original_price: number
   discounted_price: number
   popular?: boolean
   product_id?: string
+  treatments?: number
+  content?: string[]
 }
 
 interface PricingBlockData {
-  // Product name
-  product_name?: string
-  product_name_font_size?: string
-  product_name_font_family?: string
-  product_name_color?: string
+  // Headline
+  headline?: string
+  headline_font_size?: string
+  headline_font_family?: string
+  headline_color?: string
+  headline_bold?: boolean
+  headline_italic?: boolean
+  headline_text_align?: 'left' | 'center' | 'right'
+
+  // Subheadline
+  subheadline?: string
+  subheadline_font_size?: string
+  subheadline_font_family?: string
+  subheadline_color?: string
+  subheadline_bold?: boolean
+  subheadline_italic?: boolean
+  subheadline_text_align?: 'left' | 'center' | 'right'
 
   // Features
   features?: string[]
-  features_font_size?: string
-  features_font_family?: string
-  features_color?: string
+  content_font_size?: string
+  content_font_family?: string
+  content_color?: string
+  content_bold?: boolean
+  content_italic?: boolean
+  content_text_align?: 'left' | 'center' | 'right'
 
   // Plan heading
   plan_heading?: string
   plan_heading_font_size?: string
   plan_heading_font_family?: string
   plan_heading_color?: string
+  plan_heading_bold?: boolean
+  plan_heading_italic?: boolean
+  plan_heading_text_align?: 'left' | 'center' | 'right'
 
   // Plans
-  plans?: Plan[]
+  plans?: PricingPlan[]
+
+  // Price display styling
+  price_font_size?: string
+  price_font_family?: string
+  price_color?: string
+  price_bold?: boolean
+  price_italic?: boolean
+  price_text_align?: 'left' | 'center' | 'right'
+
+  // Plan title styling
+  plan_title_bold?: boolean
+  plan_title_italic?: boolean
+  plan_title_text_align?: 'left' | 'center' | 'right'
+
+  // Plan content styling
+  plan_content_font_size?: string
+  plan_content_font_family?: string
+  plan_content_color?: string
+  plan_content_bold?: boolean
+  plan_content_italic?: boolean
+  plan_content_text_align?: 'left' | 'center' | 'right'
 
   // CTA
   cta_text?: string
+  cta_font_size?: string
+  cta_font_family?: string
+  cta_color?: string
+  cta_bold?: boolean
+  cta_italic?: boolean
+  cta_text_align?: 'left' | 'center' | 'right'
+
   currency_symbol?: string
   background_color?: string
 }
 
 interface PricingBlockProps {
   data: PricingBlockData
+  onAddToCart?: (product: any) => void
 }
 
-export default function PricingBlock({ data }: PricingBlockProps) {
-  const router = useRouter()
+export default function PricingBlock({ data, onAddToCart }: PricingBlockProps) {
   const searchParams = useSearchParams()
   const businessUnitParam = searchParams.get('businessUnit') || ''
-
-  const {
-    product_name = 'Product Name',
-    product_name_font_size = '2rem',
-    product_name_font_family = 'Josefin Sans',
-    product_name_color = '#000000',
-    features = [],
-    features_font_size = '1rem',
-    features_font_family = 'Cormorant Garamond',
-    features_color = '#374151',
-    plan_heading = 'Choose Your Plan',
-    plan_heading_font_size = '1.25rem',
-    plan_heading_font_family = 'Josefin Sans',
-    plan_heading_color = '#000000',
-    plans = [],
-    cta_text = 'Buy Now & SAVE',
-    currency_symbol = '$',
-    background_color = '#ffffff'
-  } = data
-
-  // State for selected plan (default to first plan)
   const [selectedPlanIndex, setSelectedPlanIndex] = useState(0)
-  const [showAddedConfirmation, setShowAddedConfirmation] = useState(false)
 
-  // Get selected plan
+  const plans = data.plans || []
+  const features = data.features || []
   const selectedPlan = plans[selectedPlanIndex] || plans[0] || {
     title: '',
     original_price: 0,
@@ -86,36 +112,25 @@ export default function PricingBlock({ data }: PricingBlockProps) {
     ? Math.round(((selectedPlan.original_price - selectedPlan.discounted_price) / selectedPlan.original_price) * 100)
     : 0
 
+  const currencySymbol = data.currency_symbol || '$'
+
   // Add selected plan to cart
   const handleAddToCart = async () => {
-    // Get cart from localStorage
-    const cartKey = `shop_cart_${businessUnitParam}`
-    const savedCart = localStorage.getItem(cartKey)
-    let cart = []
-
-    try {
-      if (savedCart) {
-        cart = JSON.parse(savedCart)
-      }
-    } catch (e) {
-      console.error('Error loading cart:', e)
-    }
-
     let planProduct
 
     // If plan has product_id, fetch actual product data
     if (selectedPlan.product_id) {
       try {
         const response = await fetch(`/api/shop/products?businessUnit=${businessUnitParam}`)
-        const data = await response.json()
-        const product = data.products?.find((p: any) => p.id === selectedPlan.product_id)
+        const responseData = await response.json()
+        const product = responseData.products?.find((p: any) => p.id === selectedPlan.product_id)
 
         if (product) {
           planProduct = {
             id: product.id,
             title: product.title,
             description: product.description || '',
-            cost_price: selectedPlan.discounted_price, // Use plan pricing
+            cost_price: selectedPlan.discounted_price,
             compare_at_price: selectedPlan.original_price,
             thumbnail: product.thumbnail || '',
           }
@@ -137,73 +152,73 @@ export default function PricingBlock({ data }: PricingBlockProps) {
       }
     }
 
-    // Check if this plan is already in cart
-    const existingItemIndex = cart.findIndex((item: any) => item.product.id === planProduct.id)
-
-    if (existingItemIndex >= 0) {
-      // Increment quantity
-      cart[existingItemIndex].quantity += 1
-    } else {
-      // Add new item
-      cart.push({
-        product: planProduct,
-        quantity: 1
-      })
+    // Call parent's addToCart function to add to cart and open sidebar
+    if (onAddToCart) {
+      onAddToCart(planProduct)
     }
-
-    // Save to localStorage
-    localStorage.setItem(cartKey, JSON.stringify(cart))
-
-    // Show confirmation
-    setShowAddedConfirmation(true)
-    setTimeout(() => setShowAddedConfirmation(false), 3000)
   }
 
   return (
     <section
       className="py-12 px-4"
-      style={{ backgroundColor: background_color }}
+      style={{ backgroundColor: data.background_color || '#ffffff' }}
     >
-      <div className="max-w-2xl mx-auto">
-        {/* Product Name */}
-        {product_name && (
+      <div className="px-4 md:px-12 max-w-2xl mx-auto w-full">
+        {/* Headline */}
+        {data.headline && (
           <h2
-            className={`text-center font-light tracking-[0.2em] uppercase leading-tight mb-6 drop-shadow-lg ${getFontClass(product_name_font_family)}`}
+            className={`font-light tracking-[0.2em] uppercase leading-tight mb-6 ${getFontClass(data.headline_font_family)} ${
+              (data.headline_text_align || 'center') === 'left' ? 'text-left' :
+              (data.headline_text_align || 'center') === 'right' ? 'text-right' :
+              'text-center'
+            }`}
             style={{
-              fontSize: product_name_font_size,
-              color: product_name_color
+              fontSize: data.headline_font_size || '1.5rem',
+              color: data.headline_color || '#000000',
+              fontWeight: data.headline_bold ? 'bold' : undefined,
+              fontStyle: data.headline_italic ? 'italic' : undefined
             }}
           >
-            {product_name}
+            {data.headline}
           </h2>
         )}
 
-        {/* Pricing Display - Discounted LEFT, Original RIGHT */}
-        <div className="flex items-center justify-center gap-4 mb-6">
-          {/* Discounted Price */}
-          <div className="text-4xl font-bold" style={{ color: product_name_color }}>
-            {currency_symbol}{selectedPlan.discounted_price}
-          </div>
-
-          {/* Original Price (Strikethrough) */}
-          {selectedPlan.original_price > selectedPlan.discounted_price && (
-            <div className="text-2xl text-gray-400 line-through">
-              {currency_symbol}{selectedPlan.original_price}
-            </div>
-          )}
-        </div>
+        {/* Subheadline */}
+        {data.subheadline && (
+          <p
+            className={`font-light tracking-[0.15em] uppercase mb-4 ${getFontClass(data.subheadline_font_family)} ${
+              (data.subheadline_text_align || 'center') === 'left' ? 'text-left' :
+              (data.subheadline_text_align || 'center') === 'right' ? 'text-right' :
+              'text-center'
+            }`}
+            style={{
+              fontSize: data.subheadline_font_size || '1.25rem',
+              color: data.subheadline_color || '#000000',
+              fontWeight: data.subheadline_bold ? 'bold' : undefined,
+              fontStyle: data.subheadline_italic ? 'italic' : undefined
+            }}
+          >
+            {data.subheadline}
+          </p>
+        )}
 
         {/* Features */}
         {features.length > 0 && (
-          <ul className="space-y-2 mb-8">
+          <ul className={`space-y-2 mb-6 max-w-md mx-auto ${
+            (data.content_text_align || 'left') === 'left' ? 'text-left' :
+            (data.content_text_align || 'left') === 'right' ? 'text-right' :
+            'text-center'
+          }`}>
             {features.map((feature, index) => (
               <li key={index} className="flex items-start gap-2">
                 <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                 <span
-                  className={getFontClass(features_font_family)}
+                  className={`font-light ${getFontClass(data.content_font_family || 'Cormorant Garamond')}`}
                   style={{
-                    fontSize: features_font_size,
-                    color: features_color
+                    fontSize: data.content_font_size || '1.125rem',
+                    color: data.content_color || '#374151',
+                    fontWeight: data.content_bold ? 'bold' : undefined,
+                    fontStyle: data.content_italic ? 'italic' : undefined
                   }}
                 >
                   {feature}
@@ -213,16 +228,57 @@ export default function PricingBlock({ data }: PricingBlockProps) {
           </ul>
         )}
 
-        {/* Plan Heading */}
-        {plan_heading && (
-          <h3
-            className={`text-center font-light tracking-[0.15em] uppercase mb-4 drop-shadow ${getFontClass(plan_heading_font_family)}`}
+        {/* Pricing Display - Discounted LEFT, Original RIGHT */}
+        <div className={`flex items-center gap-4 mb-6 ${
+          (data.price_text_align || 'center') === 'left' ? 'justify-start' :
+          (data.price_text_align || 'center') === 'right' ? 'justify-end' :
+          'justify-center'
+        }`}>
+          {/* Discounted Price */}
+          <div
+            className={`${getFontClass(data.price_font_family)}`}
             style={{
-              fontSize: plan_heading_font_size,
-              color: plan_heading_color
+              fontSize: data.price_font_size || '2.5rem',
+              color: data.price_color || data.headline_color || '#000000',
+              fontWeight: data.price_bold ? 'bold' : undefined,
+              fontStyle: data.price_italic ? 'italic' : undefined
             }}
           >
-            {plan_heading}
+            {currencySymbol}{selectedPlan.discounted_price}
+          </div>
+
+          {/* Original Price (Strikethrough) */}
+          {selectedPlan.original_price > selectedPlan.discounted_price && (
+            <div
+              className={`line-through ${getFontClass(data.price_font_family)}`}
+              style={{
+                fontSize: data.price_font_size ? `calc(${data.price_font_size} * 0.6)` : '1.5rem',
+                color: data.subheadline_color || '#6b7280',
+                fontWeight: data.price_bold ? 'bold' : undefined,
+                fontStyle: data.price_italic ? 'italic' : undefined
+              }}
+            >
+              {currencySymbol}{selectedPlan.original_price}
+            </div>
+          )}
+        </div>
+
+        {/* Plan Heading */}
+        {data.plan_heading && (
+          <h3
+            className={`font-light tracking-[0.15em] uppercase mb-4 ${getFontClass(data.plan_heading_font_family || data.subheadline_font_family)} ${
+              (data.plan_heading_text_align || 'center') === 'left' ? 'text-left' :
+              (data.plan_heading_text_align || 'center') === 'right' ? 'text-right' :
+              'text-center'
+            }`}
+            style={{
+              fontSize: data.plan_heading_font_size || data.subheadline_font_size || '1.25rem',
+              color: data.plan_heading_color || data.subheadline_color || '#000000',
+              fontWeight: data.plan_heading_bold ? 'bold' : undefined,
+              fontStyle: data.plan_heading_italic ? 'italic' : undefined
+            }}
+          >
+            {data.plan_heading}
           </h3>
         )}
 
@@ -230,57 +286,99 @@ export default function PricingBlock({ data }: PricingBlockProps) {
         {plans.length > 0 && (
           <div className="space-y-3 mb-6">
             {plans.map((plan, index) => (
-              <label
-                key={index}
-                className={`relative flex items-center gap-3 p-4 border-2 cursor-pointer transition-all ${
-                  selectedPlanIndex === index
-                    ? 'border-black bg-gray-100'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
-                }`}
-                onClick={() => setSelectedPlanIndex(index)}
-              >
-                {/* Most Popular Badge */}
-                {plan.popular && (
-                  <div className={`absolute -top-2.5 right-4 bg-black text-white text-xs px-3 py-1 rounded-full font-semibold tracking-wider ${getFontClass(plan_heading_font_family)}`}>
-                    MOST POPULAR
+              <div key={index}>
+                <label
+                  className={`relative flex items-center gap-3 p-4 border-2 cursor-pointer transition-all ${
+                    selectedPlanIndex === index
+                      ? 'border-black bg-gray-100'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                  onClick={() => setSelectedPlanIndex(index)}
+                >
+                  {/* Most Popular Badge */}
+                  {plan.popular && (
+                    <div className={`absolute -top-2.5 right-4 bg-black text-white text-xs px-3 py-1 rounded-full font-semibold tracking-wider ${getFontClass(data.plan_heading_font_family)}`}>
+                      MOST POPULAR
+                    </div>
+                  )}
+
+                  {/* Radio Button */}
+                  <input
+                    type="radio"
+                    name="pricing-plan"
+                    checked={selectedPlanIndex === index}
+                    onChange={() => setSelectedPlanIndex(index)}
+                    className="w-5 h-5 text-violet-600 focus:ring-violet-500"
+                  />
+
+                  {/* Plan Title */}
+                  <span
+                    className={`flex-1 ${getFontClass(data.plan_title_font_family || 'Cormorant Garamond')} ${
+                      (data.plan_title_text_align || 'left') === 'left' ? 'text-left' :
+                      (data.plan_title_text_align || 'left') === 'right' ? 'text-right' :
+                      'text-center'
+                    }`}
+                    style={{
+                      fontSize: data.plan_title_font_size || '1rem',
+                      color: data.plan_title_color || '#1f2937',
+                      fontWeight: data.plan_title_bold ? 'bold' : undefined,
+                      fontStyle: data.plan_title_italic ? 'italic' : undefined
+                    }}
+                  >
+                    {plan.title}
+                  </span>
+                </label>
+
+                {/* Plan Content - Shows only when selected */}
+                {selectedPlanIndex === index && plan.content && plan.content.length > 0 && (
+                  <div className="mt-3 px-4">
+                    <ul className={`space-y-2 ${
+                      (data.plan_content_text_align || 'left') === 'left' ? 'text-left' :
+                      (data.plan_content_text_align || 'left') === 'right' ? 'text-right' :
+                      'text-center'
+                    }`}>
+                      {plan.content.map((contentItem, contentIndex) => (
+                        <li key={contentIndex} className="flex items-start gap-2">
+                          <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                          <span
+                            className={`${getFontClass(data.plan_content_font_family || 'Cormorant Garamond')}`}
+                            style={{
+                              fontSize: data.plan_content_font_size || '0.875rem',
+                              color: data.plan_content_color || '#374151',
+                              fontWeight: data.plan_content_bold ? 'bold' : undefined,
+                              fontStyle: data.plan_content_italic ? 'italic' : undefined
+                            }}
+                          >
+                            {contentItem}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
-
-                {/* Radio Button */}
-                <input
-                  type="radio"
-                  name="pricing-plan"
-                  checked={selectedPlanIndex === index}
-                  onChange={() => setSelectedPlanIndex(index)}
-                  className="w-5 h-5 text-violet-600 focus:ring-violet-500"
-                />
-
-                {/* Plan Title */}
-                <span className="flex-1 font-medium text-gray-900">
-                  {plan.title}
-                </span>
-              </label>
+              </div>
             ))}
           </div>
         )}
 
         {/* CTA Button with Auto-Calculated Discount */}
-        {cta_text && (
-          <div>
-            <button
-              onClick={handleAddToCart}
-              className={`w-full px-8 py-4 bg-black text-white text-sm font-bold tracking-wider uppercase hover:bg-gray-800 transition-colors shadow-lg ${getFontClass(product_name_font_family)}`}
-            >
-              {cta_text} {discountPercentage > 0 && `${discountPercentage}%`}
-            </button>
-
-            {/* Added to Cart Confirmation */}
-            {showAddedConfirmation && (
-              <div className="mt-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-lg text-center">
-                ✓ Added to cart! <Link href={`/livechat/shop?businessUnit=${businessUnitParam}&openCart=true`} className="underline font-semibold">View Cart</Link>
-              </div>
-            )}
-          </div>
+        {data.cta_text && (
+          <button
+            onClick={handleAddToCart}
+            className={`w-full px-8 py-4 bg-black tracking-wider uppercase hover:bg-gray-800 transition-colors shadow-lg ${getFontClass(data.cta_font_family || data.headline_font_family)} ${
+              (data.cta_text_align || 'center') === 'left' ? 'text-left' :
+              (data.cta_text_align || 'center') === 'right' ? 'text-right' :
+              'text-center'
+            }`}
+            style={{
+              fontSize: data.cta_font_size || '0.875rem',
+              color: data.cta_color || '#ffffff',
+              fontWeight: data.cta_bold ? 'bold' : undefined,
+              fontStyle: data.cta_italic ? 'italic' : undefined
+            }}
+          >
+            {data.cta_text} {discountPercentage > 0 && `${discountPercentage}%`}
+          </button>
         )}
       </div>
     </section>

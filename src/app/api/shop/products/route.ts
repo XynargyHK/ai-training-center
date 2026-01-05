@@ -11,12 +11,37 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+// Helper to resolve business unit ID from slug
+async function resolveBusinessUnitId(slugOrId: string): Promise<string | null> {
+  // Check if it's already a UUID
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (uuidRegex.test(slugOrId)) {
+    return slugOrId
+  }
+
+  // Look up by slug
+  const { data } = await supabase
+    .from('business_units')
+    .select('id')
+    .eq('slug', slugOrId)
+    .single()
+
+  return data?.id || null
+}
+
 // GET - List products with types
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const productTypeId = searchParams.get('productTypeId')
     const search = searchParams.get('search')
+    const businessUnitSlug = searchParams.get('businessUnit')
+
+    // Resolve business unit ID from slug
+    let businessUnitId: string | null = null
+    if (businessUnitSlug) {
+      businessUnitId = await resolveBusinessUnitId(businessUnitSlug)
+    }
 
     let query = supabase
       .from('products')
@@ -37,10 +62,17 @@ export async function GET(request: NextRequest) {
         cost_price,
         is_featured,
         product_type_id,
+        business_unit_id,
         product_types(id, name)
       `)
       .is('deleted_at', null)
+      .eq('status', 'published')
       .order('title')
+
+    // Filter by business unit if provided
+    if (businessUnitId) {
+      query = query.eq('business_unit_id', businessUnitId)
+    }
 
     if (productTypeId) {
       query = query.eq('product_type_id', productTypeId)
@@ -54,8 +86,8 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error
 
-    // Fetch add-ons for all products
-    const { data: addonMatches } = await supabase
+    // Fetch add-ons for products (filtered by business unit if applicable)
+    let addonQuery = supabase
       .from('product_addon_matches')
       .select(`
         product_id,
@@ -64,6 +96,8 @@ export async function GET(request: NextRequest) {
         addon:products!addon_product_id(id, title, tagline, thumbnail, cost_price, product_types(id, name))
       `)
       .order('display_order')
+
+    const { data: addonMatches } = await addonQuery
 
     // Create a map of product_id -> addons
     const addonsByProduct: Record<string, any[]> = {}
@@ -82,11 +116,18 @@ export async function GET(request: NextRequest) {
       addons: addonsByProduct[p.id] || []
     }))
 
-    // Get product types with counts
-    const { data: allProducts } = await supabase
+    // Get product types with counts (filtered by business unit and published only)
+    let typesQuery = supabase
       .from('products')
       .select('product_type_id, product_types(id, name)')
       .is('deleted_at', null)
+      .eq('status', 'published')
+
+    if (businessUnitId) {
+      typesQuery = typesQuery.eq('business_unit_id', businessUnitId)
+    }
+
+    const { data: allProducts } = await typesQuery
 
     // Count products by type
     const typeCounts: Record<string, { id: string; name: string; count: number }> = {}
@@ -109,7 +150,8 @@ export async function GET(request: NextRequest) {
       success: true,
       products: productsWithAddons,
       productTypes,
-      total: productsWithAddons?.length || 0
+      total: productsWithAddons?.length || 0,
+      businessUnitId
     })
   } catch (error: any) {
     console.error('Error fetching shop products:', error)

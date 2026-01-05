@@ -24,10 +24,12 @@ interface Step {
 }
 
 interface StepsBlockData {
-  heading?: string
   heading_font_size?: string
   heading_font_family?: string
   heading_color?: string
+  heading_align?: 'left' | 'center' | 'right'
+  heading_bold?: boolean
+  heading_italic?: boolean
   background_color?: string
   overall_layout?: 'vertical' | 'horizontal'
   steps: Step[]
@@ -35,14 +37,17 @@ interface StepsBlockData {
 
 interface StepsBlockProps {
   data: StepsBlockData
+  heading?: string
 }
 
-export default function StepsBlock({ data }: StepsBlockProps) {
+export default function StepsBlock({ data, heading = '' }: StepsBlockProps) {
   const {
-    heading = 'HOW TO USE',
     heading_font_size = '2.5rem',
     heading_font_family = 'Josefin Sans',
     heading_color = '#000000',
+    heading_align = 'center',
+    heading_bold = false,
+    heading_italic = false,
     background_color = '#ffffff',
     overall_layout = 'vertical',
     steps = []
@@ -66,10 +71,13 @@ export default function StepsBlock({ data }: StepsBlockProps) {
         {/* Heading */}
         {heading && (
           <h2
-            className={`text-center font-light tracking-[0.2em] uppercase leading-tight mb-4 drop-shadow-lg ${getFontClass(heading_font_family)}`}
+            className={`font-light tracking-[0.2em] uppercase leading-tight mb-4 drop-shadow-lg ${getFontClass(heading_font_family)}`}
             style={{
               fontSize: heading_font_size,
-              color: heading_color
+              color: heading_color,
+              textAlign: heading_align,
+              fontWeight: heading_bold ? 'bold' : undefined,
+              fontStyle: heading_italic ? 'italic' : undefined
             }}
           >
             {heading}
@@ -78,7 +86,7 @@ export default function StepsBlock({ data }: StepsBlockProps) {
 
         {/* Steps Container */}
         {overall_layout === 'horizontal' ? (
-          <div className="overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="overflow-x-auto snap-x snap-mandatory pb-4" style={{ WebkitOverflowScrolling: 'touch' }}>
             <div className="flex gap-4">
               {steps.map((step, index) => {
             const isTextLeft = step.text_position === 'left'

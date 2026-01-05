@@ -227,8 +227,6 @@ const AITrainingCenter = () => {
     }
   }, [selectedBusinessUnit])
 
-  
-
   useEffect(() => {
     let interval: NodeJS.Timeout
     if (trainingSession && trainingSession.status !== 'completed' && trainingSession.status !== 'failed') {
@@ -569,7 +567,7 @@ const AITrainingCenter = () => {
       console.log(`✅ Loaded ${roomServicesData?.length || 0} room-service assignments`)
 
       // Load appointments
-      const appointmentsResponse = await fetch(`/api/appointments?businessUnit=${selectedBusinessUnit}`)
+      const appointmentsResponse = await fetch(`/api/appointments?businessUnitId=${selectedBusinessUnit}`)
       if (appointmentsResponse.ok) {
         const appointmentsData = await appointmentsResponse.json()
         setAppointments(appointmentsData.appointments || [])
@@ -1638,11 +1636,11 @@ Format as JSON array:
           </div>
 
           {/* Profile, Language Selector and View Live Chat */}
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto flex-wrap justify-end">
             {/* Profile Button */}
             <button
               onClick={() => setShowProfileModal(true)}
-              className="bg-white border border-gray-300 hover:border-purple-500 text-gray-900 px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-semibold flex items-center gap-2 transition-all duration-200 hover:shadow-lg text-sm sm:text-base"
+              className="bg-white border border-gray-300 hover:border-purple-500 text-gray-900 px-2.5 sm:px-4 py-2 sm:py-3 rounded-xl font-semibold flex items-center gap-1.5 sm:gap-2 transition-all duration-200 hover:shadow-lg text-sm sm:text-base"
               title={t.profile || 'Profile'}
             >
               <User className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -1666,7 +1664,7 @@ Format as JSON array:
                   setIsLoading(false)
                   alert(`Loaded ${faqData?.length || 0} FAQs in ${newLanguage}\nFirst FAQ: ${faqData?.[0]?.question || 'none'}`)
                 }}
-                className="appearance-none bg-white border border-gray-300 rounded-xl px-3 sm:px-4 py-2 sm:py-3 pr-8 sm:pr-10 text-sm sm:text-base text-gray-900 hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer transition-colors"
+                className="appearance-none bg-white border border-gray-300 rounded-xl px-2.5 sm:px-4 py-2 sm:py-3 pr-7 sm:pr-10 text-sm sm:text-base text-gray-900 hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer transition-colors"
                 title={t.language}
               >
                 {Object.entries(languageNames).map(([code, name]) => (
@@ -1675,7 +1673,7 @@ Format as JSON array:
                   </option>
                 ))}
               </select>
-              <Globe className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+              <Globe className="absolute right-1.5 sm:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
             </div>
 
             {/* View Live Chat Button */}
@@ -1683,74 +1681,74 @@ Format as JSON array:
               href={`/livechat?businessUnit=${selectedBusinessUnit}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 hover:from-purple-600 hover:via-pink-600 hover:to-cyan-600 text-gray-900 px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold flex items-center gap-2 transition-all duration-200 hover:shadow-lg hover:scale-105 text-sm sm:text-base justify-center flex-1 sm:flex-none"
+              className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 hover:from-purple-600 hover:via-pink-600 hover:to-cyan-600 text-gray-900 px-3 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold flex items-center gap-1.5 sm:gap-2 transition-all duration-200 hover:shadow-lg hover:scale-105 text-sm sm:text-base justify-center"
             >
               <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-              {t.viewLiveChat}
+              <span className="hidden sm:inline">{t.viewLiveChat}</span>
+              <span className="sm:hidden">Chat</span>
             </a>
           </div>
         </div>
 
         {/* Business Unit Selector */}
-        <div className="mb-6 bg-white rounded-xl p-4 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <h3 className="text-sm font-medium text-gray-500">{t.businessUnit}:</h3>
-              <div className="flex gap-2 flex-wrap">
-                {businessUnits.map((unit) => (
-                  <button
-                    key={unit.id}
-                    onClick={() => setSelectedBusinessUnit(unit.id)}
-                    className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-                      selectedBusinessUnit === unit.id
-                        ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-gray-900'
-                        : 'bg-gray-100 text-gray-600 hover:bg-slate-600'
-                    }`}
-                  >
-                    <span>{unit.name}</span>
-                    {selectedBusinessUnit === unit.id && (
-                      <span className="text-xs opacity-75">({unit.industry})</span>
-                    )}
-                    {unit.id !== 'skincoach' && selectedBusinessUnit === unit.id && (
-                      <span
-                        onClick={(e) => {
+        <div className="mb-6 bg-white rounded-xl p-3 sm:p-4 border border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <h3 className="text-sm font-medium text-gray-500 shrink-0">{t.businessUnit}:</h3>
+            <div className="flex gap-2 flex-wrap overflow-x-auto pb-1 -mb-1">
+              {businessUnits.map((unit) => (
+                <button
+                  key={unit.id}
+                  onClick={() => setSelectedBusinessUnit(unit.id)}
+                  className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-colors flex items-center gap-1 sm:gap-2 text-sm sm:text-base whitespace-nowrap ${
+                    selectedBusinessUnit === unit.id
+                      ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-gray-900'
+                      : 'bg-gray-100 text-gray-600 hover:bg-slate-600'
+                  }`}
+                >
+                  <span>{unit.name}</span>
+                  {selectedBusinessUnit === unit.id && (
+                    <span className="text-xs opacity-75 hidden sm:inline">({unit.industry})</span>
+                  )}
+                  {unit.id !== 'skincoach' && selectedBusinessUnit === unit.id && (
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteBusinessUnit(unit.id)
+                      }}
+                      className="ml-1 sm:ml-2 text-red-400 hover:text-red-300 cursor-pointer"
+                      title="Delete business unit"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
                           e.stopPropagation()
                           handleDeleteBusinessUnit(unit.id)
-                        }}
-                        className="ml-2 text-red-400 hover:text-red-300 cursor-pointer"
-                        title="Delete business unit"
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            handleDeleteBusinessUnit(unit.id)
-                          }
-                        }}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </span>
-                    )}
-                  </button>
-                ))}
-                {!showAddBusinessUnit && (
-                  <button
-                    onClick={() => setShowAddBusinessUnit(true)}
-                    className="px-4 py-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-slate-600 transition-colors flex items-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    {t.addBusinessUnit}
-                  </button>
-                )}
-              </div>
+                        }
+                      }}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </span>
+                  )}
+                </button>
+              ))}
+              {!showAddBusinessUnit && (
+                <button
+                  onClick={() => setShowAddBusinessUnit(true)}
+                  className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-slate-600 transition-colors flex items-center gap-1 sm:gap-2 text-sm sm:text-base whitespace-nowrap"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="hidden sm:inline">{t.addBusinessUnit}</span>
+                  <span className="sm:hidden">Add</span>
+                </button>
+              )}
             </div>
           </div>
 
           {/* Add Business Unit Form */}
           {showAddBusinessUnit && (
             <div className="mt-4 pt-4 border-t border-gray-200">
-              <div className="flex gap-3 items-end">
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-gray-500 mb-2">{t.businessName}</label>
                   <input
@@ -1758,7 +1756,7 @@ Format as JSON array:
                     value={newBusinessUnitName}
                     onChange={(e) => setNewBusinessUnitName(e.target.value)}
                     placeholder={t.businessNamePlaceholder}
-                    className="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 placeholder-gray-400"
+                    className="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 placeholder-gray-400 text-sm sm:text-base"
                     autoFocus
                   />
                 </div>
@@ -1769,26 +1767,28 @@ Format as JSON array:
                     value={newBusinessUnitIndustry}
                     onChange={(e) => setNewBusinessUnitIndustry(e.target.value)}
                     placeholder={t.industryPlaceholder}
-                    className="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 placeholder-gray-400"
+                    className="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 placeholder-gray-400 text-sm sm:text-base"
                   />
                 </div>
-                <button
-                  onClick={addBusinessUnit}
-                  disabled={!newBusinessUnitName.trim()}
-                  className="bg-green-600 hover:bg-green-700 disabled:bg-slate-600 px-4 py-2 rounded-lg transition-colors"
-                >
-                  {t.add}
-                </button>
-                <button
-                  onClick={() => {
-                    setShowAddBusinessUnit(false)
-                    setNewBusinessUnitName('')
-                    setNewBusinessUnitIndustry('')
-                  }}
-                  className="bg-slate-600 hover:bg-gray-100 px-4 py-2 rounded-lg transition-colors"
-                >
-                  {t.cancel}
-                </button>
+                <div className="flex gap-2 sm:gap-3">
+                  <button
+                    onClick={addBusinessUnit}
+                    disabled={!newBusinessUnitName.trim()}
+                    className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 disabled:bg-slate-600 px-4 py-2 rounded-lg transition-colors text-white text-sm sm:text-base"
+                  >
+                    {t.add}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowAddBusinessUnit(false)
+                      setNewBusinessUnitName('')
+                      setNewBusinessUnitIndustry('')
+                    }}
+                    className="flex-1 sm:flex-none bg-slate-600 hover:bg-gray-500 px-4 py-2 rounded-lg transition-colors text-white text-sm sm:text-base"
+                  >
+                    {t.cancel}
+                  </button>
+                </div>
               </div>
             </div>
           )}

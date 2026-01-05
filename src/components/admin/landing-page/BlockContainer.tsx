@@ -12,6 +12,7 @@ interface BlockContainerProps {
   onDelete: () => void
   dragHandleProps?: any  // From react-beautiful-dnd
   children: React.ReactNode
+  headerActions?: React.ReactNode  // Custom actions to show in header
 }
 
 export default function BlockContainer({
@@ -20,9 +21,10 @@ export default function BlockContainer({
   onUpdate,
   onDelete,
   dragHandleProps,
-  children
+  children,
+  headerActions
 }: BlockContainerProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(true)
   const [isEditingName, setIsEditingName] = useState(false)
   const [editedName, setEditedName] = useState(block.name)
 
@@ -41,14 +43,16 @@ export default function BlockContainer({
   return (
     <div className="bg-gradient-to-r from-slate-800/50 to-slate-800/30 rounded-lg border border-slate-600 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-3 p-4 bg-slate-800/50 border-b border-slate-600">
-        {/* Block Icon */}
-        <div className="w-10 h-10 bg-violet-500/20 rounded-lg flex items-center justify-center text-xl">
-          {blockConfig?.icon || '📦'}
+      <div className="relative flex items-center gap-3 p-4 bg-slate-800/50 border-b border-slate-600">
+        {/* Block Type Label - Top Center */}
+        <div className="absolute top-1 left-1/2 -translate-x-1/2">
+          <span className="text-[10px] text-white uppercase tracking-wider">
+            {blockConfig?.label || block.type}
+          </span>
         </div>
 
         {/* Block Name/Type */}
-        <div className="flex-1">
+        <div className="flex-1 mt-3">
           {isEditingName ? (
             <div className="flex items-center gap-2">
               <input
@@ -82,16 +86,17 @@ export default function BlockContainer({
               </button>
             </div>
           )}
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-xs text-slate-500">#{index + 1}</span>
-            <span className="text-xs px-2 py-0.5 bg-violet-500/20 text-violet-400 rounded">
-              {blockConfig?.label || block.type}
-            </span>
-          </div>
         </div>
 
+        {/* Custom Header Actions */}
+        {headerActions && (
+          <div className="flex items-center gap-2 mt-3">
+            {headerActions}
+          </div>
+        )}
+
         {/* Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mt-3">
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="text-slate-400 hover:text-white transition-colors p-1"

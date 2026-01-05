@@ -20,24 +20,29 @@ interface AccordionItem {
 }
 
 interface AccordionBlockData {
-  heading?: string
   heading_font_size?: string
   heading_font_family?: string
   heading_color?: string
+  heading_align?: 'left' | 'center' | 'right'
+  heading_bold?: boolean
+  heading_italic?: boolean
   items: AccordionItem[]
   background_color?: string
 }
 
 interface AccordionBlockProps {
   data: AccordionBlockData
+  heading?: string
 }
 
-export default function AccordionBlock({ data }: AccordionBlockProps) {
+export default function AccordionBlock({ data, heading = '' }: AccordionBlockProps) {
   const {
-    heading = 'Frequently Asked Questions',
     heading_font_size = '2.5rem',
     heading_font_family = 'Josefin Sans',
     heading_color = '#000000',
+    heading_align = 'center',
+    heading_bold = false,
+    heading_italic = false,
     items = [],
     background_color = '#ffffff'
   } = data
@@ -61,10 +66,13 @@ export default function AccordionBlock({ data }: AccordionBlockProps) {
         {/* Heading */}
         {heading && (
           <h2
-            className={`text-center font-light tracking-[0.2em] uppercase leading-tight mb-12 drop-shadow-lg ${getFontClass(heading_font_family)}`}
+            className={`font-light tracking-[0.2em] uppercase leading-tight mb-12 drop-shadow-lg ${getFontClass(heading_font_family)}`}
             style={{
               fontSize: heading_font_size,
-              color: heading_color
+              color: heading_color,
+              textAlign: heading_align,
+              fontWeight: heading_bold ? 'bold' : undefined,
+              fontStyle: heading_italic ? 'italic' : undefined
             }}
           >
             {heading}

@@ -94,19 +94,52 @@ function handleSupabaseError(error: any, context: string): void {
 export async function loadKnowledge(businessUnitSlugOrId?: string | null) {
   const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
 
-  const { data, error } = await supabase
+  // Load industry knowledge from knowledge_base table
+  const { data: knowledgeData, error: knowledgeError } = await supabase
     .from('knowledge_base')
     .select('*')
     .eq('business_unit_id', businessUnitId)
     .order('created_at', { ascending: false })
 
-  if (error) {
-    handleSupabaseError(error, 'Loading knowledge base')
-    return []
+  if (knowledgeError) {
+    handleSupabaseError(knowledgeError, 'Loading knowledge base')
   }
 
-  // Transform to match existing interface
-  return data.map(item => ({
+  // Load products
+  const { data: productsData, error: productsError } = await supabase
+    .from('products')
+    .select('*')
+    .eq('business_unit_id', businessUnitId)
+    .eq('status', 'published')
+
+  if (productsError) {
+    console.error('Error loading products for knowledge:', productsError)
+  }
+
+  // Load services
+  const { data: servicesData, error: servicesError} = await supabase
+    .from('services')
+    .select('*')
+    .eq('business_unit_id', businessUnitId)
+
+  if (servicesError) {
+    console.error('Error loading services for knowledge:', servicesError)
+  }
+
+  // Load landing page content
+  const { data: landingPageData, error: landingPageError } = await supabase
+    .from('landing_pages')
+    .select('*')
+    .eq('business_unit_id', businessUnitId)
+    .eq('is_published', true)
+    .single()
+
+  if (landingPageError) {
+    console.error('Error loading landing page for knowledge:', landingPageError)
+  }
+
+  // Transform industry knowledge
+  const knowledgeEntries = (knowledgeData || []).map(item => ({
     id: item.id,
     category: item.category,
     topic: item.topic || item.title,
@@ -118,6 +151,87 @@ export async function loadKnowledge(businessUnitSlugOrId?: string | null) {
     fileName: item.file_name,
     filePath: item.file_path
   }))
+
+  // Transform products into knowledge entries
+  const productEntries = (productsData || []).map(product => ({
+    id: `product-${product.id}`,
+    category: 'Products',
+    topic: product.title,
+    content: `Product: ${product.title}${product.subtitle ? ` - ${product.subtitle}` : ''}
+Description: ${product.description || 'No description'}
+${product.tagline ? `Tagline: ${product.tagline}` : ''}
+${product.key_actives ? `Key Actives: ${product.key_actives}` : ''}
+${product.face_benefits ? `Face Benefits: ${product.face_benefits}` : ''}
+${product.body_benefits ? `Body Benefits: ${product.body_benefits}` : ''}
+${product.hair_benefits ? `Hair Benefits: ${product.hair_benefits}` : ''}
+${product.eye_benefits ? `Eye Benefits: ${product.eye_benefits}` : ''}
+${product.cost_price ? `Price: $${product.cost_price}` : ''}
+${product.compare_at_price ? `Regular Price: $${product.compare_at_price}` : ''}`,
+    keywords: [product.title, ...(product.tagline ? [product.tagline] : [])],
+    confidence: 1.0,
+    createdAt: new Date(product.created_at),
+    updatedAt: new Date(product.updated_at)
+  }))
+
+  // Transform services into knowledge entries
+  const serviceEntries = (servicesData || []).map(service => ({
+    id: `service-${service.id}`,
+    category: 'Services',
+    topic: service.name,
+    content: `Service: ${service.name}
+Description: ${service.description || 'No description'}
+${service.duration ? `Duration: ${service.duration} minutes` : ''}
+${service.price ? `Price: ${service.currency || '$'}${service.price}` : ''}
+Category: ${service.category || 'General'}`,
+    keywords: [service.name, service.category].filter(Boolean),
+    confidence: 1.0,
+    createdAt: new Date(service.created_at),
+    updatedAt: new Date(service.updated_at)
+  }))
+
+  // Transform landing page content into knowledge entry
+  const landingPageEntries = []
+  if (landingPageData) {
+    const lp = landingPageData
+
+    // Extract hero content
+    const heroSlides = lp.hero_slides || []
+    const heroContent = heroSlides.map((slide: any) =>
+      `${slide.headline || ''} ${slide.subheadline || ''} ${slide.content || ''}`
+    ).join(' ')
+
+    // Extract blocks content
+    const blocks = lp.blocks || []
+    const blocksContent = blocks.map((block: any) => {
+      if (block.data) {
+        return JSON.stringify(block.data).replace(/[{}"]/g, ' ')
+      }
+      return ''
+    }).join(' ')
+
+    landingPageEntries.push({
+      id: `landing-page-${lp.id}`,
+      category: 'Landing Page',
+      topic: 'Website Content',
+      content: `Landing Page Content:
+${heroContent}
+${blocksContent}
+${lp.announcement_text || ''}
+${lp.footer_disclaimer || ''}`,
+      keywords: ['landing page', 'website', 'homepage'],
+      confidence: 1.0,
+      createdAt: new Date(lp.created_at),
+      updatedAt: new Date(lp.updated_at)
+    })
+  }
+
+  // Combine all knowledge sources
+  return [
+    ...knowledgeEntries,
+    ...productEntries,
+    ...serviceEntries,
+    ...landingPageEntries
+  ]
 }
 
 export async function saveKnowledge(entry: any, businessUnitSlugOrId?: string | null) {
@@ -683,16 +797,25 @@ export async function copyDefaultGuidelines(targetBusinessUnitSlugOrId: string) 
   }
 
   // Copy guidelines to the new business unit
-  const guidelinesToInsert = defaultGuidelines.map(g => ({
-    business_unit_id: targetBusinessUnitId,
-    original_id: `guideline-${Date.now()}-${Math.random().toString(36).substring(7)}`,
-    category: g.category,
-    title: g.title,
-    content: g.content,
-    embedding: g.embedding,
-    embedding_model: g.embedding_model,
-    embedded_at: g.embedded_at
-  }))
+  // Generate new UUIDs for each guideline
+  const { v4: uuidv4 } = await import('uuid')
+
+  const guidelinesToInsert = defaultGuidelines.map(g => {
+    const newId = uuidv4()
+    return {
+      id: newId,
+      business_unit_id: targetBusinessUnitId,
+      original_id: `guideline-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+      reference_id: newId, // Required for multi-language support
+      language: g.language || 'en',
+      category: g.category,
+      title: g.title,
+      content: g.content,
+      embedding: g.embedding,
+      embedding_model: g.embedding_model,
+      embedded_at: g.embedded_at
+    }
+  })
 
   const { error: insertError } = await supabase
     .from('guidelines')

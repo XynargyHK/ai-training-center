@@ -15,10 +15,12 @@ interface Testimonial {
 }
 
 interface TestimonialsBlockData {
-  heading?: string
   heading_font_size?: string
   heading_font_family?: string
   heading_color?: string
+  heading_align?: 'left' | 'center' | 'right'
+  heading_bold?: boolean
+  heading_italic?: boolean
   testimonials: Testimonial[]
   background_color?: string
   autoplay?: boolean
@@ -27,14 +29,17 @@ interface TestimonialsBlockData {
 
 interface TestimonialsBlockProps {
   data: TestimonialsBlockData
+  heading?: string
 }
 
-export default function TestimonialsBlock({ data }: TestimonialsBlockProps) {
+export default function TestimonialsBlock({ data, heading = '' }: TestimonialsBlockProps) {
   const {
-    heading = 'Customer Reviews',
     heading_font_size = '2.5rem',
     heading_font_family = 'Josefin Sans',
     heading_color = '#000000',
+    heading_align = 'center',
+    heading_bold = false,
+    heading_italic = false,
     testimonials = [],
     background_color = '#ffffff',
     autoplay = false,
@@ -75,10 +80,13 @@ export default function TestimonialsBlock({ data }: TestimonialsBlockProps) {
         {/* Heading */}
         {heading && (
           <h2
-            className={`text-center font-light tracking-[0.2em] uppercase leading-tight mb-12 ${getFontClass(heading_font_family)}`}
+            className={`font-light tracking-[0.2em] uppercase leading-tight mb-12 ${getFontClass(heading_font_family)}`}
             style={{
               fontSize: heading_font_size,
-              color: heading_color
+              color: heading_color,
+              textAlign: heading_align,
+              fontWeight: heading_bold ? 'bold' : undefined,
+              fontStyle: heading_italic ? 'italic' : undefined
             }}
           >
             {heading}

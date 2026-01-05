@@ -15,6 +15,10 @@ export default function AccordionBlockEditor({ block, onUpdate }: AccordionBlock
     heading_font_size?: string
     heading_font_family?: string
     heading_color?: string
+    heading_align?: 'left' | 'center' | 'right'
+    heading_bold?: boolean
+    heading_italic?: boolean
+    background_color?: string
     items: Array<{
       title: string
       title_font_size?: string
@@ -109,22 +113,6 @@ export default function AccordionBlockEditor({ block, onUpdate }: AccordionBlock
 
   return (
     <div className="space-y-4">
-      {/* Heading Section - Using UniversalTextEditor */}
-      <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-600">
-        <UniversalTextEditor
-          label="Heading"
-          value={data.heading || ''}
-          onChange={(value) => updateData({ heading: value })}
-          fontSize={data.heading_font_size || '2.5rem'}
-          onFontSizeChange={(value) => updateData({ heading_font_size: value })}
-          fontFamily={data.heading_font_family || 'Josefin Sans'}
-          onFontFamilyChange={(value) => updateData({ heading_font_family: value })}
-          color={data.heading_color || '#000000'}
-          onColorChange={(value) => updateData({ heading_color: value })}
-          placeholder="e.g., Frequently Asked Questions"
-        />
-      </div>
-
       {/* FAQ Items */}
       {data.items.map((item, index) => (
         <div key={index} className="bg-slate-800/50 rounded-lg p-4 border border-slate-600">

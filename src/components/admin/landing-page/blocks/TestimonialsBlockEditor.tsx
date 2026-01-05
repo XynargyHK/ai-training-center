@@ -108,32 +108,6 @@ export default function TestimonialsBlockEditor({ block, onUpdate, businessUnitI
 
   return (
     <div className="space-y-6">
-      {/* Section Heading */}
-      <div>
-        <TextEditorControls
-          label="Section Heading"
-          value={block.data.heading || 'Customer Reviews'}
-          onChange={(value) => updateData('heading', value)}
-          fontSize={block.data.heading_font_size}
-          onFontSizeChange={(size) => updateData('heading_font_size', size)}
-          fontFamily={block.data.heading_font_family}
-          onFontFamilyChange={(family) => updateData('heading_font_family', family)}
-          color={block.data.heading_color}
-          onColorChange={(color) => updateData('heading_color', color)}
-        />
-      </div>
-
-      {/* Background Color */}
-      <div>
-        <label className="text-sm font-medium text-slate-300 block mb-2">Background Color</label>
-        <input
-          type="color"
-          value={block.data.background_color || '#ffffff'}
-          onChange={(e) => updateData('background_color', e.target.value)}
-          className="w-20 h-10 rounded cursor-pointer"
-        />
-      </div>
-
       {/* Carousel Settings */}
       <div className="space-y-3">
         <label className="text-sm font-medium text-slate-300 block">Carousel Settings</label>

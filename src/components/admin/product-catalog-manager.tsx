@@ -135,9 +135,12 @@ export default function ProductCatalogManager({
       setProducts(productsData.products || [])
       setTotalProducts(productsData.products?.length || 0)
 
-      // Show wizard if catalog is empty
+      // Show wizard ONLY if both categories AND products are completely empty
+      // Don't show if there are products (even without categories)
       if ((categoriesData.categories?.length || 0) === 0 && (productsData.products?.length || 0) === 0) {
         setShowWizard(true)
+      } else {
+        setShowWizard(false)
       }
     } catch (error) {
       console.error('Failed to load catalog data:', error)

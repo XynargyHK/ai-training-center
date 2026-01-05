@@ -2,16 +2,18 @@
 
 import type { LandingPageBlock } from '@/types/landing-page-blocks'
 import SplitBlock from './blocks/SplitBlock'
-import PricingBlock from './blocks/PricingBlock'
 import TestimonialsBlock from './blocks/TestimonialsBlock'
 import AccordionBlock from './blocks/AccordionBlock'
 import StepsBlock from './blocks/StepsBlock'
+import PricingBlock from './blocks/PricingBlock'
+import StaticBannerBlock from './blocks/StaticBannerBlock'
 
 interface BlockRendererProps {
   blocks: LandingPageBlock[]
+  onAddToCart?: (product: any) => void
 }
 
-export default function BlockRenderer({ blocks }: BlockRendererProps) {
+export default function BlockRenderer({ blocks, onAddToCart }: BlockRendererProps) {
   console.log('[BlockRenderer] Rendering', blocks.length, 'blocks')
 
   if (!blocks || blocks.length === 0) {
@@ -33,10 +35,10 @@ export default function BlockRenderer({ blocks }: BlockRendererProps) {
             return <SplitBlock key={block.id} data={block.data as any} />
 
           case 'pricing':
-            return <PricingBlock key={block.id} data={block.data as any} />
+            return <PricingBlock key={block.id} data={block.data as any} onAddToCart={onAddToCart} />
 
           case 'testimonials':
-            return <TestimonialsBlock key={block.id} data={block.data as any} />
+            return <TestimonialsBlock key={block.id} data={block.data as any} heading={block.name} />
 
           case 'card':
             // TODO: Implement CardBlock component
@@ -49,10 +51,13 @@ export default function BlockRenderer({ blocks }: BlockRendererProps) {
             )
 
           case 'accordion':
-            return <AccordionBlock key={block.id} data={block.data as any} />
+            return <AccordionBlock key={block.id} data={block.data as any} heading={block.name} />
 
           case 'steps':
-            return <StepsBlock key={block.id} data={block.data as any} />
+            return <StepsBlock key={block.id} data={block.data as any} heading={block.name} />
+
+          case 'static_banner':
+            return <StaticBannerBlock key={block.id} data={block.data as any} />
 
           default:
             // Silently skip unknown block types (legacy blocks or removed types)

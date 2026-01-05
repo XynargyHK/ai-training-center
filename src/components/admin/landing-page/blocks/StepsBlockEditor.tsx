@@ -27,10 +27,12 @@ interface Step {
 }
 
 interface StepsBlockData {
-  heading?: string
   heading_font_size?: string
   heading_font_family?: string
   heading_color?: string
+  heading_align?: 'left' | 'center' | 'right'
+  heading_bold?: boolean
+  heading_italic?: boolean
   background_color?: string
   overall_layout?: 'vertical' | 'horizontal'
   steps: Step[]
@@ -159,62 +161,6 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
 
   return (
     <div className="space-y-6">
-      {/* Heading Settings - Using UniversalTextEditor */}
-      <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-600">
-        <UniversalTextEditor
-          label="Heading"
-          value={data.heading || ''}
-          onChange={(value) => updateData({ heading: value })}
-          fontSize={data.heading_font_size || '2.5rem'}
-          onFontSizeChange={(value) => updateData({ heading_font_size: value })}
-          fontFamily={data.heading_font_family || 'Josefin Sans'}
-          onFontFamilyChange={(value) => updateData({ heading_font_family: value })}
-          color={data.heading_color || '#000000'}
-          onColorChange={(value) => updateData({ heading_color: value })}
-          placeholder="e.g., HOW TO USE"
-        />
-      </div>
-
-      {/* Overall Layout */}
-      <div>
-        <label className="block text-sm font-medium text-slate-300 mb-2">Overall Layout</label>
-        <div className="flex gap-2">
-          <button
-            onClick={() => updateData({ overall_layout: 'vertical' })}
-            className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
-              (data.overall_layout || 'vertical') === 'vertical'
-                ? 'border-violet-500 bg-violet-500/20 text-white'
-                : 'border-slate-600 bg-slate-800/50 text-slate-400 hover:border-slate-500'
-            }`}
-          >
-            <div className="text-sm font-medium">Vertical</div>
-            <div className="text-xs mt-1 opacity-70">Steps stack ↓</div>
-          </button>
-          <button
-            onClick={() => updateData({ overall_layout: 'horizontal' })}
-            className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
-              data.overall_layout === 'horizontal'
-                ? 'border-violet-500 bg-violet-500/20 text-white'
-                : 'border-slate-600 bg-slate-800/50 text-slate-400 hover:border-slate-500'
-            }`}
-          >
-            <div className="text-sm font-medium">Horizontal</div>
-            <div className="text-xs mt-1 opacity-70">Steps →→→</div>
-          </button>
-        </div>
-      </div>
-
-      {/* Background Color */}
-      <div>
-        <label className="block text-sm font-medium text-slate-300 mb-2">Background Color</label>
-        <input
-          type="color"
-          value={data.background_color || '#ffffff'}
-          onChange={(e) => updateData({ background_color: e.target.value })}
-          className="w-full h-10 bg-slate-800 border border-slate-600 rounded-lg"
-        />
-      </div>
-
       {/* Steps */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">

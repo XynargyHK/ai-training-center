@@ -1065,7 +1065,7 @@ function LandingPageContent() {
 
       {/* Dynamic Blocks */}
       {landingPage.blocks && landingPage.blocks.length > 0 ? (
-        <BlockRenderer blocks={landingPage.blocks} />
+        <BlockRenderer blocks={landingPage.blocks} onAddToCart={addToCart} />
       ) : (
         <>
           {/* Fallback: Show old landing page schema content */}

@@ -7,9 +7,10 @@ import type { LandingPageBlock } from '@/types/landing-page-blocks'
 interface CardBlockEditorProps {
   block: LandingPageBlock
   onUpdate: (block: LandingPageBlock) => void
+  businessUnitId?: string
 }
 
-export default function CardBlockEditor({ block, onUpdate }: CardBlockEditorProps) {
+export default function CardBlockEditor({ block, onUpdate, businessUnitId }: CardBlockEditorProps) {
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null)
   const data = block.data as {
     layout: string
@@ -63,12 +64,18 @@ export default function CardBlockEditor({ block, onUpdate }: CardBlockEditorProp
   }
 
   const handleImageUpload = async (index: number, file: File) => {
+    if (!businessUnitId) {
+      alert('Business unit is required for upload')
+      return
+    }
+
     setUploadingIndex(index)
     try {
       const formData = new FormData()
       formData.append('file', file)
+      formData.append('businessUnit', businessUnitId)
 
-      const response = await fetch('/api/media-library/upload', {
+      const response = await fetch('/api/media-library', {
         method: 'POST',
         body: formData
       })
@@ -76,7 +83,7 @@ export default function CardBlockEditor({ block, onUpdate }: CardBlockEditorProp
       if (!response.ok) throw new Error('Upload failed')
 
       const result = await response.json()
-      updateCard(index, { image_url: result.url })
+      updateCard(index, { image_url: result.file.url })
     } catch (error) {
       console.error('Upload error:', error)
       alert('Failed to upload image')
