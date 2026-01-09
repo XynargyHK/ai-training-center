@@ -8,6 +8,7 @@ import StepsBlock from './blocks/StepsBlock'
 import PricingBlock from './blocks/PricingBlock'
 import StaticBannerBlock from './blocks/StaticBannerBlock'
 import PoliciesBlock from './blocks/PoliciesBlock'
+import TableBlock from './blocks/TableBlock'
 
 interface BlockRendererProps {
   blocks: LandingPageBlock[]
@@ -62,6 +63,9 @@ export default function BlockRenderer({ blocks, onAddToCart }: BlockRendererProp
 
           case 'policies':
             return <PoliciesBlock key={block.id} data={block.data as any} />
+
+          case 'table':
+            return <TableBlock key={block.id} data={block.data as any} heading={block.name} />
 
           default:
             // Silently skip unknown block types (legacy blocks or removed types)

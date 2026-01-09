@@ -33,6 +33,14 @@ interface StepsBlockData {
   heading_align?: 'left' | 'center' | 'right'
   heading_bold?: boolean
   heading_italic?: boolean
+  // Block-level subheadline (after headline)
+  subheadline?: string
+  subheadline_font_size?: string
+  subheadline_font_family?: string
+  subheadline_color?: string
+  subheadline_bold?: boolean
+  subheadline_italic?: boolean
+  subheadline_align?: 'left' | 'center' | 'right'
   background_color?: string
   overall_layout?: 'vertical' | 'horizontal'
   steps: Step[]
@@ -161,6 +169,28 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
 
   return (
     <div className="space-y-6">
+      {/* Block-level Subheadline (after headline) */}
+      <div>
+        <UniversalTextEditor
+          label="Block Subheadline"
+          value={data.subheadline || ''}
+          onChange={(value) => updateData({ subheadline: value })}
+          fontSize={data.subheadline_font_size || 'clamp(1rem, 2vw, 1.25rem)'}
+          onFontSizeChange={(value) => updateData({ subheadline_font_size: value })}
+          fontFamily={data.subheadline_font_family || 'Josefin Sans'}
+          onFontFamilyChange={(value) => updateData({ subheadline_font_family: value })}
+          color={data.subheadline_color || '#666666'}
+          onColorChange={(value) => updateData({ subheadline_color: value })}
+          bold={data.subheadline_bold}
+          onBoldChange={(value) => updateData({ subheadline_bold: value })}
+          italic={data.subheadline_italic}
+          onItalicChange={(value) => updateData({ subheadline_italic: value })}
+          textAlign={data.subheadline_align || 'center'}
+          onTextAlignChange={(value) => updateData({ subheadline_align: value })}
+          placeholder="Enter subheadline (appears below main headline)"
+        />
+      </div>
+
       {/* Steps */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">

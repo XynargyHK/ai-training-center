@@ -30,6 +30,14 @@ interface StepsBlockData {
   heading_align?: 'left' | 'center' | 'right'
   heading_bold?: boolean
   heading_italic?: boolean
+  // Block-level subheadline (after headline)
+  subheadline?: string
+  subheadline_font_size?: string
+  subheadline_font_family?: string
+  subheadline_color?: string
+  subheadline_bold?: boolean
+  subheadline_italic?: boolean
+  subheadline_align?: 'left' | 'center' | 'right'
   background_color?: string
   overall_layout?: 'vertical' | 'horizontal'
   steps: Step[]
@@ -48,6 +56,13 @@ export default function StepsBlock({ data, heading = '' }: StepsBlockProps) {
     heading_align = 'center',
     heading_bold = false,
     heading_italic = false,
+    subheadline,
+    subheadline_font_size = 'clamp(1rem, 2vw, 1.25rem)',
+    subheadline_font_family = 'Josefin Sans',
+    subheadline_color = '#666666',
+    subheadline_bold = false,
+    subheadline_italic = false,
+    subheadline_align = 'center',
     background_color = '#ffffff',
     overall_layout = 'vertical',
     steps = []
@@ -82,6 +97,22 @@ export default function StepsBlock({ data, heading = '' }: StepsBlockProps) {
           >
             {heading}
           </h2>
+        )}
+
+        {/* Block Subheadline - same style as hero banner */}
+        {subheadline && (
+          <p
+            className={`font-light tracking-[0.15em] uppercase mb-4 drop-shadow ${getFontClass(subheadline_font_family)}`}
+            style={{
+              fontSize: subheadline_font_size,
+              color: subheadline_color,
+              textAlign: subheadline_align,
+              fontWeight: subheadline_bold ? 'bold' : undefined,
+              fontStyle: subheadline_italic ? 'italic' : undefined
+            }}
+          >
+            {subheadline}
+          </p>
         )}
 
         {/* Steps Container */}
@@ -168,11 +199,7 @@ export default function StepsBlock({ data, heading = '' }: StepsBlockProps) {
                             style={{ width: step.image_width || '400px' }}
                           />
                         )
-                      ) : (
-                        <div className="w-full max-w-2xl aspect-video bg-gray-200 rounded-lg flex items-center justify-center">
-                          <span className="text-gray-400">No media</span>
-                        </div>
-                      )}
+                      ) : null}
                     </div>
 
                     {/* Text Below */}
@@ -197,11 +224,11 @@ export default function StepsBlock({ data, heading = '' }: StepsBlockProps) {
                     )}
                   </div>
                 ) : (
-                  // Side-by-side layout
-                  <div className="flex flex-row gap-2 items-start">
+                  // Side-by-side layout - wraps to stack only when text would be <40% width
+                  <div className="flex flex-row flex-wrap gap-4 items-start">
                     {/* Text Left */}
                     {isTextLeft && (
-                      <div className="flex-1 space-y-2">
+                      <div className="flex-1 space-y-2" style={{ minWidth: '40%' }}>
                         {/* Subheadline */}
                         {step.subheadline && (
                           <h3
@@ -220,7 +247,7 @@ export default function StepsBlock({ data, heading = '' }: StepsBlockProps) {
                       </div>
                     )}
 
-                    {/* Media */}
+                    {/* Media - fixed width, flex-shrink-0 to maintain size */}
                     <div className="flex-shrink-0">
                       {step.background_url ? (
                         isMediaVideo ? (
@@ -232,26 +259,22 @@ export default function StepsBlock({ data, heading = '' }: StepsBlockProps) {
                             playsInline
                             preload="auto"
                             className="h-auto rounded"
-                            style={{ width: step.image_width || '400px' }}
+                            style={{ width: step.image_width || '400px', maxWidth: '100%' }}
                           />
                         ) : (
                           <img
                             src={step.background_url}
                             alt={`Step ${index + 1}`}
                             className="h-auto rounded"
-                            style={{ width: step.image_width || '400px' }}
+                            style={{ width: step.image_width || '400px', maxWidth: '100%' }}
                           />
                         )
-                      ) : (
-                        <div className="aspect-video bg-gray-200 rounded flex items-center justify-center" style={{ width: step.image_width || '400px' }}>
-                          <span className="text-gray-400">No media</span>
-                        </div>
-                      )}
+                      ) : null}
                     </div>
 
-                    {/* Text Right */}
+                    {/* Text Right - wraps below when text would be <40% width */}
                     {isTextRight && (
-                      <div className="flex-1 space-y-2">
+                      <div className="flex-1 space-y-2" style={{ minWidth: '40%' }}>
                         {/* Subheadline */}
                         {step.subheadline && (
                           <h3
@@ -355,11 +378,7 @@ export default function StepsBlock({ data, heading = '' }: StepsBlockProps) {
                               style={{ width: step.image_width || '400px' }}
                             />
                           )
-                        ) : (
-                          <div className="w-full max-w-2xl aspect-video bg-gray-200 rounded-lg flex items-center justify-center">
-                            <span className="text-gray-400">No media</span>
-                          </div>
-                        )}
+                        ) : null}
                       </div>
 
                       {/* Text Below */}
@@ -384,11 +403,11 @@ export default function StepsBlock({ data, heading = '' }: StepsBlockProps) {
                       )}
                     </div>
                   ) : (
-                    // Side-by-side layout
-                    <div className="flex flex-row gap-2 items-start">
+                    // Side-by-side layout - wraps to stack only when text would be <40% width
+                    <div className="flex flex-row flex-wrap gap-4 items-start">
                       {/* Text Left */}
                       {isTextLeft && (
-                        <div className="flex-1 space-y-2">
+                        <div className="flex-1 space-y-2" style={{ minWidth: '40%' }}>
                           {/* Subheadline */}
                           {step.subheadline && (
                             <h3
@@ -407,7 +426,7 @@ export default function StepsBlock({ data, heading = '' }: StepsBlockProps) {
                         </div>
                       )}
 
-                      {/* Media */}
+                      {/* Media - fixed width, flex-shrink-0 to maintain size */}
                       <div className="flex-shrink-0">
                         {step.background_url ? (
                           isMediaVideo ? (
@@ -419,26 +438,22 @@ export default function StepsBlock({ data, heading = '' }: StepsBlockProps) {
                               playsInline
                               preload="auto"
                               className="h-auto rounded"
-                              style={{ width: step.image_width || '400px' }}
+                              style={{ width: step.image_width || '400px', maxWidth: '100%' }}
                             />
                           ) : (
                             <img
                               src={step.background_url}
                               alt={`Step ${index + 1}`}
                               className="h-auto rounded"
-                              style={{ width: step.image_width || '400px' }}
+                              style={{ width: step.image_width || '400px', maxWidth: '100%' }}
                             />
                           )
-                        ) : (
-                          <div className="aspect-video bg-gray-200 rounded flex items-center justify-center" style={{ width: step.image_width || '400px' }}>
-                            <span className="text-gray-400">No media</span>
-                          </div>
-                        )}
+                        ) : null}
                       </div>
 
-                      {/* Text Right */}
+                      {/* Text Right - wraps below when text would be <40% width */}
                       {isTextRight && (
-                        <div className="flex-1 space-y-2">
+                        <div className="flex-1 space-y-2" style={{ minWidth: '40%' }}>
                           {/* Subheadline */}
                           {step.subheadline && (
                             <h3

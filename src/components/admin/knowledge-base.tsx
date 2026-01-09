@@ -93,9 +93,9 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
   const [products, setProducts] = useState<any[]>([])
   // Collapsible section state for landing page editor
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
-    announcement: false,
-    menuBar: false,
-    hero: false,
+    announcement: true,
+    menuBar: true,
+    hero: true,
     header: false,
     problem: true,
     solution: true,
@@ -544,7 +544,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
   // Handle adding a new block
   const handleAddBlock = (blockType: string) => {
     const blocks = landingPageData.blocks || []
-    const newBlock = createNewBlock(blockType, `New ${blockType} block`, blocks.length)
+    const newBlock = createNewBlock(blockType, '', blocks.length)
     if (newBlock) {
       setLandingPageData({
         ...landingPageData,
@@ -1852,6 +1852,62 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                 <div className="flex-1">
                                   <div className="text-sm font-medium text-white">Testimonials</div>
                                   <div className="text-xs text-slate-400">Customer reviews carousel</div>
+                                </div>
+                              </button>
+
+                              {/* Steps (Text/Image Grid) Block */}
+                              <button
+                                onClick={() => handleAddBlock('steps')}
+                                className="w-full px-3 py-2.5 hover:bg-slate-700 transition-colors flex items-center gap-3 text-left"
+                              >
+                                <div className="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-2xl">📝</span>
+                                </div>
+                                <div className="flex-1">
+                                  <div className="text-sm font-medium text-white">Text/Image Grid</div>
+                                  <div className="text-xs text-slate-400">Flexible text & image layout</div>
+                                </div>
+                              </button>
+
+                              {/* Static Banner Block */}
+                              <button
+                                onClick={() => handleAddBlock('static_banner')}
+                                className="w-full px-3 py-2.5 hover:bg-slate-700 transition-colors flex items-center gap-3 text-left"
+                              >
+                                <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-2xl">🖼️</span>
+                                </div>
+                                <div className="flex-1">
+                                  <div className="text-sm font-medium text-white">Static Banner</div>
+                                  <div className="text-xs text-slate-400">Full-width banner with overlay</div>
+                                </div>
+                              </button>
+
+                              {/* Table Block */}
+                              <button
+                                onClick={() => handleAddBlock('table')}
+                                className="w-full px-3 py-2.5 hover:bg-slate-700 transition-colors flex items-center gap-3 text-left"
+                              >
+                                <div className="w-10 h-10 rounded-lg bg-teal-500/20 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-2xl">📊</span>
+                                </div>
+                                <div className="flex-1">
+                                  <div className="text-sm font-medium text-white">Table</div>
+                                  <div className="text-xs text-slate-400">Customizable rows & columns</div>
+                                </div>
+                              </button>
+
+                              {/* Policies Block */}
+                              <button
+                                onClick={() => handleAddBlock('policies')}
+                                className="w-full px-3 py-2.5 hover:bg-slate-700 transition-colors flex items-center gap-3 text-left"
+                              >
+                                <div className="w-10 h-10 rounded-lg bg-slate-500/20 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-2xl">📜</span>
+                                </div>
+                                <div className="flex-1">
+                                  <div className="text-sm font-medium text-white">Policies</div>
+                                  <div className="text-xs text-slate-400">Terms, Privacy, Refund, Shipping</div>
                                 </div>
                               </button>
                             </div>
