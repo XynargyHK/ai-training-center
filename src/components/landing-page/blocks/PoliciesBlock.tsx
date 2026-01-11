@@ -137,8 +137,6 @@ export default function PoliciesBlock({ data, anchorId }: PoliciesBlockProps) {
   return (
     <section id={anchorId} className="py-12 px-4 bg-gray-50">
       <div className="max-w-4xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-8 text-gray-900">Legal & Policies</h2>
-
         <div className="space-y-3">
           {enabledPolicies.map((policyType) => {
             const isExpanded = expandedPolicy === policyType
