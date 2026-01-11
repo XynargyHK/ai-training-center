@@ -45,12 +45,26 @@ export default function SplitBlock({ data, anchorId }: SplitBlockProps) {
             )}
 
             {data.cta_text && data.cta_url && (
-              <a
-                href={data.cta_url}
-                className={`inline-block px-8 py-3 bg-white text-black text-sm font-bold tracking-[0.15em] uppercase hover:bg-black hover:text-white transition-colors ${getFontClass('Josefin Sans')}`}
-              >
-                {data.cta_text}
-              </a>
+              data.cta_url.startsWith('#') ? (
+                <button
+                  onClick={() => {
+                    const element = document.querySelector(data.cta_url || '')
+                    if (element) {
+                      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    }
+                  }}
+                  className={`inline-block px-8 py-3 bg-white text-black text-sm font-bold tracking-[0.15em] uppercase hover:bg-black hover:text-white transition-colors ${getFontClass('Josefin Sans')}`}
+                >
+                  {data.cta_text}
+                </button>
+              ) : (
+                <a
+                  href={data.cta_url}
+                  className={`inline-block px-8 py-3 bg-white text-black text-sm font-bold tracking-[0.15em] uppercase hover:bg-black hover:text-white transition-colors ${getFontClass('Josefin Sans')}`}
+                >
+                  {data.cta_text}
+                </a>
+              )
             )}
           </div>
         </div>

@@ -157,12 +157,26 @@ export default function StaticBannerBlock({ data, anchorId }: StaticBannerBlockP
               (data.content_text_align || 'center') === 'right' ? 'text-right' :
               'text-center'
             }`}>
-              <Link
-                href={buildUrl(data.cta_url || '#')}
-                className={`inline-block px-8 py-3 bg-white text-black text-sm font-bold tracking-[0.15em] uppercase hover:bg-black hover:text-white transition-colors ${getFontClass(data.headline_font_family)}`}
-              >
-                {data.cta_text}
-              </Link>
+              {data.cta_url?.startsWith('#') ? (
+                <button
+                  onClick={() => {
+                    const element = document.querySelector(data.cta_url || '')
+                    if (element) {
+                      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    }
+                  }}
+                  className={`inline-block px-8 py-3 bg-white text-black text-sm font-bold tracking-[0.15em] uppercase hover:bg-black hover:text-white transition-colors ${getFontClass(data.headline_font_family)}`}
+                >
+                  {data.cta_text}
+                </button>
+              ) : (
+                <Link
+                  href={buildUrl(data.cta_url || '#')}
+                  className={`inline-block px-8 py-3 bg-white text-black text-sm font-bold tracking-[0.15em] uppercase hover:bg-black hover:text-white transition-colors ${getFontClass(data.headline_font_family)}`}
+                >
+                  {data.cta_text}
+                </Link>
+              )}
             </div>
           )}
         </div>
