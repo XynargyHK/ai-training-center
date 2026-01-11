@@ -101,10 +101,6 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
         [key]: value
       }
     }
-    // Auto-update block name when headline changes
-    if (key === 'headline' && value) {
-      updatedBlock.name = value
-    }
     onUpdate(updatedBlock)
   }
 
