@@ -53,6 +53,8 @@ export default function StaticBannerBlock({ data, anchorId }: StaticBannerBlockP
 
   const buildUrl = (url: string) => {
     if (!url) return '#'
+    // Don't modify anchor links
+    if (url.startsWith('#')) return url
     const hasParams = url.includes('?')
     return businessUnitParam
       ? `${url}${hasParams ? '&' : '?'}businessUnit=${businessUnitParam}`
