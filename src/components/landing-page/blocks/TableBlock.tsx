@@ -43,9 +43,10 @@ interface TableBlockData {
 interface TableBlockProps {
   data: TableBlockData
   heading?: string
+  anchorId?: string
 }
 
-export default function TableBlock({ data, heading = '' }: TableBlockProps) {
+export default function TableBlock({ data, heading = '', anchorId }: TableBlockProps) {
   const {
     heading_font_size = '2.5rem',
     heading_font_family = 'Josefin Sans',
@@ -83,6 +84,7 @@ export default function TableBlock({ data, heading = '' }: TableBlockProps) {
 
   return (
     <section
+      id={anchorId}
       className="py-8 px-4 relative overflow-hidden"
       style={{ backgroundColor: background_color }}
     >

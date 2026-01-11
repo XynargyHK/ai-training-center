@@ -49,6 +49,7 @@ interface PolicyData {
 
 interface PoliciesBlockProps {
   data: PolicyData
+  anchorId?: string
 }
 
 // Helper to render policy content with placeholders replaced
@@ -82,7 +83,7 @@ function markdownToHtml(markdown: string): string {
     .replace(/\n/g, '<br />')
 }
 
-export default function PoliciesBlock({ data }: PoliciesBlockProps) {
+export default function PoliciesBlock({ data, anchorId }: PoliciesBlockProps) {
   const [expandedPolicy, setExpandedPolicy] = useState<PolicyType | null>(null)
 
   // Map field values for template rendering
@@ -134,7 +135,7 @@ export default function PoliciesBlock({ data }: PoliciesBlockProps) {
   }
 
   return (
-    <section className="py-12 px-4 bg-gray-50">
+    <section id={anchorId} className="py-12 px-4 bg-gray-50">
       <div className="max-w-4xl mx-auto">
         <h2 className="text-3xl font-bold text-center mb-8 text-gray-900">Legal & Policies</h2>
 

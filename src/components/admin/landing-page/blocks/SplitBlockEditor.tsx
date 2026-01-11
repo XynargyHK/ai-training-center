@@ -210,11 +210,14 @@ export default function SplitBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
               type="text"
               value={data.cta_url || ''}
               onChange={(e) => updateData({ cta_url: e.target.value })}
-              placeholder="e.g., #shop"
+              placeholder="#micro-infusion-system"
               className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
             />
           </div>
         </div>
+        <p className="text-xs text-slate-400 mt-2">
+          To scroll to another block, use <span className="text-violet-400">#headline-in-lowercase</span> (e.g., #micro-infusion-system, #faq)
+        </p>
       </div>
     </div>
   )

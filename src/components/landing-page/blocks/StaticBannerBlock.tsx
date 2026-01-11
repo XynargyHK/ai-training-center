@@ -44,9 +44,10 @@ interface StaticBannerBlockData {
 
 interface StaticBannerBlockProps {
   data: StaticBannerBlockData
+  anchorId?: string
 }
 
-export default function StaticBannerBlock({ data }: StaticBannerBlockProps) {
+export default function StaticBannerBlock({ data, anchorId }: StaticBannerBlockProps) {
   const searchParams = useSearchParams()
   const businessUnitParam = searchParams.get('businessUnit') || ''
 
@@ -59,7 +60,7 @@ export default function StaticBannerBlock({ data }: StaticBannerBlockProps) {
   }
 
   return (
-    <section className="relative w-full pt-8 pb-4 md:pt-12 md:pb-6 overflow-hidden">
+    <section id={anchorId} className="relative w-full min-h-[200px] md:min-h-[300px] pt-8 pb-4 md:pt-12 md:pb-6 overflow-hidden">
       {/* Background */}
       {data.background_url ? (
         data.background_type === 'video' ? (

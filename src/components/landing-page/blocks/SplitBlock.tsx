@@ -5,13 +5,14 @@ import { getFontClass } from '@/lib/fonts'
 
 interface SplitBlockProps {
   data: SplitBlockData
+  anchorId?: string
 }
 
-export default function SplitBlock({ data }: SplitBlockProps) {
+export default function SplitBlock({ data, anchorId }: SplitBlockProps) {
   const isImageLeft = data.layout === 'image-left'
 
   return (
-    <div className="w-full py-16 px-4 bg-gradient-to-b from-slate-900 to-slate-800">
+    <div id={anchorId} className="w-full py-16 px-4 bg-gradient-to-b from-slate-900 to-slate-800">
       <div className="max-w-6xl mx-auto">
         <div className={`grid md:grid-cols-2 gap-8 items-center ${isImageLeft ? '' : 'md:grid-flow-dense'}`}>
           {/* Image Column */}

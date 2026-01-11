@@ -252,6 +252,50 @@ export const BLOCK_TYPES: Record<string, BlockTypeConfig> = {
     }
   },
 
+  table: {
+    type: 'table',
+    label: 'Table',
+    icon: '📊',
+    description: 'Table with customizable rows and columns',
+    category: 'content',
+    defaultData: {
+      headline: '',
+      headline_font_size: 'clamp(1.5rem, 3vw, 2rem)',
+      headline_font_family: 'Josefin Sans',
+      headline_color: '#000000',
+      headline_bold: false,
+      headline_italic: false,
+      headline_align: 'center',
+      subheadline: '',
+      subheadline_font_size: 'clamp(1rem, 2vw, 1.25rem)',
+      subheadline_font_family: 'Josefin Sans',
+      subheadline_color: '#666666',
+      subheadline_bold: false,
+      subheadline_italic: false,
+      subheadline_align: 'center',
+      content: '',
+      content_font_size: 'clamp(0.875rem, 1.5vw, 1rem)',
+      content_font_family: 'Cormorant Garamond',
+      content_color: '#374151',
+      content_bold: false,
+      content_italic: false,
+      content_align: 'center',
+      background_color: '#ffffff',
+      rows: 3,
+      columns: 3,
+      table_data: [
+        ['Header 1', 'Header 2', 'Header 3'],
+        ['Row 1 Col 1', 'Row 1 Col 2', 'Row 1 Col 3'],
+        ['Row 2 Col 1', 'Row 2 Col 2', 'Row 2 Col 3']
+      ],
+      header_bg_color: '#f3f4f6',
+      header_text_color: '#000000',
+      cell_bg_color: '#ffffff',
+      cell_text_color: '#374151',
+      border_color: '#e5e7eb'
+    }
+  },
+
   policies: {
     type: 'policies',
     label: 'Policies',

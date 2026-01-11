@@ -396,7 +396,7 @@ export default function PricingBlockEditor({ block, onUpdate }: PricingBlockEdit
           onColorChange={(color) => updateData('cta_color', color)}
           placeholder="Subscribe & SAVE"
         />
-        <p className="text-xs text-slate-400 mt-1">The discount % will be auto-calculated</p>
+        <p className="text-xs text-slate-400 mt-1">The discount % will be auto-calculated and shown below the button</p>
       </div>
     </div>
   )

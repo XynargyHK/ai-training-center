@@ -46,9 +46,10 @@ interface StepsBlockData {
 interface StepsBlockProps {
   data: StepsBlockData
   heading?: string
+  anchorId?: string
 }
 
-export default function StepsBlock({ data, heading = '' }: StepsBlockProps) {
+export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockProps) {
   const {
     heading_font_size = '2.5rem',
     heading_font_family = 'Josefin Sans',
@@ -79,6 +80,7 @@ export default function StepsBlock({ data, heading = '' }: StepsBlockProps) {
 
   return (
     <section
+      id={anchorId}
       className="py-4 px-2"
       style={{ backgroundColor: background_color }}
     >

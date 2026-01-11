@@ -91,10 +91,11 @@ interface PricingBlockData {
 
 interface PricingBlockProps {
   data: PricingBlockData
+  anchorId?: string
   onAddToCart?: (product: any) => void
 }
 
-export default function PricingBlock({ data, onAddToCart }: PricingBlockProps) {
+export default function PricingBlock({ data, anchorId, onAddToCart }: PricingBlockProps) {
   const searchParams = useSearchParams()
   const businessUnitParam = searchParams.get('businessUnit') || ''
   const [selectedPlanIndex, setSelectedPlanIndex] = useState(0)
@@ -160,6 +161,7 @@ export default function PricingBlock({ data, onAddToCart }: PricingBlockProps) {
 
   return (
     <section
+      id={anchorId}
       className="py-12 px-4"
       style={{ backgroundColor: data.background_color || '#ffffff' }}
     >
@@ -361,24 +363,38 @@ export default function PricingBlock({ data, onAddToCart }: PricingBlockProps) {
           </div>
         )}
 
-        {/* CTA Button with Auto-Calculated Discount */}
+        {/* CTA Button */}
         {data.cta_text && (
-          <button
-            onClick={handleAddToCart}
-            className={`w-full px-8 py-4 bg-black tracking-wider uppercase hover:bg-gray-800 transition-colors shadow-lg ${getFontClass(data.cta_font_family || data.headline_font_family)} ${
-              (data.cta_text_align || 'center') === 'left' ? 'text-left' :
-              (data.cta_text_align || 'center') === 'right' ? 'text-right' :
-              'text-center'
-            }`}
-            style={{
-              fontSize: data.cta_font_size || '0.875rem',
-              color: data.cta_color || '#ffffff',
-              fontWeight: data.cta_bold ? 'bold' : undefined,
-              fontStyle: data.cta_italic ? 'italic' : undefined
-            }}
-          >
-            {data.cta_text} {discountPercentage > 0 && `${discountPercentage}%`}
-          </button>
+          <div className="text-center">
+            <button
+              onClick={handleAddToCart}
+              className={`w-full px-8 py-4 bg-black tracking-wider uppercase hover:bg-gray-800 transition-colors shadow-lg ${getFontClass(data.cta_font_family || data.headline_font_family)} ${
+                (data.cta_text_align || 'center') === 'left' ? 'text-left' :
+                (data.cta_text_align || 'center') === 'right' ? 'text-right' :
+                'text-center'
+              }`}
+              style={{
+                fontSize: data.cta_font_size || '0.875rem',
+                color: data.cta_color || '#ffffff',
+                fontWeight: data.cta_bold ? 'bold' : undefined,
+                fontStyle: data.cta_italic ? 'italic' : undefined
+              }}
+            >
+              {data.cta_text}
+            </button>
+            {/* Discount savings text below button */}
+            {discountPercentage > 0 && (
+              <p
+                className={`mt-2 italic ${getFontClass(data.content_font_family || 'Cormorant Garamond')}`}
+                style={{
+                  fontSize: '0.875rem',
+                  color: data.content_color || '#6b7280'
+                }}
+              >
+                Save {discountPercentage}% vs single treatment
+              </p>
+            )}
+          </div>
         )}
       </div>
     </section>

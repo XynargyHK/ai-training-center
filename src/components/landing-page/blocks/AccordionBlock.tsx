@@ -33,9 +33,10 @@ interface AccordionBlockData {
 interface AccordionBlockProps {
   data: AccordionBlockData
   heading?: string
+  anchorId?: string
 }
 
-export default function AccordionBlock({ data, heading = '' }: AccordionBlockProps) {
+export default function AccordionBlock({ data, heading = '', anchorId }: AccordionBlockProps) {
   const {
     heading_font_size = '2.5rem',
     heading_font_family = 'Josefin Sans',
@@ -59,6 +60,7 @@ export default function AccordionBlock({ data, heading = '' }: AccordionBlockPro
 
   return (
     <section
+      id={anchorId}
       className="py-16 px-4"
       style={{ backgroundColor: background_color }}
     >

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Upload, Loader2, X } from 'lucide-react'
+import { Upload, Loader2, X, Image } from 'lucide-react'
 import type { LandingPageBlock } from '@/types/landing-page-blocks'
 import UniversalTextEditor from '../UniversalTextEditor'
 
@@ -15,22 +15,11 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const updateData = (key: string, value: any) => {
-    const updatedBlock = {
-      ...block,
-      data: {
-        ...block.data,
-        [key]: value
-      }
-    }
-
-    // Auto-update block name when headline changes
-    if (key === 'headline' && value) {
-      updatedBlock.name = value
-    }
-
-    onUpdate(updatedBlock)
-  }
+  // Get block data with defaults
+  const data = block.data || {}
+  const background_url = data.background_url || ''
+  const background_type = data.background_type || 'image'
+  const background_color = data.background_color || '#1e293b'
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -56,7 +45,7 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
     try {
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('businessUnitId', businessUnitId!)
+      formData.append('businessUnitId', businessUnitId || '')
 
       const response = await fetch('/api/ecommerce/upload-image', {
         method: 'POST',
@@ -70,12 +59,20 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
 
       const responseData = await response.json()
       if (responseData.url) {
-        updateData('background_url', responseData.url)
-        updateData('background_type', isVideo ? 'video' : 'image')
+        // Update block with new background - exactly like hero banner does
+        const updatedBlock = {
+          ...block,
+          data: {
+            ...data,
+            background_url: responseData.url,
+            background_type: isVideo ? 'video' : 'image'
+          }
+        }
+        onUpdate(updatedBlock)
       }
-    } catch (error) {
-      console.error('Upload error:', error)
-      alert('Failed to upload file')
+    } catch (error: any) {
+      console.error('Error uploading background:', error)
+      alert(`Failed to upload: ${error.message}`)
     } finally {
       setUploading(false)
       if (fileInputRef.current) {
@@ -84,73 +81,100 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
     }
   }
 
+  const removeBackground = () => {
+    const updatedBlock = {
+      ...block,
+      data: {
+        ...data,
+        background_url: '',
+        background_type: 'image'
+      }
+    }
+    onUpdate(updatedBlock)
+  }
+
+  const updateField = (key: string, value: any) => {
+    const updatedBlock = {
+      ...block,
+      data: {
+        ...data,
+        [key]: value
+      }
+    }
+    // Auto-update block name when headline changes
+    if (key === 'headline' && value) {
+      updatedBlock.name = value
+    }
+    onUpdate(updatedBlock)
+  }
+
   return (
     <div className="space-y-6">
       {/* Background Media */}
       <div>
-        <label className="block text-sm font-medium text-slate-300 mb-2">Background Media</label>
-        <div className="space-y-3">
-          {/* Upload Button and Preview */}
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-3">
-              {block.data.background_url ? (
-                <div className="relative">
-                  {block.data.background_type === 'video' ? (
-                    <video src={block.data.background_url} className="h-16 w-28 object-cover rounded" muted />
-                  ) : (
-                    <img src={block.data.background_url} alt="Background" className="h-16 w-28 object-cover rounded" />
-                  )}
-                  <button
-                    onClick={() => {
-                      updateData('background_url', '')
-                      updateData('background_type', 'image')
-                    }}
-                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                  <span className="absolute bottom-0.5 right-0.5 text-[10px] bg-black/60 text-white px-1 rounded">
-                    {block.data.background_type === 'video' ? 'VIDEO' : 'IMAGE'}
-                  </span>
-                </div>
-              ) : null}
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,video/*"
-                onChange={handleUpload}
-                className="hidden"
-              />
+        <label className="block text-sm font-medium text-slate-300 mb-2">Background Image/Video</label>
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Preview thumbnail or placeholder */}
+          {background_url ? (
+            <div className="relative">
+              {background_type === 'video' ? (
+                <video src={background_url} className="h-16 w-28 object-cover rounded" muted />
+              ) : (
+                <img src={background_url} alt="Background" className="h-16 w-28 object-cover rounded" />
+              )}
               <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded text-sm"
+                onClick={removeBackground}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
               >
-                {uploading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4" />
-                    {block.data.background_url ? 'Change' : 'Upload'} Image/Video
-                  </>
-                )}
+                <X className="w-3 h-3" />
               </button>
+              <span className="absolute bottom-0.5 right-0.5 text-[10px] bg-black/60 text-white px-1 rounded">
+                {background_type === 'video' ? 'VIDEO' : 'IMAGE'}
+              </span>
             </div>
+          ) : (
+            <div className="h-16 w-28 bg-slate-800 border border-dashed border-slate-600 rounded flex items-center justify-center">
+              <Image className="w-6 h-6 text-slate-500" />
+            </div>
+          )}
 
-            {/* Background Color Fallback - On the right */}
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-slate-400">BG Color:</label>
-              <input
-                type="color"
-                value={block.data.background_color || '#1e293b'}
-                onChange={(e) => updateData('background_color', e.target.value)}
-                className="w-10 h-10 rounded border border-slate-600 cursor-pointer"
-              />
-            </div>
+          {/* Upload button */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="px-3 py-1.5 bg-violet-600 text-white text-sm rounded hover:bg-violet-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+          >
+            {uploading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Uploading...
+              </>
+            ) : (
+              <>
+                <Upload className="w-4 h-4" />
+                Upload
+              </>
+            )}
+          </button>
+
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"
+            onChange={handleUpload}
+            className="hidden"
+          />
+
+          {/* Background Color */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-slate-400">BG Color:</label>
+            <input
+              type="color"
+              value={background_color}
+              onChange={(e) => updateField('background_color', e.target.value)}
+              className="w-10 h-10 rounded border border-slate-600 cursor-pointer"
+            />
           </div>
         </div>
       </div>
@@ -159,20 +183,20 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
       <div>
         <UniversalTextEditor
           label="Headline"
-          value={block.data.headline || ''}
-          onChange={(value) => updateData('headline', value)}
-          textAlign={block.data.headline_text_align || 'center'}
-          onTextAlignChange={(align) => updateData('headline_text_align', align)}
-          bold={block.data.headline_bold || false}
-          onBoldChange={(bold) => updateData('headline_bold', bold)}
-          italic={block.data.headline_italic || false}
-          onItalicChange={(italic) => updateData('headline_italic', italic)}
-          fontSize={block.data.headline_font_size || 'clamp(1.875rem, 5vw, 3.75rem)'}
-          onFontSizeChange={(size) => updateData('headline_font_size', size)}
-          fontFamily={block.data.headline_font_family || 'Josefin Sans'}
-          onFontFamilyChange={(family) => updateData('headline_font_family', family)}
-          color={block.data.headline_color || '#ffffff'}
-          onColorChange={(color) => updateData('headline_color', color)}
+          value={data.headline || ''}
+          onChange={(value) => updateField('headline', value)}
+          textAlign={data.headline_text_align || 'center'}
+          onTextAlignChange={(align) => updateField('headline_text_align', align)}
+          bold={data.headline_bold || false}
+          onBoldChange={(bold) => updateField('headline_bold', bold)}
+          italic={data.headline_italic || false}
+          onItalicChange={(italic) => updateField('headline_italic', italic)}
+          fontSize={data.headline_font_size || 'clamp(1.875rem, 5vw, 3.75rem)'}
+          onFontSizeChange={(size) => updateField('headline_font_size', size)}
+          fontFamily={data.headline_font_family || 'Josefin Sans'}
+          onFontFamilyChange={(family) => updateField('headline_font_family', family)}
+          color={data.headline_color || '#ffffff'}
+          onColorChange={(color) => updateField('headline_color', color)}
           placeholder="Enter headline"
         />
       </div>
@@ -181,20 +205,20 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
       <div>
         <UniversalTextEditor
           label="Subheadline"
-          value={block.data.subheadline || ''}
-          onChange={(value) => updateData('subheadline', value)}
-          textAlign={block.data.subheadline_text_align || 'center'}
-          onTextAlignChange={(align) => updateData('subheadline_text_align', align)}
-          bold={block.data.subheadline_bold || false}
-          onBoldChange={(bold) => updateData('subheadline_bold', bold)}
-          italic={block.data.subheadline_italic || false}
-          onItalicChange={(italic) => updateData('subheadline_italic', italic)}
-          fontSize={block.data.subheadline_font_size || 'clamp(1.125rem, 2.5vw, 1.25rem)'}
-          onFontSizeChange={(size) => updateData('subheadline_font_size', size)}
-          fontFamily={block.data.subheadline_font_family || 'Josefin Sans'}
-          onFontFamilyChange={(family) => updateData('subheadline_font_family', family)}
-          color={block.data.subheadline_color || '#ffffff'}
-          onColorChange={(color) => updateData('subheadline_color', color)}
+          value={data.subheadline || ''}
+          onChange={(value) => updateField('subheadline', value)}
+          textAlign={data.subheadline_text_align || 'center'}
+          onTextAlignChange={(align) => updateField('subheadline_text_align', align)}
+          bold={data.subheadline_bold || false}
+          onBoldChange={(bold) => updateField('subheadline_bold', bold)}
+          italic={data.subheadline_italic || false}
+          onItalicChange={(italic) => updateField('subheadline_italic', italic)}
+          fontSize={data.subheadline_font_size || 'clamp(1.125rem, 2.5vw, 1.25rem)'}
+          onFontSizeChange={(size) => updateField('subheadline_font_size', size)}
+          fontFamily={data.subheadline_font_family || 'Josefin Sans'}
+          onFontFamilyChange={(family) => updateField('subheadline_font_family', family)}
+          color={data.subheadline_color || '#ffffff'}
+          onColorChange={(color) => updateField('subheadline_color', color)}
           placeholder="Enter subheadline"
         />
       </div>
@@ -203,20 +227,20 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
       <div>
         <UniversalTextEditor
           label="Description"
-          value={block.data.content || ''}
-          onChange={(value) => updateData('content', value)}
-          textAlign={block.data.content_text_align || 'center'}
-          onTextAlignChange={(align) => updateData('content_text_align', align)}
-          bold={block.data.content_bold || false}
-          onBoldChange={(bold) => updateData('content_bold', bold)}
-          italic={block.data.content_italic || false}
-          onItalicChange={(italic) => updateData('content_italic', italic)}
-          fontSize={block.data.content_font_size || 'clamp(1rem, 2vw, 1.125rem)'}
-          onFontSizeChange={(size) => updateData('content_font_size', size)}
-          fontFamily={block.data.content_font_family || 'Josefin Sans'}
-          onFontFamilyChange={(family) => updateData('content_font_family', family)}
-          color={block.data.content_color || '#ffffff'}
-          onColorChange={(color) => updateData('content_color', color)}
+          value={data.content || ''}
+          onChange={(value) => updateField('content', value)}
+          textAlign={data.content_text_align || 'center'}
+          onTextAlignChange={(align) => updateField('content_text_align', align)}
+          bold={data.content_bold || false}
+          onBoldChange={(bold) => updateField('content_bold', bold)}
+          italic={data.content_italic || false}
+          onItalicChange={(italic) => updateField('content_italic', italic)}
+          fontSize={data.content_font_size || 'clamp(1rem, 2vw, 1.125rem)'}
+          onFontSizeChange={(size) => updateField('content_font_size', size)}
+          fontFamily={data.content_font_family || 'Josefin Sans'}
+          onFontFamilyChange={(family) => updateField('content_font_family', family)}
+          color={data.content_color || '#ffffff'}
+          onColorChange={(color) => updateField('content_color', color)}
           placeholder="Enter description (optional)"
           multiline
           rows={3}
@@ -224,27 +248,32 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
       </div>
 
       {/* CTA Button */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-sm text-slate-300 mb-2">CTA Button Text</label>
-          <input
-            type="text"
-            value={block.data.cta_text || ''}
-            onChange={(e) => updateData('cta_text', e.target.value)}
-            placeholder="SHOP NOW"
-            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
-          />
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm text-slate-300 mb-2">CTA Button Text</label>
+            <input
+              type="text"
+              value={data.cta_text || ''}
+              onChange={(e) => updateField('cta_text', e.target.value)}
+              placeholder="SHOP NOW"
+              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-slate-300 mb-2">CTA Button URL</label>
+            <input
+              type="text"
+              value={data.cta_url || ''}
+              onChange={(e) => updateField('cta_url', e.target.value)}
+              placeholder="#micro-infusion-system"
+              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+            />
+          </div>
         </div>
-        <div>
-          <label className="block text-sm text-slate-300 mb-2">CTA Button URL</label>
-          <input
-            type="text"
-            value={block.data.cta_url || ''}
-            onChange={(e) => updateData('cta_url', e.target.value)}
-            placeholder="/livechat/shop"
-            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
-          />
-        </div>
+        <p className="text-xs text-slate-400">
+          To scroll to another block, use <span className="text-violet-400">#headline-in-lowercase</span> (e.g., #micro-infusion-system, #faq, #pricing-plans)
+        </p>
       </div>
     </div>
   )
