@@ -17,7 +17,17 @@ import {
   Redo,
   Type
 } from 'lucide-react'
-import { getFontClass } from '@/lib/fonts'
+// Font class mapping using CSS variables (contained to this component only)
+const FONT_STYLE_MAP: Record<string, string> = {
+  'Josefin Sans': 'var(--font-headline)',
+  'Cormorant Garamond': 'var(--font-serif)',
+  'Playfair Display': 'var(--font-playfair)',
+  'Montserrat': 'var(--font-montserrat)',
+  'Inter': 'var(--font-inter)',
+  'Lora': 'var(--font-lora)',
+  'Raleway': 'var(--font-raleway)',
+  'Open Sans': 'var(--font-opensans)',
+}
 
 interface PolicyRichTextEditorProps {
   value: string
@@ -232,14 +242,14 @@ export default function PolicyRichTextEditor({
           }
         }
       }
-      // Wrap selection in span with font class
+      // Wrap selection in span with inline font style (contained to editor only)
       const selection = window.getSelection()
       if (selection && selection.rangeCount > 0) {
         const range = selection.getRangeAt(0)
         if (!range.collapsed) {
           const span = document.createElement('span')
-          // Use the actual font class from getFontClass
-          span.className = getFontClass(fontName)
+          // Use inline style - does NOT affect other components
+          span.style.fontFamily = FONT_STYLE_MAP[fontName] || fontName
           try {
             range.surroundContents(span)
           } catch (e) {
@@ -342,7 +352,8 @@ export default function PolicyRichTextEditor({
                   }}
                   className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
                     currentFontFamily === font ? 'bg-violet-600 text-white' : 'text-slate-200'
-                  } ${getFontClass(font)}`}
+                  }`}
+                  style={{ fontFamily: FONT_STYLE_MAP[font] || font }}
                   type="button"
                 >
                   {font}
