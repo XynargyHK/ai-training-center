@@ -12,10 +12,13 @@ import PolicyManager from './policy-manager'
 import ProductCatalogManager from './product-catalog-manager'
 import { type Language, getTranslation } from '@/lib/translations'
 import BlockManager from './landing-page/BlockManager'
+import FooterEditor from './landing-page/FooterEditor'
 import BlockPreview from './landing-page/BlockPreview'
 import { createNewBlock } from './landing-page/block-registry'
 import type { LandingPageBlock } from '@/types/landing-page-blocks'
 import TextEditorControls from './landing-page/TextEditorControls'
+import PolicyRichTextEditor from './landing-page/PolicyRichTextEditor'
+import { policyTemplates } from '@/data/policy-templates'
 
 // Types
 interface Service {
@@ -118,6 +121,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
   const [showMediaPicker, setShowMediaPicker] = useState<number | null>(null) // slide index or null
   const [showFontMenu, setShowFontMenu] = useState<string | null>(null) // font menu key or null
   const [showColorPicker, setShowColorPicker] = useState<string | null>(null) // color picker key or null
+  const [showFooterPicker, setShowFooterPicker] = useState<string | null>(null) // footer styling picker
+  const [editingPolicyType, setEditingPolicyType] = useState<string | null>(null) // policy being edited
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null)
   const [showAddBlockMenu, setShowAddBlockMenu] = useState(false)
 
@@ -1897,19 +1902,6 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                 </div>
                               </button>
 
-                              {/* Policies Block */}
-                              <button
-                                onClick={() => handleAddBlock('policies')}
-                                className="w-full px-3 py-2.5 hover:bg-slate-700 transition-colors flex items-center gap-3 text-left"
-                              >
-                                <div className="w-10 h-10 rounded-lg bg-slate-500/20 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-2xl">📜</span>
-                                </div>
-                                <div className="flex-1">
-                                  <div className="text-sm font-medium text-white">Policies</div>
-                                  <div className="text-xs text-slate-400">Terms, Privacy, Refund, Shipping</div>
-                                </div>
-                              </button>
                             </div>
                           </div>
                         )}
@@ -3407,15 +3399,247 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                       </>
                     )}
 
-                    {/* Policies Section (Footnote) */}
+                    {/* Footer Configuration */}
                     <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
-                      <h3 className="text-lg font-semibold mb-4 text-orange-400 flex items-center gap-2">
-                        <FileText className="w-5 h-5" />
-                        Policies & Legal
-                      </h3>
-                      <p className="text-sm text-slate-400 mb-4">Manage your store policies (Return Policy, Privacy Policy, Terms of Service, etc.)</p>
-                      <PolicyManager businessUnitId={businessUnitId} language={language} />
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-violet-400 flex items-center gap-2">
+                          <FileText className="w-5 h-5" />
+                          Footer
+                        </h3>
+                        {/* Footer Styling Controls - inline with title */}
+                        {(() => {
+                          const footerData = landingPageData.footer || {}
+                          const fontSize = footerData.text_font_size || '0.875rem'
+                          const fontFamily = footerData.text_font_family || 'Josefin Sans'
+                          const textColor = footerData.text_color || '#ffffff'
+                          const bgColor = footerData.background_color || '#0D1B2A'
+                          const textAlign = footerData.text_align || 'center'
+                          const bold = footerData.text_bold || false
+                          const italic = footerData.text_italic || false
+
+                          const COLOR_PALETTE = [
+                            { name: 'White', value: '#ffffff' },
+                            { name: 'Black', value: '#000000' },
+                            { name: 'Dark Gray', value: '#374151' },
+                            { name: 'Gray', value: '#6b7280' },
+                            { name: 'Slate', value: '#1e293b' },
+                            { name: 'Navy', value: '#0D1B2A' },
+                            { name: 'Red', value: '#ef4444' },
+                            { name: 'Orange', value: '#f97316' },
+                            { name: 'Yellow', value: '#eab308' },
+                            { name: 'Green', value: '#22c55e' },
+                            { name: 'Teal', value: '#14b8a6' },
+                            { name: 'Blue', value: '#3b82f6' },
+                            { name: 'Violet', value: '#8b5cf6' },
+                            { name: 'Pink', value: '#ec4899' },
+                          ]
+
+                          const updateFooter = (key: string, value: any) => {
+                            setLandingPageData(prev => prev ? {
+                              ...prev,
+                              footer: { ...prev.footer, [key]: value }
+                            } : prev)
+                          }
+
+                          return (
+                            <div className="flex items-center gap-1">
+                              {/* Alignment buttons */}
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => updateFooter('text_align', 'left')}
+                                  className={`p-1 rounded ${
+                                    textAlign === 'left'
+                                      ? 'bg-violet-600 text-white'
+                                      : 'text-slate-400 hover:text-slate-200'
+                                  }`}
+                                  title="Align Left"
+                                >
+                                  <AlignLeft className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={() => updateFooter('text_align', 'center')}
+                                  className={`p-1 rounded ${
+                                    textAlign === 'center'
+                                      ? 'bg-violet-600 text-white'
+                                      : 'text-slate-400 hover:text-slate-200'
+                                  }`}
+                                  title="Align Center"
+                                >
+                                  <AlignCenter className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={() => updateFooter('text_align', 'right')}
+                                  className={`p-1 rounded ${
+                                    textAlign === 'right'
+                                      ? 'bg-violet-600 text-white'
+                                      : 'text-slate-400 hover:text-slate-200'
+                                  }`}
+                                  title="Align Right"
+                                >
+                                  <AlignRight className="w-3 h-3" />
+                                </button>
+                              </div>
+
+                              {/* Bold/Italic buttons */}
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => updateFooter('text_bold', !bold)}
+                                  className={`p-1 rounded ${
+                                    bold
+                                      ? 'bg-violet-600 text-white'
+                                      : 'text-slate-400 hover:text-slate-200'
+                                  }`}
+                                  title="Bold"
+                                >
+                                  <Bold className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={() => updateFooter('text_italic', !italic)}
+                                  className={`p-1 rounded ${
+                                    italic
+                                      ? 'bg-violet-600 text-white'
+                                      : 'text-slate-400 hover:text-slate-200'
+                                  }`}
+                                  title="Italic"
+                                >
+                                  <Italic className="w-3 h-3" />
+                                </button>
+                              </div>
+
+                              {/* Font Size */}
+                              <div className="relative">
+                                <button
+                                  onClick={() => setShowFooterPicker(showFooterPicker === 'fontSize' ? null : 'fontSize')}
+                                  className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+                                >
+                                  {Math.round(parseFloat(fontSize) * 16) || 14}
+                                </button>
+                                {showFooterPicker === 'fontSize' && (
+                                  <div className="absolute right-0 top-full mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+                                    {[10, 12, 14, 16, 18, 20, 24, 28, 32].map(size => (
+                                      <button
+                                        key={size}
+                                        onClick={() => {
+                                          updateFooter('text_font_size', `${size / 16}rem`)
+                                          setShowFooterPicker(null)
+                                        }}
+                                        className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
+                                          Math.round(parseFloat(fontSize) * 16) === size ? 'bg-violet-600 text-white' : 'text-slate-200'
+                                        }`}
+                                      >
+                                        {size}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Font Family */}
+                              <div className="relative">
+                                <button
+                                  onClick={() => setShowFooterPicker(showFooterPicker === 'fontFamily' ? null : 'fontFamily')}
+                                  className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+                                >
+                                  {fontFamily.split(' ')[0]}
+                                </button>
+                                {showFooterPicker === 'fontFamily' && (
+                                  <div className="absolute right-0 top-full mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-64 overflow-y-auto">
+                                    {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
+                                      <button
+                                        key={font}
+                                        onClick={() => {
+                                          updateFooter('text_font_family', font)
+                                          setShowFooterPicker(null)
+                                        }}
+                                        className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
+                                          fontFamily === font ? 'bg-violet-600 text-white' : 'text-slate-200'
+                                        }`}
+                                      >
+                                        {font}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Text Color */}
+                              <div className="relative flex flex-col items-center gap-0.5">
+                                <button
+                                  onClick={() => setShowFooterPicker(showFooterPicker === 'textColor' ? null : 'textColor')}
+                                  className="w-7 h-7 rounded border border-slate-600 cursor-pointer hover:scale-110 transition-transform"
+                                  style={{ backgroundColor: textColor }}
+                                  title="Text color"
+                                />
+                                <span className="text-[9px] text-slate-500">Text</span>
+                                {showFooterPicker === 'textColor' && (
+                                  <div className="absolute right-0 top-full mt-2 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50">
+                                    <div className="grid grid-cols-7 gap-2">
+                                      {COLOR_PALETTE.map((c) => (
+                                        <button
+                                          key={c.value}
+                                          onClick={() => {
+                                            updateFooter('text_color', c.value)
+                                            setShowFooterPicker(null)
+                                          }}
+                                          className="w-7 h-7 rounded border-2 hover:scale-110 transition-transform"
+                                          style={{
+                                            backgroundColor: c.value,
+                                            borderColor: textColor === c.value ? '#a855f7' : '#475569'
+                                          }}
+                                          title={c.name}
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Background Color */}
+                              <div className="relative flex flex-col items-center gap-0.5">
+                                <button
+                                  onClick={() => setShowFooterPicker(showFooterPicker === 'bgColor' ? null : 'bgColor')}
+                                  className="w-7 h-7 rounded border border-slate-600 cursor-pointer hover:scale-110 transition-transform"
+                                  style={{ backgroundColor: bgColor }}
+                                  title="Background color"
+                                />
+                                <span className="text-[9px] text-slate-500">BG</span>
+                                {showFooterPicker === 'bgColor' && (
+                                  <div className="absolute right-0 top-full mt-2 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50">
+                                    <div className="grid grid-cols-7 gap-2">
+                                      {COLOR_PALETTE.map((c) => (
+                                        <button
+                                          key={c.value}
+                                          onClick={() => {
+                                            updateFooter('background_color', c.value)
+                                            setShowFooterPicker(null)
+                                          }}
+                                          className="w-7 h-7 rounded border-2 hover:scale-110 transition-transform"
+                                          style={{
+                                            backgroundColor: c.value,
+                                            borderColor: bgColor === c.value ? '#a855f7' : '#475569'
+                                          }}
+                                          title={c.name}
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })()}
+                      </div>
+                      <FooterEditor
+                        data={landingPageData.footer || {}}
+                        onChange={(footerData) => {
+                          setLandingPageData(prev => prev ? { ...prev, footer: footerData } : prev)
+                        }}
+                        onEditPolicy={(policyType) => {
+                          setEditingPolicyType(policyType)
+                        }}
+                      />
                     </div>
+
                   </div>
                 ) : (
                   <div className="text-center py-12">
@@ -3630,6 +3854,114 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
               >
                 <Globe className="w-4 h-4" />
                 Scrape Website
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Policy Editor Modal */}
+      {editingPolicyType && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-slate-700">
+              <h3 className="text-lg font-semibold text-white">
+                Edit {editingPolicyType.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+              </h3>
+              <button
+                onClick={() => setEditingPolicyType(null)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <p className="text-sm text-slate-400 mb-3">
+                Select text and use the toolbar to format. Your changes appear exactly as they will on the page.
+              </p>
+              {(() => {
+                // Get existing content or load from template (with placeholders intact)
+                const policyKey = editingPolicyType.replace(/-/g, '_') as keyof typeof policyTemplates
+                const existingContent = landingPageData?.footer?.policy_content?.[editingPolicyType]
+
+                // Load raw template content with placeholders
+                const template = policyTemplates[policyKey]
+
+                // Convert markdown to HTML for WYSIWYG editing if loading template
+                const markdownToHtml = (md: string): string => {
+                  return md
+                    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+                    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+                    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                    .replace(/^- (.+)$/gm, '<li>$1</li>')
+                    .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+                    .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
+                    .replace(/\n\n/g, '</p><p>')
+                    .replace(/\n/g, '<br/>')
+                }
+
+                // Use existing content (HTML) or convert template markdown to HTML
+                const displayContent = existingContent || (template ? markdownToHtml(template.content) : '')
+
+                // Available variables for this template
+                const availableVars = template?.fields?.map((f: { key: string }) => `{{${f.key}}}`) || []
+
+                return (
+                  <>
+                    {template && (
+                      <div className="mb-3 p-3 bg-violet-900/30 border border-violet-600/50 rounded">
+                        <p className="text-xs text-violet-300 mb-2">
+                          Available variables (will be replaced with your footer settings):
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {availableVars.map((v: string) => (
+                            <span key={v} className="px-1.5 py-0.5 bg-violet-800/50 rounded text-[10px] text-violet-200 font-mono cursor-pointer hover:bg-violet-700/50"
+                              onClick={() => {
+                                // Insert variable at cursor position
+                                document.execCommand('insertText', false, v)
+                              }}
+                              title="Click to insert"
+                            >
+                              {v}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <PolicyRichTextEditor
+                      value={displayContent}
+                      onChange={(newContent) => {
+                        setLandingPageData(prev => prev ? {
+                          ...prev,
+                          footer: {
+                            ...prev.footer,
+                            policy_content: {
+                              ...prev.footer?.policy_content,
+                              [editingPolicyType]: newContent
+                            }
+                          }
+                        } : prev)
+                      }}
+                      placeholder={`Start typing your ${editingPolicyType.split('-').join(' ')} content here...`}
+                    />
+                  </>
+                )
+              })()}
+            </div>
+            <div className="flex justify-end gap-3 p-4 border-t border-slate-700">
+              <button
+                onClick={() => setEditingPolicyType(null)}
+                className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => setEditingPolicyType(null)}
+                className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors"
+              >
+                Done
               </button>
             </div>
           </div>
