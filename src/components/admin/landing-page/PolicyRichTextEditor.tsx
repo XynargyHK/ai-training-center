@@ -34,15 +34,16 @@ const FONT_SIZES = [
   { label: '48', value: '7' },
 ]
 
+// Font families with their CSS variable names
 const FONT_FAMILIES = [
-  'Josefin Sans',
-  'Cormorant Garamond',
-  'Playfair Display',
-  'Montserrat',
-  'Inter',
-  'Lora',
-  'Raleway',
-  'Open Sans',
+  { name: 'Josefin Sans', variable: 'var(--font-headline)' },
+  { name: 'Cormorant Garamond', variable: 'var(--font-serif)' },
+  { name: 'Playfair Display', variable: 'var(--font-playfair)' },
+  { name: 'Montserrat', variable: 'var(--font-montserrat)' },
+  { name: 'Inter', variable: 'var(--font-inter)' },
+  { name: 'Lora', variable: 'var(--font-lora)' },
+  { name: 'Raleway', variable: 'var(--font-raleway)' },
+  { name: 'Open Sans', variable: 'var(--font-open-sans)' },
 ]
 
 const COLOR_PALETTE = [
@@ -215,9 +216,40 @@ export default function PolicyRichTextEditor({
     setShowFontSizeMenu(false)
   }
 
-  const handleFontFamily = (font: string) => {
-    execCommand('fontName', font)
-    setCurrentFontFamily(font)
+  const handleFontFamily = (fontObj: { name: string; variable: string }) => {
+    if (editorRef.current) {
+      editorRef.current.focus()
+      // Restore selection
+      if (savedSelectionRef.current) {
+        const selection = window.getSelection()
+        if (selection) {
+          selection.removeAllRanges()
+          try {
+            selection.addRange(savedSelectionRef.current.cloneRange())
+          } catch (e) {
+            // Selection might be invalid
+          }
+        }
+      }
+      // Wrap selection in span with CSS variable font
+      const selection = window.getSelection()
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0)
+        if (!range.collapsed) {
+          const span = document.createElement('span')
+          span.style.fontFamily = fontObj.variable
+          try {
+            range.surroundContents(span)
+          } catch (e) {
+            // If surroundContents fails (partial selection), use execCommand fallback
+            document.execCommand('fontName', false, fontObj.name)
+          }
+        }
+      }
+      handleInput()
+      saveSelection()
+    }
+    setCurrentFontFamily(fontObj.name)
     setShowFontFamilyMenu(false)
   }
 
@@ -299,18 +331,18 @@ export default function PolicyRichTextEditor({
             <div className="absolute top-full left-0 mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
               {FONT_FAMILIES.map(font => (
                 <button
-                  key={font}
+                  key={font.name}
                   onClick={(e) => {
                     e.preventDefault()
                     handleFontFamily(font)
                   }}
                   className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                    currentFontFamily === font ? 'bg-violet-600 text-white' : 'text-slate-200'
+                    currentFontFamily === font.name ? 'bg-violet-600 text-white' : 'text-slate-200'
                   }`}
-                  style={{ fontFamily: font }}
+                  style={{ fontFamily: font.variable }}
                   type="button"
                 >
-                  {font}
+                  {font.name}
                 </button>
               ))}
             </div>
