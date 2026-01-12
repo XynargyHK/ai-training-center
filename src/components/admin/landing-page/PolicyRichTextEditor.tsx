@@ -35,14 +35,14 @@ const FONT_SIZES = [
 ]
 
 const FONT_FAMILIES = [
-  'Arial',
-  'Times New Roman',
-  'Georgia',
-  'Verdana',
-  'Courier New',
-  'Trebuchet MS',
-  'Palatino',
-  'Garamond',
+  'Josefin Sans',
+  'Cormorant Garamond',
+  'Playfair Display',
+  'Montserrat',
+  'Inter',
+  'Lora',
+  'Raleway',
+  'Open Sans',
 ]
 
 const COLOR_PALETTE = [
@@ -69,7 +69,7 @@ export default function PolicyRichTextEditor({
   const [showFontFamilyMenu, setShowFontFamilyMenu] = useState(false)
   const [showColorPicker, setShowColorPicker] = useState(false)
   const [currentFontSize, setCurrentFontSize] = useState('3')
-  const [currentFontFamily, setCurrentFontFamily] = useState('Arial')
+  const [currentFontFamily, setCurrentFontFamily] = useState('Josefin Sans')
   const [currentColor, setCurrentColor] = useState('#000000')
 
   // Initialize editor content
