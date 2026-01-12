@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import { Upload, X, ChevronUp, ChevronDown, Plus, Trash2, Image, Loader2 } from 'lucide-react'
 import type { LandingPageBlock } from '@/types/landing-page-blocks'
 import UniversalTextEditor from '../UniversalTextEditor'
+import PolicyRichTextEditor from '../PolicyRichTextEditor'
 
 interface Step {
   background_url?: string
@@ -359,27 +360,15 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
               placeholder="e.g., Step 1: Cleanse"
             />
 
-            {/* Text Content - Using Universal Text Editor */}
-            <UniversalTextEditor
-              label="Text Content"
-              value={step.text_content || ''}
-              onChange={(value) => updateStep(index, { text_content: value })}
-              fontSize={step.text_font_size || '1rem'}
-              onFontSizeChange={(value) => updateStep(index, { text_font_size: value })}
-              fontFamily={step.text_font_family || 'Cormorant Garamond'}
-              onFontFamilyChange={(value) => updateStep(index, { text_font_family: value })}
-              color={step.text_color || '#000000'}
-              onColorChange={(value) => updateStep(index, { text_color: value })}
-              bold={step.text_bold}
-              onBoldChange={(value) => updateStep(index, { text_bold: value })}
-              italic={step.text_italic}
-              onItalicChange={(value) => updateStep(index, { text_italic: value })}
-              textAlign={step.text_align || 'left'}
-              onTextAlignChange={(value) => updateStep(index, { text_align: value })}
-              placeholder="Enter step instructions..."
-              multiline={true}
-              rows={3}
-            />
+            {/* Text Content - Using Rich Text Editor */}
+            <div>
+              <label className="block text-xs text-slate-400 mb-2">Text Content</label>
+              <PolicyRichTextEditor
+                value={step.text_content || ''}
+                onChange={(value) => updateStep(index, { text_content: value })}
+                placeholder="Enter step instructions... Use toolbar for formatting, lists, etc."
+              />
+            </div>
           </div>
         ))}
 

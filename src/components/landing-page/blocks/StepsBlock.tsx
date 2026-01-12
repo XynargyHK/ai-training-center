@@ -69,8 +69,16 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
     steps = []
   } = data
 
-  // Helper function to preserve line breaks
-  const preserveLineBreaks = (text: string) => {
+  // Helper function to handle text content
+  // If content is HTML (from rich editor), use as-is
+  // If plain text, preserve line breaks
+  const processTextContent = (text: string) => {
+    if (!text) return ''
+    // Check if content appears to be HTML
+    if (text.includes('<') && text.includes('>')) {
+      return text // Already HTML from WYSIWYG editor
+    }
+    // Plain text - preserve line breaks
     return text.replace(/\n/g, '<br>')
   }
 
@@ -81,7 +89,7 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
   return (
     <section
       id={anchorId}
-      className="py-4 px-2"
+      className="py-4 px-2 steps-block-content"
       style={{ backgroundColor: background_color }}
     >
       <div className="max-w-4xl mx-auto">
@@ -174,7 +182,7 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
                         <div
                           className={textClassName}
                           style={textStyle}
-                          dangerouslySetInnerHTML={{ __html: preserveLineBreaks(step.text_content) }}
+                          dangerouslySetInnerHTML={{ __html: processTextContent(step.text_content) }}
                         />
                       </div>
                     )}
@@ -220,7 +228,7 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
                         <div
                           className={textClassName}
                           style={textStyle}
-                          dangerouslySetInnerHTML={{ __html: preserveLineBreaks(step.text_content) }}
+                          dangerouslySetInnerHTML={{ __html: processTextContent(step.text_content) }}
                         />
                       </div>
                     )}
@@ -244,7 +252,7 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
                         <div
                           className={textClassName}
                           style={textStyle}
-                          dangerouslySetInnerHTML={{ __html: preserveLineBreaks(step.text_content) }}
+                          dangerouslySetInnerHTML={{ __html: processTextContent(step.text_content) }}
                         />
                       </div>
                     )}
@@ -290,7 +298,7 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
                         <div
                           className={textClassName}
                           style={textStyle}
-                          dangerouslySetInnerHTML={{ __html: preserveLineBreaks(step.text_content) }}
+                          dangerouslySetInnerHTML={{ __html: processTextContent(step.text_content) }}
                         />
                       </div>
                     )}
@@ -353,7 +361,7 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
                           <div
                             className={textClassName}
                             style={textStyle}
-                            dangerouslySetInnerHTML={{ __html: preserveLineBreaks(step.text_content) }}
+                            dangerouslySetInnerHTML={{ __html: processTextContent(step.text_content) }}
                           />
                         </div>
                       )}
@@ -399,7 +407,7 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
                           <div
                             className={textClassName}
                             style={textStyle}
-                            dangerouslySetInnerHTML={{ __html: preserveLineBreaks(step.text_content) }}
+                            dangerouslySetInnerHTML={{ __html: processTextContent(step.text_content) }}
                           />
                         </div>
                       )}
@@ -423,7 +431,7 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
                           <div
                             className={textClassName}
                             style={textStyle}
-                            dangerouslySetInnerHTML={{ __html: preserveLineBreaks(step.text_content) }}
+                            dangerouslySetInnerHTML={{ __html: processTextContent(step.text_content) }}
                           />
                         </div>
                       )}
@@ -469,7 +477,7 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
                           <div
                             className={textClassName}
                             style={textStyle}
-                            dangerouslySetInnerHTML={{ __html: preserveLineBreaks(step.text_content) }}
+                            dangerouslySetInnerHTML={{ __html: processTextContent(step.text_content) }}
                           />
                         </div>
                       )}
@@ -481,6 +489,43 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
           </div>
         )}
       </div>
+
+      {/* Rich text content styles */}
+      <style jsx global>{`
+        .steps-block-content ul {
+          list-style-type: disc;
+          margin-left: 1.5rem;
+          padding-left: 0.5rem;
+          margin-bottom: 0.5rem;
+        }
+        .steps-block-content ol {
+          list-style-type: decimal;
+          margin-left: 1.5rem;
+          padding-left: 0.5rem;
+          margin-bottom: 0.5rem;
+        }
+        .steps-block-content li {
+          margin-bottom: 0.25rem;
+        }
+        .steps-block-content h1 {
+          font-size: 1.75rem;
+          font-weight: bold;
+          margin: 0.5rem 0;
+        }
+        .steps-block-content h2 {
+          font-size: 1.5rem;
+          font-weight: 600;
+          margin: 0.5rem 0;
+        }
+        .steps-block-content h3 {
+          font-size: 1.25rem;
+          font-weight: 500;
+          margin: 0.25rem 0;
+        }
+        .steps-block-content p {
+          margin-bottom: 0.5rem;
+        }
+      `}</style>
     </section>
   )
 }
