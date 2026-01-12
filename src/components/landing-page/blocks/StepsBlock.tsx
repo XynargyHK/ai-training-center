@@ -147,7 +147,7 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
             }
 
             // Text styling - same as Features
-            const textClassName = `font-light ${getFontClass(step.text_font_family)}`
+            const textClassName = `font-light step-text-content ${getFontClass(step.text_font_family)}`
             const textStyle: React.CSSProperties = {
               fontSize: step.text_font_size || 'clamp(1rem, 2vw, 1.125rem)',
               color: step.text_color || '#374151',
@@ -330,7 +330,7 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
               }
 
               // Text styling - same as Features
-              const textClassName = `font-light ${getFontClass(step.text_font_family)}`
+              const textClassName = `font-light step-text-content ${getFontClass(step.text_font_family)}`
               const textStyle: React.CSSProperties = {
                 fontSize: step.text_font_size || 'clamp(1rem, 2vw, 1.125rem)',
                 color: step.text_color || '#374151',
@@ -490,39 +490,39 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
         )}
       </div>
 
-      {/* Rich text content styles */}
+      {/* Rich text content styles - only for text content areas, NOT main heading */}
       <style jsx global>{`
-        .steps-block-content ul {
+        .steps-block-content .step-text-content ul {
           list-style-type: disc;
           margin-left: 1.5rem;
           padding-left: 0.5rem;
           margin-bottom: 0.5rem;
         }
-        .steps-block-content ol {
+        .steps-block-content .step-text-content ol {
           list-style-type: decimal;
           margin-left: 1.5rem;
           padding-left: 0.5rem;
           margin-bottom: 0.5rem;
         }
-        .steps-block-content li {
+        .steps-block-content .step-text-content li {
           margin-bottom: 0.25rem;
         }
-        .steps-block-content h1 {
+        .steps-block-content .step-text-content h1 {
           font-size: 1.75rem;
           font-weight: bold;
           margin: 0.5rem 0;
         }
-        .steps-block-content h2 {
+        .steps-block-content .step-text-content h2 {
           font-size: 1.5rem;
           font-weight: 600;
           margin: 0.5rem 0;
         }
-        .steps-block-content h3 {
+        .steps-block-content .step-text-content h3 {
           font-size: 1.25rem;
           font-weight: 500;
           margin: 0.25rem 0;
         }
-        .steps-block-content p {
+        .steps-block-content .step-text-content p {
           margin-bottom: 0.5rem;
         }
       `}</style>

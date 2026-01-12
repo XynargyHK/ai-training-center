@@ -125,6 +125,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
   const [editingPolicyType, setEditingPolicyType] = useState<string | null>(null) // policy being edited
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null)
   const [showAddBlockMenu, setShowAddBlockMenu] = useState(false)
+  const [footerCollapsed, setFooterCollapsed] = useState(false)
 
   // Color palette for text colors
   const COLOR_PALETTE = [
@@ -3629,15 +3630,37 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                           )
                         })()}
                       </div>
-                      <FooterEditor
-                        data={landingPageData.footer || {}}
-                        onChange={(footerData) => {
-                          setLandingPageData(prev => prev ? { ...prev, footer: footerData } : prev)
-                        }}
-                        onEditPolicy={(policyType) => {
-                          setEditingPolicyType(policyType)
-                        }}
-                      />
+                      {/* Footer Section - Collapsible */}
+                      <div className="mt-6 border border-slate-600 rounded-lg overflow-hidden">
+                        <div
+                          className="flex items-center justify-between px-4 py-3 bg-slate-700 cursor-pointer hover:bg-slate-600 transition-colors"
+                          onClick={() => setFooterCollapsed(!footerCollapsed)}
+                        >
+                          <h3 className="text-sm font-medium text-white flex items-center gap-2">
+                            📜 Footer & Policies
+                          </h3>
+                          <button className="text-slate-300 hover:text-white">
+                            {footerCollapsed ? (
+                              <ChevronDown className="w-5 h-5" />
+                            ) : (
+                              <ChevronUp className="w-5 h-5" />
+                            )}
+                          </button>
+                        </div>
+                        {!footerCollapsed && (
+                          <div className="p-4 bg-slate-800/50">
+                            <FooterEditor
+                              data={landingPageData.footer || {}}
+                              onChange={(footerData) => {
+                                setLandingPageData(prev => prev ? { ...prev, footer: footerData } : prev)
+                              }}
+                              onEditPolicy={(policyType) => {
+                                setEditingPolicyType(policyType)
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                   </div>

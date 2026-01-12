@@ -70,6 +70,16 @@ const COLOR_PALETTE = [
   { name: 'Pink', value: '#ec4899' },
 ]
 
+// Font weights
+const FONT_WEIGHTS = [
+  { label: 'Thin', value: '100' },
+  { label: 'Light', value: '300' },
+  { label: 'Normal', value: '400' },
+  { label: 'Medium', value: '500' },
+  { label: 'Semibold', value: '600' },
+  { label: 'Bold', value: '700' },
+]
+
 export default function PolicyRichTextEditor({
   value,
   onChange,
@@ -79,9 +89,11 @@ export default function PolicyRichTextEditor({
   const savedSelectionRef = useRef<Range | null>(null)
   const [showFontSizeMenu, setShowFontSizeMenu] = useState(false)
   const [showFontFamilyMenu, setShowFontFamilyMenu] = useState(false)
+  const [showFontWeightMenu, setShowFontWeightMenu] = useState(false)
   const [showColorPicker, setShowColorPicker] = useState(false)
   const [currentFontSize, setCurrentFontSize] = useState('3')
   const [currentFontFamily, setCurrentFontFamily] = useState('Josefin Sans')
+  const [currentFontWeight, setCurrentFontWeight] = useState('400')
   const [currentColor, setCurrentColor] = useState('#000000')
 
   // Initialize editor content
@@ -267,6 +279,45 @@ export default function PolicyRichTextEditor({
     setShowFontFamilyMenu(false)
   }
 
+  const handleFontWeight = (weight: string) => {
+    if (editorRef.current) {
+      editorRef.current.focus()
+      // Restore selection
+      if (savedSelectionRef.current) {
+        const selection = window.getSelection()
+        if (selection) {
+          selection.removeAllRanges()
+          try {
+            selection.addRange(savedSelectionRef.current.cloneRange())
+          } catch (e) {
+            // Selection might be invalid
+          }
+        }
+      }
+      // Wrap selection in span with font weight
+      const selection = window.getSelection()
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0)
+        if (!range.collapsed) {
+          const span = document.createElement('span')
+          span.style.fontWeight = weight
+          try {
+            range.surroundContents(span)
+          } catch (e) {
+            // If surroundContents fails (partial selection), extract and wrap
+            const content = range.extractContents()
+            span.appendChild(content)
+            range.insertNode(span)
+          }
+        }
+      }
+      handleInput()
+      saveSelection()
+    }
+    setCurrentFontWeight(weight)
+    setShowFontWeightMenu(false)
+  }
+
   const handleColor = (color: string) => {
     execCommand('foreColor', color)
     setCurrentColor(color)
@@ -279,6 +330,7 @@ export default function PolicyRichTextEditor({
       const target = e.target as HTMLElement
       if (!target.closest('.font-size-dropdown')) setShowFontSizeMenu(false)
       if (!target.closest('.font-family-dropdown')) setShowFontFamilyMenu(false)
+      if (!target.closest('.font-weight-dropdown')) setShowFontWeightMenu(false)
       if (!target.closest('.color-picker-dropdown')) setShowColorPicker(false)
     }
     document.addEventListener('click', handleClickOutside)
@@ -334,6 +386,7 @@ export default function PolicyRichTextEditor({
               e.stopPropagation()
               setShowFontFamilyMenu(!showFontFamilyMenu)
               setShowFontSizeMenu(false)
+              setShowFontWeightMenu(false)
               setShowColorPicker(false)
             }}
             className="px-2 py-1 text-xs bg-slate-600 hover:bg-slate-500 text-slate-200 rounded border border-slate-500 min-w-[80px] text-left"
@@ -371,6 +424,7 @@ export default function PolicyRichTextEditor({
               e.stopPropagation()
               setShowFontSizeMenu(!showFontSizeMenu)
               setShowFontFamilyMenu(false)
+              setShowFontWeightMenu(false)
               setShowColorPicker(false)
             }}
             className="px-2 py-1 text-xs bg-slate-600 hover:bg-slate-500 text-slate-200 rounded border border-slate-500 min-w-[40px]"
@@ -399,6 +453,44 @@ export default function PolicyRichTextEditor({
           )}
         </div>
 
+        {/* Font Weight Dropdown */}
+        <div className="relative font-weight-dropdown">
+          <button
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              setShowFontWeightMenu(!showFontWeightMenu)
+              setShowFontSizeMenu(false)
+              setShowFontFamilyMenu(false)
+              setShowColorPicker(false)
+            }}
+            className="px-2 py-1 text-xs bg-slate-600 hover:bg-slate-500 text-slate-200 rounded border border-slate-500 min-w-[60px]"
+            type="button"
+          >
+            {FONT_WEIGHTS.find(w => w.value === currentFontWeight)?.label || 'Normal'}
+          </button>
+          {showFontWeightMenu && (
+            <div className="absolute top-full left-0 mt-1 w-24 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+              {FONT_WEIGHTS.map(weight => (
+                <button
+                  key={weight.value}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    handleFontWeight(weight.value)
+                  }}
+                  className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
+                    currentFontWeight === weight.value ? 'bg-violet-600 text-white' : 'text-slate-200'
+                  }`}
+                  style={{ fontWeight: weight.value }}
+                  type="button"
+                >
+                  {weight.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         <ToolbarDivider />
 
         {/* Text Color */}
@@ -410,6 +502,7 @@ export default function PolicyRichTextEditor({
               setShowColorPicker(!showColorPicker)
               setShowFontSizeMenu(false)
               setShowFontFamilyMenu(false)
+              setShowFontWeightMenu(false)
             }}
             className="w-7 h-7 rounded border border-slate-500 cursor-pointer hover:scale-105 transition-transform flex items-center justify-center"
             style={{ backgroundColor: currentColor }}

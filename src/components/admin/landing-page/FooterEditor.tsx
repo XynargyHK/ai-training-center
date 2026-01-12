@@ -63,7 +63,7 @@ interface FooterEditorProps {
 }
 
 const defaultLinks: FooterLink[] = [
-  { label: 'About Us', url: '#about' },
+  { label: 'About Us', url: '?policy=about-us' },
   { label: 'Shipping', url: '?policy=shipping-policy' },
   { label: 'FAQ', url: '#faq' },
   { label: 'Terms', url: '?policy=terms-of-service' },

@@ -7,7 +7,6 @@ import AccordionBlock from './blocks/AccordionBlock'
 import StepsBlock from './blocks/StepsBlock'
 import PricingBlock from './blocks/PricingBlock'
 import StaticBannerBlock from './blocks/StaticBannerBlock'
-import PoliciesBlock from './blocks/PoliciesBlock'
 import TableBlock from './blocks/TableBlock'
 
 // Convert block name to URL-friendly anchor slug
@@ -74,9 +73,6 @@ export default function BlockRenderer({ blocks, onAddToCart }: BlockRendererProp
 
           case 'static_banner':
             return <StaticBannerBlock key={block.id} anchorId={anchorId} data={block.data as any} />
-
-          case 'policies':
-            return <PoliciesBlock key={block.id} anchorId={anchorId} data={block.data as any} />
 
           case 'table':
             return <TableBlock key={block.id} anchorId={anchorId} data={block.data as any} heading={block.name} />

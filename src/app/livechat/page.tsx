@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { serifFont, headlineFont, getFontClass } from '@/lib/fonts'
 import BlockRenderer from '@/components/landing-page/BlockRenderer'
+import LandingPageFooter from '@/components/landing-page/LandingPageFooter'
+import PolicyContentView from '@/components/landing-page/PolicyContentView'
 import CheckoutModal from '@/components/shop/checkout-modal'
 import AICoach from '@/components/ui/ai-coach'
 
@@ -139,6 +141,47 @@ interface LandingPageData {
   footer_disclaimer?: string
   primary_color?: string
   secondary_color?: string
+  blocks?: any[]
+  footer?: {
+    links?: { label: string; url: string }[]
+    brand_name?: string
+    company_name?: string
+    contact_email?: string
+    background_color?: string
+    text_font_family?: string
+    text_font_size?: string
+    text_color?: string
+    text_align?: 'left' | 'center' | 'right'
+    text_bold?: boolean
+    text_italic?: boolean
+    // Policy settings
+    website_url?: string
+    contact_address?: string
+    governing_state?: string
+    effective_date?: string
+    liability_cap?: string
+    refund_days?: string
+    refund_processing_days?: string
+    warranty_months?: string
+    restocking_fee?: string
+    return_address?: string
+    processing_days?: string
+    domestic_shipping_days?: string
+    international_shipping_days?: string
+    free_shipping_threshold?: string
+    shipping_carriers?: string
+    cutoff_time?: string
+    warehouse_location?: string
+    policies?: {
+      about_us?: { enabled: boolean }
+      terms_of_service?: { enabled: boolean }
+      privacy_policy?: { enabled: boolean }
+      refund_policy?: { enabled: boolean }
+      shipping_policy?: { enabled: boolean }
+      guarantee?: { enabled: boolean }
+    }
+    policy_content?: Record<string, string>
+  }
 }
 
 // Price Banner Component
@@ -364,9 +407,11 @@ interface AIStaff {
 
 function LandingPageContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const businessUnitParam = searchParams.get('businessUnit') || ''
   const countryParam = searchParams.get('country') || 'US'
   const langParam = searchParams.get('lang') || searchParams.get('language') || 'en'
+  const policyParam = searchParams.get('policy') || '' // e.g., 'terms-of-service', 'privacy-policy'
 
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [selectedPricing, setSelectedPricing] = useState<string>('')
@@ -641,11 +686,21 @@ function LandingPageContent() {
     )
   }
 
+  // Get policy data from the footer settings
+  const getPolicyData = () => {
+    if (!policyParam) return null
+    // Policy data is now stored in footer settings
+    return landingPage?.footer || null
+  }
+
+  const policyData = policyParam ? getPolicyData() : null
+  const backUrl = `/livechat${businessUnitParam ? `?businessUnit=${businessUnitParam}` : ''}`
+
   // Render full landing page with database content
   return (
     <div className="min-h-screen bg-white">
       {/* Announcement Bar - Rotating */}
-      {announcements.length > 0 && (
+      {!policyParam && announcements.length > 0 && (
         <div className="text-white text-center py-2.5 px-4 text-sm overflow-hidden" style={{ backgroundColor: secondaryColor }}>
           <div
             className={`transition-all duration-300 ${
@@ -783,8 +838,17 @@ function LandingPageContent() {
         )}
       </header>
 
+      {/* Policy Content View - Show instead of hero/blocks when viewing policy */}
+      {policyParam && (
+        <PolicyContentView
+          policyType={policyParam}
+          policyData={policyData}
+          backUrl={backUrl}
+        />
+      )}
+
       {/* Hero Section - Carousel */}
-      {(landingPage.hero_slides && landingPage.hero_slides.length > 0) && (() => {
+      {!policyParam && (landingPage.hero_slides && landingPage.hero_slides.length > 0) && (() => {
           // Separate slides into carousel and static
           const carouselSlides = landingPage.hero_slides.filter(slide => slide.is_carousel !== false)
           const staticSlides = landingPage.hero_slides.filter(slide => slide.is_carousel === false)
@@ -940,7 +1004,7 @@ function LandingPageContent() {
         })()}
 
       {/* Static Hero Banners - Below Carousel */}
-      {(landingPage.hero_slides && landingPage.hero_slides.length > 0) && (() => {
+      {!policyParam && (landingPage.hero_slides && landingPage.hero_slides.length > 0) && (() => {
           const staticSlides = landingPage.hero_slides.filter(slide => slide.is_carousel === false)
 
           if (staticSlides.length === 0) return null
@@ -1064,9 +1128,9 @@ function LandingPageContent() {
         })()}
 
       {/* Dynamic Blocks */}
-      {landingPage.blocks && landingPage.blocks.length > 0 ? (
+      {!policyParam && landingPage.blocks && landingPage.blocks.length > 0 ? (
         <BlockRenderer blocks={landingPage.blocks} onAddToCart={addToCart} />
-      ) : (
+      ) : !policyParam && (
         <>
           {/* Fallback: Show old landing page schema content */}
           {/* Clinical Results */}
@@ -1409,14 +1473,11 @@ function LandingPageContent() {
       )}
 
       {/* Footer */}
-      <footer className="py-8 px-4 text-white text-center text-sm" style={{ backgroundColor: secondaryColor }}>
-        {landingPage.footer_disclaimer && (
-          <p className="text-black/50 mb-4">
-            {landingPage.footer_disclaimer}
-          </p>
-        )}
-        <p className="text-black/70">&copy; 2024 {businessUnit?.name || 'Shop'}. All rights reserved.</p>
-      </footer>
+      <LandingPageFooter
+        data={landingPage.footer}
+        businessUnitName={businessUnit?.name}
+        businessUnitParam={businessUnitParam}
+      />
     </div>
   )
 }
