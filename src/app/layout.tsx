@@ -3,7 +3,7 @@ import "./globals.css";
 import { serifFont, headlineFont, playfairFont, montserratFont, interFont, loraFont, ralewayFont, openSansFont } from '@/lib/fonts'
 
 export const metadata: Metadata = {
-  title: "BNI AI Center",
+  title: "AI Business Center",
   description: "Train and manage AI agents with roleplay scenarios, knowledge management, and real-time testing",
 };
 

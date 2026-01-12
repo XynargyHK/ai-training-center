@@ -653,7 +653,7 @@ export const translations: Record<Language, Translations> = {
     noAiStaff: 'No AI staff available. Please train some AI staff first in the admin panel.',
     availableStaff: 'Available staff:',
 
-    adminTitle: 'BNI AI Center',
+    adminTitle: 'AI Business Center',
     adminSubtitle: 'Train and manage your AI customer support agent',
     viewLiveChat: 'View Live Chat',
     profile: 'Profile',
@@ -2432,7 +2432,7 @@ export const translations: Record<Language, Translations> = {
     noAiStaff: 'Không có nhân viên AI nào. Vui lòng đào tạo nhân viên AI trong bảng quản trị.',
     availableStaff: 'Nhân viên có sẵn:',
 
-    adminTitle: 'BNI AI Center',
+    adminTitle: 'AI Business Center',
     adminSubtitle: 'Đào tạo và quản lý trợ lý hỗ trợ khách hàng AI của bạn',
     viewLiveChat: 'Xem Trò Chuyện Trực Tiếp',
     profile: 'Hồ Sơ',
