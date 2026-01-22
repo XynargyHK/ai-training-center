@@ -864,14 +864,22 @@ function LandingPageContent() {
               {currentSlide.background_url ? (
                 currentSlide.background_type === 'video' ? (
                   <video
-                    key={currentSlide.background_url}
+                    key={currentHeroSlide}
                     src={currentSlide.background_url}
                     autoPlay
                     loop
                     muted
                     playsInline
                     preload="auto"
+                    poster={`${currentSlide.background_url}#t=0.1`}
                     className="absolute inset-0 w-full h-full object-cover"
+                    onLoadStart={(e) => {
+                      const video = e.currentTarget
+                      video.play().catch(() => {
+                        // Auto-retry play if blocked
+                        setTimeout(() => video.play().catch(() => {}), 100)
+                      })
+                    }}
                   />
                 ) : (
                   <img
