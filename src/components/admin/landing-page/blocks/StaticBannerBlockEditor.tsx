@@ -13,7 +13,9 @@ interface StaticBannerBlockEditorProps {
 
 export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitId }: StaticBannerBlockEditorProps) {
   const [uploading, setUploading] = useState(false)
+  const [uploadingPoster, setUploadingPoster] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const posterInputRef = useRef<HTMLInputElement>(null)
 
   // Get block data with defaults
   const data = block.data || {}
@@ -93,6 +95,53 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
     onUpdate(updatedBlock)
   }
 
+  const handlePosterUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Only allow images for poster
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file for the poster')
+      return
+    }
+
+    // Validate file size (max 5MB for poster)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Poster image must be less than 5MB')
+      return
+    }
+
+    setUploadingPoster(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('businessUnitId', businessUnitId || '')
+
+      const response = await fetch('/api/ecommerce/upload-image', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Upload failed')
+      }
+
+      const responseData = await response.json()
+      if (responseData.url) {
+        updateField('video_poster', responseData.url)
+      }
+    } catch (error: any) {
+      console.error('Error uploading poster:', error)
+      alert(`Failed to upload poster: ${error.message}`)
+    } finally {
+      setUploadingPoster(false)
+      if (posterInputRef.current) {
+        posterInputRef.current.value = ''
+      }
+    }
+  }
+
   const updateField = (key: string, value: any) => {
     const updatedBlock = {
       ...block,
@@ -114,7 +163,14 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
           {background_url ? (
             <div className="relative">
               {background_type === 'video' ? (
-                <video src={background_url} className="h-16 w-28 object-cover rounded" muted />
+                <video
+                  src={background_url}
+                  poster={data.video_poster}
+                  className="h-16 w-28 object-cover rounded bg-slate-800"
+                  muted
+                  playsInline
+                  preload="metadata"
+                />
               ) : (
                 <img src={background_url} alt="Background" className="h-16 w-28 object-cover rounded" />
               )}
@@ -174,6 +230,65 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
           </div>
         </div>
       </div>
+
+      {/* Video Poster Image - Only show when background is video */}
+      {background_type === 'video' && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+          <label className="block text-sm font-medium text-amber-300 mb-2 flex items-center gap-2">
+            <Image className="w-4 h-4" />
+            Video Poster Image (Optional - Shows while loading)
+          </label>
+          <p className="text-xs text-amber-200/70 mb-3">
+            A poster image displays while the video loads, improving perceived performance. Recommended for videos over 1MB.
+          </p>
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Preview poster thumbnail */}
+            {data.video_poster ? (
+              <div className="relative">
+                <img src={data.video_poster} alt="Poster" className="h-16 w-28 object-cover rounded border border-amber-500/30" />
+                <button
+                  onClick={() => updateField('video_poster', '')}
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ) : (
+              <div className="h-16 w-28 bg-slate-800 border border-dashed border-amber-600/50 rounded flex items-center justify-center">
+                <Image className="w-6 h-6 text-amber-500/50" />
+              </div>
+            )}
+
+            {/* Upload poster button */}
+            <button
+              onClick={() => posterInputRef.current?.click()}
+              disabled={uploadingPoster}
+              className="px-3 py-1.5 bg-amber-600 text-white text-sm rounded hover:bg-amber-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+            >
+              {uploadingPoster ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4" />
+                  {data.video_poster ? 'Change Poster' : 'Add Poster'}
+                </>
+              )}
+            </button>
+
+            {/* Hidden file input for poster */}
+            <input
+              ref={posterInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={handlePosterUpload}
+              className="hidden"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Headline */}
       <div>

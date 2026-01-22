@@ -9,6 +9,7 @@ interface StaticBannerBlockData {
   background_url?: string
   background_type?: 'image' | 'video'
   background_color?: string
+  video_poster?: string // Poster image for video while loading
 
   // Headline
   headline?: string
@@ -68,17 +69,19 @@ export default function StaticBannerBlock({ data, anchorId }: StaticBannerBlockP
         data.background_type === 'video' ? (
           <video
             src={data.background_url}
+            poster={data.video_poster}
             autoPlay
             loop
             muted
             playsInline
-            preload="auto"
+            preload="metadata"
             className="absolute inset-0 w-full h-full object-cover"
           />
         ) : (
           <img
             src={data.background_url}
             alt=""
+            loading="lazy"
             className="absolute inset-0 w-full h-full object-cover"
           />
         )

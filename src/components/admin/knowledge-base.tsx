@@ -94,6 +94,9 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
   const [selectedLangCode, setSelectedLangCode] = useState('en')
   const [availableLocales, setAvailableLocales] = useState<{country: string, language_code: string}[]>([])
   const [products, setProducts] = useState<any[]>([])
+  const [showCopyModal, setShowCopyModal] = useState(false)
+  const [copyTargetCountry, setCopyTargetCountry] = useState('')
+  const [isCopying, setIsCopying] = useState(false)
   // Collapsible section state for landing page editor
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
     announcement: true,
@@ -630,6 +633,70 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
     }
   }
 
+  // Copy landing page to another locale (same language, different country)
+  const copyToLocale = async (targetCountry: string) => {
+    if (!businessUnitId || !landingPageData) {
+      alert('Cannot copy: missing business unit or data')
+      return
+    }
+
+    const sourceCountry = landingPageData.country || 'US'
+    const languageCode = landingPageData.language_code || 'en'
+
+    // Check if target already exists
+    const targetExists = availableLocales.some(
+      l => l.country === targetCountry && l.language_code === languageCode
+    )
+
+    if (targetExists) {
+      const confirmOverwrite = confirm(
+        `A landing page already exists for ${targetCountry}/${languageCode}. Do you want to overwrite it?`
+      )
+      if (!confirmOverwrite) return
+    }
+
+    setIsCopying(true)
+    try {
+      // Create a copy of the landing page data with the new country
+      const { id, business_unit_id, created_at, updated_at, ...cleanData } = landingPageData
+
+      // Update country and currency for target locale
+      const currencyInfo = countryCurrencyMap[targetCountry] || countryCurrencyMap['US']
+
+      const payload = {
+        businessUnitId: businessUnitId,
+        ...cleanData,
+        country: targetCountry,
+        currency: currencyInfo.currency,
+        currency_symbol: currencyInfo.symbol
+      }
+
+      console.log('[Copy] Copying from', sourceCountry, 'to', targetCountry, 'with language', languageCode)
+      const response = await fetch('/api/landing-page', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      const result = await response.json()
+      if (response.ok && result.success) {
+        alert(`Successfully copied landing page to ${targetCountry}/${languageCode}!`)
+        setShowCopyModal(false)
+        setCopyTargetCountry('')
+        // Reload to refresh available locales
+        await loadLandingPage(sourceCountry, languageCode)
+      } else {
+        const errorMsg = result.error || result.message || 'Unknown error'
+        alert(`Failed to copy: ${errorMsg}`)
+      }
+    } catch (error) {
+      console.error('[Copy] Error copying landing page:', error)
+      alert('Error copying landing page: ' + (error instanceof Error ? error.message : 'Unknown error'))
+    } finally {
+      setIsCopying(false)
+    }
+  }
+
   // Media Library functions
   const loadMediaFiles = async () => {
     if (!businessUnitId) return
@@ -770,19 +837,15 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
 
       const data = await response.json()
       if (data.url) {
-        // Handle static hero background
-        if (landingPageData.hero_type === 'static' && slideIndex === 0) {
-          setLandingPageData({ ...landingPageData, hero_static_bg: data.url })
-        } else {
-          // Handle carousel slides
-          const slides = [...(landingPageData.hero_slides || [])]
-          slides[slideIndex] = {
-            ...slides[slideIndex],
-            background_url: data.url,
-            background_type: isVideo ? 'video' : 'image'
-          }
-          setLandingPageData({ ...landingPageData, hero_slides: slides })
+        // Handle carousel slides (always use slides array)
+        const slides = [...(landingPageData.hero_slides || [])]
+        slides[slideIndex] = {
+          ...slides[slideIndex],
+          background_url: data.url,
+          background_type: isVideo ? 'video' : 'image',
+          original_filename: file.name // Store original filename
         }
+        setLandingPageData({ ...landingPageData, hero_slides: slides })
       }
     } catch (error: any) {
       console.error('Error uploading hero background:', error)
@@ -799,19 +862,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
   const selectMediaForHeroSlide = (slideIndex: number, file: MediaFile) => {
     const isVideo = file.type.startsWith('video/')
 
-    // Handle static hero background
-    if (landingPageData.hero_type === 'static' && slideIndex === 0) {
-      setLandingPageData({ ...landingPageData, hero_static_bg: file.url })
-      setShowMediaPicker(null)
-      return
-    }
-
-    // Handle carousel slides
+    // Handle carousel slides (always use slides array)
     const slides = [...(landingPageData.hero_slides || [])]
     slides[slideIndex] = {
       ...slides[slideIndex],
       background_url: file.url,
-      background_type: isVideo ? 'video' : 'image'
+      background_type: isVideo ? 'video' : 'image',
+      original_filename: file.name // Store original filename from library
     }
     setLandingPageData({ ...landingPageData, hero_slides: slides })
     setShowMediaPicker(null)
@@ -1979,15 +2036,18 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                       <div className="flex flex-wrap items-center gap-3">
                         {/* Current Locale Badge */}
                         <div className="flex items-center gap-2">
-                          <span className="text-cyan-400 text-sm font-medium">Locale:</span>
-                          <span className="text-white font-mono bg-cyan-600 px-2 py-1 rounded text-sm">
-                            {getLocalePath(landingPageData.country || 'US', landingPageData.language_code || 'en')}
-                          </span>
+                          <span className="text-cyan-400 text-sm font-medium">Editing:</span>
+                          <div className="flex items-center gap-1.5 px-2 py-1 bg-gradient-to-r from-cyan-600 to-violet-600 rounded">
+                            <span className="text-white font-mono text-sm font-bold">
+                              {countryOptions.find(c => c.code === (landingPageData.country || 'US'))?.flag}
+                              {' '}{getLocalePath(landingPageData.country || 'US', landingPageData.language_code || 'en')}
+                            </span>
+                            {hasLandingPage && <Check className="w-3.5 h-3.5 text-green-300" />}
+                          </div>
                           <span className="text-slate-300 text-sm">
-                            {countryOptions.find(c => c.code === (landingPageData.country || 'US'))?.flag}
-                            {' '}{landingPageData.currency_symbol || '$'}{landingPageData.currency || 'USD'}
+                            {landingPageData.currency_symbol || '$'}{landingPageData.currency || 'USD'}
                           </span>
-                          {!hasLandingPage && <span className="text-amber-400 text-xs bg-amber-500/20 px-2 py-0.5 rounded">New</span>}
+                          {!hasLandingPage && <span className="text-amber-400 text-xs bg-amber-500/20 px-2 py-0.5 rounded font-semibold">New Locale</span>}
                         </div>
 
                         {/* Divider */}
@@ -2057,7 +2117,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                           <>
                             <div className="h-6 w-px bg-slate-600 hidden md:block" />
                             <div className="flex items-center gap-1 flex-wrap">
-                              <span className="text-slate-400 text-xs">Switch:</span>
+                              <span className="text-slate-400 text-xs">Other Locales:</span>
                               {availableLocales.map(locale => {
                                 const isActive = (landingPageData.country || 'US') === locale.country &&
                                                  (landingPageData.language_code || 'en') === locale.language_code
@@ -2067,13 +2127,30 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                   <button
                                     key={`${locale.country}-${locale.language_code}`}
                                     onClick={() => handleLocaleChange(locale.country, locale.language_code)}
-                                    className="px-2 py-0.5 rounded text-xs font-mono bg-slate-800 text-slate-300 hover:bg-slate-600 transition-colors"
+                                    className="px-2 py-1 rounded text-xs font-mono bg-slate-800 text-slate-300 hover:bg-cyan-600 hover:text-white transition-colors border border-slate-600 flex items-center gap-1"
+                                    title={`Switch to ${country?.name || locale.country}`}
                                   >
                                     {country?.flag}{getLocalePath(locale.country, locale.language_code)}
+                                    <Check className="w-3 h-3 text-green-400" />
                                   </button>
                                 )
                               })}
                             </div>
+                          </>
+                        )}
+
+                        {/* Copy to Locale Button */}
+                        {hasLandingPage && (
+                          <>
+                            <div className="h-6 w-px bg-slate-600 hidden md:block" />
+                            <button
+                              onClick={() => setShowCopyModal(true)}
+                              className="px-3 py-1 rounded text-sm bg-cyan-600 text-white hover:bg-cyan-500 transition-colors flex items-center gap-1.5"
+                              title="Copy to another country"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                              Copy
+                            </button>
                           </>
                         )}
                       </div>
@@ -2461,7 +2538,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                           </div>
 
                       <div className="space-y-4">
-                        {(landingPageData.hero_slides || []).map((slide: { headline: string; subheadline: string; content?: string; background_url: string; background_type: string; cta_text: string; cta_url: string; text_align?: 'left' | 'center' | 'right' }, index: number) => (
+                        {(landingPageData.hero_slides || []).map((slide: { headline: string; subheadline: string; content?: string; background_url: string; background_type: string; cta_text: string; cta_url: string; text_align?: 'left' | 'center' | 'right'; original_filename?: string }, index: number) => (
                           <div key={index} className="bg-slate-800/50 rounded-lg p-4 border border-slate-600">
                             <div className="flex justify-between items-center mb-3">
                               <div className="flex items-center gap-3">
@@ -2542,7 +2619,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                   {slide.background_url ? (
                                     <div className="relative">
                                       {slide.background_type === 'video' ? (
-                                        <video src={slide.background_url} className="h-16 w-28 object-cover rounded" muted />
+                                        <video
+                                          src={slide.background_url}
+                                          className="h-16 w-28 object-cover rounded bg-slate-800"
+                                          muted
+                                          playsInline
+                                          preload="metadata"
+                                        />
                                       ) : (
                                         <img src={slide.background_url} alt="Background" className="h-16 w-28 object-cover rounded" />
                                       )}
@@ -2582,6 +2665,20 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                       </>
                                     )}
                                   </button>
+                                  {/* Show original filename if available */}
+                                  {slide.background_url && (
+                                    <div className="text-xs font-mono max-w-xs">
+                                      {slide.original_filename ? (
+                                        <span className="text-green-300" title={slide.original_filename}>
+                                          📄 {slide.original_filename}
+                                        </span>
+                                      ) : (
+                                        <span className="text-amber-300">
+                                          ⚠️ Re-upload to see filename
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
                                   <button
                                     onClick={() => {
                                       loadMediaFiles()
@@ -3331,10 +3428,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                               )}
                             </div>
                           </div>
-                        ))}
+                  ))}
                       </div>
-                        </div>
-                      )}
 
                       {/* Media Picker Modal */}
                       {showMediaPicker !== null && (
@@ -3385,6 +3480,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                               )}
                             </div>
                           </div>
+                        </div>
+                      )}
                         </div>
                       )}
                     </div>
@@ -3877,6 +3974,128 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
               >
                 <Globe className="w-4 h-4" />
                 Scrape Website
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Copy to Locale Modal */}
+      {showCopyModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                <Copy className="w-5 h-5 text-cyan-400" />
+                Copy to Another Country
+              </h3>
+              <button
+                onClick={() => { setShowCopyModal(false); setCopyTargetCountry(''); }}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-slate-300 mb-2">
+                  Source: <span className="font-semibold text-white">{landingPageData?.country || 'US'}/{landingPageData?.language_code || 'en'}</span>
+                </label>
+                <p className="text-xs text-slate-400">
+                  All content, blocks, and settings will be copied to the target country with the same language.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm text-slate-300 mb-2">
+                  Target Country
+                </label>
+                <select
+                  value={copyTargetCountry}
+                  onChange={(e) => setCopyTargetCountry(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                >
+                  <option value="">Select a country...</option>
+                  {countryOptions
+                    .filter(country => country.code !== (landingPageData?.country || 'US'))
+                    .map(country => {
+                      const hasExistingPage = availableLocales.some(
+                        l => l.country === country.code && l.language_code === (landingPageData?.language_code || 'en')
+                      )
+                      return (
+                        <option key={country.code} value={country.code}>
+                          {country.flag} {country.name} ({country.code}) {hasExistingPage ? '✓ Already exists' : ''}
+                        </option>
+                      )
+                    })}
+                </select>
+              </div>
+
+              {/* Visual list of countries with their status */}
+              <div className="bg-slate-700/50 rounded-lg p-3 max-h-40 overflow-y-auto">
+                <div className="text-xs text-slate-400 mb-2">Available Countries:</div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {countryOptions
+                    .filter(country => country.code !== (landingPageData?.country || 'US'))
+                    .map(country => {
+                      const hasExistingPage = availableLocales.some(
+                        l => l.country === country.code && l.language_code === (landingPageData?.language_code || 'en')
+                      )
+                      return (
+                        <div
+                          key={country.code}
+                          className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
+                            hasExistingPage
+                              ? 'bg-green-500/10 border border-green-500/30 text-green-300'
+                              : 'bg-slate-600/30 border border-slate-600 text-slate-400'
+                          }`}
+                        >
+                          <span>{country.flag}</span>
+                          <span className="font-mono">{country.code}</span>
+                          {hasExistingPage && <Check className="w-3 h-3" />}
+                        </div>
+                      )
+                    })}
+                </div>
+              </div>
+
+              <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-3">
+                <p className="text-xs text-cyan-300">
+                  <strong>Note:</strong> Currency will be automatically updated based on the target country.
+                  {availableLocales.some(l => l.country === copyTargetCountry && l.language_code === (landingPageData?.language_code || 'en')) && (
+                    <span className="block mt-1 text-amber-300">
+                      ⚠️ This will overwrite the existing page for {copyTargetCountry}/{landingPageData?.language_code || 'en'}
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => { setShowCopyModal(false); setCopyTargetCountry(''); }}
+                className="px-4 py-2 text-slate-400 hover:text-white"
+                disabled={isCopying}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => copyToLocale(copyTargetCountry)}
+                disabled={!copyTargetCountry || isCopying}
+                className="flex items-center gap-2 px-6 py-2 bg-cyan-600 hover:bg-cyan-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isCopying ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Copying...
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    Copy Content
+                  </>
+                )}
               </button>
             </div>
           </div>

@@ -296,6 +296,11 @@ export default function ProductForm({
     setExpandedSections(newSet)
   }
 
+  // Helper function to check if URL is a video
+  const isVideoUrl = (url: string) => {
+    return url.match(/\.(mp4|webm|mov)(\?|$)/i) !== null
+  }
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || formData.images.length >= 5) return
@@ -674,46 +679,59 @@ export default function ProductForm({
             {expandedSections.has('images') && (
               <div className="bg-slate-700/50 rounded-lg p-4 space-y-4">
                 <div className="flex flex-wrap gap-4">
-                  {formData.images.map((url, idx) => (
-                    <div key={idx} className="relative group">
-                      <div
-                        className={`w-24 h-24 rounded-lg overflow-hidden border-2 cursor-pointer ${
-                          formData.thumbnail === url ? 'border-purple-500' : 'border-slate-600'
-                        }`}
-                        onClick={() => setPreviewImageIndex(idx)}
-                      >
-                        <img src={url} alt={`Product ${idx + 1}`} className="w-full h-full object-cover" />
+                  {formData.images.map((url, idx) => {
+                    // Extract filename from URL
+                    const urlParts = url.split('/')
+                    const filename = urlParts[urlParts.length - 1]
+                    // Get the storage path (everything after the bucket name)
+                    const pathMatch = url.match(/product-images\/(.+)$/)
+                    const storagePath = pathMatch ? pathMatch[1] : filename
+
+                    return (
+                      <div key={idx} className="relative group">
+                        <div
+                          className={`w-24 h-24 rounded-lg overflow-hidden border-2 cursor-pointer ${
+                            formData.thumbnail === url ? 'border-purple-500' : 'border-slate-600'
+                          }`}
+                          onClick={() => setPreviewImageIndex(idx)}
+                        >
+                          {isVideoUrl(url) ? (
+                            <video src={url} className="w-full h-full object-cover" muted playsInline preload="metadata" />
+                          ) : (
+                            <img src={url} alt={`Product ${idx + 1}`} className="w-full h-full object-cover" />
+                          )}
+                        </div>
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 rounded-lg">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setPreviewImageIndex(idx) }}
+                            className="p-1 bg-blue-600 rounded text-white text-xs"
+                            title="Enlarge image"
+                          >
+                            <ZoomIn className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setAsThumbnail(url) }}
+                            className="p-1 bg-purple-600 rounded text-white text-xs"
+                            title="Set as thumbnail"
+                          >
+                            <Eye className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); removeImage(idx) }}
+                            className="p-1 bg-red-600 rounded text-white text-xs"
+                            title="Remove image"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                        {formData.thumbnail === url && (
+                          <span className="absolute -top-2 -right-2 bg-purple-600 text-white text-xs px-1 rounded">
+                            Main
+                          </span>
+                        )}
                       </div>
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 rounded-lg">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setPreviewImageIndex(idx) }}
-                          className="p-1 bg-blue-600 rounded text-white text-xs"
-                          title="Enlarge image"
-                        >
-                          <ZoomIn className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setAsThumbnail(url) }}
-                          className="p-1 bg-purple-600 rounded text-white text-xs"
-                          title="Set as thumbnail"
-                        >
-                          <Eye className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); removeImage(idx) }}
-                          className="p-1 bg-red-600 rounded text-white text-xs"
-                          title="Remove image"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                      {formData.thumbnail === url && (
-                        <span className="absolute -top-2 -right-2 bg-purple-600 text-white text-xs px-1 rounded">
-                          Main
-                        </span>
-                      )}
-                    </div>
-                  ))}
+                    )
+                  })}
                   {formData.images.length < 5 && (
                     <div className="w-24 h-24 border-2 border-dashed border-slate-500 rounded-lg flex items-center justify-center">
                       <button
@@ -785,7 +803,7 @@ export default function ProductForm({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/*,video/mp4,video/webm"
                   multiple
                   className="hidden"
                   onChange={handleImageUpload}
@@ -1419,12 +1437,23 @@ export default function ProductForm({
               </>
             )}
 
-            {/* Main image */}
-            <img
-              src={formData.images[previewImageIndex]}
-              alt={`Product image ${previewImageIndex + 1}`}
-              className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
-            />
+            {/* Main image/video */}
+            {isVideoUrl(formData.images[previewImageIndex]) ? (
+              <video
+                src={formData.images[previewImageIndex]}
+                className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
+                controls
+                autoPlay
+                loop
+                muted
+              />
+            ) : (
+              <img
+                src={formData.images[previewImageIndex]}
+                alt={`Product image ${previewImageIndex + 1}`}
+                className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
+              />
+            )}
 
             {/* Image counter */}
             <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 text-white text-sm">
