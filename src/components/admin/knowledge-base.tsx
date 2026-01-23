@@ -19,6 +19,8 @@ import type { LandingPageBlock } from '@/types/landing-page-blocks'
 import TextEditorControls from './landing-page/TextEditorControls'
 import PolicyRichTextEditor from './landing-page/PolicyRichTextEditor'
 import { policyTemplates } from '@/data/policy-templates'
+import LanguageBar from './landing-page/LanguageBar'
+import AddLocaleModal from './landing-page/AddLocaleModal'
 
 // Types
 interface Service {
@@ -129,6 +131,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null)
   const [showAddBlockMenu, setShowAddBlockMenu] = useState(false)
   const [footerCollapsed, setFooterCollapsed] = useState(false)
+  const [showAddLocaleModal, setShowAddLocaleModal] = useState(false)
 
   // Color palette for text colors
   const COLOR_PALETTE = [
@@ -1807,8 +1810,22 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
             {/* Landing Page Tab Content */}
             {activeSubTab === 'landing' && (
               <div>
+                {/* Language Bar */}
+                <LanguageBar
+                  businessUnitId={businessUnitId}
+                  currentCountry={selectedCountry}
+                  currentLanguage={selectedLangCode}
+                  onLocaleChange={(country, lang) => {
+                    setSelectedCountry(country)
+                    setSelectedLangCode(lang)
+                    // Reload landing page for new locale
+                    loadLandingPage()
+                  }}
+                  onAddLocale={() => setShowAddLocaleModal(true)}
+                />
+
                 {/* Header Row with Title and Action Buttons */}
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-4 mt-4">
                   <h2 className="text-2xl font-bold flex items-center gap-2 text-white">
                     <Layout className="w-6 h-6 text-violet-400" />
                     {t.landingPageEditor || 'Landing Page Editor'}
@@ -3772,6 +3789,21 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                     </button>
                   </div>
                 )}
+
+                {/* Add Locale Modal */}
+                <AddLocaleModal
+                  isOpen={showAddLocaleModal}
+                  onClose={() => setShowAddLocaleModal(false)}
+                  businessUnitId={businessUnitId}
+                  existingLocales={availableLocales}
+                  onLocaleCreated={(country, lang) => {
+                    setShowAddLocaleModal(false)
+                    setSelectedCountry(country)
+                    setSelectedLangCode(lang)
+                    // Reload to show new locale
+                    loadLandingPage()
+                  }}
+                />
               </div>
             )}
 
