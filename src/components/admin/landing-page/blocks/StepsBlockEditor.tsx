@@ -153,7 +153,8 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
         steps[stepIndex] = {
           ...steps[stepIndex],
           background_url: responseData.url,
-          background_type: isVideo ? 'video' : 'image'
+          background_type: isVideo ? 'video' : 'image',
+          original_filename: file.name
         }
         updateData({ steps })
       }
@@ -263,6 +264,22 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
                     <Image className="w-6 h-6 text-slate-500" />
                   </div>
                 )}
+
+                {/* Filename display */}
+                {step.background_url && (
+                  <div className="text-xs font-mono max-w-xs">
+                    {step.original_filename ? (
+                      <span className="text-green-300" title={step.original_filename}>
+                        📄 {step.original_filename}
+                      </span>
+                    ) : (
+                      <span className="text-amber-300">
+                        ⚠️ Re-upload to see filename
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 <button
                   onClick={() => stepInputRefs.current[index]?.click()}
                   disabled={uploadingIndex === index}

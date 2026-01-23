@@ -99,7 +99,8 @@ export default function TableBlockEditor({ block, onUpdate, businessUnitId }: Ta
           data: {
             ...data,
             background_url: responseData.url,
-            background_type: isVideo ? 'video' : 'image'
+            background_type: isVideo ? 'video' : 'image',
+            original_filename: file.name
           }
         }
         onUpdate(updatedBlock)
@@ -231,6 +232,21 @@ export default function TableBlockEditor({ block, onUpdate, businessUnitId }: Ta
           ) : (
             <div className="h-16 w-28 bg-slate-800 border border-dashed border-slate-600 rounded flex items-center justify-center">
               <Image className="w-6 h-6 text-slate-500" />
+            </div>
+          )}
+
+          {/* Filename display */}
+          {background_url && (
+            <div className="text-xs font-mono max-w-xs">
+              {data.original_filename ? (
+                <span className="text-green-300" title={data.original_filename}>
+                  📄 {data.original_filename}
+                </span>
+              ) : (
+                <span className="text-amber-300">
+                  ⚠️ Re-upload to see filename
+                </span>
+              )}
             </div>
           )}
 
