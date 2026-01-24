@@ -1485,6 +1485,8 @@ function LandingPageContent() {
         data={landingPage.footer}
         businessUnitName={businessUnit?.name}
         businessUnitParam={businessUnitParam}
+        country={countryParam}
+        language={langParam}
       />
     </div>
   )

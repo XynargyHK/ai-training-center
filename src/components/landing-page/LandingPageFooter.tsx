@@ -59,6 +59,8 @@ interface LandingPageFooterProps {
   data?: FooterData
   businessUnitName?: string
   businessUnitParam?: string
+  country?: string
+  language?: string
 }
 
 // Default footer data
@@ -73,7 +75,9 @@ const defaultLinks: FooterLink[] = [
 export default function LandingPageFooter({
   data,
   businessUnitName = 'Shop',
-  businessUnitParam = ''
+  businessUnitParam = '',
+  country = 'US',
+  language = 'en'
 }: LandingPageFooterProps) {
   const footerData = data || {}
   const links = footerData.links || defaultLinks
@@ -98,10 +102,15 @@ export default function LandingPageFooter({
     if (url.startsWith('#') || url.startsWith('mailto:') || url.startsWith('http')) {
       return url
     }
+    // Build locale params
+    const localeParams = `&country=${country}&lang=${language}`
     if (url.startsWith('?policy=')) {
-      return businessUnitParam ? `/livechat?businessUnit=${businessUnitParam}&policy=${url.replace('?policy=', '')}` : `/livechat${url}`
+      const policyName = url.replace('?policy=', '')
+      return businessUnitParam
+        ? `/livechat?businessUnit=${businessUnitParam}&policy=${policyName}${localeParams}`
+        : `/livechat?policy=${policyName}${localeParams}`
     }
-    return businessUnitParam ? `${url}?businessUnit=${businessUnitParam}` : url
+    return businessUnitParam ? `${url}?businessUnit=${businessUnitParam}${localeParams}` : url
   }
 
   const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>, url: string) => {
