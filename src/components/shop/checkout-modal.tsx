@@ -8,6 +8,70 @@ import { getFontClass } from '@/lib/fonts'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '')
 
+// Translations for checkout modal
+const translations: Record<string, Record<string, string>> = {
+  en: {
+    checkout: 'Checkout',
+    payment: 'Payment',
+    orderConfirmed: 'Order Confirmed',
+    orderSummary: 'Order Summary',
+    total: 'Total',
+    contactInfo: 'Contact Information',
+    fullName: 'Full Name',
+    email: 'Email',
+    phoneOptional: 'Phone (Optional)',
+    shippingAddress: 'Shipping Address (Optional)',
+    streetAddress: 'Street Address',
+    city: 'City',
+    state: 'State',
+    postalCode: 'Postal Code',
+    country: 'Country',
+    cancel: 'Cancel',
+    continueToPayment: 'Continue to Payment',
+    paymentInfo: 'Payment Information',
+    processing: 'Processing...',
+    pay: 'Pay',
+    paymentSuccessful: 'Payment Successful!',
+    orderConfirmationMsg: "Your order has been confirmed. We've sent a confirmation email to",
+    orderId: 'Order ID',
+    close: 'Close',
+    required: '*',
+    fillNameEmail: 'Please fill in your name and email',
+    paymentFailed: 'Payment failed. Please try again.',
+    failedInitPayment: 'Failed to initialize payment',
+  },
+  zh: {
+    checkout: '結帳',
+    payment: '付款',
+    orderConfirmed: '訂單已確認',
+    orderSummary: '訂單摘要',
+    total: '總計',
+    contactInfo: '聯絡資料',
+    fullName: '全名',
+    email: '電郵',
+    phoneOptional: '電話（選填）',
+    shippingAddress: '送貨地址（選填）',
+    streetAddress: '街道地址',
+    city: '城市',
+    state: '州/省',
+    postalCode: '郵遞區號',
+    country: '國家',
+    cancel: '取消',
+    continueToPayment: '繼續付款',
+    paymentInfo: '付款資料',
+    processing: '處理中...',
+    pay: '支付',
+    paymentSuccessful: '付款成功！',
+    orderConfirmationMsg: '您的訂單已確認。我們已發送確認電郵至',
+    orderId: '訂單編號',
+    close: '關閉',
+    required: '*',
+    fillNameEmail: '請填寫您的姓名和電郵',
+    paymentFailed: '付款失敗，請重試。',
+    failedInitPayment: '無法初始化付款',
+  }
+}
+
 interface CartItem {
   product: {
     id: string
@@ -28,6 +92,7 @@ interface CheckoutModalProps {
   businessUnitParam?: string
   headingFont?: string
   bodyFont?: string
+  language?: string
 }
 
 function CheckoutForm({
@@ -38,7 +103,8 @@ function CheckoutForm({
   shippingAddress,
   total,
   headingFont = 'Josefin Sans',
-  bodyFont = 'Cormorant Garamond'
+  bodyFont = 'Cormorant Garamond',
+  language = 'en'
 }: {
   cart: CartItem[]
   onSuccess: (orderId: string) => void
@@ -48,7 +114,9 @@ function CheckoutForm({
   total: number
   headingFont?: string
   bodyFont?: string
+  language?: string
 }) {
+  const t = translations[language] || translations.en
   const stripe = useStripe()
   const elements = useElements()
   const [isProcessing, setIsProcessing] = useState(false)
@@ -135,7 +203,7 @@ function CheckoutForm({
       {/* Payment Element */}
       <div>
         <label className={`block text-sm font-medium text-gray-700 mb-2 ${getFontClass(bodyFont)}`}>
-          Payment Information
+          {t.paymentInfo}
         </label>
         <PaymentElement />
       </div>
@@ -156,7 +224,7 @@ function CheckoutForm({
           className={`flex-1 px-6 py-3 border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors font-bold tracking-[0.15em] uppercase ${getFontClass(headingFont)}`}
           disabled={isProcessing}
         >
-          Cancel
+          {t.cancel}
         </button>
         <button
           type="submit"
@@ -166,12 +234,12 @@ function CheckoutForm({
           {isProcessing ? (
             <>
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Processing...
+              {t.processing}
             </>
           ) : (
             <>
               <CreditCard className="w-5 h-5" />
-              Pay ${total.toFixed(2)}
+              {t.pay} ${total.toFixed(2)}
             </>
           )}
         </button>
@@ -187,8 +255,10 @@ export default function CheckoutModal({
   onSuccess,
   businessUnitParam = '',
   headingFont = 'Josefin Sans',
-  bodyFont = 'Cormorant Garamond'
+  bodyFont = 'Cormorant Garamond',
+  language = 'en'
 }: CheckoutModalProps) {
+  const t = translations[language] || translations.en
   const [step, setStep] = useState<'info' | 'payment' | 'success'>('info')
   const [clientSecret, setClientSecret] = useState('')
   const [customerInfo, setCustomerInfo] = useState({
@@ -222,7 +292,7 @@ export default function CheckoutModal({
   const handleContinueToPayment = async () => {
     // Validate customer info
     if (!customerInfo.name || !customerInfo.email) {
-      alert('Please fill in your name and email')
+      alert(t.fillNameEmail)
       return
     }
 
@@ -251,7 +321,7 @@ export default function CheckoutModal({
       setStep('payment')
     } catch (error: any) {
       console.error('Error creating payment intent:', error)
-      alert(error.message || 'Failed to initialize payment')
+      alert(error.message || t.failedInitPayment)
     }
   }
 
@@ -276,9 +346,9 @@ export default function CheckoutModal({
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <h2 className={`text-xl font-light tracking-[0.2em] uppercase text-gray-900 ${getFontClass(headingFont)}`}>
-            {step === 'info' && 'Checkout'}
-            {step === 'payment' && 'Payment'}
-            {step === 'success' && 'Order Confirmed'}
+            {step === 'info' && t.checkout}
+            {step === 'payment' && t.payment}
+            {step === 'success' && t.orderConfirmed}
           </h2>
           {step !== 'payment' && (
             <button
@@ -297,7 +367,7 @@ export default function CheckoutModal({
             <div className="space-y-6">
               {/* Order Summary */}
               <div>
-                <h3 className={`font-light tracking-[0.15em] uppercase text-gray-900 mb-3 ${getFontClass(headingFont)}`}>Order Summary</h3>
+                <h3 className={`font-light tracking-[0.15em] uppercase text-gray-900 mb-3 ${getFontClass(headingFont)}`}>{t.orderSummary}</h3>
                 <div className="space-y-2">
                   {cart.map((item, index) => (
                     <div key={index} className="flex justify-between text-sm">
@@ -310,7 +380,7 @@ export default function CheckoutModal({
                     </div>
                   ))}
                   <div className={`border-t border-gray-200 pt-2 mt-2 flex justify-between font-bold ${getFontClass(headingFont)}`}>
-                    <span>Total</span>
+                    <span>{t.total}</span>
                     <span>${total.toFixed(2)}</span>
                   </div>
                 </div>
@@ -318,11 +388,11 @@ export default function CheckoutModal({
 
               {/* Customer Info Form */}
               <div>
-                <h3 className={`font-light tracking-[0.15em] uppercase text-gray-900 mb-3 ${getFontClass(headingFont)}`}>Contact Information</h3>
+                <h3 className={`font-light tracking-[0.15em] uppercase text-gray-900 mb-3 ${getFontClass(headingFont)}`}>{t.contactInfo}</h3>
                 <div className="space-y-4">
                   <div>
                     <label className={`block text-sm font-medium text-gray-700 mb-1 ${getFontClass(bodyFont)}`}>
-                      Full Name *
+                      {t.fullName} {t.required}
                     </label>
                     <input
                       type="text"
@@ -330,12 +400,12 @@ export default function CheckoutModal({
                       value={customerInfo.name}
                       onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                      placeholder="John Doe"
+                      placeholder={language === 'zh' ? '陳大文' : 'John Doe'}
                     />
                   </div>
                   <div>
                     <label className={`block text-sm font-medium text-gray-700 mb-1 ${getFontClass(bodyFont)}`}>
-                      Email *
+                      {t.email} {t.required}
                     </label>
                     <input
                       type="email"
@@ -348,14 +418,14 @@ export default function CheckoutModal({
                   </div>
                   <div>
                     <label className={`block text-sm font-medium text-gray-700 mb-1 ${getFontClass(bodyFont)}`}>
-                      Phone (Optional)
+                      {t.phoneOptional}
                     </label>
                     <input
                       type="tel"
                       value={customerInfo.phone}
                       onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                      placeholder="+1 (555) 123-4567"
+                      placeholder={language === 'zh' ? '+852 1234 5678' : '+1 (555) 123-4567'}
                     />
                   </div>
                 </div>
@@ -363,50 +433,50 @@ export default function CheckoutModal({
 
               {/* Shipping Address Form */}
               <div>
-                <h3 className={`font-light tracking-[0.15em] uppercase text-gray-900 mb-3 ${getFontClass(headingFont)}`}>Shipping Address (Optional)</h3>
+                <h3 className={`font-light tracking-[0.15em] uppercase text-gray-900 mb-3 ${getFontClass(headingFont)}`}>{t.shippingAddress}</h3>
                 <div className="space-y-4">
                   <div>
                     <label className={`block text-sm font-medium text-gray-700 mb-1 ${getFontClass(bodyFont)}`}>
-                      Street Address
+                      {t.streetAddress}
                     </label>
                     <input
                       type="text"
                       value={shippingAddress.address}
                       onChange={(e) => setShippingAddress({ ...shippingAddress, address: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                      placeholder="123 Main St"
+                      placeholder={language === 'zh' ? '中環德輔道中123號' : '123 Main St'}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className={`block text-sm font-medium text-gray-700 mb-1 ${getFontClass(bodyFont)}`}>
-                        City
+                        {t.city}
                       </label>
                       <input
                         type="text"
                         value={shippingAddress.city}
                         onChange={(e) => setShippingAddress({ ...shippingAddress, city: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                        placeholder="New York"
+                        placeholder={language === 'zh' ? '香港' : 'New York'}
                       />
                     </div>
                     <div>
                       <label className={`block text-sm font-medium text-gray-700 mb-1 ${getFontClass(bodyFont)}`}>
-                        State
+                        {t.state}
                       </label>
                       <input
                         type="text"
                         value={shippingAddress.state}
                         onChange={(e) => setShippingAddress({ ...shippingAddress, state: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                        placeholder="NY"
+                        placeholder={language === 'zh' ? '香港島' : 'NY'}
                       />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className={`block text-sm font-medium text-gray-700 mb-1 ${getFontClass(bodyFont)}`}>
-                        Postal Code
+                        {t.postalCode}
                       </label>
                       <input
                         type="text"
@@ -418,14 +488,14 @@ export default function CheckoutModal({
                     </div>
                     <div>
                       <label className={`block text-sm font-medium text-gray-700 mb-1 ${getFontClass(bodyFont)}`}>
-                        Country
+                        {t.country}
                       </label>
                       <input
                         type="text"
                         value={shippingAddress.country}
                         onChange={(e) => setShippingAddress({ ...shippingAddress, country: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                        placeholder="US"
+                        placeholder={language === 'zh' ? '香港' : 'US'}
                       />
                     </div>
                   </div>
@@ -439,13 +509,13 @@ export default function CheckoutModal({
                   onClick={onClose}
                   className={`flex-1 px-6 py-3 border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors font-bold tracking-[0.15em] uppercase ${getFontClass(headingFont)}`}
                 >
-                  Cancel
+                  {t.cancel}
                 </button>
                 <button
                   onClick={handleContinueToPayment}
                   className={`flex-1 px-6 py-3 bg-black text-white hover:bg-gray-800 transition-colors shadow-lg font-bold tracking-[0.15em] uppercase ${getFontClass(headingFont)}`}
                 >
-                  Continue to Payment
+                  {t.continueToPayment}
                 </button>
               </div>
             </div>
@@ -463,6 +533,7 @@ export default function CheckoutModal({
                 total={total}
                 headingFont={headingFont}
                 bodyFont={bodyFont}
+                language={language}
               />
             </Elements>
           )}
@@ -474,20 +545,20 @@ export default function CheckoutModal({
                 <CheckCircle2 className="w-10 h-10 text-green-600" />
               </div>
               <h3 className={`text-2xl font-light tracking-[0.2em] uppercase text-gray-900 mb-2 ${getFontClass(headingFont)}`}>
-                Payment Successful!
+                {t.paymentSuccessful}
               </h3>
               <p className={`text-gray-600 mb-6 font-light ${getFontClass(bodyFont)}`}>
-                Your order has been confirmed. We've sent a confirmation email to {customerInfo.email}.
+                {t.orderConfirmationMsg} {customerInfo.email}
               </p>
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-                <p className={`text-sm text-gray-600 mb-1 font-light ${getFontClass(bodyFont)}`}>Order ID</p>
+                <p className={`text-sm text-gray-600 mb-1 font-light ${getFontClass(bodyFont)}`}>{t.orderId}</p>
                 <p className={`font-mono font-bold text-gray-900 ${getFontClass(headingFont)}`}>{orderId}</p>
               </div>
               <button
                 onClick={onClose}
                 className={`px-6 py-3 bg-black text-white hover:bg-gray-800 transition-colors shadow-lg font-bold tracking-[0.15em] uppercase ${getFontClass(headingFont)}`}
               >
-                Close
+                {t.close}
               </button>
             </div>
           )}

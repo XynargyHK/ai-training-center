@@ -413,6 +413,21 @@ function LandingPageContent() {
   const langParam = searchParams.get('lang') || searchParams.get('language') || 'en'
   const policyParam = searchParams.get('policy') || '' // e.g., 'terms-of-service', 'privacy-policy'
 
+  // Cart translations
+  const cartText = langParam === 'zh' ? {
+    shoppingCart: '購物車',
+    cartEmpty: '您的購物車是空的',
+    total: '總計',
+    proceedToCheckout: '前往結帳',
+    removeFromCart: '從購物車移除'
+  } : {
+    shoppingCart: 'Shopping Cart',
+    cartEmpty: 'Your cart is empty',
+    total: 'Total',
+    proceedToCheckout: 'Proceed to Checkout',
+    removeFromCart: 'Remove from cart'
+  }
+
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [selectedPricing, setSelectedPricing] = useState<string>('')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -1377,7 +1392,7 @@ function LandingPageContent() {
           >
             {/* Cart Header */}
             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-              <h2 className={`text-lg font-light tracking-[0.2em] uppercase ${getFontClass(headingFont)}`}>Shopping Cart ({cartItemCount})</h2>
+              <h2 className={`text-lg font-light tracking-[0.2em] uppercase ${getFontClass(headingFont)}`}>{cartText.shoppingCart} ({cartItemCount})</h2>
               <button
                 onClick={() => setShowCartSidebar(false)}
                 className="text-gray-500 hover:text-gray-700"
@@ -1391,7 +1406,7 @@ function LandingPageContent() {
               {cart.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-gray-500">
                   <ShoppingCart className="w-16 h-16 mb-4" />
-                  <p className={`text-gray-500 font-light ${getFontClass(bodyFont)}`}>Your cart is empty</p>
+                  <p className={`text-gray-500 font-light ${getFontClass(bodyFont)}`}>{cartText.cartEmpty}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -1429,7 +1444,7 @@ function LandingPageContent() {
                         <button
                           onClick={() => removeFromCart(item.product.id)}
                           className="text-red-500 hover:text-red-700 p-1 transition-colors"
-                          title="Remove from cart"
+                          title={cartText.removeFromCart}
                         >
                           <Trash2 className="w-5 h-5" />
                         </button>
@@ -1445,14 +1460,14 @@ function LandingPageContent() {
             {cart.length > 0 && (
               <div className="p-4 border-t border-gray-200 bg-white">
                 <div className="flex justify-between mb-4">
-                  <span className={`font-light tracking-[0.15em] uppercase ${getFontClass(headingFont)}`}>Total:</span>
+                  <span className={`font-light tracking-[0.15em] uppercase ${getFontClass(headingFont)}`}>{cartText.total}:</span>
                   <span className={`font-bold ${getFontClass(headingFont)}`}>${cartTotal.toFixed(2)}</span>
                 </div>
                 <button
                   onClick={() => setShowCheckoutModal(true)}
                   className={`block w-full px-6 py-3 bg-black text-white text-center font-bold tracking-[0.15em] uppercase hover:bg-gray-800 transition-colors shadow-lg ${getFontClass(headingFont)}`}
                 >
-                  Proceed to Checkout
+                  {cartText.proceedToCheckout}
                 </button>
               </div>
             )}
@@ -1469,6 +1484,7 @@ function LandingPageContent() {
         businessUnitParam={businessUnitParam}
         headingFont={headingFont}
         bodyFont={bodyFont}
+        language={langParam}
       />
 
       {/* AI Coach Floating Button - Always render regardless of blocks */}
