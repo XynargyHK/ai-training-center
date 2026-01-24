@@ -1,4 +1,19 @@
-import { Cormorant_Garamond, Josefin_Sans, Playfair_Display, Montserrat, Inter, Lora, Raleway, Open_Sans } from 'next/font/google'
+import { Cormorant_Garamond, Josefin_Sans, Playfair_Display, Montserrat, Inter, Lora, Raleway, Open_Sans, Noto_Sans_TC, Noto_Sans_SC } from 'next/font/google'
+
+// Chinese fonts for Traditional and Simplified Chinese
+export const notoSansTC = Noto_Sans_TC({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '700'],
+  display: 'swap',
+  variable: '--font-noto-tc',
+})
+
+export const notoSansSC = Noto_Sans_SC({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '700'],
+  display: 'swap',
+  variable: '--font-noto-sc',
+})
 
 // Elegant serif font for body text and logo
 export const serifFont = Cormorant_Garamond({
@@ -70,6 +85,8 @@ export const getFontClass = (fontFamily?: string) => {
     case 'Open Sans': return openSansFont.className
     case 'Josefin Sans': return headlineFont.className
     case 'Cormorant Garamond': return serifFont.className
+    case 'Noto Sans TC': return notoSansTC.className
+    case 'Noto Sans SC': return notoSansSC.className
     default: return headlineFont.className
   }
 }

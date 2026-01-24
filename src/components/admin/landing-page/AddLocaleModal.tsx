@@ -8,7 +8,7 @@ interface AddLocaleModalProps {
   onClose: () => void
   businessUnitId: string
   existingLocales: Array<{ country: string; language_code: string }>
-  onLocaleCreated: (country: string, language: string) => void
+  onLocaleCreated: (country: string, language: string, openTranslationPanel?: boolean, sourceLocale?: string) => void
 }
 
 export default function AddLocaleModal({
@@ -70,6 +70,9 @@ export default function AddLocaleModal({
 
     setCreating(true)
     try {
+      // When translating, first copy the content (fast), then user can translate section by section
+      const actualMode = creationMode === 'translate' ? 'copy' : creationMode
+
       const response = await fetch('/api/landing-pages/create-locale', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -77,7 +80,7 @@ export default function AddLocaleModal({
           businessUnitId,
           country,
           language,
-          mode: creationMode,
+          mode: actualMode,
           sourceCountry: sourceLocale ? sourceLocale.split('/')[0] : undefined,
           sourceLanguage: sourceLocale ? sourceLocale.split('/')[1] : undefined
         })
@@ -85,7 +88,9 @@ export default function AddLocaleModal({
 
       const data = await response.json()
       if (data.success) {
-        onLocaleCreated(country, language)
+        // If user selected translate mode, pass flag to open translation panel
+        const openTranslationPanel = creationMode === 'translate'
+        onLocaleCreated(country, language, openTranslationPanel, sourceLocale)
         onClose()
         // Reset form
         setCountry('')

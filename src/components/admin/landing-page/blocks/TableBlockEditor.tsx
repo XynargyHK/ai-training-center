@@ -238,15 +238,44 @@ export default function TableBlockEditor({ block, onUpdate, businessUnitId }: Ta
           {/* Filename display */}
           {background_url && (
             <div className="text-xs font-mono max-w-xs">
-              {data.original_filename ? (
-                <span className="text-green-300" title={data.original_filename}>
-                  📄 {data.original_filename}
-                </span>
-              ) : (
-                <span className="text-amber-300">
-                  ⚠️ Re-upload to see filename
-                </span>
-              )}
+              {(() => {
+                // Use original_filename if set
+                if (data.original_filename) {
+                  return (
+                    <span className="text-green-300" title={data.original_filename}>
+                      📄 {data.original_filename}
+                    </span>
+                  )
+                }
+                // Try to extract from URL (works for media-library uploads with format: timestamp_filename.ext)
+                try {
+                  const urlPath = new URL(background_url).pathname
+                  const fullName = urlPath.split('/').pop() || ''
+                  // Check if it's media-library format (timestamp_filename) vs product-images format (timestamp-random)
+                  if (fullName.includes('_') && !fullName.match(/^\d+-[a-z0-9]+\./i)) {
+                    const filename = fullName.replace(/^\d+_/, '')
+                    if (filename && filename !== fullName) {
+                      return (
+                        <span className="text-green-300" title={filename}>
+                          📄 {filename}
+                        </span>
+                      )
+                    }
+                  }
+                } catch {}
+                // Can't determine filename - show truncated URL
+                try {
+                  const urlPath = new URL(background_url).pathname
+                  const shortName = urlPath.split('/').pop() || ''
+                  return (
+                    <span className="text-slate-400 text-[10px]" title={shortName}>
+                      📎 {shortName.length > 20 ? shortName.substring(0, 17) + '...' : shortName}
+                    </span>
+                  )
+                } catch {
+                  return null
+                }
+              })()}
             </div>
           )}
 

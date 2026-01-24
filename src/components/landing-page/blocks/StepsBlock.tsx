@@ -70,13 +70,21 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
   } = data
 
   // Helper function to handle text content
-  // If content is HTML (from rich editor), use as-is
+  // If content is HTML (from rich editor), process and fix colors
   // If plain text, preserve line breaks
   const processTextContent = (text: string) => {
     if (!text) return ''
     // Check if content appears to be HTML
     if (text.includes('<') && text.includes('>')) {
-      return text // Already HTML from WYSIWYG editor
+      // Fix white/invisible colors in font tags and inline styles
+      let processed = text
+      // Replace white colors in font tags
+      processed = processed.replace(/<font\s+color=["']?(#fff|#ffffff|white|rgb\(255,\s*255,\s*255\))["']?>/gi, '<font color="#000000">')
+      // Replace white colors in inline styles
+      processed = processed.replace(/style=["'][^"']*color:\s*(#fff|#ffffff|white|rgb\(255,\s*255,\s*255\))/gi, (match) => {
+        return match.replace(/(#fff|#ffffff|white|rgb\(255,\s*255,\s*255\))/gi, '#000000')
+      })
+      return processed
     }
     // Plain text - preserve line breaks
     return text.replace(/\n/g, '<br>')
@@ -85,6 +93,15 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
   if (!steps || steps.length === 0) {
     return null
   }
+
+  // Debug logging
+  console.log('[StepsBlock] Rendering with steps:', steps.length)
+  steps.forEach((step, i) => {
+    console.log(`[StepsBlock] Step ${i}: text_position=${step.text_position}, text_content length=${step.text_content?.length || 0}`)
+    if (step.text_content) {
+      console.log(`[StepsBlock] Step ${i} text_content preview:`, step.text_content.substring(0, 100))
+    }
+  })
 
   return (
     <section
@@ -339,6 +356,13 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
                 textAlign: step.text_align || 'left'
               }
 
+              // Debug: log what we're rendering
+              const processedContent = processTextContent(step.text_content)
+              console.log(`[StepsBlock] Step ${index} text_content RAW:`, step.text_content)
+              console.log(`[StepsBlock] Step ${index} text_content PROCESSED:`, processedContent)
+              console.log(`[StepsBlock] Step ${index} text_color:`, step.text_color)
+              console.log(`[StepsBlock] Step ${index} text_content length:`, step.text_content?.length, 'processed length:', processedContent?.length)
+
               return (
                 <div key={index} className="w-full p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
                   {/* Vertical text above/below OR Horizontal text left/right */}
@@ -524,6 +548,20 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
         }
         .steps-block-content .step-text-content p {
           margin-bottom: 0.5rem;
+        }
+        /* Force text visibility - override any inline white/light colors */
+        .steps-block-content .step-text-content,
+        .steps-block-content .step-text-content *,
+        .steps-block-content .step-text-content font,
+        .steps-block-content .step-text-content font[color],
+        .steps-block-content .step-text-content span[style*="color"] {
+          color: inherit !important;
+        }
+        /* Remove font color attribute effect */
+        .steps-block-content .step-text-content font[color="#ffffff"],
+        .steps-block-content .step-text-content font[color="white"],
+        .steps-block-content .step-text-content font[color="#fff"] {
+          color: #000000 !important;
         }
       `}</style>
     </section>

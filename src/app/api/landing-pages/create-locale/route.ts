@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
       announcements: [],
       blocks: [],
       menu_items: [],
-      footer_columns: []
+      footer: {}
     }
 
     // If copying or translating from source
@@ -192,16 +192,14 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Source locale not found' }, { status: 404 })
       }
 
-      // Copy structure from source
+      // Copy ALL fields from source, then override locale-specific fields
+      const { id, created_at, updated_at, ...sourceData } = sourcePage
       newPageData = {
-        ...newPageData,
-        hero_type: sourcePage.hero_type,
-        hero_slides: sourcePage.hero_slides || [],
-        announcements: sourcePage.announcements || [],
-        blocks: sourcePage.blocks || [],
-        menu_items: sourcePage.menu_items || [],
-        footer_columns: sourcePage.footer_columns || [],
-        pricing_options: sourcePage.pricing_options || []
+        ...sourceData,
+        business_unit_id: resolvedBusinessUnitId,
+        country,
+        language_code: language,
+        is_active: true
       }
 
       // If translate mode, translate all text content
@@ -229,8 +227,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Translate footer
-        if (newPageData.footer_columns && newPageData.footer_columns.length > 0) {
-          newPageData.footer_columns = await translateObject(newPageData.footer_columns, language, 'skincare and beauty')
+        if (newPageData.footer && newPageData.footer.length > 0) {
+          newPageData.footer = await translateObject(newPageData.footer, language, 'skincare and beauty')
         }
 
         console.log(`Translation completed for ${country}/${language}`)

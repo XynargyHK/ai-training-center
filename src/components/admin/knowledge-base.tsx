@@ -6,7 +6,7 @@ import {
   Upload, Search, Grid, List,
   Loader2, X, BookOpen, Globe, Layout, Save, Image, Video, Copy, Check,
   ChevronDown, ChevronUp, Zap, MessageSquare, Shield, ShoppingCart,
-  AlignLeft, AlignCenter, AlignRight, Menu, Sparkles, Bold, Italic
+  AlignLeft, AlignCenter, AlignRight, Menu, Sparkles, Bold, Italic, Languages
 } from 'lucide-react'
 import PolicyManager from './policy-manager'
 import ProductCatalogManager from './product-catalog-manager'
@@ -89,6 +89,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
 
   // Landing Page state
   const [landingPageData, setLandingPageData] = useState<any>(null)
+  const landingPageDataRef = useRef<any>(null)
+  const loadRequestIdRef = useRef<number>(0) // To track latest request and ignore stale responses
   const [hasLandingPage, setHasLandingPage] = useState(false)
   const [landingPageLoading, setLandingPageLoading] = useState(false)
   const [landingPageSaving, setLandingPageSaving] = useState(false)
@@ -132,6 +134,9 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
   const [showAddBlockMenu, setShowAddBlockMenu] = useState(false)
   const [footerCollapsed, setFooterCollapsed] = useState(false)
   const [showAddLocaleModal, setShowAddLocaleModal] = useState(false)
+  const [translationMode, setTranslationMode] = useState(false)
+  const [translationSourceData, setTranslationSourceData] = useState<any>(null)
+  const [translatingSectionKey, setTranslatingSectionKey] = useState<string | null>(null)
 
   // Color palette for text colors
   const COLOR_PALETTE = [
@@ -160,6 +165,11 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
   useEffect(() => {
     loadData()
   }, [businessUnitId, activeSubTab])
+
+  // Keep ref synced with state for closure-safe access in save function
+  useEffect(() => {
+    landingPageDataRef.current = landingPageData
+  }, [landingPageData])
 
   // Fetch products for pricing plan linking
   useEffect(() => {
@@ -218,10 +228,30 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
     const loadCountry = country || selectedCountry
     const loadLang = langCode || selectedLangCode
 
+    // Increment request ID to track this specific request
+    const thisRequestId = ++loadRequestIdRef.current
+    console.log(`[LoadLandingPage] Starting request #${thisRequestId} for ${loadCountry}/${loadLang}`)
+
     setLandingPageLoading(true)
     try {
-      const response = await fetch(`/api/landing-page?businessUnit=${businessUnitId}&country=${loadCountry}&language=${loadLang}`)
+      // Add cache-busting timestamp to prevent stale data when switching locales
+      const response = await fetch(`/api/landing-page?businessUnit=${businessUnitId}&country=${loadCountry}&language=${loadLang}&_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      })
       const data = await response.json()
+
+      // CRITICAL: Check if this is still the latest request
+      // If user switched locales while we were loading, ignore this stale response
+      if (thisRequestId !== loadRequestIdRef.current) {
+        console.log(`[LoadLandingPage] Ignoring stale response #${thisRequestId} (current is #${loadRequestIdRef.current})`)
+        return
+      }
+
+      console.log(`[LoadLandingPage] Processing response #${thisRequestId} for ${loadCountry}/${loadLang}`)
 
       // Update available locales
       if (data.availableLocales) {
@@ -229,6 +259,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
       }
 
       if (data.landingPage) {
+        // Verify the response matches what we requested
+        if (data.landingPage.country !== loadCountry || data.landingPage.language_code !== loadLang) {
+          console.warn(`[LoadLandingPage] Response mismatch! Requested ${loadCountry}/${loadLang}, got ${data.landingPage.country}/${data.landingPage.language_code}`)
+          // Don't use mismatched data
+          return
+        }
         // Migrate legacy hero data to hero_slides if needed
         const landingPage = { ...data.landingPage }
         if ((!landingPage.hero_slides || landingPage.hero_slides.length === 0) && landingPage.hero_headline) {
@@ -333,6 +369,11 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
         setLandingPageData(landingPage)
         setHasLandingPage(true)
       } else {
+        // Check again for stale request before setting default
+        if (thisRequestId !== loadRequestIdRef.current) {
+          console.log(`[LoadLandingPage] Ignoring stale default #${thisRequestId}`)
+          return
+        }
         // No landing page for this locale - create default with the selected locale
         const defaultPage = getDefaultLandingPage()
         defaultPage.country = loadCountry
@@ -346,13 +387,21 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
       }
     } catch (error) {
       console.error('Error loading landing page:', error)
+      // Check for stale request before setting error default
+      if (thisRequestId !== loadRequestIdRef.current) {
+        console.log(`[LoadLandingPage] Ignoring stale error #${thisRequestId}`)
+        return
+      }
       const defaultPage = getDefaultLandingPage()
       defaultPage.country = loadCountry
       defaultPage.language_code = loadLang
       setLandingPageData(defaultPage)
       setHasLandingPage(false)
     } finally {
-      setLandingPageLoading(false)
+      // Only clear loading if this is still the current request
+      if (thisRequestId === loadRequestIdRef.current) {
+        setLandingPageLoading(false)
+      }
     }
   }
 
@@ -576,15 +625,17 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
 
   const saveLandingPage = async () => {
     console.log('[DEBUG v2] saveLandingPage called')
-    if (!businessUnitId || !landingPageData) {
-      console.error('Missing businessUnitId or landingPageData', { businessUnitId, landingPageData })
+    // Use ref to get the latest data (handles async state updates)
+    const dataToSave = landingPageDataRef.current || landingPageData
+    if (!businessUnitId || !dataToSave) {
+      console.error('Missing businessUnitId or landingPageData', { businessUnitId, dataToSave })
       alert('Cannot save: missing business unit or data')
       return
     }
     setLandingPageSaving(true)
     try {
       // Create payload without id, business_unit_id, created_at, updated_at to prevent conflicts
-      const { id, business_unit_id, created_at, updated_at, ...cleanData } = landingPageData
+      const { id, business_unit_id, created_at, updated_at, ...cleanData } = dataToSave
       const payload = {
         businessUnitId: businessUnitId,
         ...cleanData
@@ -617,7 +668,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
         setHasLandingPage(true)
         // Reload the landing page to get the updated data with proper IDs
         // Pass the current locale to ensure we reload the correct page
-        await loadLandingPage(landingPageData.country || 'US', landingPageData.language_code || 'en')
+        await loadLandingPage(dataToSave.country || 'US', dataToSave.language_code || 'en')
         console.log('[DEBUG v2] Landing page saved successfully!')
         alert(t.landingPageSaved || 'Landing page saved successfully!')
       } else {
@@ -1816,12 +1867,49 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                   currentCountry={selectedCountry}
                   currentLanguage={selectedLangCode}
                   onLocaleChange={(country, lang) => {
+                    // Clear current data first to prevent stale data showing
+                    setLandingPageData(null)
+                    landingPageDataRef.current = null
+                    // Also clear translation mode when switching locales
+                    setTranslationMode(false)
+                    setTranslationSourceData(null)
                     setSelectedCountry(country)
                     setSelectedLangCode(lang)
-                    // Reload landing page for new locale
-                    loadLandingPage()
+                    // Reload landing page for new locale - pass values directly to avoid stale state
+                    loadLandingPage(country, lang)
                   }}
                   onAddLocale={() => setShowAddLocaleModal(true)}
+                  onDeleteLocale={async (country, lang) => {
+                    try {
+                      const response = await fetch(
+                        `/api/landing-pages/delete-locale?businessUnit=${businessUnitId}&country=${country}&language=${lang}`,
+                        { method: 'DELETE' }
+                      )
+                      const data = await response.json()
+                      if (data.success) {
+                        // If deleting current locale, switch to first available
+                        if (country === selectedCountry && lang === selectedLangCode) {
+                          const otherLocale = availableLocales.find(
+                            l => l.country !== country || l.language_code !== lang
+                          )
+                          if (otherLocale) {
+                            setSelectedCountry(otherLocale.country)
+                            setSelectedLangCode(otherLocale.language_code)
+                            // Reload with new locale values
+                            loadLandingPage(otherLocale.country, otherLocale.language_code)
+                          }
+                        } else {
+                          // Reload current locale
+                          loadLandingPage(selectedCountry, selectedLangCode)
+                        }
+                      } else {
+                        alert(data.error || 'Failed to delete locale')
+                      }
+                    } catch (err) {
+                      console.error('Delete locale error:', err)
+                      alert('Failed to delete locale')
+                    }
+                  }}
                 />
 
                 {/* Header Row with Title and Action Buttons */}
@@ -2047,12 +2135,69 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                     <span className="ml-3 text-slate-400">Loading...</span>
                   </div>
                 ) : landingPageData ? (
-                  <div className="space-y-6">
+                  <>
+                    {/* Translation Mode Header */}
+                    {translationMode && translationSourceData && (
+                      <div className="mb-4 p-3 bg-amber-900/30 border border-amber-500/50 rounded-lg flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Languages className="w-5 h-5 text-amber-400" />
+                          <span className="text-amber-300">
+                            Translation Mode: Copying from <strong>{translationSourceData.country}/{translationSourceData.language_code}</strong>
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setTranslationMode(false)
+                            setTranslationSourceData(null)
+                          }}
+                          className="px-3 py-1 text-sm bg-slate-700 hover:bg-slate-600 text-white rounded"
+                        >
+                          Exit Translation Mode
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Resume Translation Button - shows for non-English locales when not in translation mode */}
+                    {!translationMode && selectedLangCode !== 'en' && (
+                      <div className="mb-4 p-3 bg-blue-900/30 border border-blue-500/50 rounded-lg flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Languages className="w-5 h-5 text-blue-400" />
+                          <span className="text-blue-300">
+                            Viewing <strong>{selectedCountry}/{selectedLangCode}</strong> - Enable translation mode to see translate buttons
+                          </span>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            // Load source data (US/en by default)
+                            try {
+                              const response = await fetch(`/api/landing-page?businessUnit=${businessUnitId}&country=US&language=en`)
+                              const data = await response.json()
+                              if (data.landingPage) {
+                                setTranslationSourceData(data.landingPage)
+                                setTranslationMode(true)
+                              } else {
+                                alert('No source locale (US/en) found. Please create it first.')
+                              }
+                            } catch (err) {
+                              console.error('Failed to load source data:', err)
+                              alert('Failed to load source data')
+                            }
+                          }}
+                          className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded flex items-center gap-2"
+                        >
+                          <Languages className="w-4 h-4" />
+                          Enable Translation Mode
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Main content area */}
+                    <div className="space-y-6">
                     {/* Announcement Section */}
                     <div className="bg-gradient-to-r from-amber-900/20 to-slate-800/50 rounded-lg border border-amber-500/30">
-                      <button
+                      <div
                         onClick={() => toggleSection('announcement')}
-                        className="w-full flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors rounded-t-lg"
+                        className="w-full flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors rounded-t-lg cursor-pointer"
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
@@ -2067,9 +2212,38 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                           <span className="text-sm text-slate-400">
                             {(landingPageData.announcements || []).length} announcements
                           </span>
+                          {translationMode && translationSourceData && (
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation()
+                                setTranslatingSectionKey('announcements')
+                                try {
+                                  const response = await fetch('/api/landing-pages/translate-section', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      content: translationSourceData.announcements,
+                                      targetLanguage: selectedLangCode
+                                    })
+                                  })
+                                  const data = await response.json()
+                                  if (data.success) {
+                                    setLandingPageData(prev => prev ? { ...prev, announcements: data.translated } : prev)
+                                    setTimeout(() => saveLandingPage(), 500)
+                                  }
+                                } catch (err) { console.error(err) }
+                                setTranslatingSectionKey(null)
+                              }}
+                              disabled={translatingSectionKey === 'announcements'}
+                              className="px-2 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-xs flex items-center gap-1 disabled:opacity-50"
+                            >
+                              {translatingSectionKey === 'announcements' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Languages className="w-3 h-3" />}
+                              Translate
+                            </button>
+                          )}
                           {collapsedSections.announcement ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronUp className="w-5 h-5 text-slate-400" />}
                         </div>
-                      </button>
+                      </div>
 
                       {!collapsedSections.announcement && (
                         <div className="p-6 pt-2 space-y-4 border-t border-slate-600/50">
@@ -2161,9 +2335,9 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
 
                     {/* Menu Bar Section */}
                     <div className="bg-gradient-to-r from-indigo-900/20 to-slate-800/50 rounded-lg border border-indigo-500/30">
-                      <button
+                      <div
                         onClick={() => toggleSection('menuBar')}
-                        className="w-full flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors rounded-t-lg"
+                        className="w-full flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors rounded-t-lg cursor-pointer"
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
@@ -2178,9 +2352,38 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                           <span className="text-sm text-slate-400">
                             {(landingPageData.menu_items || []).length} menu items
                           </span>
+                          {translationMode && translationSourceData && (
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation()
+                                setTranslatingSectionKey('menu')
+                                try {
+                                  const response = await fetch('/api/landing-pages/translate-section', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      content: translationSourceData.menu_items,
+                                      targetLanguage: selectedLangCode
+                                    })
+                                  })
+                                  const data = await response.json()
+                                  if (data.success) {
+                                    setLandingPageData(prev => prev ? { ...prev, menu_items: data.translated } : prev)
+                                    setTimeout(() => saveLandingPage(), 500)
+                                  }
+                                } catch (err) { console.error(err) }
+                                setTranslatingSectionKey(null)
+                              }}
+                              disabled={translatingSectionKey === 'menu'}
+                              className="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs flex items-center gap-1 disabled:opacity-50"
+                            >
+                              {translatingSectionKey === 'menu' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Languages className="w-3 h-3" />}
+                              Translate
+                            </button>
+                          )}
                           {collapsedSections.menuBar ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronUp className="w-5 h-5 text-slate-400" />}
                         </div>
-                      </button>
+                      </div>
 
                       {!collapsedSections.menuBar && (
                         <div className="p-6 pt-2 space-y-6 border-t border-slate-600/50">
@@ -2392,9 +2595,9 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
 
                     {/* Hero Section */}
                     <div className="bg-gradient-to-r from-violet-900/20 to-slate-800/50 rounded-lg border border-violet-500/30">
-                      <button
+                      <div
                         onClick={() => toggleSection('hero')}
-                        className="w-full flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors rounded-t-lg"
+                        className="w-full flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors rounded-t-lg cursor-pointer"
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
@@ -2407,9 +2610,38 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                         </div>
                         <div className="flex items-center gap-3">
                           <span className="text-sm text-slate-400">📱 Horizontal Scroll</span>
+                          {translationMode && translationSourceData && (
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation()
+                                setTranslatingSectionKey('hero')
+                                try {
+                                  const response = await fetch('/api/landing-pages/translate-section', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      content: translationSourceData.hero_slides,
+                                      targetLanguage: selectedLangCode
+                                    })
+                                  })
+                                  const data = await response.json()
+                                  if (data.success) {
+                                    setLandingPageData(prev => prev ? { ...prev, hero_slides: data.translated } : prev)
+                                    setTimeout(() => saveLandingPage(), 500)
+                                  }
+                                } catch (err) { console.error(err) }
+                                setTranslatingSectionKey(null)
+                              }}
+                              disabled={translatingSectionKey === 'hero'}
+                              className="px-2 py-1 bg-violet-600 hover:bg-violet-700 text-white rounded text-xs flex items-center gap-1 disabled:opacity-50"
+                            >
+                              {translatingSectionKey === 'hero' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Languages className="w-3 h-3" />}
+                              Translate
+                            </button>
+                          )}
                           {collapsedSections.hero ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronUp className="w-5 h-5 text-slate-400" />}
                         </div>
-                      </button>
+                      </div>
 
                       {!collapsedSections.hero && (
                         <div className="p-6 pt-2 space-y-4 border-t border-slate-600/50">
@@ -2560,15 +2792,44 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                   {/* Show original filename if available */}
                                   {slide.background_url && (
                                     <div className="text-xs font-mono max-w-xs">
-                                      {slide.original_filename ? (
-                                        <span className="text-green-300" title={slide.original_filename}>
-                                          📄 {slide.original_filename}
-                                        </span>
-                                      ) : (
-                                        <span className="text-amber-300">
-                                          ⚠️ Re-upload to see filename
-                                        </span>
-                                      )}
+                                      {(() => {
+                                        // Use original_filename if set
+                                        if (slide.original_filename) {
+                                          return (
+                                            <span className="text-green-300" title={slide.original_filename}>
+                                              📄 {slide.original_filename}
+                                            </span>
+                                          )
+                                        }
+                                        // Try to extract from URL (works for media-library uploads with format: timestamp_filename.ext)
+                                        try {
+                                          const urlPath = new URL(slide.background_url).pathname
+                                          const fullName = urlPath.split('/').pop() || ''
+                                          // Check if it's media-library format (timestamp_filename) vs product-images format (timestamp-random)
+                                          if (fullName.includes('_') && !fullName.match(/^\d+-[a-z0-9]+\./i)) {
+                                            const filename = fullName.replace(/^\d+_/, '')
+                                            if (filename && filename !== fullName) {
+                                              return (
+                                                <span className="text-green-300" title={filename}>
+                                                  📄 {filename}
+                                                </span>
+                                              )
+                                            }
+                                          }
+                                        } catch {}
+                                        // Can't determine filename - show truncated URL
+                                        try {
+                                          const urlPath = new URL(slide.background_url).pathname
+                                          const shortName = urlPath.split('/').pop() || ''
+                                          return (
+                                            <span className="text-slate-400 text-[10px]" title={shortName}>
+                                              📎 {shortName.length > 20 ? shortName.substring(0, 17) + '...' : shortName}
+                                            </span>
+                                          )
+                                        } catch {
+                                          return null
+                                        }
+                                      })()}
                                     </div>
                                   )}
                                   <button
@@ -3380,13 +3641,24 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
 
                     {/* Added Blocks */}
                     {landingPageData.blocks && landingPageData.blocks.length > 0 && (
-                      <>
-                        <BlockManager
-                          blocks={landingPageData.blocks}
-                          onChange={handleBlocksChange}
-                          businessUnitId={businessUnitId}
-                        />
-                      </>
+                      <BlockManager
+                        blocks={landingPageData.blocks}
+                        onChange={handleBlocksChange}
+                        businessUnitId={businessUnitId}
+                        translationMode={translationMode}
+                        translationSourceBlocks={translationSourceData?.blocks}
+                        targetLanguage={selectedLangCode}
+                        onTranslateBlock={(index, translatedBlock) => {
+                          setLandingPageData(prev => {
+                            if (!prev) return prev
+                            const updatedBlocks = [...prev.blocks]
+                            updatedBlocks[index] = translatedBlock
+                            return { ...prev, blocks: updatedBlocks }
+                          })
+                          // Auto-save after translation (using ref for latest data)
+                          setTimeout(() => saveLandingPage(), 500)
+                        }}
+                      />
                     )}
 
                     {/* Footer Configuration */}
@@ -3396,6 +3668,34 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                           <FileText className="w-5 h-5" />
                           Footer
                         </h3>
+                        {translationMode && translationSourceData && (
+                          <button
+                            onClick={async () => {
+                              setTranslatingSectionKey('footer')
+                              try {
+                                const response = await fetch('/api/landing-pages/translate-section', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    content: translationSourceData.footer,
+                                    targetLanguage: selectedLangCode
+                                  })
+                                })
+                                const data = await response.json()
+                                if (data.success) {
+                                  setLandingPageData(prev => prev ? { ...prev, footer: data.translated } : prev)
+                                  setTimeout(() => saveLandingPage(), 500)
+                                }
+                              } catch (err) { console.error(err) }
+                              setTranslatingSectionKey(null)
+                            }}
+                            disabled={translatingSectionKey === 'footer'}
+                            className="px-2 py-1 bg-pink-600 hover:bg-pink-700 text-white rounded text-xs flex items-center gap-1 disabled:opacity-50"
+                          >
+                            {translatingSectionKey === 'footer' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Languages className="w-3 h-3" />}
+                            Translate
+                          </button>
+                        )}
                         {/* Footer Styling Controls - inline with title */}
                         {(() => {
                           const footerData = landingPageData.footer || {}
@@ -3651,8 +3951,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                         )}
                       </div>
                     </div>
-
-                  </div>
+                    </div>
+                  </>
                 ) : (
                   <div className="text-center py-12">
                     <p className="text-slate-400 mb-4">{t.noLandingPageYet || 'No landing page configured yet. Create one to customize what customers see.'}</p>
@@ -3671,15 +3971,31 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                   onClose={() => setShowAddLocaleModal(false)}
                   businessUnitId={businessUnitId}
                   existingLocales={availableLocales}
-                  onLocaleCreated={(country, lang) => {
+                  onLocaleCreated={async (country, lang, openTranslationMode, sourceLocale) => {
                     setShowAddLocaleModal(false)
                     setSelectedCountry(country)
                     setSelectedLangCode(lang)
-                    // Reload to show new locale
-                    loadLandingPage()
+                    // Reload to show new locale - pass values directly to avoid stale state
+                    await loadLandingPage(country, lang)
+
+                    // If translation mode should open, fetch source data for side-by-side view
+                    if (openTranslationMode && sourceLocale) {
+                      const [srcCountry, srcLang] = sourceLocale.split('/')
+                      try {
+                        const response = await fetch(`/api/landing-page?businessUnit=${businessUnitId}&country=${srcCountry}&language=${srcLang}`)
+                        const data = await response.json()
+                        if (data.landingPage) {
+                          setTranslationSourceData(data.landingPage)
+                          setTranslationMode(true)
+                        }
+                      } catch (err) {
+                        console.error('Failed to load source data:', err)
+                      }
+                    }
                   }}
                 />
-              </div>
+
+                </div>
             )}
 
             {/* Media Library Tab Content */}

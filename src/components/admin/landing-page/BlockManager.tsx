@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
-import { Plus, AlignLeft, AlignCenter, AlignRight, Bold, Italic } from 'lucide-react'
+import { Plus, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Languages, Loader2 } from 'lucide-react'
 import type { LandingPageBlock } from '@/types/landing-page-blocks'
 import { createNewBlock } from './block-registry'
 import BlockContainer from './BlockContainer'
@@ -20,6 +20,11 @@ interface BlockManagerProps {
   blocks: LandingPageBlock[]
   onChange: (blocks: LandingPageBlock[]) => void
   businessUnitId?: string
+  // Translation props
+  translationMode?: boolean
+  translationSourceBlocks?: LandingPageBlock[]
+  targetLanguage?: string
+  onTranslateBlock?: (index: number, translatedBlock: LandingPageBlock) => void
 }
 
 // Color palette for background color picker
@@ -49,9 +54,45 @@ const COLOR_PALETTE = [
   { name: 'Rose', value: '#f43f5e' },
 ]
 
-export default function BlockManager({ blocks, onChange, businessUnitId }: BlockManagerProps) {
+export default function BlockManager({
+  blocks,
+  onChange,
+  businessUnitId,
+  translationMode,
+  translationSourceBlocks,
+  targetLanguage,
+  onTranslateBlock
+}: BlockManagerProps) {
   const [showBlockPicker, setShowBlockPicker] = useState(false)
   const [showBgColorPicker, setShowBgColorPicker] = useState<string | null>(null)
+  const [translatingBlockIndex, setTranslatingBlockIndex] = useState<number | null>(null)
+
+  const handleTranslateBlock = async (index: number) => {
+    if (!translationSourceBlocks || !targetLanguage || !onTranslateBlock) return
+
+    const sourceBlock = translationSourceBlocks[index]
+    if (!sourceBlock) return
+
+    setTranslatingBlockIndex(index)
+    try {
+      const response = await fetch('/api/landing-pages/translate-section', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: sourceBlock,
+          targetLanguage
+        })
+      })
+      const data = await response.json()
+      if (data.success) {
+        onTranslateBlock(index, data.translated)
+      }
+    } catch (err) {
+      console.error('Translation error:', err)
+    } finally {
+      setTranslatingBlockIndex(null)
+    }
+  }
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return
@@ -1687,13 +1728,34 @@ export default function BlockManager({ blocks, onChange, businessUnitId }: Block
                           onDelete={() => handleDeleteBlock(index)}
                           dragHandleProps={provided.dragHandleProps}
                           headerActions={
-                            block.type === 'testimonials' ? renderTestimonialsHeaderActions(block, index) :
-                            block.type === 'accordion' ? renderAccordionHeaderActions(block, index) :
-                            block.type === 'steps' ? renderStepsHeaderActions(block, index) :
-                            block.type === 'pricing' ? renderPricingHeaderActions(block, index) :
-                            block.type === 'static_banner' ? renderStaticBannerHeaderActions(block, index) :
-                            block.type === 'table' ? renderTableHeaderActions(block, index) :
-                            undefined
+                            <div className="flex items-center gap-2">
+                              {/* Translation button */}
+                              {translationMode && translationSourceBlocks && targetLanguage && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleTranslateBlock(index)
+                                  }}
+                                  disabled={translatingBlockIndex === index}
+                                  className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs flex items-center gap-1 disabled:opacity-50"
+                                >
+                                  {translatingBlockIndex === index ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <Languages className="w-3 h-3" />
+                                  )}
+                                  Translate
+                                </button>
+                              )}
+                              {/* Block-specific actions */}
+                              {block.type === 'testimonials' ? renderTestimonialsHeaderActions(block, index) :
+                               block.type === 'accordion' ? renderAccordionHeaderActions(block, index) :
+                               block.type === 'steps' ? renderStepsHeaderActions(block, index) :
+                               block.type === 'pricing' ? renderPricingHeaderActions(block, index) :
+                               block.type === 'static_banner' ? renderStaticBannerHeaderActions(block, index) :
+                               block.type === 'table' ? renderTableHeaderActions(block, index) :
+                               null}
+                            </div>
                           }
                         >
                           {renderBlockEditor(block, index)}

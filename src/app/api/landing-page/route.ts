@@ -41,34 +41,39 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Business unit not found' }, { status: 404 })
     }
 
-    // Fetch the landing page for this business unit + country + language
-    const { data: landingPage, error } = await supabase
-      .from('landing_pages')
-      .select('*')
-      .eq('business_unit_id', businessUnitId)
-      .eq('country', country)
-      .eq('language_code', languageCode)
-      .eq('is_active', true)
-      .single()
+    // Run all queries in PARALLEL for faster response
+    const [landingPageResult, businessUnitResult, availableLocalesResult] = await Promise.all([
+      // Fetch the landing page for this business unit + country + language
+      supabase
+        .from('landing_pages')
+        .select('*')
+        .eq('business_unit_id', businessUnitId)
+        .eq('country', country)
+        .eq('language_code', languageCode)
+        .eq('is_active', true)
+        .single(),
+      // Fetch business unit info
+      supabase
+        .from('business_units')
+        .select('id, name, slug')
+        .eq('id', businessUnitId)
+        .single(),
+      // Fetch all available locales for this business unit
+      supabase
+        .from('landing_pages')
+        .select('country, language_code')
+        .eq('business_unit_id', businessUnitId)
+        .eq('is_active', true)
+    ])
+
+    const { data: landingPage, error } = landingPageResult
+    const { data: businessUnit } = businessUnitResult
+    const { data: availableLocales } = availableLocalesResult
 
     if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
       console.error('Error fetching landing page:', error)
       return NextResponse.json({ error: 'Failed to fetch landing page' }, { status: 500 })
     }
-
-    // Also fetch business unit info
-    const { data: businessUnit } = await supabase
-      .from('business_units')
-      .select('id, name, slug')
-      .eq('id', businessUnitId)
-      .single()
-
-    // Fetch all available locales for this business unit
-    const { data: availableLocales } = await supabase
-      .from('landing_pages')
-      .select('country, language_code')
-      .eq('business_unit_id', businessUnitId)
-      .eq('is_active', true)
 
     return NextResponse.json({
       landingPage: landingPage || null,

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Globe, Plus } from 'lucide-react'
+import { Globe, Plus, Trash2 } from 'lucide-react'
 
 interface LandingPageLocale {
   id: string
@@ -18,6 +18,7 @@ interface LanguageBarProps {
   onLocaleChange: (country: string, language: string) => void
   onAddLocale: () => void
   onSyncRequest?: (sourceCountry: string, sourceLanguage: string) => void
+  onDeleteLocale?: (country: string, language: string) => void
 }
 
 export default function LanguageBar({
@@ -26,7 +27,8 @@ export default function LanguageBar({
   currentLanguage,
   onLocaleChange,
   onAddLocale,
-  onSyncRequest
+  onSyncRequest,
+  onDeleteLocale
 }: LanguageBarProps) {
   const [locales, setLocales] = useState<LandingPageLocale[]>([])
   const [loading, setLoading] = useState(true)
@@ -106,19 +108,40 @@ export default function LanguageBar({
             {locales.map((locale) => {
               const isActive = locale.country === currentCountry && locale.language_code === currentLanguage
               return (
-                <button
-                  key={`${locale.country}-${locale.language_code}`}
-                  onClick={() => onLocaleChange(locale.country, locale.language_code)}
-                  className={`
-                    px-3 py-1.5 rounded text-sm font-medium transition-colors
-                    ${isActive
-                      ? 'bg-violet-600 text-white'
-                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                    }
-                  `}
-                >
-                  {getFlagEmoji(locale.country)} {locale.country}/{getLanguageName(locale.language_code)}
-                </button>
+                <div key={`${locale.country}-${locale.language_code}`} className="flex items-center">
+                  <button
+                    onClick={() => onLocaleChange(locale.country, locale.language_code)}
+                    className={`
+                      px-3 py-1.5 rounded-l text-sm font-medium transition-colors
+                      ${isActive
+                        ? 'bg-violet-600 text-white'
+                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }
+                    `}
+                  >
+                    {getFlagEmoji(locale.country)} {locale.country}/{getLanguageName(locale.language_code)}
+                  </button>
+                  {onDeleteLocale && locales.length > 1 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (confirm(`Delete ${locale.country}/${locale.language_code} locale?`)) {
+                          onDeleteLocale(locale.country, locale.language_code)
+                        }
+                      }}
+                      className={`
+                        px-2 py-1.5 rounded-r text-sm transition-colors border-l border-slate-600
+                        ${isActive
+                          ? 'bg-violet-700 text-violet-200 hover:bg-red-600 hover:text-white'
+                          : 'bg-slate-700 text-slate-400 hover:bg-red-600 hover:text-white'
+                        }
+                      `}
+                      title="Delete locale"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
               )
             })}
 
