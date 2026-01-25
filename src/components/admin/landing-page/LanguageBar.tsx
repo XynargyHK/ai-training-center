@@ -164,26 +164,26 @@ export default function LanguageBar({
       </div>
 
       {/* Sync notification (if applicable) */}
-      {currentLocale && onSyncRequest && (
+      {currentLocale && onSyncRequest && locales.length > 1 && (
         <div className="mt-3 bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-2">
           <div className="flex items-center justify-between">
             <div className="text-sm text-amber-300">
-              ⚠️ Want to update this page from another locale?
+              Sync from another locale:
             </div>
-            <button
-              onClick={() => {
-                // Default to first locale as source, or prompt user
-                const sourceLocale = locales.find(l =>
-                  l.country !== currentCountry || l.language_code !== currentLanguage
-                )
-                if (sourceLocale && onSyncRequest) {
-                  onSyncRequest(sourceLocale.country, sourceLocale.language_code)
-                }
-              }}
-              className="px-3 py-1 bg-amber-600 text-white text-sm rounded hover:bg-amber-700 transition-colors"
-            >
-              Compare & Sync
-            </button>
+            <div className="flex items-center gap-2">
+              {locales
+                .filter(l => l.country !== currentCountry || l.language_code !== currentLanguage)
+                .map(locale => (
+                  <button
+                    key={`sync-${locale.country}-${locale.language_code}`}
+                    onClick={() => onSyncRequest(locale.country, locale.language_code)}
+                    className="px-3 py-1 bg-amber-600 text-white text-sm rounded hover:bg-amber-700 transition-colors"
+                  >
+                    Sync from {getFlagEmoji(locale.country)} {locale.country}/{getLanguageName(locale.language_code)}
+                  </button>
+                ))
+              }
+            </div>
           </div>
         </div>
       )}
