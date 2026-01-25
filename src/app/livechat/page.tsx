@@ -568,10 +568,10 @@ function LandingPageContent() {
     : []
   const currentAnnouncement = announcements[currentAnnouncementIndex] || ''
 
-  // Build URL with businessUnit param preserved
+  // Build URL with businessUnit and locale params preserved
   const buildUrl = (path: string) => {
     if (businessUnitParam) {
-      return `${path}?businessUnit=${businessUnitParam}`
+      return `${path}?businessUnit=${businessUnitParam}&country=${countryParam}&lang=${langParam}`
     }
     return path
   }
