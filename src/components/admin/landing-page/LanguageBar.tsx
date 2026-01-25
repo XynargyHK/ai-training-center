@@ -152,6 +152,18 @@ export default function LanguageBar({
               <Plus className="w-3 h-3" />
               Add
             </button>
+
+            {/* Sync button - only show when NOT on US/en (the master locale) */}
+            {onSyncRequest && !(currentCountry === 'US' && currentLanguage === 'en') && (
+              <button
+                onClick={() => onSyncRequest('US', 'en')}
+                className="px-3 py-1.5 rounded text-sm font-medium bg-amber-600 text-white hover:bg-amber-700 transition-colors flex items-center gap-1"
+                title="Sync structure from US/English"
+              >
+                <Plus className="w-3 h-3" />
+                Sync from US
+              </button>
+            )}
           </div>
         </div>
 
@@ -162,34 +174,6 @@ export default function LanguageBar({
           </span>
         </div>
       </div>
-
-      {/* Sync notification - only show locales with SAME language */}
-      {currentLocale && onSyncRequest && (() => {
-        const sameLanguageLocales = locales.filter(l =>
-          l.language_code === currentLanguage && l.country !== currentCountry
-        )
-        if (sameLanguageLocales.length === 0) return null
-        return (
-          <div className="mt-3 bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-2">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-amber-300">
-                Sync from another locale:
-              </div>
-              <div className="flex items-center gap-2">
-                {sameLanguageLocales.map(locale => (
-                  <button
-                    key={`sync-${locale.country}-${locale.language_code}`}
-                    onClick={() => onSyncRequest(locale.country, locale.language_code)}
-                    className="px-3 py-1 bg-amber-600 text-white text-sm rounded hover:bg-amber-700 transition-colors"
-                  >
-                    Sync from {getFlagEmoji(locale.country)} {locale.country}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )
-      })()}
     </div>
   )
 }
