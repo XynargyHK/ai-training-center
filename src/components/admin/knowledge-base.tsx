@@ -1910,6 +1910,58 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                       alert('Failed to delete locale')
                     }
                   }}
+                  onSyncRequest={async (sourceCountry, sourceLanguage) => {
+                    // Sync from source locale to current locale
+                    if (confirm(`Sync content from ${sourceCountry}/${sourceLanguage} to ${selectedCountry}/${selectedLangCode}?\n\nThis will copy structure and media from the source locale. Text content will be preserved.`)) {
+                      try {
+                        // Get source locale data
+                        const sourceResponse = await fetch(
+                          `/api/landing-page?businessUnit=${businessUnitId}&country=${sourceCountry}&language=${sourceLanguage}`
+                        )
+                        const sourceData = await sourceResponse.json()
+
+                        if (!sourceData.landingPage) {
+                          alert('Source locale not found')
+                          return
+                        }
+
+                        // Copy structure from source, keeping current locale's text where possible
+                        const currentData = landingPageData || {}
+                        const syncedData = {
+                          ...currentData,
+                          // Sync blocks structure (media URLs, layout) from source
+                          blocks: sourceData.landingPage.blocks || [],
+                          // Sync hero slides from source
+                          hero_slides: sourceData.landingPage.hero_slides || [],
+                          // Keep current locale's text fields
+                          // (These would be translated separately)
+                        }
+
+                        // Save synced data
+                        const saveResponse = await fetch('/api/landing-page', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            businessUnitId,
+                            country: selectedCountry,
+                            language_code: selectedLangCode,
+                            ...syncedData
+                          })
+                        })
+
+                        const saveResult = await saveResponse.json()
+                        if (saveResult.success) {
+                          alert('Sync complete! Reload to see changes.')
+                          loadLandingPage(selectedCountry, selectedLangCode)
+                        } else {
+                          alert(saveResult.error || 'Sync failed')
+                        }
+                      } catch (err) {
+                        console.error('Sync error:', err)
+                        alert('Failed to sync locales')
+                      }
+                    }
+                  }}
                 />
 
                 {/* Header Row with Title and Action Buttons */}
