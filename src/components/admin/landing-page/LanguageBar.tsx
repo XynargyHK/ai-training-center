@@ -163,30 +163,33 @@ export default function LanguageBar({
         </div>
       </div>
 
-      {/* Sync notification (if applicable) */}
-      {currentLocale && onSyncRequest && locales.length > 1 && (
-        <div className="mt-3 bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-2">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-amber-300">
-              Sync from another locale:
-            </div>
-            <div className="flex items-center gap-2">
-              {locales
-                .filter(l => l.country !== currentCountry || l.language_code !== currentLanguage)
-                .map(locale => (
+      {/* Sync notification - only show locales with SAME language */}
+      {currentLocale && onSyncRequest && (() => {
+        const sameLanguageLocales = locales.filter(l =>
+          l.language_code === currentLanguage && l.country !== currentCountry
+        )
+        if (sameLanguageLocales.length === 0) return null
+        return (
+          <div className="mt-3 bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-2">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-amber-300">
+                Sync from another locale:
+              </div>
+              <div className="flex items-center gap-2">
+                {sameLanguageLocales.map(locale => (
                   <button
                     key={`sync-${locale.country}-${locale.language_code}`}
                     onClick={() => onSyncRequest(locale.country, locale.language_code)}
                     className="px-3 py-1 bg-amber-600 text-white text-sm rounded hover:bg-amber-700 transition-colors"
                   >
-                    Sync from {getFlagEmoji(locale.country)} {locale.country}/{getLanguageName(locale.language_code)}
+                    Sync from {getFlagEmoji(locale.country)} {locale.country}
                   </button>
-                ))
-              }
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
     </div>
   )
 }
