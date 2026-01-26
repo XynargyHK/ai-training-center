@@ -40,7 +40,7 @@ const translations: Record<string, Record<string, string>> = {
     paymentFailed: 'Payment failed. Please try again.',
     failedInitPayment: 'Failed to initialize payment',
   },
-  zh: {
+  tw: {
     checkout: '結帳',
     payment: '付款',
     orderConfirmed: '訂單已確認',
