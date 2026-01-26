@@ -981,7 +981,8 @@ function LandingPageContent() {
                         loop
                         muted
                         playsInline
-                        preload={index === 0 ? 'auto' : 'metadata'}
+                        preload="auto"
+                        poster={`${slide.background_url}#t=0.1`}
                         className="absolute inset-0 w-full h-full object-cover"
                       />
                     ) : (
