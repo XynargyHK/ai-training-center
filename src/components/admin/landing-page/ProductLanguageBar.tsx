@@ -3,34 +3,30 @@
 import { useState, useEffect } from 'react'
 import { Globe, Plus, Trash2 } from 'lucide-react'
 
-interface LandingPageLocale {
-  id: string
+interface ProductLocale {
   country: string
   language_code: string
-  is_active: boolean
-  updated_at: string
+  product_count: number
 }
 
-interface LanguageBarProps {
+interface ProductLanguageBarProps {
   businessUnitId: string
   currentCountry: string
   currentLanguage: string
   onLocaleChange: (country: string, language: string) => void
   onAddLocale: () => void
-  onSyncRequest?: (sourceCountry: string, sourceLanguage: string) => void
   onDeleteLocale?: (country: string, language: string) => void
 }
 
-export default function LanguageBar({
+export default function ProductLanguageBar({
   businessUnitId,
   currentCountry,
   currentLanguage,
   onLocaleChange,
   onAddLocale,
-  onSyncRequest,
   onDeleteLocale
-}: LanguageBarProps) {
-  const [locales, setLocales] = useState<LandingPageLocale[]>([])
+}: ProductLanguageBarProps) {
+  const [locales, setLocales] = useState<ProductLocale[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -39,13 +35,13 @@ export default function LanguageBar({
 
   const loadLocales = async () => {
     try {
-      const response = await fetch(`/api/landing-pages/locales?businessUnit=${businessUnitId}`)
+      const response = await fetch(`/api/ecommerce/products/locales?businessUnit=${businessUnitId}`)
       const data = await response.json()
       if (data.success) {
         setLocales(data.locales || [])
       }
     } catch (error) {
-      console.error('Failed to load locales:', error)
+      console.error('Failed to load product locales:', error)
     } finally {
       setLoading(false)
     }
@@ -92,17 +88,13 @@ export default function LanguageBar({
     )
   }
 
-  const currentLocale = locales.find(
-    l => l.country === currentCountry && l.language_code === currentLanguage
-  )
-
   return (
     <div className="bg-slate-800 border-b border-slate-700 px-6 py-3">
       <div className="flex items-center justify-between">
         {/* Left: Language tabs */}
         <div className="flex items-center gap-2">
           <Globe className="w-4 h-4 text-slate-400" />
-          <span className="text-sm text-slate-400 mr-2">Languages:</span>
+          <span className="text-sm text-slate-400 mr-2">Product Languages:</span>
 
           <div className="flex items-center gap-1">
             {locales.map((locale) => {
@@ -120,12 +112,13 @@ export default function LanguageBar({
                     `}
                   >
                     {getFlagEmoji(locale.country)} {locale.country}/{getLanguageName(locale.language_code)}
+                    <span className="ml-1 text-xs opacity-70">({locale.product_count})</span>
                   </button>
                   {onDeleteLocale && locales.length > 1 && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        if (confirm(`Delete ${locale.country}/${locale.language_code} locale?`)) {
+                        if (confirm(`Delete all ${locale.country}/${locale.language_code} products?`)) {
                           onDeleteLocale(locale.country, locale.language_code)
                         }
                       }}
@@ -152,18 +145,6 @@ export default function LanguageBar({
               <Plus className="w-3 h-3" />
               Add
             </button>
-
-            {/* Sync button - only show when NOT on US/en (the master locale) */}
-            {onSyncRequest && !(currentCountry === 'US' && currentLanguage === 'en') && (
-              <button
-                onClick={() => onSyncRequest('US', 'en')}
-                className="px-3 py-1.5 rounded text-sm font-medium bg-amber-600 text-white hover:bg-amber-700 transition-colors flex items-center gap-1"
-                title="Sync structure from US/English"
-              >
-                <Plus className="w-3 h-3" />
-                Sync from US
-              </button>
-            )}
           </div>
         </div>
 

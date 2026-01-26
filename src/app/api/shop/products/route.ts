@@ -36,6 +36,8 @@ export async function GET(request: NextRequest) {
     const productTypeId = searchParams.get('productTypeId')
     const search = searchParams.get('search')
     const businessUnitSlug = searchParams.get('businessUnit')
+    const country = searchParams.get('country')
+    const language = searchParams.get('language')
 
     // Resolve business unit ID from slug
     let businessUnitId: string | null = null
@@ -63,6 +65,8 @@ export async function GET(request: NextRequest) {
         is_featured,
         product_type_id,
         business_unit_id,
+        country,
+        language_code,
         product_types(id, name)
       `)
       .is('deleted_at', null)
@@ -72,6 +76,14 @@ export async function GET(request: NextRequest) {
     // Filter by business unit if provided
     if (businessUnitId) {
       query = query.eq('business_unit_id', businessUnitId)
+    }
+
+    // Filter by locale if provided
+    if (country) {
+      query = query.eq('country', country)
+    }
+    if (language) {
+      query = query.eq('language_code', language)
     }
 
     if (productTypeId) {
@@ -125,6 +137,12 @@ export async function GET(request: NextRequest) {
 
     if (businessUnitId) {
       typesQuery = typesQuery.eq('business_unit_id', businessUnitId)
+    }
+    if (country) {
+      typesQuery = typesQuery.eq('country', country)
+    }
+    if (language) {
+      typesQuery = typesQuery.eq('language_code', language)
     }
 
     const { data: allProducts } = await typesQuery

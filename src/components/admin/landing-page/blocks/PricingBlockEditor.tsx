@@ -85,6 +85,28 @@ export default function PricingBlockEditor({ block, onUpdate }: PricingBlockEdit
 
   return (
     <div className="space-y-6">
+      {/* Headline */}
+      <div>
+        <UniversalTextEditor
+          label="Headline"
+          value={block.data.headline || ''}
+          onChange={(value) => updateData('headline', value)}
+          align={block.data.headline_text_align || 'center'}
+          onAlignChange={(align) => updateData('headline_text_align', align)}
+          bold={block.data.headline_bold || false}
+          onBoldChange={(bold) => updateData('headline_bold', bold)}
+          italic={block.data.headline_italic || false}
+          onItalicChange={(italic) => updateData('headline_italic', italic)}
+          fontSize={block.data.headline_font_size || '1.5rem'}
+          onFontSizeChange={(size) => updateData('headline_font_size', size)}
+          fontFamily={block.data.headline_font_family || 'Josefin Sans'}
+          onFontFamilyChange={(family) => updateData('headline_font_family', family)}
+          color={block.data.headline_color || '#000000'}
+          onColorChange={(color) => updateData('headline_color', color)}
+          placeholder="Main headline"
+        />
+      </div>
+
       {/* Subheadline */}
       <div>
         <UniversalTextEditor

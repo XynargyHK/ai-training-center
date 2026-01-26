@@ -400,7 +400,7 @@ export default function CheckoutModal({
                       value={customerInfo.name}
                       onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                      placeholder={language === 'zh' ? '陳大文' : 'John Doe'}
+                      placeholder={language === 'tw' ? '陳大文' : 'John Doe'}
                     />
                   </div>
                   <div>
@@ -425,7 +425,7 @@ export default function CheckoutModal({
                       value={customerInfo.phone}
                       onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                      placeholder={language === 'zh' ? '+852 1234 5678' : '+1 (555) 123-4567'}
+                      placeholder={language === 'tw' ? '+852 1234 5678' : '+1 (555) 123-4567'}
                     />
                   </div>
                 </div>
@@ -444,7 +444,7 @@ export default function CheckoutModal({
                       value={shippingAddress.address}
                       onChange={(e) => setShippingAddress({ ...shippingAddress, address: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                      placeholder={language === 'zh' ? '中環德輔道中123號' : '123 Main St'}
+                      placeholder={language === 'tw' ? '中環德輔道中123號' : '123 Main St'}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -457,7 +457,7 @@ export default function CheckoutModal({
                         value={shippingAddress.city}
                         onChange={(e) => setShippingAddress({ ...shippingAddress, city: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                        placeholder={language === 'zh' ? '香港' : 'New York'}
+                        placeholder={language === 'tw' ? '香港' : 'New York'}
                       />
                     </div>
                     <div>
@@ -469,7 +469,7 @@ export default function CheckoutModal({
                         value={shippingAddress.state}
                         onChange={(e) => setShippingAddress({ ...shippingAddress, state: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                        placeholder={language === 'zh' ? '香港島' : 'NY'}
+                        placeholder={language === 'tw' ? '香港島' : 'NY'}
                       />
                     </div>
                   </div>
@@ -495,7 +495,7 @@ export default function CheckoutModal({
                         value={shippingAddress.country}
                         onChange={(e) => setShippingAddress({ ...shippingAddress, country: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                        placeholder={language === 'zh' ? '香港' : 'US'}
+                        placeholder={language === 'tw' ? '香港' : 'US'}
                       />
                     </div>
                   </div>

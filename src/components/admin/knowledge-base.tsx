@@ -1912,30 +1912,47 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                   }}
                   onSyncRequest={async (sourceCountry, sourceLanguage) => {
                     // Sync from source locale to current locale
-                    if (confirm(`Sync content from ${sourceCountry}/${sourceLanguage} to ${selectedCountry}/${selectedLangCode}?\n\nThis will copy structure and media from the source locale. Text content will be preserved.`)) {
+                    if (confirm(`Sync ALL content from ${sourceCountry}/${sourceLanguage} to ${selectedCountry}/${selectedLangCode}?\n\nThis will copy: blocks, hero slides, menu, announcements, footer, logo, and all other content.\n\nYour locale's currency settings will be preserved.`)) {
                       try {
                         // Get source locale data
+                        console.log('[Sync] Fetching source:', sourceCountry, sourceLanguage)
                         const sourceResponse = await fetch(
                           `/api/landing-page?businessUnit=${businessUnitId}&country=${sourceCountry}&language=${sourceLanguage}`
                         )
                         const sourceData = await sourceResponse.json()
+                        console.log('[Sync] Source data blocks:', sourceData.landingPage?.blocks?.length || 0)
 
                         if (!sourceData.landingPage) {
-                          alert('Source locale not found')
+                          alert('Source locale (US/en) not found. Create it first.')
                           return
                         }
 
-                        // Copy structure from source, keeping current locale's text where possible
+                        // Copy ALL content from source, keeping only locale-specific settings
+                        const source = sourceData.landingPage
                         const currentData = landingPageData || {}
-                        const syncedData = {
-                          ...currentData,
-                          // Sync blocks structure (media URLs, layout) from source
-                          blocks: sourceData.landingPage.blocks || [],
-                          // Sync hero slides from source
-                          hero_slides: sourceData.landingPage.hero_slides || [],
-                          // Keep current locale's text fields
-                          // (These would be translated separately)
+
+                        // Keep target locale's settings
+                        const localeSettings = {
+                          country: selectedCountry,
+                          language_code: selectedLangCode,
+                          currency: currentData.currency,
+                          currency_symbol: currentData.currency_symbol,
                         }
+
+                        // Copy everything from source except id and locale settings
+                        const { id, business_unit_id, country, language_code, currency, currency_symbol, created_at, updated_at, ...sourceContent } = source
+
+                        const syncedData = {
+                          ...sourceContent,
+                          ...localeSettings,
+                        }
+
+                        console.log('[Sync] Syncing all content:', {
+                          blocks: syncedData.blocks?.length || 0,
+                          hero_slides: syncedData.hero_slides?.length || 0,
+                          menu_items: syncedData.menu_items?.length || 0,
+                          announcements: syncedData.announcements?.length || 0,
+                        })
 
                         // Save synced data
                         const saveResponse = await fetch('/api/landing-page', {
@@ -1950,15 +1967,18 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                         })
 
                         const saveResult = await saveResponse.json()
+                        console.log('[Sync] Save result:', saveResult)
                         if (saveResult.success) {
-                          alert('Sync complete! Reload to see changes.')
-                          loadLandingPage(selectedCountry, selectedLangCode)
+                          // Force a full reload to ensure fresh data
+                          alert('Sync complete! Page will reload.')
+                          window.location.reload()
                         } else {
-                          alert(saveResult.error || 'Sync failed')
+                          console.error('[Sync] Failed:', saveResult)
+                          alert(`Sync failed: ${saveResult.error || 'Unknown error'}${saveResult.details ? '\n\nDetails: ' + saveResult.details : ''}`)
                         }
                       } catch (err) {
                         console.error('Sync error:', err)
-                        alert('Failed to sync locales')
+                        alert('Failed to sync locales: ' + (err instanceof Error ? err.message : String(err)))
                       }
                     }
                   }}

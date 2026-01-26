@@ -111,6 +111,8 @@ interface ProductFormData {
 interface ProductFormProps {
   businessUnitId: string
   productId?: string // Product ID for editing (will fetch full data)
+  country?: string
+  languageCode?: string
   onSave: (product: any) => void
   onCancel: () => void
 }
@@ -151,6 +153,8 @@ const INITIAL_FORM_DATA: ProductFormData = {
 export default function ProductForm({
   businessUnitId,
   productId,
+  country = 'US',
+  languageCode = 'en',
   onSave,
   onCancel
 }: ProductFormProps) {
@@ -577,6 +581,8 @@ export default function ProductForm({
         ...formData,
         business_unit_id: businessUnitId,
         id: productId,
+        country,
+        language_code: languageCode,
       }
 
       const response = await fetch('/api/ecommerce/products', {

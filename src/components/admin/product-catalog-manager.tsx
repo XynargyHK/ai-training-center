@@ -23,6 +23,8 @@ import ProductForm from './product-form'
 import BundleManager from './bundle-manager'
 import CatalogSettings from './catalog-settings'
 import AddonMatchingModal from './addon-matching-modal'
+import ProductLanguageBar from './landing-page/ProductLanguageBar'
+import ProductAddLocaleModal from './landing-page/ProductAddLocaleModal'
 
 interface Category {
   id: string
@@ -87,6 +89,12 @@ export default function ProductCatalogManager({
   const [showBulkImportMenu, setShowBulkImportMenu] = useState(false)
   const bulkImportRef = useRef<HTMLDivElement>(null)
 
+  // Locale state
+  const [selectedCountry, setSelectedCountry] = useState('US')
+  const [selectedLangCode, setSelectedLangCode] = useState('en')
+  const [availableLocales, setAvailableLocales] = useState<Array<{ country: string; language_code: string }>>([])
+  const [showAddLocaleModal, setShowAddLocaleModal] = useState(false)
+
   // Add-on matching modal state
   const [addonModalProduct, setAddonModalProduct] = useState<{
     id: string
@@ -113,7 +121,24 @@ export default function ProductCatalogManager({
   // Load data
   useEffect(() => {
     loadData()
+  }, [businessUnitId, selectedCountry, selectedLangCode])
+
+  // Load available locales
+  useEffect(() => {
+    loadLocales()
   }, [businessUnitId])
+
+  const loadLocales = async () => {
+    try {
+      const res = await fetch(`/api/ecommerce/products/locales?businessUnit=${businessUnitId}`)
+      const data = await res.json()
+      if (data.success) {
+        setAvailableLocales(data.locales || [])
+      }
+    } catch (error) {
+      console.error('Failed to load product locales:', error)
+    }
+  }
 
   const loadData = async () => {
     setIsLoading(true)
@@ -121,7 +146,7 @@ export default function ProductCatalogManager({
       const [categoriesRes, typesRes, productsRes] = await Promise.all([
         fetch(`/api/ecommerce/categories?businessUnitId=${businessUnitId}`),
         fetch(`/api/ecommerce/product-types?businessUnitId=${businessUnitId}`),
-        fetch(`/api/ecommerce/products?business_unit_id=${businessUnitId}&limit=200`)
+        fetch(`/api/ecommerce/products?business_unit_id=${businessUnitId}&country=${selectedCountry}&language=${selectedLangCode}&limit=200`)
       ])
 
       const [categoriesData, typesData, productsData] = await Promise.all([
@@ -201,6 +226,46 @@ export default function ProductCatalogManager({
     setShowProductForm(false)
     setEditingProduct(null)
     loadData()
+    loadLocales()
+  }
+
+  const handleLocaleChange = (country: string, lang: string) => {
+    setSelectedCountry(country)
+    setSelectedLangCode(lang)
+  }
+
+  const handleLocaleCreated = (country: string, lang: string) => {
+    setSelectedCountry(country)
+    setSelectedLangCode(lang)
+    loadLocales()
+    // loadData will be triggered by the useEffect on selectedCountry/selectedLangCode
+  }
+
+  const handleDeleteLocale = async (delCountry: string, delLang: string) => {
+    try {
+      // Fetch products for this locale and delete them one by one
+      const res = await fetch(
+        `/api/ecommerce/products?business_unit_id=${businessUnitId}&country=${delCountry}&language=${delLang}&limit=500`
+      )
+      const data = await res.json()
+      const localeProducts = data.products || []
+
+      for (const p of localeProducts) {
+        await fetch(`/api/ecommerce/products?id=${p.id}`, { method: 'DELETE' })
+      }
+
+      // Switch to first available locale
+      const remaining = availableLocales.filter(
+        l => !(l.country === delCountry && l.language_code === delLang)
+      )
+      if (remaining.length > 0) {
+        setSelectedCountry(remaining[0].country)
+        setSelectedLangCode(remaining[0].language_code)
+      }
+      loadLocales()
+    } catch (error) {
+      console.error('Failed to delete locale:', error)
+    }
   }
 
   // Toggle add-on status for a product
@@ -367,6 +432,8 @@ export default function ProductCatalogManager({
         <ProductForm
           businessUnitId={businessUnitId}
           productId={editingProduct?.id}
+          country={selectedCountry}
+          languageCode={selectedLangCode}
           onSave={handleProductSaved}
           onCancel={() => { setShowProductForm(false); setEditingProduct(null) }}
         />
@@ -376,6 +443,16 @@ export default function ProductCatalogManager({
 
   return (
     <div className="space-y-6">
+      {/* Product Language Bar */}
+      <ProductLanguageBar
+        businessUnitId={businessUnitId}
+        currentCountry={selectedCountry}
+        currentLanguage={selectedLangCode}
+        onLocaleChange={handleLocaleChange}
+        onAddLocale={() => setShowAddLocaleModal(true)}
+        onDeleteLocale={handleDeleteLocale}
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -859,6 +936,15 @@ export default function ProductCatalogManager({
           onSave={handleSaveAddons}
         />
       )}
+
+      {/* Add Product Locale Modal */}
+      <ProductAddLocaleModal
+        isOpen={showAddLocaleModal}
+        onClose={() => setShowAddLocaleModal(false)}
+        businessUnitId={businessUnitId}
+        existingLocales={availableLocales}
+        onLocaleCreated={handleLocaleCreated}
+      />
     </div>
   )
 }

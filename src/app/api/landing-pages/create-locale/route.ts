@@ -31,7 +31,7 @@ async function translateText(text: string, targetLanguage: string, context: stri
   const llmConfig = getLLMConfig()
 
   const languageMap: { [key: string]: string } = {
-    'zh': 'Traditional Chinese (Hong Kong)',
+    'tw': 'Traditional Chinese (Hong Kong)',
     'cn': 'Simplified Chinese',
     'en': 'English',
     'es': 'Spanish',

@@ -19,6 +19,8 @@ export interface Product {
   subtitle?: string
   thumbnail?: string
   status: 'draft' | 'published' | 'archived'
+  country?: string
+  language_code?: string
   metadata?: Record<string, any>
   created_at: string
   updated_at: string

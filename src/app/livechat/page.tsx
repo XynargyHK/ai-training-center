@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { Star, Check, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ShoppingCart, Sparkles, Shield, Truck, RotateCcw, Menu, X, User, Search, Trash2, MessageCircle } from 'lucide-react'
+import { Star, Check, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ShoppingCart, Sparkles, Shield, Truck, RotateCcw, Menu, X, User, Search, Trash2, MessageCircle, Globe } from 'lucide-react'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { serifFont, headlineFont, getFontClass } from '@/lib/fonts'
@@ -188,6 +188,8 @@ interface LandingPageData {
 function PriceBannerContent({ slide, onAddToCart }: { slide: HeroSlide; onAddToCart: (product: any) => void }) {
   const searchParams = useSearchParams()
   const businessUnitParam = searchParams.get('businessUnit') || ''
+  const countryParam = searchParams.get('country') || 'US'
+  const langParam = searchParams.get('lang') || searchParams.get('language') || 'en'
   const [selectedPlanIndex, setSelectedPlanIndex] = useState(0)
 
   const plans = slide.plans || []
@@ -212,7 +214,7 @@ function PriceBannerContent({ slide, onAddToCart }: { slide: HeroSlide; onAddToC
     // If plan has product_id, fetch actual product data
     if (selectedPlan.product_id) {
       try {
-        const response = await fetch(`/api/shop/products?businessUnit=${businessUnitParam}`)
+        const response = await fetch(`/api/shop/products?businessUnit=${businessUnitParam}&country=${countryParam}&language=${langParam}`)
         const data = await response.json()
         const product = data.products?.find((p: any) => p.id === selectedPlan.product_id)
 
@@ -414,7 +416,7 @@ function LandingPageContent() {
   const policyParam = searchParams.get('policy') || '' // e.g., 'terms-of-service', 'privacy-policy'
 
   // Cart translations
-  const cartText = langParam === 'zh' ? {
+  const cartText = langParam === 'tw' ? {
     shoppingCart: '購物車',
     cartEmpty: '您的購物車是空的',
     total: '總計',
@@ -450,6 +452,21 @@ function LandingPageContent() {
 
   // Hero carousel state
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0)
+
+  // Language selector state
+  const [availableLocales, setAvailableLocales] = useState<{ country: string; language_code: string }[]>([])
+  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false)
+
+  // Filter locales to only show languages for the current country (based on IP/URL)
+  const languagesForCountry = availableLocales.filter(l => l.country === countryParam)
+
+  // Close language dropdown when clicking outside
+  useEffect(() => {
+    if (!showLanguageDropdown) return
+    const handleClick = () => setShowLanguageDropdown(false)
+    document.addEventListener('click', handleClick)
+    return () => document.removeEventListener('click', handleClick)
+  }, [showLanguageDropdown])
 
   // Load cart from localStorage
   useEffect(() => {
@@ -503,6 +520,9 @@ function LandingPageContent() {
 
         if (data.businessUnit) {
           setBusinessUnit(data.businessUnit)
+        }
+        if (data.availableLocales) {
+          setAvailableLocales(data.availableLocales)
         }
         if (data.landingPage) {
           console.log('[LiveChat Preview] Loaded landing page data')
@@ -810,6 +830,40 @@ function LandingPageContent() {
                 </button>
               )}
 
+              {/* Language Selector - only show if multiple languages for this country */}
+              {languagesForCountry.length > 1 && (
+                <div className="relative">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowLanguageDropdown(!showLanguageDropdown) }}
+                    className="hidden md:flex items-center gap-1 p-2 text-black hover:opacity-80 transition-colors"
+                  >
+                    <Globe className="w-5 h-5" />
+                    <span className="text-xs font-medium uppercase">{langParam}</span>
+                  </button>
+                  {showLanguageDropdown && (
+                    <div className="absolute right-0 top-full mt-1 bg-white shadow-lg rounded-lg border border-gray-200 py-1 min-w-[140px] z-50">
+                      {languagesForCountry.map((locale) => {
+                        const isActive = locale.language_code === langParam
+                        const langName: Record<string, string> = { en: 'English', tw: '繁體中文', cn: '简体中文', ja: '日本語', ko: '한국어' }
+                        return (
+                          <button
+                            key={locale.language_code}
+                            onClick={() => {
+                              setShowLanguageDropdown(false)
+                              router.push(`/livechat?businessUnit=${businessUnitParam}&country=${countryParam}&lang=${locale.language_code}`)
+                            }}
+                            className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2 ${isActive ? 'bg-gray-50 font-medium' : ''}`}
+                          >
+                            <span>{langName[locale.language_code] || locale.language_code}</span>
+                            {isActive && <Check className="w-4 h-4 ml-auto text-green-600" />}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Mobile menu button on right (if logo_position is 'left') */}
               {logoPosition === 'left' && (
                 <button
@@ -847,6 +901,29 @@ function LandingPageContent() {
                   <User className="w-4 h-4" />
                   My Account
                 </Link>
+              )}
+              {/* Mobile language selector - only show if multiple languages for this country */}
+              {languagesForCountry.length > 1 && (
+                <div className="border-t border-gray-100 mt-2 pt-2">
+                  <div className="px-4 py-2 text-xs text-gray-500 uppercase tracking-wider">Language</div>
+                  {languagesForCountry.map((locale) => {
+                    const isActive = locale.language_code === langParam
+                    const langName: Record<string, string> = { en: 'English', tw: '繁體中文', cn: '简体中文', ja: '日本語', ko: '한국어' }
+                    return (
+                      <button
+                        key={`mobile-${locale.language_code}`}
+                        onClick={() => {
+                          setMobileMenuOpen(false)
+                          router.push(`/livechat?businessUnit=${businessUnitParam}&country=${countryParam}&lang=${locale.language_code}`)
+                        }}
+                        className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-50 flex items-center gap-2 ${isActive ? 'bg-gray-50 font-medium' : ''}`}
+                      >
+                        <span>{langName[locale.language_code] || locale.language_code}</span>
+                        {isActive && <Check className="w-4 h-4 ml-auto text-green-600" />}
+                      </button>
+                    )
+                  })}
+                </div>
               )}
             </nav>
           </div>

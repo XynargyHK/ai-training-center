@@ -41,6 +41,8 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') as 'draft' | 'published' | 'archived' | null
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 100
     const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : 0
+    const country = searchParams.get('country')
+    const language = searchParams.get('language')
 
     // Get single product by ID
     if (productId) {
@@ -106,6 +108,14 @@ export async function GET(request: NextRequest) {
       query = query.eq('status', status)
     }
 
+    // Filter by locale
+    if (country) {
+      query = query.eq('country', country)
+    }
+    if (language) {
+      query = query.eq('language_code', language)
+    }
+
     query = query.range(offset, offset + limit - 1)
 
     const { data: products, error } = await query
@@ -163,7 +173,10 @@ export async function POST(request: NextRequest) {
       landing_page_reference_url,
       // Display
       is_featured,
-      badges
+      badges,
+      // Locale
+      country,
+      language_code
     } = body
 
     if (!business_unit_id || !title) {
@@ -199,6 +212,8 @@ export async function POST(request: NextRequest) {
         product_type_id: product_type_id || null,
         status: status || 'draft',
         thumbnail: thumbnail || (images && images[0]) || null,
+        country: country || 'US',
+        language_code: language_code || 'en',
         // Detail fields (added in migration 051)
         hero_benefit,
         key_actives,

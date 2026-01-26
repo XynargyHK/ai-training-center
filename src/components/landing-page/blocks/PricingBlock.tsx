@@ -98,6 +98,8 @@ interface PricingBlockProps {
 export default function PricingBlock({ data, anchorId, onAddToCart }: PricingBlockProps) {
   const searchParams = useSearchParams()
   const businessUnitParam = searchParams.get('businessUnit') || ''
+  const countryParam = searchParams.get('country') || 'US'
+  const langParam = searchParams.get('lang') || searchParams.get('language') || 'en'
   const [selectedPlanIndex, setSelectedPlanIndex] = useState(0)
 
   const plans = data.plans || []
@@ -122,7 +124,7 @@ export default function PricingBlock({ data, anchorId, onAddToCart }: PricingBlo
     // If plan has product_id, fetch actual product data
     if (selectedPlan.product_id) {
       try {
-        const response = await fetch(`/api/shop/products?businessUnit=${businessUnitParam}`)
+        const response = await fetch(`/api/shop/products?businessUnit=${businessUnitParam}&country=${countryParam}&language=${langParam}`)
         const responseData = await response.json()
         const product = responseData.products?.find((p: any) => p.id === selectedPlan.product_id)
 

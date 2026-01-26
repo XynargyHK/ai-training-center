@@ -3,24 +3,24 @@
 import { useState } from 'react'
 import { X, Loader2 } from 'lucide-react'
 
-interface AddLocaleModalProps {
+interface ProductAddLocaleModalProps {
   isOpen: boolean
   onClose: () => void
   businessUnitId: string
   existingLocales: Array<{ country: string; language_code: string }>
-  onLocaleCreated: (country: string, language: string, openTranslationPanel?: boolean, sourceLocale?: string) => void
+  onLocaleCreated: (country: string, language: string) => void
 }
 
-export default function AddLocaleModal({
+export default function ProductAddLocaleModal({
   isOpen,
   onClose,
   businessUnitId,
   existingLocales,
   onLocaleCreated
-}: AddLocaleModalProps) {
+}: ProductAddLocaleModalProps) {
   const [country, setCountry] = useState('')
   const [language, setLanguage] = useState('')
-  const [creationMode, setCreationMode] = useState<'empty' | 'translate' | 'copy'>('translate')
+  const [creationMode, setCreationMode] = useState<'empty' | 'translate' | 'copy'>('copy')
   const [sourceLocale, setSourceLocale] = useState('')
   const [creating, setCreating] = useState(false)
 
@@ -54,7 +54,6 @@ export default function AddLocaleModal({
       return
     }
 
-    // Check if locale already exists
     const exists = existingLocales.some(
       l => l.country === country && l.language_code === language
     )
@@ -70,17 +69,14 @@ export default function AddLocaleModal({
 
     setCreating(true)
     try {
-      // When translating, first copy the content (fast), then user can translate section by section
-      const actualMode = creationMode === 'translate' ? 'copy' : creationMode
-
-      const response = await fetch('/api/landing-pages/create-locale', {
+      const response = await fetch('/api/ecommerce/products/create-locale', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           businessUnitId,
           country,
           language,
-          mode: actualMode,
+          mode: creationMode,
           sourceCountry: sourceLocale ? sourceLocale.split('/')[0] : undefined,
           sourceLanguage: sourceLocale ? sourceLocale.split('/')[1] : undefined
         })
@@ -88,20 +84,17 @@ export default function AddLocaleModal({
 
       const data = await response.json()
       if (data.success) {
-        // If user selected translate mode, pass flag to open translation panel
-        const openTranslationPanel = creationMode === 'translate'
-        onLocaleCreated(country, language, openTranslationPanel, sourceLocale)
+        onLocaleCreated(country, language)
         onClose()
-        // Reset form
         setCountry('')
         setLanguage('')
-        setCreationMode('translate')
+        setCreationMode('copy')
         setSourceLocale('')
       } else {
         alert(data.error || 'Failed to create locale')
       }
     } catch (error) {
-      console.error('Error creating locale:', error)
+      console.error('Error creating product locale:', error)
       alert('Failed to create locale')
     } finally {
       setCreating(false)
@@ -115,7 +108,7 @@ export default function AddLocaleModal({
       <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-700">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-700">
-          <h2 className="text-xl font-semibold text-white">Add New Locale</h2>
+          <h2 className="text-xl font-semibold text-white">Add Product Locale</h2>
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-white transition-colors"
@@ -167,20 +160,20 @@ export default function AddLocaleModal({
               Create by:
             </label>
             <div className="space-y-3">
-              {/* Translate option */}
+              {/* Copy option */}
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="radio"
                   name="mode"
-                  value="translate"
-                  checked={creationMode === 'translate'}
-                  onChange={() => setCreationMode('translate')}
+                  value="copy"
+                  checked={creationMode === 'copy'}
+                  onChange={() => setCreationMode('copy')}
                   className="mt-1"
                 />
                 <div>
-                  <div className="text-white font-medium">Translating from:</div>
-                  <div className="text-sm text-slate-400">AI will translate content to target language</div>
-                  {creationMode === 'translate' && (
+                  <div className="text-white font-medium">Duplicating from:</div>
+                  <div className="text-sm text-slate-400">Copy all products as-is without translation</div>
+                  {creationMode === 'copy' && (
                     <select
                       value={sourceLocale}
                       onChange={(e) => setSourceLocale(e.target.value)}
@@ -197,20 +190,20 @@ export default function AddLocaleModal({
                 </div>
               </label>
 
-              {/* Copy option */}
+              {/* Translate option */}
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="radio"
                   name="mode"
-                  value="copy"
-                  checked={creationMode === 'copy'}
-                  onChange={() => setCreationMode('copy')}
+                  value="translate"
+                  checked={creationMode === 'translate'}
+                  onChange={() => setCreationMode('translate')}
                   className="mt-1"
                 />
                 <div>
-                  <div className="text-white font-medium">Duplicating from:</div>
-                  <div className="text-sm text-slate-400">Copy as-is without translation</div>
-                  {creationMode === 'copy' && (
+                  <div className="text-white font-medium">Translating from:</div>
+                  <div className="text-sm text-slate-400">Copy products and AI-translate text fields</div>
+                  {creationMode === 'translate' && (
                     <select
                       value={sourceLocale}
                       onChange={(e) => setSourceLocale(e.target.value)}
@@ -239,7 +232,7 @@ export default function AddLocaleModal({
                 />
                 <div>
                   <div className="text-white font-medium">Starting empty</div>
-                  <div className="text-sm text-slate-400">Create blank page from scratch</div>
+                  <div className="text-sm text-slate-400">Add products manually from scratch</div>
                 </div>
               </label>
             </div>
