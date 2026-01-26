@@ -948,124 +948,123 @@ function LandingPageContent() {
           // Only show carousel section if there are carousel slides
           if (carouselSlides.length === 0) return null
 
-          const currentSlide = carouselSlides[currentHeroSlide] || carouselSlides[0]
-
           return (
             <section className="relative w-full h-[500px] md:h-[600px] overflow-hidden">
-              {/* Background */}
-              {currentSlide.background_url ? (
-                currentSlide.background_type === 'video' ? (
-                  <video
-                    key={currentHeroSlide}
-                    src={currentSlide.background_url}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    preload="auto"
-                    poster={`${currentSlide.background_url}#t=0.1`}
-                    className="absolute inset-0 w-full h-full object-cover"
-                    onLoadStart={(e) => {
-                      const video = e.currentTarget
-                      video.play().catch(() => {
-                        // Auto-retry play if blocked
-                        setTimeout(() => video.play().catch(() => {}), 100)
-                      })
-                    }}
-                  />
-                ) : (
-                  <img
-                    key={currentSlide.background_url}
-                    src={currentSlide.background_url}
-                    alt=""
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                )
-              ) : (
+              {/* All slides rendered simultaneously - fade between them */}
+              {carouselSlides.map((slide, index) => (
                 <div
-                  className="absolute inset-0"
-                  style={{ backgroundColor: currentSlide.background_color || '#1e293b' }}
-                />
-              )}
+                  key={index}
+                  className={`absolute inset-0 transition-opacity duration-700 ${
+                    index === currentHeroSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
+                  }`}
+                  aria-hidden={index !== currentHeroSlide}
+                >
+                  {/* Background */}
+                  {slide.background_url ? (
+                    slide.background_type === 'video' ? (
+                      <video
+                        src={slide.background_url}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        preload="auto"
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    ) : (
+                      <img
+                        src={slide.background_url}
+                        alt=""
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    )
+                  ) : (
+                    <div
+                      className="absolute inset-0"
+                      style={{ backgroundColor: slide.background_color || '#1e293b' }}
+                    />
+                  )}
 
-              {/* Overlay for text readability - only when there's an image/video */}
-              {currentSlide.background_url && (
-                <div className="absolute inset-0 bg-black/30" />
-              )}
+                  {/* Overlay for text readability */}
+                  {slide.background_url && (
+                    <div className="absolute inset-0 bg-black/30" />
+                  )}
 
-              {/* Content */}
-              <div className="relative z-10 h-full flex items-center justify-center">
-                <div className="px-4 md:px-12 max-w-4xl w-full">
-                  {currentSlide.headline && (
-                    <h1
-                      className={`font-light tracking-[0.2em] uppercase leading-tight mb-4 drop-shadow-lg ${getFontClass(currentSlide.headline_font_family)} ${
-                        (currentSlide.headline_text_align || 'center') === 'left' ? 'text-left' :
-                        (currentSlide.headline_text_align || 'center') === 'right' ? 'text-right' :
-                        'text-center'
-                      }`}
-                      style={{
-                        fontSize: currentSlide.headline_font_size || 'clamp(1.875rem, 5vw, 3.75rem)',
-                        color: currentSlide.headline_color || '#ffffff',
-                        fontWeight: currentSlide.headline_bold ? 'bold' : undefined,
-                        fontStyle: currentSlide.headline_italic ? 'italic' : undefined
-                      }}
-                    >
-                      {currentSlide.headline}
-                    </h1>
-                  )}
-                  {currentSlide.subheadline && (
-                    <p
-                      className={`font-light tracking-[0.15em] uppercase mb-4 drop-shadow ${getFontClass(currentSlide.subheadline_font_family)} ${
-                        (currentSlide.subheadline_text_align || 'center') === 'left' ? 'text-left' :
-                        (currentSlide.subheadline_text_align || 'center') === 'right' ? 'text-right' :
-                        'text-center'
-                      }`}
-                      style={{
-                        fontSize: currentSlide.subheadline_font_size || 'clamp(1.125rem, 2.5vw, 1.25rem)',
-                        color: currentSlide.subheadline_color || '#ffffff',
-                        fontWeight: currentSlide.subheadline_bold ? 'bold' : undefined,
-                        fontStyle: currentSlide.subheadline_italic ? 'italic' : undefined
-                      }}
-                    >
-                      {currentSlide.subheadline}
-                    </p>
-                  )}
-                  {currentSlide.content && (
-                    <p
-                      className={`font-light mb-8 drop-shadow max-w-2xl whitespace-pre-wrap ${getFontClass(currentSlide.content_font_family)} ${
-                        (currentSlide.content_text_align || 'center') === 'left' ? 'text-left' :
-                        (currentSlide.content_text_align || 'center') === 'right' ? 'text-right mr-0 ml-auto' :
-                        'text-center mx-auto'
-                      }`}
-                      style={{
-                        fontSize: currentSlide.content_font_size || 'clamp(1rem, 2vw, 1.125rem)',
-                        color: currentSlide.content_color || '#ffffff',
-                        fontWeight: currentSlide.content_bold ? 'bold' : undefined,
-                        fontStyle: currentSlide.content_italic ? 'italic' : undefined
-                      }}
-                    >
-                      {currentSlide.content}
-                    </p>
-                  )}
-                  {!currentSlide.content && currentSlide.subheadline && (
-                    <div className="mb-4" />
-                  )}
-                  {currentSlide.cta_text && (
-                    <div className={`${
-                      (currentSlide.content_text_align || 'center') === 'left' ? 'text-left' :
-                      (currentSlide.content_text_align || 'center') === 'right' ? 'text-right' :
-                      'text-center'
-                    }`}>
-                      <Link
-                        href={buildUrl(currentSlide.cta_url || '/livechat/shop')}
-                        className={`inline-block px-8 py-3 bg-white text-black text-sm font-bold tracking-[0.15em] uppercase hover:bg-black hover:text-white transition-colors ${headlineFont.className}`}
-                      >
-                        {currentSlide.cta_text}
-                      </Link>
+                  {/* Content */}
+                  <div className="relative z-10 h-full flex items-center justify-center">
+                    <div className="px-4 md:px-12 max-w-4xl w-full">
+                      {slide.headline && (
+                        <h1
+                          className={`font-light tracking-[0.2em] uppercase leading-tight mb-4 drop-shadow-lg ${getFontClass(slide.headline_font_family)} ${
+                            (slide.headline_text_align || 'center') === 'left' ? 'text-left' :
+                            (slide.headline_text_align || 'center') === 'right' ? 'text-right' :
+                            'text-center'
+                          }`}
+                          style={{
+                            fontSize: slide.headline_font_size || 'clamp(1.875rem, 5vw, 3.75rem)',
+                            color: slide.headline_color || '#ffffff',
+                            fontWeight: slide.headline_bold ? 'bold' : undefined,
+                            fontStyle: slide.headline_italic ? 'italic' : undefined
+                          }}
+                        >
+                          {slide.headline}
+                        </h1>
+                      )}
+                      {slide.subheadline && (
+                        <p
+                          className={`font-light tracking-[0.15em] uppercase mb-4 drop-shadow ${getFontClass(slide.subheadline_font_family)} ${
+                            (slide.subheadline_text_align || 'center') === 'left' ? 'text-left' :
+                            (slide.subheadline_text_align || 'center') === 'right' ? 'text-right' :
+                            'text-center'
+                          }`}
+                          style={{
+                            fontSize: slide.subheadline_font_size || 'clamp(1.125rem, 2.5vw, 1.25rem)',
+                            color: slide.subheadline_color || '#ffffff',
+                            fontWeight: slide.subheadline_bold ? 'bold' : undefined,
+                            fontStyle: slide.subheadline_italic ? 'italic' : undefined
+                          }}
+                        >
+                          {slide.subheadline}
+                        </p>
+                      )}
+                      {slide.content && (
+                        <p
+                          className={`font-light mb-8 drop-shadow max-w-2xl whitespace-pre-wrap ${getFontClass(slide.content_font_family)} ${
+                            (slide.content_text_align || 'center') === 'left' ? 'text-left' :
+                            (slide.content_text_align || 'center') === 'right' ? 'text-right mr-0 ml-auto' :
+                            'text-center mx-auto'
+                          }`}
+                          style={{
+                            fontSize: slide.content_font_size || 'clamp(1rem, 2vw, 1.125rem)',
+                            color: slide.content_color || '#ffffff',
+                            fontWeight: slide.content_bold ? 'bold' : undefined,
+                            fontStyle: slide.content_italic ? 'italic' : undefined
+                          }}
+                        >
+                          {slide.content}
+                        </p>
+                      )}
+                      {!slide.content && slide.subheadline && (
+                        <div className="mb-4" />
+                      )}
+                      {slide.cta_text && (
+                        <div className={`${
+                          (slide.content_text_align || 'center') === 'left' ? 'text-left' :
+                          (slide.content_text_align || 'center') === 'right' ? 'text-right' :
+                          'text-center'
+                        }`}>
+                          <Link
+                            href={buildUrl(slide.cta_url || '/livechat/shop')}
+                            className={`inline-block px-8 py-3 bg-white text-black text-sm font-bold tracking-[0.15em] uppercase hover:bg-black hover:text-white transition-colors ${headlineFont.className}`}
+                          >
+                            {slide.cta_text}
+                          </Link>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
-              </div>
+              ))}
 
               {/* Navigation Arrows */}
               {carouselSlides.length > 1 && (
