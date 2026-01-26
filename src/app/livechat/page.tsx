@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
 import { Star, Check, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ShoppingCart, Sparkles, Shield, Truck, RotateCcw, Menu, X, User, Search, Trash2, MessageCircle, Globe } from 'lucide-react'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
@@ -452,6 +452,19 @@ function LandingPageContent() {
 
   // Hero carousel state
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0)
+  const heroVideoRefs = useRef<(HTMLVideoElement | null)[]>([])
+
+  // Play only the active carousel video, pause all others (mobile browsers limit concurrent playback)
+  useEffect(() => {
+    heroVideoRefs.current.forEach((video, index) => {
+      if (!video) return
+      if (index === currentHeroSlide) {
+        video.play().catch(() => {})
+      } else {
+        video.pause()
+      }
+    })
+  }, [currentHeroSlide])
 
   // Language selector state
   const [availableLocales, setAvailableLocales] = useState<{ country: string; language_code: string }[]>([])
@@ -963,12 +976,12 @@ function LandingPageContent() {
                   {slide.background_url ? (
                     slide.background_type === 'video' ? (
                       <video
+                        ref={(el) => { heroVideoRefs.current[index] = el }}
                         src={slide.background_url}
-                        autoPlay
                         loop
                         muted
                         playsInline
-                        preload="auto"
+                        preload={index === 0 ? 'auto' : 'metadata'}
                         className="absolute inset-0 w-full h-full object-cover"
                       />
                     ) : (
