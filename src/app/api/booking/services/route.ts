@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = createServiceRoleClient()
     const body = await request.json()
-    const { id, name, description, price, businessUnitId } = body
+    const { id, name, description, price, businessUnitId, is_active } = body
 
     if (!name || !description) {
       return NextResponse.json({ error: 'Name and description are required' }, { status: 400 })
@@ -86,6 +86,10 @@ export async function POST(request: NextRequest) {
         updateData.price = parseFloat(price)
       }
 
+      if (is_active !== undefined) {
+        updateData.is_active = is_active
+      }
+
       const { data, error } = await supabase
         .from('appointment_services')
         .update(updateData)
@@ -104,7 +108,8 @@ export async function POST(request: NextRequest) {
       const insertData: any = {
         name,
         description,
-        business_unit_id: businessUnit.id
+        business_unit_id: businessUnit.id,
+        is_active: is_active !== undefined ? is_active : false
       }
 
       if (price !== undefined && price !== '') {
@@ -126,6 +131,36 @@ export async function POST(request: NextRequest) {
     }
   } catch (error: any) {
     console.error('Error in POST /api/booking/services:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+}
+
+// PATCH - Toggle is_active status
+export async function PATCH(request: NextRequest) {
+  try {
+    const supabase = createServiceRoleClient()
+    const body = await request.json()
+    const { id, is_active } = body
+
+    if (!id || is_active === undefined) {
+      return NextResponse.json({ error: 'Service ID and is_active are required' }, { status: 400 })
+    }
+
+    const { data, error } = await supabase
+      .from('appointment_services')
+      .update({ is_active, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error toggling service status:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ data })
+  } catch (error: any) {
+    console.error('Error in PATCH /api/booking/services:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

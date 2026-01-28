@@ -22,6 +22,15 @@ async function resolveBusinessUnitId(businessUnitParam: string): Promise<string 
   return data?.id || null
 }
 
+// Fields that are NOT content — excluded when copying draft to published_data
+const NON_CONTENT_FIELDS = new Set([
+  'id', 'business_unit_id', 'country', 'language_code',
+  'currency', 'currency_symbol',
+  'is_active', 'is_published', 'published_at', 'published_data',
+  'slug',
+  'created_at', 'updated_at'
+])
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -36,17 +45,46 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Business unit not found' }, { status: 404 })
     }
 
-    // Update publish status for the specific locale
+    const resolvedCountry = country || 'US'
+    const resolvedLang = language_code || 'en'
+
+    let publishedData: any = null
+
+    if (is_published) {
+      // Publishing: read the current draft and copy content into published_data
+      const { data: currentRow, error: readError } = await supabase
+        .from('landing_pages')
+        .select('*')
+        .eq('business_unit_id', resolvedBusinessUnitId)
+        .eq('country', resolvedCountry)
+        .eq('language_code', resolvedLang)
+        .single()
+
+      if (readError || !currentRow) {
+        return NextResponse.json({ error: 'Landing page not found' }, { status: 404 })
+      }
+
+      // Copy all content fields into published_data
+      publishedData = {}
+      for (const [key, value] of Object.entries(currentRow)) {
+        if (!NON_CONTENT_FIELDS.has(key)) {
+          publishedData[key] = value
+        }
+      }
+    }
+    // Unpublishing: publishedData stays null (clears the published copy)
+
     const { data, error } = await supabase
       .from('landing_pages')
       .update({
         is_published: is_published,
         published_at: is_published ? new Date().toISOString() : null,
+        published_data: publishedData,
         updated_at: new Date().toISOString()
       })
       .eq('business_unit_id', resolvedBusinessUnitId)
-      .eq('country', country || 'US')
-      .eq('language_code', language_code || 'en')
+      .eq('country', resolvedCountry)
+      .eq('language_code', resolvedLang)
       .select()
       .single()
 

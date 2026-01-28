@@ -107,10 +107,10 @@ export default function TestimonialsBlockEditor({ block, onUpdate, businessUnitI
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Carousel Settings */}
       <div className="space-y-3">
-        <label className="text-sm font-medium text-slate-300 block">Carousel Settings</label>
+        <label className="text-xs font-medium text-gray-600 block">Carousel Settings</label>
         <div className="flex items-center gap-3">
           <input
             type="checkbox"
@@ -118,18 +118,18 @@ export default function TestimonialsBlockEditor({ block, onUpdate, businessUnitI
             onChange={(e) => updateData('autoplay', e.target.checked)}
             className="w-4 h-4"
           />
-          <span className="text-sm text-slate-400">Auto-advance carousel</span>
+          <span className="text-sm text-gray-500">Auto-advance carousel</span>
         </div>
         {block.data.autoplay && (
           <div>
-            <label className="text-xs text-slate-400 block mb-1">Interval (seconds)</label>
+            <label className="text-xs text-gray-500 block mb-1">Interval (seconds)</label>
             <input
               type="number"
               min="3"
               max="10"
               value={(block.data.autoplay_interval || 5000) / 1000}
               onChange={(e) => updateData('autoplay_interval', parseInt(e.target.value) * 1000)}
-              className="w-24 px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+              className="w-24 px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-xs"
             />
           </div>
         )}
@@ -138,10 +138,10 @@ export default function TestimonialsBlockEditor({ block, onUpdate, businessUnitI
       {/* Testimonials */}
       <div>
         <div className="flex justify-between items-center mb-3">
-          <label className="text-sm font-medium text-slate-300">Testimonials</label>
+          <label className="text-xs font-medium text-gray-600">Testimonials</label>
           <button
             onClick={addTestimonial}
-            className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
+            className="flex items-center gap-1 text-sm text-violet-600 hover:text-violet-600"
           >
             <Plus className="w-4 h-4" />
             Add Testimonial
@@ -150,9 +150,9 @@ export default function TestimonialsBlockEditor({ block, onUpdate, businessUnitI
 
         <div className="space-y-3">
           {(block.data.testimonials || []).map((testimonial: any, testimonialIndex: number) => (
-            <div key={testimonialIndex} className="bg-slate-800/50 border border-slate-600 rounded-lg overflow-hidden">
+            <div key={testimonialIndex} className="bg-gray-50 border border-gray-200 rounded-none overflow-hidden">
               {/* Testimonial Header */}
-              <div className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-700/50 transition-colors">
+              <div className="w-full px-2 py-1.5 flex items-center justify-between hover:bg-gray-50 transition-colors">
                 <button
                   onClick={() => setExpandedTestimonial(expandedTestimonial === testimonialIndex ? null : testimonialIndex)}
                   className="flex items-center gap-3 flex-1 text-left"
@@ -161,16 +161,16 @@ export default function TestimonialsBlockEditor({ block, onUpdate, businessUnitI
                     <img
                       src={testimonial.image_url}
                       alt={testimonial.name}
-                      className="w-10 h-10 object-cover rounded"
+                      className="w-10 h-10 object-cover rounded-none"
                     />
                   ) : (
-                    <div className="w-10 h-10 bg-slate-700 flex items-center justify-center text-slate-400 text-xs rounded">
+                    <div className="w-10 h-10 bg-gray-100 flex items-center justify-center text-gray-500 text-xs rounded-none">
                       No img
                     </div>
                   )}
                   <div className="text-left">
-                    <div className="text-sm font-medium text-white">{testimonial.name || 'Unnamed'}</div>
-                    <div className="text-xs text-slate-400">
+                    <div className="text-sm font-medium text-gray-800">{testimonial.name || 'Unnamed'}</div>
+                    <div className="text-xs text-gray-500">
                       {testimonial.age && `${testimonial.age}`}
                       {testimonial.location && ` — ${testimonial.location}`}
                     </div>
@@ -178,7 +178,7 @@ export default function TestimonialsBlockEditor({ block, onUpdate, businessUnitI
                 </button>
                 <button
                   onClick={() => removeTestimonial(testimonialIndex)}
-                  className="text-red-400 hover:text-red-300 p-1"
+                  className="text-red-600 hover:text-red-600 p-1"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -186,10 +186,10 @@ export default function TestimonialsBlockEditor({ block, onUpdate, businessUnitI
 
               {/* Testimonial Details (Expanded) */}
               {expandedTestimonial === testimonialIndex && (
-                <div className="px-4 pb-4 space-y-4 border-t border-slate-600 pt-4">
+                <div className="px-4 pb-4 space-y-4 border-t border-gray-200 pt-4">
                   {/* Before/After Image Upload */}
                   <div>
-                    <label className="text-xs text-slate-400 block mb-2">Before/After Image (Square)</label>
+                    <label className="text-xs text-gray-500 block mb-2">Before/After Image (Square)</label>
                     <div className="flex items-start gap-3">
                       {/* Image Preview or Placeholder */}
                       <div className="relative">
@@ -198,27 +198,27 @@ export default function TestimonialsBlockEditor({ block, onUpdate, businessUnitI
                             <img
                               src={testimonial.image_url}
                               alt="Preview"
-                              className="w-32 h-32 object-cover border-2 border-slate-600 rounded"
+                              className="w-32 h-32 object-cover border-2 border-gray-200 rounded-none"
                             />
                             {/* Remove Image Button */}
                             <button
                               onClick={() => updateTestimonial(testimonialIndex, 'image_url', '')}
-                              className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors shadow-lg"
+                              className="absolute -top-2 -right-2 w-6 h-6 bg-red-50 hover:bg-red-50 border border-red-200 text-gray-800 rounded-full flex items-center justify-center transition-colors shadow-sm"
                               title="Remove image"
                             >
                               ✕
                             </button>
                           </>
                         ) : (
-                          <div className="w-32 h-32 bg-slate-700 border-2 border-slate-600 flex items-center justify-center rounded">
-                            <span className="text-slate-500 text-xs text-center">No image</span>
+                          <div className="w-32 h-32 bg-gray-100 border-2 border-gray-200 flex items-center justify-center rounded-none">
+                            <span className="text-gray-400 text-xs text-center">No image</span>
                           </div>
                         )}
                       </div>
 
                       {/* Upload Button */}
                       <div className="flex-1">
-                        <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded text-sm text-white transition-colors">
+                        <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-none text-sm text-gray-800 transition-colors">
                           <Upload className="w-4 h-4" />
                           Upload Image
                           <input
@@ -231,19 +231,19 @@ export default function TestimonialsBlockEditor({ block, onUpdate, businessUnitI
                             className="hidden"
                           />
                         </label>
-                        <p className="text-xs text-slate-500 mt-2">Upload a square image showing before and after transformation</p>
+                        <p className="text-xs text-gray-400 mt-2">Upload a square image showing before and after transformation</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Name */}
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Name</label>
+                    <label className="text-xs text-gray-500 block mb-1">Name</label>
                     <input
                       type="text"
                       value={testimonial.name || ''}
                       onChange={(e) => updateTestimonial(testimonialIndex, 'name', e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                      className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-xs"
                       placeholder="Emily R."
                     />
                   </div>
@@ -251,22 +251,22 @@ export default function TestimonialsBlockEditor({ block, onUpdate, businessUnitI
                   {/* Age & Location */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs text-slate-400 block mb-1">Age</label>
+                      <label className="text-xs text-gray-500 block mb-1">Age</label>
                       <input
                         type="text"
                         value={testimonial.age || ''}
                         onChange={(e) => updateTestimonial(testimonialIndex, 'age', e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                        className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-xs"
                         placeholder="28"
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-slate-400 block mb-1">Location</label>
+                      <label className="text-xs text-gray-500 block mb-1">Location</label>
                       <input
                         type="text"
                         value={testimonial.location || ''}
                         onChange={(e) => updateTestimonial(testimonialIndex, 'location', e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                        className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-xs"
                         placeholder="California"
                       />
                     </div>
@@ -274,7 +274,7 @@ export default function TestimonialsBlockEditor({ block, onUpdate, businessUnitI
 
                   {/* Rating */}
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Rating</label>
+                    <label className="text-xs text-gray-500 block mb-1">Rating</label>
                     <div className="flex items-center gap-2">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
@@ -282,8 +282,8 @@ export default function TestimonialsBlockEditor({ block, onUpdate, businessUnitI
                           onClick={() => updateTestimonial(testimonialIndex, 'rating', star)}
                           className={`text-2xl ${
                             star <= (testimonial.rating || 5)
-                              ? 'text-yellow-400'
-                              : 'text-slate-600'
+                              ? 'text-yellow-600'
+                              : 'text-gray-400'
                           } hover:scale-110 transition-transform`}
                         >
                           ⭐
@@ -295,10 +295,10 @@ export default function TestimonialsBlockEditor({ block, onUpdate, businessUnitI
                   {/* Benefits */}
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                      <label className="text-xs text-slate-400">Benefits</label>
+                      <label className="text-xs text-gray-500">Benefits</label>
                       <button
                         onClick={() => addBenefit(testimonialIndex)}
-                        className="text-xs text-violet-400 hover:text-violet-300"
+                        className="text-xs text-violet-600 hover:text-violet-600"
                       >
                         + Add Benefit
                       </button>
@@ -310,12 +310,12 @@ export default function TestimonialsBlockEditor({ block, onUpdate, businessUnitI
                             type="text"
                             value={benefit}
                             onChange={(e) => updateBenefit(testimonialIndex, benefitIndex, e.target.value)}
-                            className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                            className="flex-1 px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-xs"
                             placeholder="Benefit description"
                           />
                           <button
                             onClick={() => removeBenefit(testimonialIndex, benefitIndex)}
-                            className="text-red-400 hover:text-red-300 p-2"
+                            className="text-red-600 hover:text-red-600 p-2"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -326,12 +326,12 @@ export default function TestimonialsBlockEditor({ block, onUpdate, businessUnitI
 
                   {/* Testimonial Content (Quote) */}
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Testimonial Quote</label>
+                    <label className="text-xs text-gray-500 block mb-1">Testimonial Quote</label>
                     <textarea
                       value={testimonial.content || ''}
                       onChange={(e) => updateTestimonial(testimonialIndex, 'content', e.target.value)}
                       rows={4}
-                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm resize-none"
+                      className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-xs resize-none"
                       placeholder="Customer testimonial quote..."
                     />
                   </div>

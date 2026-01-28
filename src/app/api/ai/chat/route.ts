@@ -372,10 +372,13 @@ async function generateAIResponse(
   }
 
   // Map language codes to language names for instruction
+  // Supports both ISO codes (zh-TW) and short URL codes (tw)
   const languageNames: {[key: string]: string} = {
     'en': 'English',
     'zh-CN': 'Simplified Chinese',
     'zh-TW': 'Traditional Chinese',
+    'cn': 'Simplified Chinese',
+    'tw': 'Traditional Chinese',
     'vi': 'Vietnamese'
   }
   const languageInstruction = language !== 'en'

@@ -407,13 +407,26 @@ interface AIStaff {
   totalSessions: number
 }
 
-function LandingPageContent() {
+export interface LandingPageContentProps {
+  businessUnitOverride?: string
+  countryOverride?: string
+  languageOverride?: string
+  pageSlug?: string
+}
+
+export function LandingPageContent({
+  businessUnitOverride,
+  countryOverride,
+  languageOverride,
+  pageSlug
+}: LandingPageContentProps = {}) {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const businessUnitParam = searchParams.get('businessUnit') || ''
-  const countryParam = searchParams.get('country') || 'US'
-  const langParam = searchParams.get('lang') || searchParams.get('language') || 'en'
-  const policyParam = searchParams.get('policy') || '' // e.g., 'terms-of-service', 'privacy-policy'
+  const businessUnitParam = searchParams.get('businessUnit') || businessUnitOverride || ''
+  const countryParam = searchParams.get('country') || countryOverride || 'US'
+  const langParam = searchParams.get('lang') || searchParams.get('language') || languageOverride || 'en'
+  const policyParam = searchParams.get('policy') || ''
+  const previewParam = searchParams.get('preview') === 'true'
 
   // Cart translations
   const cartText = langParam === 'tw' ? {
@@ -526,7 +539,7 @@ function LandingPageContent() {
       }
 
       try {
-        const apiUrl = `/api/landing-page?businessUnit=${businessUnitParam}&country=${countryParam}&language=${langParam}`
+        const apiUrl = `/api/landing-page?businessUnit=${businessUnitParam}&country=${countryParam}&language=${langParam}${previewParam ? '&preview=true' : ''}`
         console.log('[LiveChat Preview] Fetching from:', apiUrl)
         const response = await fetch(apiUrl)
         const data = await response.json()
@@ -555,7 +568,7 @@ function LandingPageContent() {
       }
     }
     loadLandingPage()
-  }, [businessUnitParam, countryParam, langParam])
+  }, [businessUnitParam, countryParam, langParam, previewParam])
 
   // Load AI Staff
   useEffect(() => {
@@ -603,6 +616,10 @@ function LandingPageContent() {
 
   // Build URL with businessUnit and locale params preserved
   const buildUrl = (path: string) => {
+    // When on a slug page, Home link goes back to the slug URL
+    if (pageSlug && (path === '/livechat' || path === '/')) {
+      return `/${pageSlug}`
+    }
     if (businessUnitParam) {
       return `${path}?businessUnit=${businessUnitParam}&country=${countryParam}&lang=${langParam}`
     }
@@ -742,11 +759,17 @@ function LandingPageContent() {
   }
 
   const policyData = policyParam ? getPolicyData() : null
-  const backUrl = `/livechat${businessUnitParam ? `?businessUnit=${businessUnitParam}` : ''}`
+  const backUrl = pageSlug ? `/${pageSlug}` : `/livechat${businessUnitParam ? `?businessUnit=${businessUnitParam}` : ''}`
 
   // Render full landing page with database content
   return (
     <div className="min-h-screen bg-white">
+      {/* Preview Mode Banner */}
+      {previewParam && (
+        <div className="bg-amber-500 text-white text-center py-2 px-4 text-sm font-medium sticky top-0 z-[60]">
+          PREVIEW MODE — This is the draft version. Not live yet.
+        </div>
+      )}
       {/* Announcement Bar - Rotating */}
       {!policyParam && announcements.length > 0 && (
         <div className="text-white text-center py-2.5 px-4 text-sm overflow-hidden" style={{ backgroundColor: secondaryColor }}>
@@ -863,7 +886,9 @@ function LandingPageContent() {
                             key={locale.language_code}
                             onClick={() => {
                               setShowLanguageDropdown(false)
-                              router.push(`/livechat?businessUnit=${businessUnitParam}&country=${countryParam}&lang=${locale.language_code}`)
+                              router.push(pageSlug
+                                ? `/${pageSlug}?lang=${locale.language_code}`
+                                : `/livechat?businessUnit=${businessUnitParam}&country=${countryParam}&lang=${locale.language_code}`)
                             }}
                             className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2 ${isActive ? 'bg-gray-50 font-medium' : ''}`}
                           >
@@ -927,7 +952,9 @@ function LandingPageContent() {
                         key={`mobile-${locale.language_code}`}
                         onClick={() => {
                           setMobileMenuOpen(false)
-                          router.push(`/livechat?businessUnit=${businessUnitParam}&country=${countryParam}&lang=${locale.language_code}`)
+                          router.push(pageSlug
+                            ? `/${pageSlug}?lang=${locale.language_code}`
+                            : `/livechat?businessUnit=${businessUnitParam}&country=${countryParam}&lang=${locale.language_code}`)
                         }}
                         className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-50 flex items-center gap-2 ${isActive ? 'bg-gray-50 font-medium' : ''}`}
                       >
@@ -1581,6 +1608,8 @@ function LandingPageContent() {
       {aiStaffList.length > 0 && (
         <AICoach
           businessUnit={businessUnitParam}
+          country={countryParam}
+          language={langParam}
           aiStaffList={aiStaffList}
           initialOpen={false}
         />

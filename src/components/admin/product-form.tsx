@@ -637,53 +637,53 @@ export default function ProductForm({
   const SectionHeader = ({ id, title, icon: Icon }: { id: string; title: string; icon: any }) => (
     <button
       onClick={() => toggleSection(id)}
-      className="w-full flex items-center justify-between p-4 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+      className="w-full flex items-center justify-between p-2 bg-gray-100 hover:bg-gray-200 rounded-none transition-colors"
     >
-      <div className="flex items-center gap-3">
-        <Icon className="w-5 h-5 text-purple-400" />
-        <span className="font-medium text-white">{title}</span>
+      <div className="flex items-center gap-2">
+        <Icon className="w-4 h-4 text-purple-600" />
+        <span className="text-xs font-medium text-gray-800">{title}</span>
       </div>
       {expandedSections.has(id) ? (
-        <ChevronUp className="w-5 h-5 text-slate-400" />
+        <ChevronUp className="w-4 h-4 text-gray-500" />
       ) : (
-        <ChevronDown className="w-5 h-5 text-slate-400" />
+        <ChevronDown className="w-4 h-4 text-gray-500" />
       )}
     </button>
   )
 
   if (isLoading) {
     return (
-      <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-        <div className="bg-slate-800 rounded-xl p-8">
+      <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
+        <div className="bg-white rounded-none p-8">
           <Loader2 className="w-8 h-8 animate-spin text-purple-500 mx-auto" />
-          <p className="text-slate-400 mt-4">Loading...</p>
+          <p className="text-gray-500 mt-4">Loading...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-800 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-none w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-700">
-          <h2 className="text-xl font-semibold text-white flex items-center gap-3">
-            <Package className="w-6 h-6 text-purple-400" />
+        <div className="flex items-center justify-between p-3 border-b border-gray-200">
+          <h2 className="text-xs font-medium text-gray-800 flex items-center gap-2">
+            <Package className="w-4 h-4 text-purple-600" />
             {productId ? 'Edit Product' : 'Add New Product'}
           </h2>
-          <button onClick={onCancel} className="text-slate-400 hover:text-white">
-            <X className="w-6 h-6" />
+          <button onClick={onCancel} className="text-gray-500 hover:text-gray-800">
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-3 space-y-2">
 
           {/* Images Section */}
           <div className="space-y-3">
             <SectionHeader id="images" title="Product Images (up to 5)" icon={ImageIcon} />
             {expandedSections.has('images') && (
-              <div className="bg-slate-700/50 rounded-lg p-4 space-y-4">
+              <div className="bg-gray-50 rounded-none p-2 space-y-2">
                 <div className="flex flex-wrap gap-4">
                   {formData.images.map((url, idx) => {
                     // Extract filename from URL
@@ -696,8 +696,8 @@ export default function ProductForm({
                     return (
                       <div key={idx} className="relative group">
                         <div
-                          className={`w-24 h-24 rounded-lg overflow-hidden border-2 cursor-pointer ${
-                            formData.thumbnail === url ? 'border-purple-500' : 'border-slate-600'
+                          className={`w-24 h-24 rounded-none overflow-hidden border-2 cursor-pointer ${
+                            formData.thumbnail === url ? 'border-purple-500' : 'border-gray-200'
                           }`}
                           onClick={() => setPreviewImageIndex(idx)}
                         >
@@ -707,31 +707,31 @@ export default function ProductForm({
                             <img src={url} alt={`Product ${idx + 1}`} className="w-full h-full object-cover" />
                           )}
                         </div>
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 rounded-lg">
+                        <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 rounded-none">
                           <button
                             onClick={(e) => { e.stopPropagation(); setPreviewImageIndex(idx) }}
-                            className="p-1 bg-blue-600 rounded text-white text-xs"
+                            className="p-1 bg-blue-50 border border-blue-200 rounded-none text-gray-800 text-xs"
                             title="Enlarge image"
                           >
                             <ZoomIn className="w-3 h-3" />
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); setAsThumbnail(url) }}
-                            className="p-1 bg-purple-600 rounded text-white text-xs"
+                            className="p-1 bg-purple-50 border border-purple-200 rounded-none text-gray-800 text-xs"
                             title="Set as thumbnail"
                           >
                             <Eye className="w-3 h-3" />
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); removeImage(idx) }}
-                            className="p-1 bg-red-600 rounded text-white text-xs"
+                            className="p-1 bg-red-50 border border-red-200 rounded-none text-gray-800 text-xs"
                             title="Remove image"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
                         </div>
                         {formData.thumbnail === url && (
-                          <span className="absolute -top-2 -right-2 bg-purple-600 text-white text-xs px-1 rounded">
+                          <span className="absolute -top-2 -right-2 bg-purple-50 border border-purple-200 text-gray-800 text-xs px-1 rounded-none">
                             Main
                           </span>
                         )}
@@ -739,10 +739,10 @@ export default function ProductForm({
                     )
                   })}
                   {formData.images.length < 5 && (
-                    <div className="w-24 h-24 border-2 border-dashed border-slate-500 rounded-lg flex items-center justify-center">
+                    <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-none flex items-center justify-center">
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="text-slate-400 hover:text-white"
+                        className="text-gray-500 hover:text-gray-800"
                       >
                         <Plus className="w-8 h-8" />
                       </button>
@@ -753,7 +753,7 @@ export default function ProductForm({
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={formData.images.length >= 5 || isUploadingImage}
-                    className="flex items-center gap-2 px-4 py-2 bg-slate-600 hover:bg-slate-500 disabled:opacity-50 rounded-lg transition-colors"
+                    className="flex items-center gap-2 px-2 py-1 text-xs bg-gray-200 hover:bg-gray-100 disabled:opacity-50 rounded-none transition-colors"
                   >
                     {isUploadingImage ? (
                       <>
@@ -770,12 +770,12 @@ export default function ProductForm({
                 </div>
 
                 {/* AI Image Generation */}
-                <div className="mt-4 p-4 bg-purple-900/20 border border-purple-500/30 rounded-lg space-y-3">
-                  <div className="flex items-center gap-2 text-purple-300">
+                <div className="mt-4 p-4 bg-purple-50 border border-purple-500/30 rounded-none space-y-3">
+                  <div className="flex items-center gap-2 text-purple-600">
                     <Sparkles className="w-4 h-4" />
-                    <span className="text-sm font-medium">AI Image Generator</span>
+                    <span className="text-xs font-medium">AI Image Generator</span>
                     {formData.images.length > 0 && (
-                      <span className="text-xs text-slate-400">(will use first image as reference)</span>
+                      <span className="text-xs text-gray-500">(will use first image as reference)</span>
                     )}
                   </div>
                   <textarea
@@ -783,15 +783,15 @@ export default function ProductForm({
                     onChange={(e) => setImagePrompt(e.target.value)}
                     placeholder="Describe the image you want to generate... e.g., 'Create a professional product shot with the product name and 3 key benefits overlaid on a clean white background'"
                     rows={3}
-                    className="w-full px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    className="w-full px-2 py-1.5 text-xs bg-gray-200 border border-gray-300 rounded-none text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-purple-300 focus:border-purple-500"
                   />
                   {imageGenError && (
-                    <p className="text-sm text-red-400">{imageGenError}</p>
+                    <p className="text-xs text-red-600">{imageGenError}</p>
                   )}
                   <button
                     onClick={handleAiGenerateImage}
                     disabled={isGeneratingImage || formData.images.length >= 5 || !imagePrompt.trim()}
-                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg transition-colors"
+                    className="flex items-center gap-2 px-2 py-1 text-xs bg-purple-50 border border-purple-200 hover:bg-purple-50 disabled:opacity-50 rounded-none transition-colors"
                   >
                     {isGeneratingImage ? (
                       <>
@@ -822,40 +822,40 @@ export default function ProductForm({
           <div className="space-y-3">
             <SectionHeader id="basic" title="Basic Information" icon={FileText} />
             {expandedSections.has('basic') && (
-              <div className="bg-slate-700/50 rounded-lg p-4 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="bg-gray-50 rounded-none p-2 space-y-2">
+                <div className="grid grid-cols-2 gap-2">
                   <div className="col-span-2">
-                    <label className="block text-sm text-slate-300 mb-1">Product Name *</label>
+                    <label className="block text-xs text-gray-600 mb-1">Product Name *</label>
                     <input
                       type="text"
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                       placeholder="e.g., Bright+ Booster"
-                      className="w-full px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-2 py-1.5 text-xs bg-gray-200 border border-gray-300 rounded-none text-gray-800 focus:ring-2 focus:ring-purple-300"
                     />
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-sm text-slate-300 mb-1">Tagline</label>
+                    <label className="block text-xs text-gray-600 mb-1">Tagline</label>
                     <input
                       type="text"
                       value={formData.tagline}
                       onChange={(e) => setFormData({ ...formData, tagline: e.target.value })}
                       placeholder="e.g., Renew. Brighten. Glow."
-                      className="w-full px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-2 py-1.5 text-xs bg-gray-200 border border-gray-300 rounded-none text-gray-800 focus:ring-2 focus:ring-purple-300"
                     />
                   </div>
                   {/* Categories FIRST - determines what product types and benefits are shown */}
                   <div className="col-span-2">
-                    <label className="block text-sm text-slate-300 mb-1">Categories * (select first)</label>
+                    <label className="block text-xs text-gray-600 mb-1">Categories * (select first)</label>
                     <div className="flex flex-wrap gap-2">
                       {categories.map(cat => (
                         <button
                           key={cat.id}
                           onClick={() => toggleCategory(cat.id)}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          className={`px-4 py-2 rounded-none text-xs font-medium transition-colors ${
                             formData.category_ids.includes(cat.id)
-                              ? 'bg-cyan-600 text-white'
-                              : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                              ? 'bg-cyan-50 text-gray-800'
+                              : 'bg-gray-200 text-gray-600 hover:bg-gray-100'
                           }`}
                         >
                           {cat.name}
@@ -863,16 +863,16 @@ export default function ProductForm({
                       ))}
                     </div>
                     {formData.category_ids.length === 0 && (
-                      <p className="text-xs text-amber-400 mt-1">Select at least one category to see product types</p>
+                      <p className="text-xs text-amber-600 mt-1">Select at least one category to see product types</p>
                     )}
                   </div>
                   {/* Product Type - filtered by selected categories */}
                   <div>
-                    <label className="block text-sm text-slate-300 mb-1">Product Type *</label>
+                    <label className="block text-xs text-gray-600 mb-1">Product Type *</label>
                     <select
                       value={formData.product_type_id}
                       onChange={(e) => setFormData({ ...formData, product_type_id: e.target.value })}
-                      className="w-full px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-2 py-1.5 text-xs bg-gray-200 border border-gray-300 rounded-none text-gray-800 focus:ring-2 focus:ring-purple-300"
                       disabled={formData.category_ids.length === 0}
                     >
                       <option value="">{formData.category_ids.length === 0 ? 'Select categories first...' : 'Select type...'}</option>
@@ -884,11 +884,11 @@ export default function ProductForm({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-300 mb-1">Status</label>
+                    <label className="block text-xs text-gray-600 mb-1">Status</label>
                     <select
                       value={formData.status}
                       onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                      className="w-full px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-2 py-1.5 text-xs bg-gray-200 border border-gray-300 rounded-none text-gray-800 focus:ring-2 focus:ring-purple-300"
                     >
                       <option value="draft">Draft</option>
                       <option value="published">Published</option>
@@ -896,13 +896,13 @@ export default function ProductForm({
                     </select>
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-sm text-slate-300 mb-1">Description</label>
+                    <label className="block text-xs text-gray-600 mb-1">Description</label>
                     <textarea
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       placeholder="General product description..."
                       rows={3}
-                      className="w-full px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-2 py-1.5 text-xs bg-gray-200 border border-gray-300 rounded-none text-gray-800 focus:ring-2 focus:ring-purple-300"
                     />
                   </div>
                 </div>
@@ -914,17 +914,17 @@ export default function ProductForm({
           <div className="space-y-3">
             <SectionHeader id="pricing" title="Pricing & Inventory" icon={DollarSign} />
             {expandedSections.has('pricing') && (
-              <div className="bg-slate-700/50 rounded-lg p-4 space-y-4">
+              <div className="bg-gray-50 rounded-none p-2 space-y-2">
                 {/* Variants Toggle */}
-                <div className="flex items-center gap-3 p-3 bg-slate-600 rounded-lg">
+                <div className="flex items-center gap-3 p-3 bg-gray-200 rounded-none">
                   <input
                     type="checkbox"
                     id="has-variants"
                     checked={formData.has_variants}
                     onChange={(e) => setFormData({ ...formData, has_variants: e.target.checked })}
-                    className="w-4 h-4 rounded"
+                    className="w-4 h-4 rounded-none"
                   />
-                  <label htmlFor="has-variants" className="text-slate-300">
+                  <label htmlFor="has-variants" className="text-gray-600">
                     This product has multiple variants (sizes, options)
                   </label>
                 </div>
@@ -933,80 +933,80 @@ export default function ProductForm({
                   /* Simple Pricing - Single Product */
                   <div className="space-y-4">
                     {/* Row 1: Size/Option, SKU, Barcode */}
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       <div>
-                        <label className="block text-sm text-slate-300 mb-1">Size/Option</label>
+                        <label className="block text-xs text-gray-600 mb-1">Size/Option</label>
                         <input
                           type="text"
                           value={formData.size_option || ''}
                           onChange={(e) => setFormData({ ...formData, size_option: e.target.value })}
                           placeholder="e.g., 30ml, Standard, etc."
-                          className="w-full px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white"
+                          className="w-full px-2 py-1.5 text-xs bg-gray-200 border border-gray-300 rounded-none text-gray-800"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm text-slate-300 mb-1">SKU</label>
+                        <label className="block text-xs text-gray-600 mb-1">SKU</label>
                         <input
                           type="text"
                           value={formData.sku}
                           onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
                           placeholder="BRT-BOOST-30ML"
-                          className="w-full px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white"
+                          className="w-full px-2 py-1.5 text-xs bg-gray-200 border border-gray-300 rounded-none text-gray-800"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm text-slate-300 mb-1">Barcode</label>
+                        <label className="block text-xs text-gray-600 mb-1">Barcode</label>
                         <input
                           type="text"
                           value={formData.barcode}
                           onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
                           placeholder="UPC/EAN for scanning"
-                          className="w-full px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white"
+                          className="w-full px-2 py-1.5 text-xs bg-gray-200 border border-gray-300 rounded-none text-gray-800"
                         />
                       </div>
                     </div>
                     {/* Row 2: Price, Compare At, Cost, Stock */}
-                    <div className="grid grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <div>
-                        <label className="block text-sm text-slate-300 mb-1">Price *</label>
+                        <label className="block text-xs text-gray-600 mb-1">Price *</label>
                         <input
                           type="number"
                           step="0.01"
                           value={formData.price || ''}
                           onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || null })}
                           placeholder="0.00"
-                          className="w-full px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white"
+                          className="w-full px-2 py-1.5 text-xs bg-gray-200 border border-gray-300 rounded-none text-gray-800"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm text-slate-300 mb-1">Compare At</label>
+                        <label className="block text-xs text-gray-600 mb-1">Compare At</label>
                         <input
                           type="number"
                           step="0.01"
                           value={formData.compare_at_price || ''}
                           onChange={(e) => setFormData({ ...formData, compare_at_price: parseFloat(e.target.value) || null })}
                           placeholder="Original price"
-                          className="w-full px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white"
+                          className="w-full px-2 py-1.5 text-xs bg-gray-200 border border-gray-300 rounded-none text-gray-800"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm text-slate-300 mb-1">Cost Price</label>
+                        <label className="block text-xs text-gray-600 mb-1">Cost Price</label>
                         <input
                           type="number"
                           step="0.01"
                           value={formData.cost_price || ''}
                           onChange={(e) => setFormData({ ...formData, cost_price: parseFloat(e.target.value) || null })}
                           placeholder="Your cost"
-                          className="w-full px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white"
+                          className="w-full px-2 py-1.5 text-xs bg-gray-200 border border-gray-300 rounded-none text-gray-800"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm text-slate-300 mb-1">Stock Qty</label>
+                        <label className="block text-xs text-gray-600 mb-1">Stock Qty</label>
                         <input
                           type="number"
                           value={formData.stock_quantity}
                           onChange={(e) => setFormData({ ...formData, stock_quantity: parseInt(e.target.value) || 0 })}
-                          className="w-full px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white"
+                          className="w-full px-2 py-1.5 text-xs bg-gray-200 border border-gray-300 rounded-none text-gray-800"
                         />
                       </div>
                     </div>
@@ -1015,53 +1015,53 @@ export default function ProductForm({
                   /* Variants */
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-300 font-medium">Variants</span>
+                      <span className="text-gray-600 font-medium">Variants</span>
                       <button
                         onClick={addVariant}
-                        className="flex items-center gap-2 px-3 py-1 bg-green-600 hover:bg-green-500 rounded-lg text-sm"
+                        className="flex items-center gap-2 px-3 py-1 bg-green-50 border border-green-200 hover:bg-green-50 rounded-none text-sm"
                       >
                         <Plus className="w-4 h-4" />
                         Add Variant
                       </button>
                     </div>
                     {formData.variants.map((variant, idx) => (
-                      <div key={idx} className="p-3 bg-slate-600 rounded-lg space-y-2">
+                      <div key={idx} className="p-3 bg-gray-200 rounded-none space-y-2">
                         {/* Row 1: Size/Option, SKU, Barcode */}
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                           <div>
-                            <label className="block text-xs text-slate-400 mb-1">Size/Option</label>
+                            <label className="block text-xs text-gray-500 mb-1">Size/Option</label>
                             <input
                               type="text"
                               value={variant.title}
                               onChange={(e) => updateVariant(idx, { title: e.target.value })}
                               placeholder="e.g., 30ml"
-                              className="w-full px-3 py-2 bg-slate-700 border border-slate-500 rounded text-white text-sm"
+                              className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-none text-gray-800 text-sm"
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-slate-400 mb-1">SKU</label>
+                            <label className="block text-xs text-gray-500 mb-1">SKU</label>
                             <input
                               type="text"
                               value={variant.sku}
                               onChange={(e) => updateVariant(idx, { sku: e.target.value })}
                               placeholder="BRT-BOOST-30ML"
-                              className="w-full px-3 py-2 bg-slate-700 border border-slate-500 rounded text-white text-sm"
+                              className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-none text-gray-800 text-sm"
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-slate-400 mb-1">Barcode</label>
+                            <label className="block text-xs text-gray-500 mb-1">Barcode</label>
                             <input
                               type="text"
                               value={variant.barcode || ''}
                               onChange={(e) => updateVariant(idx, { barcode: e.target.value })}
                               placeholder="UPC/EAN"
-                              className="w-full px-3 py-2 bg-slate-700 border border-slate-500 rounded text-white text-sm"
+                              className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-none text-gray-800 text-sm"
                             />
                           </div>
                           <div className="flex items-end justify-end">
                             <button
                               onClick={() => removeVariant(idx)}
-                              className="p-2 text-red-400 hover:text-red-300 hover:bg-slate-700 rounded"
+                              className="p-2 text-red-600 hover:text-red-600 hover:bg-gray-100 rounded-none"
                               title="Delete variant"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -1069,55 +1069,55 @@ export default function ProductForm({
                           </div>
                         </div>
                         {/* Row 2: Price, Compare At, Cost, Stock */}
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                           <div>
-                            <label className="block text-xs text-slate-400 mb-1">Price *</label>
+                            <label className="block text-xs text-gray-500 mb-1">Price *</label>
                             <input
                               type="number"
                               step="0.01"
                               value={variant.price || ''}
                               onChange={(e) => updateVariant(idx, { price: parseFloat(e.target.value) || 0 })}
                               placeholder="0.00"
-                              className="w-full px-3 py-2 bg-slate-700 border border-slate-500 rounded text-white text-sm"
+                              className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-none text-gray-800 text-sm"
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-slate-400 mb-1">Compare At</label>
+                            <label className="block text-xs text-gray-500 mb-1">Compare At</label>
                             <input
                               type="number"
                               step="0.01"
                               value={variant.compare_at_price || ''}
                               onChange={(e) => updateVariant(idx, { compare_at_price: parseFloat(e.target.value) || null })}
                               placeholder="Original"
-                              className="w-full px-3 py-2 bg-slate-700 border border-slate-500 rounded text-white text-sm"
+                              className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-none text-gray-800 text-sm"
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-slate-400 mb-1">Cost</label>
+                            <label className="block text-xs text-gray-500 mb-1">Cost</label>
                             <input
                               type="number"
                               step="0.01"
                               value={variant.cost_price || ''}
                               onChange={(e) => updateVariant(idx, { cost_price: parseFloat(e.target.value) || null })}
                               placeholder="Your cost"
-                              className="w-full px-3 py-2 bg-slate-700 border border-slate-500 rounded text-white text-sm"
+                              className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-none text-gray-800 text-sm"
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-slate-400 mb-1">Stock Qty</label>
+                            <label className="block text-xs text-gray-500 mb-1">Stock Qty</label>
                             <input
                               type="number"
                               value={variant.stock_quantity}
                               onChange={(e) => updateVariant(idx, { stock_quantity: parseInt(e.target.value) || 0 })}
                               placeholder="0"
-                              className="w-full px-3 py-2 bg-slate-700 border border-slate-500 rounded text-white text-sm"
+                              className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-none text-gray-800 text-sm"
                             />
                           </div>
                         </div>
                       </div>
                     ))}
                     {formData.variants.length === 0 && (
-                      <p className="text-slate-400 text-sm text-center py-4">
+                      <p className="text-gray-500 text-sm text-center py-4">
                         No variants yet. Click "Add Variant" to create sizes/options.
                       </p>
                     )}
@@ -1125,24 +1125,24 @@ export default function ProductForm({
                 )}
 
                 {/* Inventory Settings */}
-                <div className="grid grid-cols-3 gap-4 pt-4 border-t border-slate-600">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-4 border-t border-gray-200">
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
                       id="track-inventory"
                       checked={formData.track_inventory}
                       onChange={(e) => setFormData({ ...formData, track_inventory: e.target.checked })}
-                      className="w-4 h-4 rounded"
+                      className="w-4 h-4 rounded-none"
                     />
-                    <label htmlFor="track-inventory" className="text-sm text-slate-300">Track inventory</label>
+                    <label htmlFor="track-inventory" className="text-xs text-gray-600">Track inventory</label>
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-300 mb-1">Low Stock Alert</label>
+                    <label className="block text-xs text-gray-600 mb-1">Low Stock Alert</label>
                     <input
                       type="number"
                       value={formData.low_stock_threshold}
                       onChange={(e) => setFormData({ ...formData, low_stock_threshold: parseInt(e.target.value) || 5 })}
-                      className="w-full px-3 py-2 bg-slate-600 border border-slate-500 rounded text-white text-sm"
+                      className="w-full px-3 py-2 bg-gray-200 border border-gray-300 rounded-none text-gray-800 text-sm"
                     />
                   </div>
                   <div className="flex items-center gap-2">
@@ -1151,9 +1151,9 @@ export default function ProductForm({
                       id="allow-backorder"
                       checked={formData.allow_backorder}
                       onChange={(e) => setFormData({ ...formData, allow_backorder: e.target.checked })}
-                      className="w-4 h-4 rounded"
+                      className="w-4 h-4 rounded-none"
                     />
-                    <label htmlFor="allow-backorder" className="text-sm text-slate-300">Allow backorder</label>
+                    <label htmlFor="allow-backorder" className="text-xs text-gray-600">Allow backorder</label>
                   </div>
                 </div>
               </div>
@@ -1164,41 +1164,41 @@ export default function ProductForm({
           <div className="space-y-3">
             <SectionHeader id="skincoach" title="SkinCoach Product Details" icon={Sparkles} />
             {expandedSections.has('skincoach') && (
-              <div className="bg-slate-700/50 rounded-lg p-4 space-y-4">
+              <div className="bg-gray-50 rounded-none p-2 space-y-2">
                 <div>
-                  <label className="block text-sm text-slate-300 mb-1">Hero Benefit Summary</label>
+                  <label className="block text-xs text-gray-600 mb-1">Hero Benefit Summary</label>
                   <textarea
                     value={formData.hero_benefit}
                     onChange={(e) => setFormData({ ...formData, hero_benefit: e.target.value })}
                     placeholder="Main benefits overview..."
                     rows={3}
-                    className="w-full px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white"
+                    className="w-full px-2 py-1.5 text-xs bg-gray-200 border border-gray-300 rounded-none text-gray-800"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-slate-300 mb-1">Key Actives</label>
+                  <label className="block text-xs text-gray-600 mb-1">Key Actives</label>
                   <textarea
                     value={formData.key_actives}
                     onChange={(e) => setFormData({ ...formData, key_actives: e.target.value })}
                     placeholder="Active ingredients and their benefits..."
                     rows={3}
-                    className="w-full px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white"
+                    className="w-full px-2 py-1.5 text-xs bg-gray-200 border border-gray-300 rounded-none text-gray-800"
                   />
                 </div>
 
                 {/* Concerns by Category - Only show for selected categories */}
                 {getConcernsByCategory().length > 0 ? (
                   <div>
-                    <label className="block text-sm text-slate-300 mb-2">
+                    <label className="block text-xs text-gray-600 mb-2">
                       Concerns by Category
-                      <span className="text-slate-500 ml-2">
+                      <span className="text-gray-400 ml-2">
                         (Select what this product helps with)
                       </span>
                     </label>
                     <div className="space-y-4">
                       {getConcernsByCategory().map(cat => (
-                        <div key={cat.categoryId} className="p-3 bg-slate-600/50 rounded-lg">
-                          <div className="text-sm font-medium text-cyan-400 mb-2">
+                        <div key={cat.categoryId} className="p-3 bg-gray-200/50 rounded-none">
+                          <div className="text-xs font-medium text-cyan-600 mb-2">
                             {cat.categoryName} Concerns
                           </div>
                           <div className="flex flex-wrap gap-2">
@@ -1209,8 +1209,8 @@ export default function ProductForm({
                                 onClick={() => toggleConcern(opt.id)}
                                 className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
                                   formData.selectedConcernIds.includes(opt.id)
-                                    ? 'bg-purple-600 text-white'
-                                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                    ? 'bg-purple-50 border border-purple-200 text-gray-800'
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                 }`}
                               >
                                 {opt.name}
@@ -1221,49 +1221,49 @@ export default function ProductForm({
                       ))}
                     </div>
                     {formData.selectedConcernIds.length > 0 && (
-                      <div className="mt-2 text-xs text-slate-400">
+                      <div className="mt-2 text-xs text-gray-500">
                         {formData.selectedConcernIds.length} concern{formData.selectedConcernIds.length !== 1 ? 's' : ''} selected
                       </div>
                     )}
                   </div>
                 ) : (
-                  <div className="p-4 bg-slate-600/50 rounded-lg border border-dashed border-slate-500">
-                    <p className="text-sm text-slate-400 text-center">
+                  <div className="p-4 bg-gray-200/50 rounded-none border border-dashed border-gray-300">
+                    <p className="text-sm text-gray-500 text-center">
                       Select categories above to see available concerns
                     </p>
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-sm text-slate-300 mb-1">Full Ingredients (INCI)</label>
+                  <label className="block text-xs text-gray-600 mb-1">Full Ingredients (INCI)</label>
                   <textarea
                     value={formData.ingredients}
                     onChange={(e) => setFormData({ ...formData, ingredients: e.target.value })}
                     placeholder="Water, Glycerin, Niacinamide..."
                     rows={3}
-                    className="w-full px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white"
+                    className="w-full px-2 py-1.5 text-xs bg-gray-200 border border-gray-300 rounded-none text-gray-800"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-sm text-slate-300 mb-1">Clinical Studies</label>
+                    <label className="block text-xs text-gray-600 mb-1">Clinical Studies</label>
                     <textarea
                       value={formData.clinical_studies}
                       onChange={(e) => setFormData({ ...formData, clinical_studies: e.target.value })}
                       placeholder="Clinical study results..."
                       rows={3}
-                      className="w-full px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white"
+                      className="w-full px-2 py-1.5 text-xs bg-gray-200 border border-gray-300 rounded-none text-gray-800"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-300 mb-1">Trade Name</label>
+                    <label className="block text-xs text-gray-600 mb-1">Trade Name</label>
                     <textarea
                       value={formData.trade_name}
                       onChange={(e) => setFormData({ ...formData, trade_name: e.target.value })}
                       placeholder="Proprietary ingredient names..."
                       rows={3}
-                      className="w-full px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white"
+                      className="w-full px-2 py-1.5 text-xs bg-gray-200 border border-gray-300 rounded-none text-gray-800"
                     />
                   </div>
                 </div>
@@ -1275,16 +1275,16 @@ export default function ProductForm({
           <div className="space-y-3">
             <SectionHeader id="landing" title="Landing Page (Optional)" icon={Globe} />
             {expandedSections.has('landing') && (
-              <div className="bg-slate-700/50 rounded-lg p-4 space-y-4">
-                <div className="flex items-center gap-3 p-3 bg-purple-900/30 border border-purple-500/30 rounded-lg">
+              <div className="bg-gray-50 rounded-none p-2 space-y-2">
+                <div className="flex items-center gap-3 p-3 bg-purple-50 border border-purple-500/30 rounded-none">
                   <input
                     type="checkbox"
                     id="has-landing"
                     checked={formData.has_landing_page}
                     onChange={(e) => setFormData({ ...formData, has_landing_page: e.target.checked })}
-                    className="w-4 h-4 rounded"
+                    className="w-4 h-4 rounded-none"
                   />
-                  <label htmlFor="has-landing" className="text-purple-300">
+                  <label htmlFor="has-landing" className="text-purple-600">
                     Create a dedicated marketing landing page for this product
                   </label>
                 </div>
@@ -1292,19 +1292,19 @@ export default function ProductForm({
                 {formData.has_landing_page && (
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm text-slate-300 mb-1">Reference URL (competitor site)</label>
+                      <label className="block text-xs text-gray-600 mb-1">Reference URL (competitor site)</label>
                       <div className="flex gap-2">
                         <input
                           type="url"
                           value={formData.landing_page_reference_url}
                           onChange={(e) => setFormData({ ...formData, landing_page_reference_url: e.target.value })}
                           placeholder="https://competitor.com/their-product"
-                          className="flex-1 px-4 py-2 bg-slate-600 border border-slate-500 rounded-lg text-white"
+                          className="flex-1 px-2 py-1.5 text-xs bg-gray-200 border border-gray-300 rounded-none text-gray-800"
                         />
                         <button
                           onClick={generateLandingPage}
                           disabled={!formData.landing_page_reference_url || isGeneratingLandingPage}
-                          className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg"
+                          className="flex items-center gap-2 px-2 py-1 text-xs bg-purple-50 border border-purple-200 hover:bg-purple-50 disabled:opacity-50 rounded-none"
                         >
                           {isGeneratingLandingPage ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -1314,43 +1314,43 @@ export default function ProductForm({
                           {isGeneratingLandingPage ? 'Generating...' : 'Generate'}
                         </button>
                       </div>
-                      <p className="text-xs text-slate-400 mt-2">
+                      <p className="text-xs text-gray-500 mt-2">
                         AI will analyze the reference site and generate a similar landing page layout
                       </p>
                     </div>
 
                     {/* Generated Landing Page Preview */}
                     {landingPageContent && (
-                      <div className="bg-slate-600/50 rounded-lg p-4 space-y-3">
+                      <div className="bg-gray-200/50 rounded-none p-4 space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-green-400">Landing Page Generated</span>
+                          <span className="text-xs font-medium text-green-600">Landing Page Generated</span>
                           <button
                             onClick={() => setLandingPageContent(null)}
-                            className="text-xs text-slate-400 hover:text-white"
+                            className="text-xs text-gray-500 hover:text-gray-800"
                           >
                             Clear
                           </button>
                         </div>
                         {landingPageContent.hero && (
                           <div>
-                            <span className="text-xs text-slate-400">Hero:</span>
-                            <p className="text-white font-medium">{landingPageContent.hero.headline}</p>
-                            <p className="text-slate-300 text-sm">{landingPageContent.hero.subheadline}</p>
+                            <span className="text-xs text-gray-500">Hero:</span>
+                            <p className="text-gray-800 font-medium">{landingPageContent.hero.headline}</p>
+                            <p className="text-gray-600 text-sm">{landingPageContent.hero.subheadline}</p>
                           </div>
                         )}
                         {landingPageContent.benefits?.items && (
                           <div>
-                            <span className="text-xs text-slate-400">Benefits:</span>
+                            <span className="text-xs text-gray-500">Benefits:</span>
                             <div className="flex flex-wrap gap-2 mt-1">
                               {landingPageContent.benefits.items.slice(0, 3).map((b: any, i: number) => (
-                                <span key={i} className="px-2 py-1 bg-slate-700 rounded text-xs text-slate-200">
+                                <span key={i} className="px-2 py-1 bg-gray-100 rounded-none text-xs text-gray-700">
                                   {b.title}
                                 </span>
                               ))}
                             </div>
                           </div>
                         )}
-                        <p className="text-xs text-slate-400">
+                        <p className="text-xs text-gray-500">
                           Full landing page content will be saved with the product
                         </p>
                       </div>
@@ -1365,16 +1365,16 @@ export default function ProductForm({
           <div className="space-y-3">
             <SectionHeader id="display" title="Display Options" icon={Eye} />
             {expandedSections.has('display') && (
-              <div className="bg-slate-700/50 rounded-lg p-4">
+              <div className="bg-gray-50 rounded-none p-4">
                 <div className="flex items-center gap-6">
                   <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
                       checked={formData.is_featured}
                       onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
-                      className="w-4 h-4 rounded"
+                      className="w-4 h-4 rounded-none"
                     />
-                    <span className="text-slate-300">Featured Product</span>
+                    <span className="text-gray-600">Featured Product</span>
                   </label>
                 </div>
               </div>
@@ -1384,17 +1384,17 @@ export default function ProductForm({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-700">
+        <div className="flex items-center justify-end gap-2 p-3 border-t border-gray-200">
           <button
             onClick={onCancel}
-            className="px-6 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg transition-colors"
+            className="px-3 py-1.5 text-xs bg-gray-200 hover:bg-gray-100 rounded-none transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={isSaving || !formData.title}
-            className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-50 rounded-lg transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 text-xs bg-green-50 border border-green-200 hover:bg-green-50 disabled:opacity-50 rounded-none transition-colors"
           >
             {isSaving ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -1416,7 +1416,7 @@ export default function ProductForm({
             {/* Close button */}
             <button
               onClick={() => setPreviewImageIndex(null)}
-              className="absolute -top-12 right-0 p-2 text-white hover:text-gray-300 transition-colors"
+              className="absolute -top-12 right-0 p-2 text-gray-800 hover:text-gray-300 transition-colors"
             >
               <X className="w-8 h-8" />
             </button>
@@ -1428,7 +1428,7 @@ export default function ProductForm({
                   onClick={() => setPreviewImageIndex(
                     previewImageIndex === 0 ? formData.images.length - 1 : previewImageIndex - 1
                   )}
-                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-14 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-14 p-2 bg-white/10 hover:bg-white/20 rounded-full text-gray-800 transition-colors"
                 >
                   <ChevronLeft className="w-8 h-8" />
                 </button>
@@ -1436,7 +1436,7 @@ export default function ProductForm({
                   onClick={() => setPreviewImageIndex(
                     previewImageIndex === formData.images.length - 1 ? 0 : previewImageIndex + 1
                   )}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-14 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-14 p-2 bg-white/10 hover:bg-white/20 rounded-full text-gray-800 transition-colors"
                 >
                   <ChevronRight className="w-8 h-8" />
                 </button>
@@ -1447,7 +1447,7 @@ export default function ProductForm({
             {isVideoUrl(formData.images[previewImageIndex]) ? (
               <video
                 src={formData.images[previewImageIndex]}
-                className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
+                className="max-w-[90vw] max-h-[85vh] object-contain rounded-none"
                 controls
                 autoPlay
                 loop
@@ -1457,15 +1457,15 @@ export default function ProductForm({
               <img
                 src={formData.images[previewImageIndex]}
                 alt={`Product image ${previewImageIndex + 1}`}
-                className="max-w-[90vw] max-h-[85vh] object-contain rounded-lg"
+                className="max-w-[90vw] max-h-[85vh] object-contain rounded-none"
               />
             )}
 
             {/* Image counter */}
-            <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 text-white text-sm">
+            <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 text-gray-800 text-sm">
               {previewImageIndex + 1} / {formData.images.length}
               {formData.images[previewImageIndex] === formData.thumbnail && (
-                <span className="ml-2 px-2 py-0.5 bg-purple-600 rounded text-xs">Main</span>
+                <span className="ml-2 px-2 py-0.5 bg-purple-50 border border-purple-200 rounded-none text-xs">Main</span>
               )}
             </div>
 
@@ -1475,7 +1475,7 @@ export default function ProductForm({
                 onClick={() => {
                   setAsThumbnail(formData.images[previewImageIndex])
                 }}
-                className="px-3 py-1 bg-purple-600 hover:bg-purple-500 rounded text-white text-sm flex items-center gap-1"
+                className="px-3 py-1 bg-purple-50 border border-purple-200 hover:bg-purple-50 rounded-none text-gray-800 text-sm flex items-center gap-1"
               >
                 <Eye className="w-4 h-4" />
                 Set as Main
@@ -1490,7 +1490,7 @@ export default function ProductForm({
                     setPreviewImageIndex(idx - 1)
                   }
                 }}
-                className="px-3 py-1 bg-red-600 hover:bg-red-500 rounded text-white text-sm flex items-center gap-1"
+                className="px-3 py-1 bg-red-50 border border-red-200 hover:bg-red-50 rounded-none text-gray-800 text-sm flex items-center gap-1"
               >
                 <Trash2 className="w-4 h-4" />
                 Delete

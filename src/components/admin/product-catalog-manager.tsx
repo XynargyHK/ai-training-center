@@ -63,11 +63,13 @@ interface Product {
 interface ProductCatalogManagerProps {
   businessUnitId: string
   language?: string
+  country?: string
 }
 
 export default function ProductCatalogManager({
   businessUnitId,
-  language = 'en'
+  language = 'en',
+  country: parentCountry
 }: ProductCatalogManagerProps) {
   // Data state
   const [categories, setCategories] = useState<Category[]>([])
@@ -90,7 +92,7 @@ export default function ProductCatalogManager({
   const bulkImportRef = useRef<HTMLDivElement>(null)
 
   // Locale state
-  const [selectedCountry, setSelectedCountry] = useState('US')
+  const [selectedCountry, setSelectedCountry] = useState(parentCountry || 'US')
   const [selectedLangCode, setSelectedLangCode] = useState('en')
   const [availableLocales, setAvailableLocales] = useState<Array<{ country: string; language_code: string }>>([])
   const [showAddLocaleModal, setShowAddLocaleModal] = useState(false)
@@ -117,6 +119,19 @@ export default function ProductCatalogManager({
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  // Sync selectedCountry from parent prop when it changes
+  useEffect(() => {
+    if (parentCountry && parentCountry !== selectedCountry) {
+      setSelectedCountry(parentCountry)
+      const localeForCountry = availableLocales.find(l => l.country === parentCountry)
+      if (localeForCountry) {
+        setSelectedLangCode(localeForCountry.language_code)
+      } else {
+        setSelectedLangCode('en')
+      }
+    }
+  }, [parentCountry])
 
   // Load data
   useEffect(() => {
@@ -420,12 +435,12 @@ export default function ProductCatalogManager({
   if (showProductForm) {
     return (
       <div>
-        <div className="mb-4 flex items-center gap-4">
+        <div className="mb-2 flex items-center gap-2">
           <button
             onClick={() => { setShowProductForm(false); setEditingProduct(null) }}
-            className="flex items-center gap-2 text-slate-400 hover:text-white"
+            className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800"
           >
-            <ChevronRight className="w-4 h-4 rotate-180" />
+            <ChevronRight className="w-3.5 h-3.5 rotate-180" />
             Back to Catalog
           </button>
         </div>
@@ -442,22 +457,23 @@ export default function ProductCatalogManager({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Product Language Bar */}
       <ProductLanguageBar
         businessUnitId={businessUnitId}
         currentCountry={selectedCountry}
         currentLanguage={selectedLangCode}
+        filterCountry={parentCountry}
         onLocaleChange={handleLocaleChange}
         onAddLocale={() => setShowAddLocaleModal(true)}
         onDeleteLocale={handleDeleteLocale}
       />
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-bold text-white">Product Catalog</h1>
-          <p className="text-slate-400 mt-1">
+          <h1 className="text-xs font-bold text-gray-800">Product Catalog</h1>
+          <p className="text-xs text-gray-500 mt-1">
             {totalProducts} products, {categories.length} categories, {productTypes.filter(t => t.is_addon).length} addon types
           </p>
         </div>
@@ -467,25 +483,25 @@ export default function ProductCatalogManager({
           <div className="relative" ref={bulkImportRef}>
             <button
               onClick={() => setShowBulkImportMenu(!showBulkImportMenu)}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors"
+              className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 hover:bg-gray-100 text-gray-700 rounded-none font-medium transition-colors"
             >
-              <Upload className="w-4 h-4" />
+              <Upload className="w-3.5 h-3.5" />
               Bulk Import
               <ChevronDown className={`w-4 h-4 transition-transform ${showBulkImportMenu ? 'rotate-180' : ''}`} />
             </button>
             {showBulkImportMenu && (
-              <div className="absolute right-0 mt-2 w-56 bg-slate-800 border border-slate-700 rounded-lg shadow-lg z-50 overflow-hidden">
+              <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-none shadow-sm z-50 overflow-hidden">
                 <button
                   onClick={() => {
                     setShowBulkImportMenu(false)
                     setShowWizard(true)
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-700 text-left"
+                  className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-gray-100 text-left"
                 >
-                  <FileText className="w-5 h-5 text-blue-400" />
+                  <FileText className="w-3.5 h-3.5 text-blue-600" />
                   <div>
-                    <div className="text-white font-medium">Upload Document</div>
-                    <div className="text-xs text-slate-400">PDF, Excel, Word files</div>
+                    <div className="text-xs text-gray-800 font-medium">Upload Document</div>
+                    <div className="text-[10px] text-gray-500">PDF, Excel, Word files</div>
                   </div>
                 </button>
                 <button
@@ -493,12 +509,12 @@ export default function ProductCatalogManager({
                     setShowBulkImportMenu(false)
                     setShowWizard(true)
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-700 text-left border-t border-slate-700"
+                  className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-gray-100 text-left border-t border-gray-200"
                 >
-                  <Link2 className="w-5 h-5 text-green-400" />
+                  <Link2 className="w-3.5 h-3.5 text-green-600" />
                   <div>
-                    <div className="text-white font-medium">Import from URL</div>
-                    <div className="text-xs text-slate-400">Website or product page</div>
+                    <div className="text-xs text-gray-800 font-medium">Import from URL</div>
+                    <div className="text-[10px] text-gray-500">Website or product page</div>
                   </div>
                 </button>
                 <button
@@ -506,12 +522,12 @@ export default function ProductCatalogManager({
                     setShowBulkImportMenu(false)
                     setShowWizard(true)
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-700 text-left border-t border-slate-700"
+                  className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-gray-100 text-left border-t border-gray-200"
                 >
-                  <Layers className="w-5 h-5 text-purple-400" />
+                  <Layers className="w-3.5 h-3.5 text-purple-600" />
                   <div>
-                    <div className="text-white font-medium">Use Template</div>
-                    <div className="text-xs text-slate-400">Industry templates</div>
+                    <div className="text-xs text-gray-800 font-medium">Use Template</div>
+                    <div className="text-[10px] text-gray-500">Industry templates</div>
                   </div>
                 </button>
               </div>
@@ -521,92 +537,92 @@ export default function ProductCatalogManager({
           {/* Add Product Button */}
           <button
             onClick={() => setShowProductForm(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+            className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-50 border border-blue-200 hover:bg-blue-100 text-gray-800 rounded-none font-medium transition-colors"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             Add Product
           </button>
         </div>
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-4 gap-4">
-        <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-600/20 rounded-lg">
-              <Package className="w-5 h-5 text-blue-400" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="bg-white rounded-none p-2 border border-gray-200">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-blue-50 rounded-none">
+              <Package className="w-4 h-4 text-blue-600" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-white">{totalProducts}</div>
-              <div className="text-sm text-slate-400">Total Products</div>
+              <div className="text-xs font-bold text-gray-800">{totalProducts}</div>
+              <div className="text-xs text-gray-500">Total Products</div>
             </div>
           </div>
         </div>
-        <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-600/20 rounded-lg">
-              <CheckCircle2 className="w-5 h-5 text-green-400" />
+        <div className="bg-white rounded-none p-2 border border-gray-200">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-green-50 rounded-none">
+              <CheckCircle2 className="w-4 h-4 text-green-600" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-white">
+              <div className="text-xs font-bold text-gray-800">
                 {products.filter(p => p.status === 'published').length}
               </div>
-              <div className="text-sm text-slate-400">Published</div>
+              <div className="text-xs text-gray-500">Published</div>
             </div>
           </div>
         </div>
-        <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-600/20 rounded-lg">
-              <FolderTree className="w-5 h-5 text-purple-400" />
+        <div className="bg-white rounded-none p-2 border border-gray-200">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-purple-50 rounded-none">
+              <FolderTree className="w-4 h-4 text-purple-600" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-white">{categories.length}</div>
-              <div className="text-sm text-slate-400">Categories</div>
+              <div className="text-xs font-bold text-gray-800">{categories.length}</div>
+              <div className="text-xs text-gray-500">Categories</div>
             </div>
           </div>
         </div>
-        <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-orange-600/20 rounded-lg">
-              <Tag className="w-5 h-5 text-orange-400" />
+        <div className="bg-white rounded-none p-2 border border-gray-200">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-orange-50 rounded-none">
+              <Tag className="w-4 h-4 text-orange-600" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-white">{productTypes.length}</div>
-              <div className="text-sm text-slate-400">Product Types</div>
+              <div className="text-xs font-bold text-gray-800">{productTypes.length}</div>
+              <div className="text-xs text-gray-500">Product Types</div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Tabs - Simplified: Products → Catalog Settings → Bundles */}
-      <div className="flex items-center gap-1 border-b border-slate-700">
+      <div className="flex items-center gap-1 border-b border-gray-200">
         <button
           onClick={() => setActiveTab('products')}
-          className={`px-4 py-3 font-medium border-b-2 transition-colors ${
+          className={`px-2 py-1 text-xs font-medium border-b-2 transition-colors ${
             activeTab === 'products'
-              ? 'border-blue-500 text-blue-400'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? 'border-blue-500 text-blue-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
           Products
         </button>
         <button
           onClick={() => setActiveTab('catalog-settings')}
-          className={`px-4 py-3 font-medium border-b-2 transition-colors ${
+          className={`px-2 py-1 text-xs font-medium border-b-2 transition-colors ${
             activeTab === 'catalog-settings'
-              ? 'border-blue-500 text-blue-400'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? 'border-blue-500 text-blue-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
           Catalog Settings
         </button>
         <button
           onClick={() => setActiveTab('bundles')}
-          className={`px-4 py-3 font-medium border-b-2 transition-colors ${
+          className={`px-2 py-1 text-xs font-medium border-b-2 transition-colors ${
             activeTab === 'bundles'
-              ? 'border-blue-500 text-blue-400'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? 'border-blue-500 text-blue-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
           Bundles
@@ -615,23 +631,23 @@ export default function ProductCatalogManager({
 
       {/* Products Tab */}
       {activeTab === 'products' && (
-        <div className="space-y-4">
+        <div className="space-y-2">
           {/* Filters */}
-          <div className="flex items-center gap-4">
-            <div className="flex-1 relative">
-              <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex-1 min-w-[120px] relative">
+              <Search className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search products..."
-                className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-7 pr-2 py-1.5 text-xs bg-white border border-gray-200 rounded-none text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300"
               />
             </div>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-2 py-1 text-xs bg-white border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
             >
               <option value="all">All Categories</option>
               {categories.map(cat => (
@@ -641,7 +657,7 @@ export default function ProductCatalogManager({
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-2 py-1 text-xs bg-white border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
             >
               <option value="all">All Status</option>
               <option value="draft">Draft</option>
@@ -651,34 +667,34 @@ export default function ProductCatalogManager({
             <select
               value={selectedProductType}
               onChange={(e) => setSelectedProductType(e.target.value as 'all' | 'base' | 'addon')}
-              className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-2 py-1 text-xs bg-white border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
             >
               <option value="all">All Products</option>
               <option value="base">Base Products</option>
               <option value="addon">Add-ons Only</option>
             </select>
-            <div className="flex items-center gap-1 bg-slate-800 border border-slate-700 rounded-lg p-1">
+            <div className="flex items-center gap-0.5 bg-white border border-gray-200 rounded-none p-0.5">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded ${viewMode === 'grid' ? 'bg-slate-700' : ''}`}
+                className={`p-1 rounded-none ${viewMode === 'grid' ? 'bg-gray-100' : ''}`}
               >
-                <Grid className="w-4 h-4 text-slate-400" />
+                <Grid className="w-3.5 h-3.5 text-gray-500" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded ${viewMode === 'list' ? 'bg-slate-700' : ''}`}
+                className={`p-1 rounded-none ${viewMode === 'list' ? 'bg-gray-100' : ''}`}
               >
-                <List className="w-4 h-4 text-slate-400" />
+                <List className="w-3.5 h-3.5 text-gray-500" />
               </button>
             </div>
           </div>
 
           {/* Empty state */}
           {filteredProducts.length === 0 ? (
-            <div className="text-center py-12 bg-slate-800/50 rounded-lg border border-slate-700">
-              <Package className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-white mb-2">No products found</h3>
-              <p className="text-slate-400 mb-6">
+            <div className="text-center py-4 bg-gray-50 rounded-none border border-gray-200">
+              <Package className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+              <h3 className="text-xs font-medium text-gray-800 mb-1">No products found</h3>
+              <p className="text-xs text-gray-500 mb-3">
                 {products.length === 0
                   ? "Get started by adding your first product"
                   : "Try adjusting your filters"}
@@ -686,14 +702,14 @@ export default function ProductCatalogManager({
               <div className="flex items-center justify-center gap-3">
                 <button
                   onClick={() => setShowProductForm(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+                  className="flex items-center gap-2 px-2 py-1 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-gray-800 rounded-none"
                 >
                   <Plus className="w-4 h-4" />
                   Add Product
                 </button>
                 <button
                   onClick={() => setShowWizard(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg"
+                  className="flex items-center gap-2 px-2 py-1 bg-gray-100 hover:bg-gray-100 text-gray-700 rounded-none"
                 >
                   <Upload className="w-4 h-4" />
                   Bulk Import
@@ -702,13 +718,13 @@ export default function ProductCatalogManager({
             </div>
           ) : viewMode === 'grid' ? (
             /* Grid View */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
               {filteredProducts.map(product => (
                 <div
                   key={product.id}
-                  className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden hover:border-slate-600 transition-colors group"
+                  className="bg-white rounded-none border border-gray-200 overflow-hidden hover:border-gray-200 transition-colors group"
                 >
-                  <div className="aspect-square bg-slate-700 relative">
+                  <div className="aspect-square bg-gray-100 relative">
                     {(product.thumbnail || product.product_images?.[0]?.url) ? (
                       <img
                         src={product.thumbnail || product.product_images?.[0]?.url}
@@ -717,41 +733,41 @@ export default function ProductCatalogManager({
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <Package className="w-12 h-12 text-slate-600" />
+                        <Package className="w-6 h-6 text-gray-400" />
                       </div>
                     )}
-                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => handleEditProduct(product)}
-                        className="p-2 bg-slate-900/80 hover:bg-slate-900 rounded-lg"
+                        className="p-1 bg-white/80 hover:bg-white rounded-none"
                       >
-                        <Edit className="w-4 h-4 text-white" />
+                        <Edit className="w-3.5 h-3.5 text-gray-800" />
                       </button>
                       <button
                         onClick={() => handleDeleteProduct(product.id)}
-                        className="p-2 bg-slate-900/80 hover:bg-red-600 rounded-lg"
+                        className="p-1 bg-white/80 hover:bg-red-50 border border-red-200 rounded-none"
                       >
-                        <Trash2 className="w-4 h-4 text-white" />
+                        <Trash2 className="w-3.5 h-3.5 text-gray-800" />
                       </button>
                     </div>
                     <div className="absolute top-2 left-2">
-                      <span className={`px-2 py-1 text-xs font-medium rounded ${
+                      <span className={`px-2 py-1 text-xs font-medium rounded-none ${
                         product.status === 'published'
-                          ? 'bg-green-600 text-white'
+                          ? 'bg-green-50 border border-green-200 text-gray-800'
                           : product.status === 'draft'
-                          ? 'bg-yellow-600 text-white'
-                          : 'bg-slate-600 text-white'
+                          ? 'bg-yellow-50 text-gray-800'
+                          : 'bg-gray-100 text-gray-700'
                       }`}>
                         {product.status}
                       </span>
                     </div>
                   </div>
-                  <div className="p-4">
+                  <div className="p-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-white truncate">{product.title}</h3>
+                        <h3 className="text-xs font-medium text-gray-800 truncate">{product.title}</h3>
                         {product.tagline && (
-                          <p className="text-sm text-slate-400 truncate mt-1">{product.tagline}</p>
+                          <p className="text-xs text-gray-500 truncate mt-1">{product.tagline}</p>
                         )}
                       </div>
                       <label className="flex items-center gap-1.5 cursor-pointer" title={isProductAddon(product) ? 'Click to remove from add-ons' : 'Click to mark as add-on'}>
@@ -759,13 +775,13 @@ export default function ProductCatalogManager({
                           type="checkbox"
                           checked={isProductAddon(product)}
                           onChange={() => handleToggleAddon(product)}
-                          className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-orange-500 focus:ring-orange-500 cursor-pointer"
+                          className="w-4 h-4 rounded-none border-gray-200 bg-gray-100 text-orange-500 focus:ring-orange-300 cursor-pointer"
                         />
-                        <span className="text-xs text-slate-400">Add-on</span>
+                        <span className="text-xs text-gray-500">Add-on</span>
                       </label>
                     </div>
                     <div className="flex items-center justify-between mt-3">
-                      <span className="text-sm text-slate-500">
+                      <span className="text-xs text-gray-400">
                         {(() => {
                           // Check metadata price first (simple products)
                           if (product.metadata?.price) return `$${product.metadata.price}`
@@ -782,7 +798,7 @@ export default function ProductCatalogManager({
                         })()}
                       </span>
                       {product.product_types && (
-                        <span className="text-xs px-2 py-1 bg-slate-700 text-slate-300 rounded">
+                        <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-none">
                           {product.product_types.name}
                         </span>
                       )}
@@ -793,58 +809,58 @@ export default function ProductCatalogManager({
             </div>
           ) : (
             /* List View */
-            <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+            <div className="bg-white rounded-none border border-gray-200 overflow-hidden">
               <table className="w-full">
-                <thead className="bg-slate-700/50">
+                <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-300">Product</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-300">Category</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-300">Type</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-300">Status</th>
-                    <th className="px-4 py-3 text-center text-sm font-medium text-slate-300">Add-ons</th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-slate-300">Actions</th>
+                    <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-600">Product</th>
+                    <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-600">Category</th>
+                    <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-600">Type</th>
+                    <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-600">Status</th>
+                    <th className="px-2 py-1.5 text-center text-xs font-medium text-gray-600">Add-ons</th>
+                    <th className="px-2 py-1.5 text-right text-xs font-medium text-gray-600">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-700">
+                <tbody className="divide-y divide-gray-200">
                   {filteredProducts.map(product => {
                     const productIsAddon = isProductAddon(product)
                     const addonCount = productAddonCounts[product.id] || 0
                     const categoryName = product.product_category_mapping?.[0]?.product_categories?.name || '-'
 
                     return (
-                      <tr key={product.id} className="hover:bg-slate-700/30">
+                      <tr key={product.id} className="hover:bg-gray-50">
                         {/* Product Name & Image */}
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-slate-700 rounded overflow-hidden flex-shrink-0">
+                        <td className="px-2 py-1.5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-gray-100 rounded-none overflow-hidden flex-shrink-0">
                               {(product.thumbnail || product.product_images?.[0]?.url) ? (
                                 <img src={product.thumbnail || product.product_images?.[0]?.url} alt="" className="w-full h-full object-cover" />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">
-                                  <Package className="w-5 h-5 text-slate-500" />
+                                  <Package className="w-4 h-4 text-gray-400" />
                                 </div>
                               )}
                             </div>
                             <div>
-                              <div className="font-medium text-white">{product.title}</div>
+                              <div className="text-xs font-medium text-gray-800">{product.title}</div>
                               {product.tagline && (
-                                <div className="text-sm text-slate-400">{product.tagline}</div>
+                                <div className="text-xs text-gray-500">{product.tagline}</div>
                               )}
                             </div>
                           </div>
                         </td>
 
                         {/* Category */}
-                        <td className="px-4 py-3 text-sm text-slate-300">
+                        <td className="px-2 py-1.5 text-xs text-gray-600">
                           {categoryName}
                         </td>
 
                         {/* Type */}
-                        <td className="px-4 py-3 text-sm text-slate-300">
+                        <td className="px-2 py-1.5 text-xs text-gray-600">
                           <div className="flex items-center gap-2">
                             {product.product_types?.name || '-'}
                             {productIsAddon && (
-                              <span className="px-1.5 py-0.5 text-xs bg-orange-600/20 text-orange-400 rounded">
+                              <span className="px-1.5 py-0.5 text-xs bg-orange-50 text-orange-600 rounded-none">
                                 Add-on
                               </span>
                             )}
@@ -852,51 +868,51 @@ export default function ProductCatalogManager({
                         </td>
 
                         {/* Status */}
-                        <td className="px-4 py-3">
-                          <span className={`px-2 py-1 text-xs font-medium rounded ${
+                        <td className="px-2 py-1.5">
+                          <span className={`px-2 py-1 text-xs font-medium rounded-none ${
                             product.status === 'published'
-                              ? 'bg-green-600/20 text-green-400'
+                              ? 'bg-green-50 text-green-600'
                               : product.status === 'draft'
-                              ? 'bg-yellow-600/20 text-yellow-400'
-                              : 'bg-slate-600/20 text-slate-400'
+                              ? 'bg-yellow-50 text-yellow-600'
+                              : 'bg-gray-200/20 text-gray-500'
                           }`}>
                             {product.status}
                           </span>
                         </td>
 
                         {/* Add-ons Column - Only for base products */}
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-2 py-1.5 text-center">
                           {productIsAddon ? (
-                            <span className="text-xs text-slate-500">-</span>
+                            <span className="text-xs text-gray-400">-</span>
                           ) : (
                             <button
                               onClick={() => handleEditAddons(product)}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm transition-colors"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 hover:bg-gray-200 rounded-none text-xs transition-colors"
                             >
-                              <span className={addonCount > 0 ? 'text-blue-400' : 'text-slate-400'}>
+                              <span className={addonCount > 0 ? 'text-blue-600' : 'text-gray-500'}>
                                 {addonCount}
                               </span>
-                              <Edit className="w-3 h-3 text-slate-400" />
+                              <Edit className="w-3 h-3 text-gray-500" />
                             </button>
                           )}
                         </td>
 
                         {/* Actions */}
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-2">
+                        <td className="px-2 py-1.5 text-right">
+                          <div className="flex items-center justify-end gap-1">
                             <button
                               onClick={() => handleEditProduct(product)}
-                              className="p-2 hover:bg-slate-700 rounded-lg"
+                              className="p-1 hover:bg-gray-100 rounded-none"
                               title="Edit product"
                             >
-                              <Edit className="w-4 h-4 text-slate-400" />
+                              <Edit className="w-3.5 h-3.5 text-gray-500" />
                             </button>
                             <button
                               onClick={() => handleDeleteProduct(product.id)}
-                              className="p-2 hover:bg-red-600/20 rounded-lg"
+                              className="p-1 hover:bg-red-50 rounded-none"
                               title="Delete product"
                             >
-                              <Trash2 className="w-4 h-4 text-slate-400 hover:text-red-400" />
+                              <Trash2 className="w-3.5 h-3.5 text-gray-500 hover:text-red-600" />
                             </button>
                           </div>
                         </td>

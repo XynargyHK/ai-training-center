@@ -206,32 +206,32 @@ export default function TableBlockEditor({ block, onUpdate, businessUnitId }: Ta
   }, [rows, columns])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Background Media */}
       <div>
-        <label className="block text-sm font-medium text-slate-300 mb-2">Background Image/Video</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Background Image/Video</label>
         <div className="flex items-center gap-3 flex-wrap">
           {/* Preview thumbnail or placeholder */}
           {background_url ? (
             <div className="relative">
               {background_type === 'video' ? (
-                <video src={background_url} className="h-16 w-28 object-cover rounded" muted />
+                <video src={background_url} className="h-16 w-28 object-cover rounded-none" muted />
               ) : (
-                <img src={background_url} alt="Background" className="h-16 w-28 object-cover rounded" />
+                <img src={background_url} alt="Background" className="h-16 w-28 object-cover rounded-none" />
               )}
               <button
                 onClick={removeBackground}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-50 text-gray-800 rounded-full flex items-center justify-center hover:bg-red-50 border border-red-200"
               >
                 <X className="w-3 h-3" />
               </button>
-              <span className="absolute bottom-0.5 right-0.5 text-[10px] bg-black/60 text-white px-1 rounded">
+              <span className="absolute bottom-0.5 right-0.5 text-[10px] bg-black/60 text-gray-800 px-1 rounded-none">
                 {background_type === 'video' ? 'VIDEO' : 'IMAGE'}
               </span>
             </div>
           ) : (
-            <div className="h-16 w-28 bg-slate-800 border border-dashed border-slate-600 rounded flex items-center justify-center">
-              <Image className="w-6 h-6 text-slate-500" />
+            <div className="h-16 w-28 bg-white border border-dashed border-gray-300 rounded-none flex items-center justify-center">
+              <Image className="w-6 h-6 text-gray-400" />
             </div>
           )}
 
@@ -242,7 +242,7 @@ export default function TableBlockEditor({ block, onUpdate, businessUnitId }: Ta
                 // Use original_filename if set
                 if (data.original_filename) {
                   return (
-                    <span className="text-green-300" title={data.original_filename}>
+                    <span className="text-green-600" title={data.original_filename}>
                       📄 {data.original_filename}
                     </span>
                   )
@@ -256,7 +256,7 @@ export default function TableBlockEditor({ block, onUpdate, businessUnitId }: Ta
                     const filename = fullName.replace(/^\d+_/, '')
                     if (filename && filename !== fullName) {
                       return (
-                        <span className="text-green-300" title={filename}>
+                        <span className="text-green-600" title={filename}>
                           📄 {filename}
                         </span>
                       )
@@ -268,7 +268,7 @@ export default function TableBlockEditor({ block, onUpdate, businessUnitId }: Ta
                   const urlPath = new URL(background_url).pathname
                   const shortName = urlPath.split('/').pop() || ''
                   return (
-                    <span className="text-slate-400 text-[10px]" title={shortName}>
+                    <span className="text-gray-500 text-[10px]" title={shortName}>
                       📎 {shortName.length > 20 ? shortName.substring(0, 17) + '...' : shortName}
                     </span>
                   )
@@ -283,7 +283,7 @@ export default function TableBlockEditor({ block, onUpdate, businessUnitId }: Ta
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="px-3 py-1.5 bg-violet-600 text-white text-sm rounded hover:bg-violet-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+            className="px-3 py-1.5 bg-violet-50 border border-violet-200 text-gray-800 text-sm rounded-none hover:bg-violet-100 transition-colors disabled:opacity-50 flex items-center gap-1.5"
           >
             {uploading ? (
               <>
@@ -307,12 +307,12 @@ export default function TableBlockEditor({ block, onUpdate, businessUnitId }: Ta
             className="hidden"
           />
         </div>
-        <p className="text-xs text-slate-500 mt-1">Optional background image or video for the table section</p>
+        <p className="text-xs text-gray-400 mt-1">Optional background image or video for the table section</p>
       </div>
 
       {/* Headline Text */}
       <div>
-        <label className="block text-sm font-medium text-slate-300 mb-2">Table Name / Headline</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Table Name / Headline</label>
         <input
           type="text"
           value={data.headline || ''}
@@ -330,9 +330,9 @@ export default function TableBlockEditor({ block, onUpdate, businessUnitId }: Ta
             onUpdate(updatedBlock)
           }}
           placeholder="Enter table headline"
-          className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+          className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
         />
-        <p className="text-xs text-slate-500 mt-1">Style this headline using the controls in the header bar above</p>
+        <p className="text-xs text-gray-400 mt-1">Style this headline using the controls in the header bar above</p>
       </div>
 
       {/* Subheadline */}
@@ -382,42 +382,42 @@ export default function TableBlockEditor({ block, onUpdate, businessUnitId }: Ta
       </div>
 
       {/* Table Configuration */}
-      <div className="border-t border-slate-600 pt-4">
-        <label className="block text-sm font-medium text-slate-300 mb-3">Table Configuration</label>
+      <div className="border-t border-gray-200 pt-4">
+        <label className="block text-xs font-medium text-gray-600 mb-2">Table Configuration</label>
 
         {/* Row and Column Controls */}
         <div className="flex gap-6 mb-4">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-400">Rows:</span>
+            <span className="text-sm text-gray-500">Rows:</span>
             <button
               onClick={() => updateRowCount(rows - 1)}
               disabled={rows <= 1}
-              className="p-1 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 rounded"
+              className="p-1 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded-none"
             >
               <Minus className="w-4 h-4" />
             </button>
-            <span className="text-white w-8 text-center">{rows}</span>
+            <span className="text-gray-800 w-8 text-center">{rows}</span>
             <button
               onClick={() => updateRowCount(rows + 1)}
-              className="p-1 bg-slate-700 hover:bg-slate-600 rounded"
+              className="p-1 bg-gray-100 hover:bg-gray-200 rounded-none"
             >
               <Plus className="w-4 h-4" />
             </button>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-400">Columns:</span>
+            <span className="text-sm text-gray-500">Columns:</span>
             <button
               onClick={() => updateColumnCount(columns - 1)}
               disabled={columns <= 1}
-              className="p-1 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 rounded"
+              className="p-1 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 rounded-none"
             >
               <Minus className="w-4 h-4" />
             </button>
-            <span className="text-white w-8 text-center">{columns}</span>
+            <span className="text-gray-800 w-8 text-center">{columns}</span>
             <button
               onClick={() => updateColumnCount(columns + 1)}
-              className="p-1 bg-slate-700 hover:bg-slate-600 rounded"
+              className="p-1 bg-gray-100 hover:bg-gray-200 rounded-none"
             >
               <Plus className="w-4 h-4" />
             </button>
@@ -425,15 +425,15 @@ export default function TableBlockEditor({ block, onUpdate, businessUnitId }: Ta
         </div>
 
         {/* Table Text Style */}
-        <div className="mb-4 p-3 bg-slate-700/50 rounded-lg">
-          <label className="block text-xs font-medium text-slate-400 mb-2">Table Text Style</label>
+        <div className="mb-3 p-2 bg-gray-50 rounded-none">
+          <label className="block text-xs font-medium text-gray-500 mb-2">Table Text Style</label>
           <div className="flex flex-wrap gap-4 items-center">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">Font:</span>
+              <span className="text-xs text-gray-500">Font:</span>
               <select
                 value={data.table_font_family || 'Inter'}
                 onChange={(e) => updateField('table_font_family', e.target.value)}
-                className="px-2 py-1 bg-slate-600 border border-slate-500 rounded text-xs text-white"
+                className="px-2 py-1 bg-gray-200 border border-gray-300 rounded-none text-xs text-gray-800"
               >
                 <option value="Inter">Inter</option>
                 <option value="Josefin Sans">Josefin Sans</option>
@@ -443,11 +443,11 @@ export default function TableBlockEditor({ block, onUpdate, businessUnitId }: Ta
               </select>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">Size:</span>
+              <span className="text-xs text-gray-500">Size:</span>
               <select
                 value={data.table_font_size || '0.875rem'}
                 onChange={(e) => updateField('table_font_size', e.target.value)}
-                className="px-2 py-1 bg-slate-600 border border-slate-500 rounded text-xs text-white"
+                className="px-2 py-1 bg-gray-200 border border-gray-300 rounded-none text-xs text-gray-800"
               >
                 <option value="0.75rem">12</option>
                 <option value="0.875rem">14</option>
@@ -458,14 +458,14 @@ export default function TableBlockEditor({ block, onUpdate, businessUnitId }: Ta
             </div>
             {/* Table Text Color */}
             <div className="relative flex items-center gap-1">
-              <span className="text-xs text-slate-400">Text:</span>
+              <span className="text-xs text-gray-500">Text:</span>
               <button
                 onClick={() => setActiveColorPicker(activeColorPicker === 'tableText' ? null : 'tableText')}
-                className="w-6 h-6 rounded border border-slate-500 cursor-pointer hover:scale-110 transition-transform"
+                className="w-6 h-6 rounded-none border border-gray-300 cursor-pointer hover:scale-110 transition-transform"
                 style={{ backgroundColor: data.table_text_color || '#000000' }}
               />
               {activeColorPicker === 'tableText' && (
-                <div className="absolute left-0 top-full mt-1 p-2 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50">
+                <div className="absolute left-0 top-full mt-1 p-2 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50">
                   <div className="grid grid-cols-7 gap-1.5">
                     {COLOR_PALETTE.map((c) => (
                       <button
@@ -474,7 +474,7 @@ export default function TableBlockEditor({ block, onUpdate, businessUnitId }: Ta
                           updateField('table_text_color', c.value)
                           setActiveColorPicker(null)
                         }}
-                        className="w-6 h-6 rounded border hover:scale-110 transition-transform"
+                        className="w-6 h-6 rounded-none border hover:scale-110 transition-transform"
                         style={{
                           backgroundColor: c.value,
                           borderColor: (data.table_text_color || '#000000') === c.value ? '#a855f7' : '#475569'
@@ -488,14 +488,14 @@ export default function TableBlockEditor({ block, onUpdate, businessUnitId }: Ta
             </div>
             {/* Border Color */}
             <div className="relative flex items-center gap-1">
-              <span className="text-xs text-slate-400">Border:</span>
+              <span className="text-xs text-gray-500">Border:</span>
               <button
                 onClick={() => setActiveColorPicker(activeColorPicker === 'border' ? null : 'border')}
-                className="w-6 h-6 rounded border border-slate-500 cursor-pointer hover:scale-110 transition-transform"
+                className="w-6 h-6 rounded-none border border-gray-300 cursor-pointer hover:scale-110 transition-transform"
                 style={{ backgroundColor: data.border_color || '#e5e7eb' }}
               />
               {activeColorPicker === 'border' && (
-                <div className="absolute left-0 top-full mt-1 p-2 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50">
+                <div className="absolute left-0 top-full mt-1 p-2 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50">
                   <div className="grid grid-cols-7 gap-1.5">
                     {COLOR_PALETTE.map((c) => (
                       <button
@@ -504,7 +504,7 @@ export default function TableBlockEditor({ block, onUpdate, businessUnitId }: Ta
                           updateField('border_color', c.value)
                           setActiveColorPicker(null)
                         }}
-                        className="w-6 h-6 rounded border hover:scale-110 transition-transform"
+                        className="w-6 h-6 rounded-none border hover:scale-110 transition-transform"
                         style={{
                           backgroundColor: c.value,
                           borderColor: (data.border_color || '#e5e7eb') === c.value ? '#a855f7' : '#475569'
@@ -532,8 +532,8 @@ export default function TableBlockEditor({ block, onUpdate, businessUnitId }: Ta
                         value={cell}
                         onChange={(e) => updateCell(rowIndex, colIndex, e.target.value)}
                         placeholder={rowIndex === 0 ? `Header ${colIndex + 1}` : `R${rowIndex + 1}C${colIndex + 1}`}
-                        className={`w-full px-2 py-1.5 bg-slate-700 border border-slate-600 rounded text-sm ${
-                          rowIndex === 0 ? 'font-bold text-white' : 'text-slate-300'
+                        className={`w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-sm ${
+                          rowIndex === 0 ? 'font-bold text-gray-800' : 'text-gray-600'
                         }`}
                       />
                     </td>
@@ -543,7 +543,7 @@ export default function TableBlockEditor({ block, onUpdate, businessUnitId }: Ta
             </tbody>
           </table>
         </div>
-        <p className="text-xs text-slate-500 mt-2">First row is automatically styled as header (bold)</p>
+        <p className="text-xs text-gray-400 mt-2">First row is automatically styled as header (bold)</p>
       </div>
     </div>
   )

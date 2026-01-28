@@ -155,10 +155,10 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Background Media */}
       <div>
-        <label className="block text-sm font-medium text-slate-300 mb-2">Background Image/Video</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Background Image/Video</label>
         <div className="flex items-center gap-3 flex-wrap">
           {/* Preview thumbnail or placeholder */}
           {background_url ? (
@@ -167,27 +167,27 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
                 <video
                   src={background_url}
                   poster={data.video_poster}
-                  className="h-16 w-28 object-cover rounded bg-slate-800"
+                  className="h-16 w-28 object-cover rounded-none bg-white"
                   muted
                   playsInline
                   preload="metadata"
                 />
               ) : (
-                <img src={background_url} alt="Background" className="h-16 w-28 object-cover rounded" />
+                <img src={background_url} alt="Background" className="h-16 w-28 object-cover rounded-none" />
               )}
               <button
                 onClick={removeBackground}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-50 text-gray-800 rounded-full flex items-center justify-center hover:bg-red-50 border border-red-200"
               >
                 <X className="w-3 h-3" />
               </button>
-              <span className="absolute bottom-0.5 right-0.5 text-[10px] bg-black/60 text-white px-1 rounded">
+              <span className="absolute bottom-0.5 right-0.5 text-[10px] bg-black/60 text-gray-800 px-1 rounded-none">
                 {background_type === 'video' ? 'VIDEO' : 'IMAGE'}
               </span>
             </div>
           ) : (
-            <div className="h-16 w-28 bg-slate-800 border border-dashed border-slate-600 rounded flex items-center justify-center">
-              <Image className="w-6 h-6 text-slate-500" />
+            <div className="h-16 w-28 bg-white border border-dashed border-gray-300 rounded-none flex items-center justify-center">
+              <Image className="w-6 h-6 text-gray-400" />
             </div>
           )}
 
@@ -198,7 +198,7 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
                 // Use original_filename if set
                 if (data.original_filename) {
                   return (
-                    <span className="text-green-300" title={data.original_filename}>
+                    <span className="text-green-600" title={data.original_filename}>
                       📄 {data.original_filename}
                     </span>
                   )
@@ -212,7 +212,7 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
                     const filename = fullName.replace(/^\d+_/, '')
                     if (filename && filename !== fullName) {
                       return (
-                        <span className="text-green-300" title={filename}>
+                        <span className="text-green-600" title={filename}>
                           📄 {filename}
                         </span>
                       )
@@ -224,7 +224,7 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
                   const urlPath = new URL(background_url).pathname
                   const shortName = urlPath.split('/').pop() || ''
                   return (
-                    <span className="text-slate-400 text-[10px]" title={shortName}>
+                    <span className="text-gray-500 text-[10px]" title={shortName}>
                       📎 {shortName.length > 20 ? shortName.substring(0, 17) + '...' : shortName}
                     </span>
                   )
@@ -239,7 +239,7 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="px-3 py-1.5 bg-violet-600 text-white text-sm rounded hover:bg-violet-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+            className="px-3 py-1.5 bg-violet-50 border border-violet-200 text-gray-800 text-sm rounded-none hover:bg-violet-100 transition-colors disabled:opacity-50 flex items-center gap-1.5"
           >
             {uploading ? (
               <>
@@ -265,12 +265,12 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
 
           {/* Background Color */}
           <div className="flex items-center gap-2">
-            <label className="text-xs text-slate-400">BG Color:</label>
+            <label className="text-xs text-gray-500">BG Color:</label>
             <input
               type="color"
               value={background_color}
               onChange={(e) => updateField('background_color', e.target.value)}
-              className="w-10 h-10 rounded border border-slate-600 cursor-pointer"
+              className="w-10 h-10 rounded-none border border-gray-200 cursor-pointer"
             />
           </div>
         </div>
@@ -278,8 +278,8 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
 
       {/* Video Poster Image - Only show when background is video */}
       {background_type === 'video' && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
-          <label className="block text-sm font-medium text-amber-300 mb-2 flex items-center gap-2">
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-none p-4">
+          <label className="block text-sm font-medium text-amber-600 mb-2 flex items-center gap-2">
             <Image className="w-4 h-4" />
             Video Poster Image (Optional - Shows while loading)
           </label>
@@ -290,16 +290,16 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
             {/* Preview poster thumbnail */}
             {data.video_poster ? (
               <div className="relative">
-                <img src={data.video_poster} alt="Poster" className="h-16 w-28 object-cover rounded border border-amber-500/30" />
+                <img src={data.video_poster} alt="Poster" className="h-16 w-28 object-cover rounded-none border border-amber-500/30" />
                 <button
                   onClick={() => updateField('video_poster', '')}
-                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-50 text-gray-800 rounded-full flex items-center justify-center hover:bg-red-50 border border-red-200"
                 >
                   <X className="w-3 h-3" />
                 </button>
               </div>
             ) : (
-              <div className="h-16 w-28 bg-slate-800 border border-dashed border-amber-600/50 rounded flex items-center justify-center">
+              <div className="h-16 w-28 bg-white border border-dashed border-amber-600/50 rounded-none flex items-center justify-center">
                 <Image className="w-6 h-6 text-amber-500/50" />
               </div>
             )}
@@ -308,7 +308,7 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
             <button
               onClick={() => posterInputRef.current?.click()}
               disabled={uploadingPoster}
-              className="px-3 py-1.5 bg-amber-600 text-white text-sm rounded hover:bg-amber-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+              className="px-3 py-1.5 bg-amber-50 text-gray-800 text-sm rounded-none hover:bg-amber-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
             >
               {uploadingPoster ? (
                 <>
@@ -407,28 +407,28 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm text-slate-300 mb-2">CTA Button Text</label>
+            <label className="block text-sm text-gray-600 mb-2">CTA Button Text</label>
             <input
               type="text"
               value={data.cta_text || ''}
               onChange={(e) => updateField('cta_text', e.target.value)}
               placeholder="SHOP NOW"
-              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+              className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-xs"
             />
           </div>
           <div>
-            <label className="block text-sm text-slate-300 mb-2">CTA Button URL</label>
+            <label className="block text-sm text-gray-600 mb-2">CTA Button URL</label>
             <input
               type="text"
               value={data.cta_url || ''}
               onChange={(e) => updateField('cta_url', e.target.value)}
               placeholder="#micro-infusion-system"
-              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+              className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-xs"
             />
           </div>
         </div>
-        <p className="text-xs text-slate-400">
-          To scroll to another block, use <span className="text-violet-400">#headline-in-lowercase</span> (e.g., #micro-infusion-system, #faq, #pricing-plans)
+        <p className="text-xs text-gray-500">
+          To scroll to another block, use <span className="text-violet-600">#headline-in-lowercase</span> (e.g., #micro-infusion-system, #faq, #pricing-plans)
         </p>
       </div>
     </div>

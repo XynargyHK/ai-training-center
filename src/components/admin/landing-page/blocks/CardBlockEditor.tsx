@@ -95,12 +95,12 @@ export default function CardBlockEditor({ block, onUpdate, businessUnitId }: Car
   return (
     <div className="space-y-4">
       {data.cards.map((card, index) => (
-        <div key={index} className="bg-slate-800/50 rounded-lg p-4 border border-slate-600">
+        <div key={index} className="bg-gray-50 rounded-none p-4 border border-gray-200">
           <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-medium text-slate-300">Card {index + 1}</span>
+            <span className="text-sm font-medium text-gray-600">Card {index + 1}</span>
             <button
               onClick={() => deleteCard(index)}
-              className="text-red-400 hover:text-red-300 p-1"
+              className="text-red-600 hover:text-red-600 p-1"
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -109,25 +109,25 @@ export default function CardBlockEditor({ block, onUpdate, businessUnitId }: Car
           <div className="space-y-3">
             {/* Image */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Image</label>
+              <label className="block text-sm font-medium text-gray-600 mb-2">Image</label>
               <div className="flex flex-col gap-2">
                 {card.image_url ? (
                   <div className="relative inline-block">
-                    <img src={card.image_url} className="h-24 w-24 object-cover rounded-lg border border-slate-600" alt="" />
+                    <img src={card.image_url} className="h-24 w-24 object-cover rounded-none border border-gray-200" alt="" />
                     <button
                       onClick={() => updateCard(index, { image_url: '' })}
-                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-50 text-gray-800 rounded-full flex items-center justify-center hover:bg-red-50 border border-red-200 transition-colors"
                     >
                       <X className="w-3 h-3" />
                     </button>
                   </div>
                 ) : (
-                  <div className="h-24 w-24 bg-slate-800 border-2 border-dashed border-slate-600 rounded-lg flex items-center justify-center">
-                    <Image className="w-6 h-6 text-slate-500" />
+                  <div className="h-24 w-24 bg-white border-2 border-dashed border-gray-300 rounded-none flex items-center justify-center">
+                    <Image className="w-6 h-6 text-gray-400" />
                   </div>
                 )}
 
-                <label className="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer flex items-center gap-2 w-fit">
+                <label className="px-4 py-2 bg-pink-50 hover:bg-pink-700 text-gray-800 rounded-none text-sm font-medium transition-colors cursor-pointer flex items-center gap-2 w-fit">
                   {uploadingIndex === index ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -156,60 +156,60 @@ export default function CardBlockEditor({ block, onUpdate, businessUnitId }: Car
             {/* Title & Author */}
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Title</label>
+                <label className="block text-xs text-gray-500 mb-1">Title</label>
                 <input
                   type="text"
                   value={card.title}
                   onChange={(e) => updateCard(index, { title: e.target.value })}
                   placeholder="Review title"
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-none text-gray-800 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Author</label>
+                <label className="block text-xs text-gray-500 mb-1">Author</label>
                 <input
                   type="text"
                   value={card.author}
                   onChange={(e) => updateCard(index, { author: e.target.value })}
                   placeholder="Customer name"
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-none text-gray-800 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500"
                 />
               </div>
             </div>
 
             {/* Content */}
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Content</label>
+              <label className="block text-xs text-gray-500 mb-1">Content</label>
               <textarea
                 value={card.content}
                 onChange={(e) => updateCard(index, { content: e.target.value })}
                 placeholder="Review content or testimonial..."
                 rows={3}
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-pink-500 resize-y"
+                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-none text-gray-800 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 resize-y"
               />
             </div>
 
             {/* Rating & Badge */}
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Rating (1-5)</label>
+                <label className="block text-xs text-gray-500 mb-1">Rating (1-5)</label>
                 <input
                   type="number"
                   min="1"
                   max="5"
                   value={card.rating}
                   onChange={(e) => updateCard(index, { rating: parseInt(e.target.value) || 5 })}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-none text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Badge</label>
+                <label className="block text-xs text-gray-500 mb-1">Badge</label>
                 <input
                   type="text"
                   value={card.badge}
                   onChange={(e) => updateCard(index, { badge: e.target.value })}
                   placeholder="e.g., Verified Customer"
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-none text-gray-800 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500"
                 />
               </div>
             </div>
@@ -219,7 +219,7 @@ export default function CardBlockEditor({ block, onUpdate, businessUnitId }: Car
 
       <button
         onClick={addCard}
-        className="w-full py-2 bg-pink-500/20 text-pink-400 hover:bg-pink-500/30 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+        className="w-full py-2 bg-pink-50 text-pink-600 hover:bg-pink-500/30 rounded-none font-medium transition-colors flex items-center justify-center gap-2"
       >
         <Plus className="w-4 h-4" />
         Add Card

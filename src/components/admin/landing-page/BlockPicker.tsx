@@ -31,45 +31,45 @@ export default function BlockPicker({ onSelect, onClose }: BlockPickerProps) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl border border-slate-600 shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+      <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-none border border-gray-200/50 shadow-2xl max-w-lg w-full max-h-[80vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-600">
+        <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200/50">
           <div>
-            <h2 className="text-2xl font-bold text-white">Add Block</h2>
-            <p className="text-sm text-slate-400 mt-1">Choose a block type to add to your page</p>
+            <h2 className="text-xs font-bold text-gray-800">Add Block</h2>
+            <p className="text-[10px] text-gray-500">Choose a block type</p>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors p-1"
+            className="text-gray-500 hover:text-gray-800 transition-colors p-0.5"
           >
-            <X className="w-6 h-6" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Block Types Grid */}
-        <div className="p-6 overflow-y-auto max-h-[calc(80vh-100px)]">
+        <div className="p-3 overflow-y-auto max-h-[calc(80vh-60px)]">
           {Object.entries(categories).map(([category, blocks]) => (
             blocks.length > 0 && (
-              <div key={category} className="mb-6 last:mb-0">
-                <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
+              <div key={category} className="mb-3 last:mb-0">
+                <h3 className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
                   {categoryLabels[category as keyof typeof categoryLabels]}
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-1.5">
                   {blocks.map((blockType) => (
                     <button
                       key={blockType.type}
                       onClick={() => handleSelectBlock(blockType.type)}
-                      className="group relative bg-slate-800/50 hover:bg-slate-700/50 border border-slate-600 hover:border-violet-500 rounded-lg p-4 text-left transition-all hover:scale-[1.02] hover:shadow-lg"
+                      className="group relative bg-gray-50 hover:bg-gray-50 border border-gray-200/50 hover:border-violet-500 rounded-none p-2 text-left transition-all"
                     >
-                      <div className="flex items-start gap-3">
-                        <div className="w-12 h-12 bg-violet-500/20 group-hover:bg-violet-500/30 rounded-lg flex items-center justify-center text-2xl transition-colors">
+                      <div className="flex items-start gap-2">
+                        <div className="w-7 h-7 bg-violet-50/20 group-hover:bg-violet-50/30 rounded-none flex items-center justify-center text-sm transition-colors shrink-0">
                           {blockType.icon}
                         </div>
-                        <div className="flex-1">
-                          <h4 className="text-white font-semibold mb-1 group-hover:text-violet-400 transition-colors">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-gray-800 text-xs font-medium group-hover:text-violet-600 transition-colors">
                             {blockType.label}
                           </h4>
-                          <p className="text-sm text-slate-400 leading-relaxed">
+                          <p className="text-[10px] text-gray-500 leading-tight truncate">
                             {blockType.description}
                           </p>
                         </div>

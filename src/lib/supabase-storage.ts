@@ -2,6 +2,7 @@
 // Replaces localStorage + JSON files with direct Supabase database access
 
 import { createClient } from '@supabase/supabase-js'
+import { urlLangToDbLang } from './locale-utils'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -91,26 +92,34 @@ function handleSupabaseError(error: any, context: string): void {
 // KNOWLEDGE BASE
 // ============================================
 
-export async function loadKnowledge(businessUnitSlugOrId?: string | null) {
+export async function loadKnowledge(businessUnitSlugOrId?: string | null, country?: string | null, language?: string | null) {
   const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+  const dbLang = language ? urlLangToDbLang(language) : null
 
-  // Load industry knowledge from knowledge_base table
-  const { data: knowledgeData, error: knowledgeError } = await supabase
+  // Load industry knowledge — filter by language (ISO code) if provided
+  let knowledgeQuery = supabase
     .from('knowledge_base')
     .select('*')
     .eq('business_unit_id', businessUnitId)
     .order('created_at', { ascending: false })
+  if (dbLang) knowledgeQuery = knowledgeQuery.eq('language', dbLang)
+
+  const { data: knowledgeData, error: knowledgeError } = await knowledgeQuery
 
   if (knowledgeError) {
     handleSupabaseError(knowledgeError, 'Loading knowledge base')
   }
 
-  // Load products
-  const { data: productsData, error: productsError } = await supabase
+  // Load products — filter by country + language_code (short codes) if provided
+  let productsQuery = supabase
     .from('products')
     .select('*')
     .eq('business_unit_id', businessUnitId)
     .eq('status', 'published')
+  if (country) productsQuery = productsQuery.eq('country', country)
+  if (language) productsQuery = productsQuery.eq('language_code', language)
+
+  const { data: productsData, error: productsError } = await productsQuery
 
   if (productsError) {
     console.error('Error loading products for knowledge:', productsError)
@@ -121,18 +130,29 @@ export async function loadKnowledge(businessUnitSlugOrId?: string | null) {
     .from('services')
     .select('*')
     .eq('business_unit_id', businessUnitId)
+    .eq('is_active', true)
 
   if (servicesError) {
     console.error('Error loading services for knowledge:', servicesError)
   }
 
-  // Load landing page content
-  const { data: landingPageData, error: landingPageError } = await supabase
+  // Load landing page — filter by country + language_code if provided
+  let landingPageQuery = supabase
     .from('landing_pages')
     .select('*')
     .eq('business_unit_id', businessUnitId)
-    .eq('is_published', true)
-    .single()
+    .eq('is_active', true)
+  if (country) landingPageQuery = landingPageQuery.eq('country', country)
+  if (language) landingPageQuery = landingPageQuery.eq('language_code', language)
+
+  const { data: rawLandingPage, error: landingPageError } = await landingPageQuery.maybeSingle()
+
+  // Use published_data (the published copy) if available
+  let landingPageData = rawLandingPage
+  if (rawLandingPage?.published_data) {
+    const { published_data, ...metadata } = rawLandingPage
+    landingPageData = { ...metadata, ...published_data }
+  }
 
   if (landingPageError) {
     console.error('Error loading landing page for knowledge:', landingPageError)
@@ -382,7 +402,8 @@ export async function hybridSearchKnowledge(query: string, limit: number = 10) {
 
 export async function loadFAQs(businessUnitSlugOrId?: string | null, language: string = 'en') {
   const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
-  console.log(`🔍 loadFAQs called with language: ${language}, businessUnitId: ${businessUnitId}`)
+  const dbLang = urlLangToDbLang(language)
+  console.log(`🔍 loadFAQs called with language: ${language} (db: ${dbLang}), businessUnitId: ${businessUnitId}`)
 
   const { data, error } = await supabase
     .from('faq_library')
@@ -396,7 +417,7 @@ export async function loadFAQs(businessUnitSlugOrId?: string | null, language: s
       )
     `)
     .eq('business_unit_id', businessUnitId)
-    .eq('language', language)
+    .eq('language', dbLang)
     .order('created_at', { ascending: false })
 
   console.log(`📊 loadFAQs returned ${data?.length || 0} FAQs, first question: ${data?.[0]?.question?.substring(0, 50)}`)
@@ -486,10 +507,11 @@ export async function deleteFAQ(id: string) {
 // CANNED MESSAGES
 // ============================================
 
-export async function loadCannedMessages(businessUnitSlugOrId?: string | null) {
+export async function loadCannedMessages(businessUnitSlugOrId?: string | null, language?: string | null) {
   const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+  const dbLang = language ? urlLangToDbLang(language) : null
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('canned_messages')
     .select(`
       *,
@@ -502,6 +524,9 @@ export async function loadCannedMessages(businessUnitSlugOrId?: string | null) {
     `)
     .eq('business_unit_id', businessUnitId)
     .order('created_at', { ascending: false })
+  if (dbLang) query = query.eq('language', dbLang)
+
+  const { data, error } = await query
 
   if (error) {
     handleSupabaseError(error, 'Loading canned messages')
@@ -671,14 +696,18 @@ export async function deleteCategory(name: string, businessUnitSlugOrId?: string
 // GUIDELINES (Migrated to Supabase)
 // ============================================
 
-export async function loadGuidelines(businessUnitSlugOrId?: string | null) {
+export async function loadGuidelines(businessUnitSlugOrId?: string | null, language?: string | null) {
   const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+  const dbLang = language ? urlLangToDbLang(language) : null
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('guidelines')
     .select('*')
     .eq('business_unit_id', businessUnitId)
     .order('created_at', { ascending: false })
+  if (dbLang) query = query.eq('language', dbLang)
+
+  const { data, error } = await query
 
   if (error) {
     handleSupabaseError(error, 'Loading guidelines')

@@ -484,10 +484,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, language }
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-slate-900 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-slate-700 shadow-2xl">
+    <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-gray-200 shadow-2xl">
           {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-700">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center gap-4">
             {/* Tab Buttons */}
             {(() => {
@@ -496,36 +496,36 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, language }
                 <>
                   <button
                     onClick={() => setActiveTab('personal')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                    className={`flex items-center gap-2 px-4 py-2 rounded-none transition-all ${
                       activeTab === 'personal'
-                        ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                        ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-gray-800'
+                        : 'text-gray-500 hover:text-gray-800 hover:bg-white'
                     }`}
                   >
                     <User className="w-5 h-5" />
                     {t.personalProfile}
                     <span className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${
                       completion.personal === 100
-                        ? 'bg-green-500/20 text-green-400'
-                        : 'bg-yellow-500/20 text-yellow-400'
+                        ? 'bg-green-50 text-green-600'
+                        : 'bg-yellow-500/20 text-yellow-600'
                     }`}>
                       {completion.personal}%
                     </span>
                   </button>
                   <button
                     onClick={() => setActiveTab('company')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                    className={`flex items-center gap-2 px-4 py-2 rounded-none transition-all ${
                       activeTab === 'company'
-                        ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                        ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-gray-800'
+                        : 'text-gray-500 hover:text-gray-800 hover:bg-white'
                     }`}
                   >
                     <Building2 className="w-5 h-5" />
                     {t.companyProfile}
                     <span className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${
                       completion.company === 100
-                        ? 'bg-green-500/20 text-green-400'
-                        : 'bg-yellow-500/20 text-yellow-400'
+                        ? 'bg-green-50 text-green-600'
+                        : 'bg-yellow-500/20 text-yellow-600'
                     }`}>
                       {completion.company}%
                     </span>
@@ -537,7 +537,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, language }
 
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-white"
+            className="p-2 hover:bg-white rounded-none transition-colors text-gray-500 hover:text-gray-800"
           >
             <X className="w-5 h-5" />
           </button>
@@ -561,23 +561,23 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, language }
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-4 border-t border-slate-700 bg-slate-800/50">
+        <div className="flex items-center justify-between p-4 border-t border-gray-200 bg-gray-50">
           <div className="flex items-center gap-4">
             {/* Overall completion bar */}
             {(() => {
               const completion = calculateProfileCompletion(personalProfile, companyProfile)
               return (
                 <div className="flex items-center gap-2">
-                  <div className="w-32 h-2 bg-slate-700 rounded-full overflow-hidden">
+                  <div className="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div
                       className={`h-full transition-all duration-300 ${
-                        completion.total === 100 ? 'bg-green-500' : 'bg-purple-500'
+                        completion.total === 100 ? 'bg-green-50' : 'bg-purple-50'
                       }`}
                       style={{ width: `${completion.total}%` }}
                     />
                   </div>
                   <span className={`text-sm ${
-                    completion.total === 100 ? 'text-green-400' : 'text-slate-400'
+                    completion.total === 100 ? 'text-green-600' : 'text-gray-500'
                   }`}>
                     {completion.total}% complete
                   </span>
@@ -586,7 +586,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, language }
             })()}
             {saveMessage && (
               <div className={`flex items-center gap-2 text-sm ${
-                saveMessage.type === 'success' ? 'text-green-400' : 'text-red-400'
+                saveMessage.type === 'success' ? 'text-green-600' : 'text-red-600'
               }`}>
                 <AlertCircle className="w-4 h-4" />
                 {saveMessage.text}
@@ -596,14 +596,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, language }
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-slate-400 hover:text-white transition-colors"
+              className="px-4 py-2 text-gray-500 hover:text-gray-800 transition-colors"
             >
               {t.cancel}
             </button>
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 text-white rounded-lg font-semibold transition-all disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 text-gray-800 rounded-none font-semibold transition-all disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
               {isSaving ? 'Saving...' : t.save}
@@ -724,15 +724,15 @@ const PersonalProfileForm: React.FC<{
   return (
     <div className="space-y-6">
       {/* GAINS Profile Upload Banner */}
-      <div className="bg-gradient-to-r from-purple-900/50 to-cyan-900/50 rounded-xl p-4 border border-purple-500/30">
+      <div className="bg-gradient-to-r from-purple-900/50 to-cyan-900/50 rounded-none p-4 border border-purple-500/30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-500/20 rounded-lg">
-              <Sparkles className="w-6 h-6 text-purple-400" />
+            <div className="p-2 bg-purple-50 rounded-none">
+              <Sparkles className="w-6 h-6 text-purple-600" />
             </div>
             <div>
-              <h3 className="text-white font-semibold">Quick Fill with GAINS Profile</h3>
-              <p className="text-sm text-slate-400">Upload your BNI GAINS Profile PDF to auto-fill your information</p>
+              <h3 className="text-gray-800 font-semibold">Quick Fill with GAINS Profile</h3>
+              <p className="text-sm text-gray-500">Upload your BNI GAINS Profile PDF to auto-fill your information</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -746,7 +746,7 @@ const PersonalProfileForm: React.FC<{
             <button
               onClick={() => gainsInputRef.current?.click()}
               disabled={isExtractingGains}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-purple-50 hover:bg-purple-50 border border-purple-200 text-gray-800 rounded-none font-medium transition-colors disabled:opacity-50"
             >
               {isExtractingGains ? (
                 <>
@@ -764,7 +764,7 @@ const PersonalProfileForm: React.FC<{
         </div>
         {extractionMessage && (
           <div className={`mt-3 flex items-center gap-2 text-sm ${
-            extractionMessage.type === 'success' ? 'text-green-400' : 'text-red-400'
+            extractionMessage.type === 'success' ? 'text-green-600' : 'text-red-600'
           }`}>
             <AlertCircle className="w-4 h-4" />
             {extractionMessage.text}
@@ -775,13 +775,13 @@ const PersonalProfileForm: React.FC<{
       {/* Profile Photo */}
       <div className="flex items-center gap-6">
         <div className="relative">
-          <div className="w-24 h-24 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden border-2 border-slate-600">
+          <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border-2 border-gray-200">
             {isUploading ? (
-              <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+              <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
             ) : profile.profilePhoto ? (
               <img src={profile.profilePhoto} alt="Profile" className="w-full h-full object-cover" />
             ) : (
-              <User className="w-12 h-12 text-slate-400" />
+              <User className="w-12 h-12 text-gray-500" />
             )}
           </div>
           <input
@@ -794,59 +794,59 @@ const PersonalProfileForm: React.FC<{
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className="absolute bottom-0 right-0 p-2 bg-purple-500 rounded-full hover:bg-purple-600 transition-colors disabled:opacity-50"
+            className="absolute bottom-0 right-0 p-2 bg-purple-50 rounded-full hover:bg-purple-50 border border-purple-200 transition-colors disabled:opacity-50"
           >
-            <Camera className="w-4 h-4 text-white" />
+            <Camera className="w-4 h-4 text-gray-800" />
           </button>
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-white">Profile Photo</h3>
-          <p className="text-sm text-slate-400">Upload a professional photo (JPG, PNG, max 10MB)</p>
+          <h3 className="text-lg font-semibold text-gray-800">Profile Photo</h3>
+          <p className="text-sm text-gray-500">Upload a professional photo (JPG, PNG, max 10MB)</p>
         </div>
       </div>
 
       {/* Required Fields Section */}
-      <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <span className="text-red-400">*</span> Required Information
+      <div className="bg-gray-50 rounded-none p-4 border border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <span className="text-red-600">*</span> Required Information
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
-              Full Legal Name <span className="text-red-400">*</span>
+            <label className="block text-sm font-medium text-gray-600 mb-1">
+              Full Legal Name <span className="text-red-600">*</span>
             </label>
             <input
               type="text"
               value={profile.fullName}
               onChange={(e) => onChange('fullName', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="Enter your full legal name"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
-              Email Address <span className="text-red-400">*</span>
+            <label className="block text-sm font-medium text-gray-600 mb-1">
+              Email Address <span className="text-red-600">*</span>
             </label>
             <input
               type="text"
               value={profile.email}
               onChange={(e) => onChange('email', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="your@email.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
-              Phone Number <span className="text-red-400">*</span>
+            <label className="block text-sm font-medium text-gray-600 mb-1">
+              Phone Number <span className="text-red-600">*</span>
             </label>
             <div className="flex gap-2">
               <select
                 value={profile.countryCode}
                 onChange={(e) => onChange('countryCode', e.target.value)}
-                className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               >
                 {countryCodes.map(({ code, country }) => (
                   <option key={code} value={code}>{code} {country}</option>
@@ -856,20 +856,20 @@ const PersonalProfileForm: React.FC<{
                 type="tel"
                 value={profile.phone}
                 onChange={(e) => onChange('phone', e.target.value)}
-                className="flex-1 px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="flex-1 px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
                 placeholder="Phone number"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
-              Role in Company <span className="text-red-400">*</span>
+            <label className="block text-sm font-medium text-gray-600 mb-1">
+              Role in Company <span className="text-red-600">*</span>
             </label>
             <select
               value={profile.roleInCompany}
               onChange={(e) => onChange('roleInCompany', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
             >
               <option value="">Select role</option>
               <option value="owner">Owner</option>
@@ -883,69 +883,69 @@ const PersonalProfileForm: React.FC<{
       </div>
 
       {/* Optional Fields Section */}
-      <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-        <h3 className="text-lg font-semibold text-white mb-4">Optional Information</h3>
+      <div className="bg-gray-50 rounded-none p-4 border border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Optional Information</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Preferred Name / Nickname
             </label>
             <input
               type="text"
               value={profile.preferredName || ''}
               onChange={(e) => onChange('preferredName', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="What should we call you?"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Job Title
             </label>
             <input
               type="text"
               value={profile.jobTitle || ''}
               onChange={(e) => onChange('jobTitle', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="e.g. CEO, Marketing Director"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Department
             </label>
             <input
               type="text"
               value={profile.department || ''}
               onChange={(e) => onChange('department', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="e.g. Sales, Operations"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Date of Birth
             </label>
             <input
               type="date"
               value={profile.dateOfBirth || ''}
               onChange={(e) => onChange('dateOfBirth', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Gender
             </label>
             <select
               value={profile.gender || ''}
               onChange={(e) => onChange('gender', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
             >
               <option value="">Prefer not to say</option>
               <option value="male">Male</option>
@@ -955,53 +955,53 @@ const PersonalProfileForm: React.FC<{
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Nationality
             </label>
             <input
               type="text"
               value={profile.nationality || ''}
               onChange={(e) => onChange('nationality', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="e.g. American, Chinese"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               LinkedIn Profile URL
             </label>
             <input
               type="url"
               value={profile.linkedInUrl || ''}
               onChange={(e) => onChange('linkedInUrl', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="https://linkedin.com/in/yourprofile"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Timezone
             </label>
             <input
               type="text"
               value={profile.timezone || ''}
               onChange={(e) => onChange('timezone', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="Auto-detected"
             />
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Bio / About Me
             </label>
             <textarea
               value={profile.bio || ''}
               onChange={(e) => onChange('bio', e.target.value)}
               rows={3}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300 resize-none"
               placeholder="Tell us about yourself..."
             />
           </div>
@@ -1009,110 +1009,110 @@ const PersonalProfileForm: React.FC<{
       </div>
 
       {/* Family & Personal Info Section (GAINS Profile) */}
-      <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-        <h3 className="text-lg font-semibold text-white mb-4">Family & Personal Info</h3>
+      <div className="bg-gray-50 rounded-none p-4 border border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Family & Personal Info</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Spouse / Partner Name
             </label>
             <input
               type="text"
               value={profile.spouseName || ''}
               onChange={(e) => onChange('spouseName', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="Spouse or partner's name"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Children
             </label>
             <input
               type="text"
               value={profile.childrenInfo || ''}
               onChange={(e) => onChange('childrenInfo', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="e.g. 2 kids (ages 5 and 8)"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Pets
             </label>
             <input
               type="text"
               value={profile.petsInfo || ''}
               onChange={(e) => onChange('petsInfo', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="e.g. Golden Retriever named Max"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Previous Job Type
             </label>
             <input
               type="text"
               value={profile.previousJobType || ''}
               onChange={(e) => onChange('previousJobType', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="Your previous profession or career"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Hobbies
             </label>
             <input
               type="text"
               value={profile.hobbies || ''}
               onChange={(e) => onChange('hobbies', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="e.g. Golf, Reading, Cooking"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Interests / Activities
             </label>
             <input
               type="text"
               value={profile.interestsActivities || ''}
               onChange={(e) => onChange('interestsActivities', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="e.g. Networking, Community service"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Residence Location
             </label>
             <input
               type="text"
               value={profile.residenceLocation || ''}
               onChange={(e) => onChange('residenceLocation', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="Where do you live?"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               How Long Have You Lived There?
             </label>
             <input
               type="text"
               value={profile.residenceDuration || ''}
               onChange={(e) => onChange('residenceDuration', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="e.g. 5 years"
             />
           </div>
@@ -1120,45 +1120,45 @@ const PersonalProfileForm: React.FC<{
       </div>
 
       {/* General Info Section (GAINS Profile) */}
-      <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-        <h3 className="text-lg font-semibold text-white mb-4">About You</h3>
+      <div className="bg-gray-50 rounded-none p-4 border border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">About You</h3>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               What Are Your Strong Desires / Wishes?
             </label>
             <textarea
               value={profile.strongDesires || ''}
               onChange={(e) => onChange('strongDesires', e.target.value)}
               rows={2}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300 resize-none"
               placeholder="What do you strongly desire or wish to achieve?"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               A Secret Nobody Knows About You
             </label>
             <textarea
               value={profile.secretNobodyKnows || ''}
               onChange={(e) => onChange('secretNobodyKnows', e.target.value)}
               rows={2}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300 resize-none"
               placeholder="Something interesting people don't know about you..."
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Key to Your Success
             </label>
             <textarea
               value={profile.keyToSuccess || ''}
               onChange={(e) => onChange('keyToSuccess', e.target.value)}
               rows={2}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300 resize-none"
               placeholder="What has been key to your success?"
             />
           </div>
@@ -1166,72 +1166,72 @@ const PersonalProfileForm: React.FC<{
       </div>
 
       {/* GAINS Worksheet Section */}
-      <div className="bg-gradient-to-br from-purple-900/30 to-cyan-900/30 rounded-xl p-4 border border-purple-500/30">
-        <h3 className="text-lg font-semibold text-white mb-2">GAINS Worksheet</h3>
-        <p className="text-sm text-slate-400 mb-4">Goals, Achievements, Interests, Networks, Skills - Help others understand how to refer you better</p>
+      <div className="bg-gradient-to-br from-purple-900/30 to-cyan-900/30 rounded-none p-4 border border-purple-500/30">
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">GAINS Worksheet</h3>
+        <p className="text-sm text-gray-500 mb-4">Goals, Achievements, Interests, Networks, Skills - Help others understand how to refer you better</p>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-purple-300 mb-1">
+            <label className="block text-sm font-medium text-purple-600 mb-1">
               G - Goals
             </label>
             <textarea
               value={profile.gainsGoals || ''}
               onChange={(e) => onChange('gainsGoals', e.target.value)}
               rows={2}
-              className="w-full px-4 py-2 bg-slate-700/70 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+              className="w-full px-4 py-2 bg-gray-100 border border-purple-500/30 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300 resize-none"
               placeholder="What are your business and personal goals? What type of referrals are you looking for?"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-cyan-300 mb-1">
+            <label className="block text-sm font-medium text-cyan-600 mb-1">
               A - Achievements
             </label>
             <textarea
               value={profile.gainsAchievements || ''}
               onChange={(e) => onChange('gainsAchievements', e.target.value)}
               rows={2}
-              className="w-full px-4 py-2 bg-slate-700/70 border border-cyan-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 resize-none"
+              className="w-full px-4 py-2 bg-gray-100 border border-cyan-500/30 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-cyan-500 resize-none"
               placeholder="What are your key accomplishments and achievements? Awards, certifications, notable projects?"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-green-300 mb-1">
+            <label className="block text-sm font-medium text-green-600 mb-1">
               I - Interests
             </label>
             <textarea
               value={profile.gainsInterests || ''}
               onChange={(e) => onChange('gainsInterests', e.target.value)}
               rows={2}
-              className="w-full px-4 py-2 bg-slate-700/70 border border-green-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+              className="w-full px-4 py-2 bg-gray-100 border border-green-500/30 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
               placeholder="What topics, industries, or activities interest you professionally and personally?"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-yellow-300 mb-1">
+            <label className="block text-sm font-medium text-yellow-600 mb-1">
               N - Networks
             </label>
             <textarea
               value={profile.gainsNetworks || ''}
               onChange={(e) => onChange('gainsNetworks', e.target.value)}
               rows={2}
-              className="w-full px-4 py-2 bg-slate-700/70 border border-yellow-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none"
+              className="w-full px-4 py-2 bg-gray-100 border border-yellow-500/30 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-yellow-500 resize-none"
               placeholder="What groups, associations, or communities are you part of? Who do you know?"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-pink-300 mb-1">
+            <label className="block text-sm font-medium text-pink-600 mb-1">
               S - Skills
             </label>
             <textarea
               value={profile.gainsSkills || ''}
               onChange={(e) => onChange('gainsSkills', e.target.value)}
               rows={2}
-              className="w-full px-4 py-2 bg-slate-700/70 border border-pink-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none"
+              className="w-full px-4 py-2 bg-gray-100 border border-pink-500/30 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none"
               placeholder="What are your special skills, talents, or expertise that set you apart?"
             />
           </div>
@@ -1268,8 +1268,8 @@ const BusinessLicenseUpload: React.FC<{
 
   return (
     <div className="mt-4">
-      <label className="block text-sm font-medium text-slate-300 mb-1">
-        Business Registration License <span className="text-red-400">*</span>
+      <label className="block text-sm font-medium text-gray-600 mb-1">
+        Business Registration License <span className="text-red-600">*</span>
       </label>
       <div className="flex items-center gap-4">
         <input
@@ -1282,7 +1282,7 @@ const BusinessLicenseUpload: React.FC<{
         <button
           onClick={() => inputRef.current?.click()}
           disabled={isUploading}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white hover:bg-slate-600 transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 hover:bg-gray-200 transition-colors disabled:opacity-50"
         >
           {isUploading ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -1296,12 +1296,12 @@ const BusinessLicenseUpload: React.FC<{
             href={currentUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-purple-400 hover:text-purple-300"
+            className="text-sm text-purple-600 hover:text-purple-600"
           >
             {fileName || 'View uploaded document'}
           </a>
         ) : (
-          <span className="text-sm text-slate-400">PDF, JPG, or PNG (max 10MB)</span>
+          <span className="text-sm text-gray-500">PDF, JPG, or PNG (max 10MB)</span>
         )}
       </div>
     </div>
@@ -1338,13 +1338,13 @@ const CompanyProfileForm: React.FC<{
       {/* Company Logo */}
       <div className="flex items-center gap-6">
         <div className="relative">
-          <div className="w-24 h-24 rounded-xl bg-slate-700 flex items-center justify-center overflow-hidden border-2 border-slate-600">
+          <div className="w-24 h-24 rounded-none bg-gray-100 flex items-center justify-center overflow-hidden border-2 border-gray-200">
             {isUploading ? (
-              <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+              <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
             ) : profile.brandLogo ? (
               <img src={profile.brandLogo} alt="Company Logo" className="w-full h-full object-cover" />
             ) : (
-              <Building2 className="w-12 h-12 text-slate-400" />
+              <Building2 className="w-12 h-12 text-gray-500" />
             )}
           </div>
           <input
@@ -1357,71 +1357,71 @@ const CompanyProfileForm: React.FC<{
           <button
             onClick={() => logoInputRef.current?.click()}
             disabled={isUploading}
-            className="absolute bottom-0 right-0 p-2 bg-purple-500 rounded-full hover:bg-purple-600 transition-colors disabled:opacity-50"
+            className="absolute bottom-0 right-0 p-2 bg-purple-50 rounded-full hover:bg-purple-50 border border-purple-200 transition-colors disabled:opacity-50"
           >
-            <Upload className="w-4 h-4 text-white" />
+            <Upload className="w-4 h-4 text-gray-800" />
           </button>
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-white">Company Logo</h3>
-          <p className="text-sm text-slate-400">Upload your company logo (JPG, PNG, max 10MB)</p>
+          <h3 className="text-lg font-semibold text-gray-800">Company Logo</h3>
+          <p className="text-sm text-gray-500">Upload your company logo (JPG, PNG, max 10MB)</p>
         </div>
       </div>
 
       {/* Required Fields Section */}
-      <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <span className="text-red-400">*</span> Required Company Information
+      <div className="bg-gray-50 rounded-none p-4 border border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <span className="text-red-600">*</span> Required Company Information
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
-              Company Legal Name <span className="text-red-400">*</span>
+            <label className="block text-sm font-medium text-gray-600 mb-1">
+              Company Legal Name <span className="text-red-600">*</span>
             </label>
             <input
               type="text"
               value={profile.companyLegalName}
               onChange={(e) => onChange('companyLegalName', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="Official registered company name"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
-              Registration Number <span className="text-red-400">*</span>
+            <label className="block text-sm font-medium text-gray-600 mb-1">
+              Registration Number <span className="text-red-600">*</span>
             </label>
             <input
               type="text"
               value={profile.registrationNumber}
               onChange={(e) => onChange('registrationNumber', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="Company registration number"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
-              Country of Registration <span className="text-red-400">*</span>
+            <label className="block text-sm font-medium text-gray-600 mb-1">
+              Country of Registration <span className="text-red-600">*</span>
             </label>
             <input
               type="text"
               value={profile.countryOfRegistration}
               onChange={(e) => onChange('countryOfRegistration', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="e.g. United States"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
-              Company Type <span className="text-red-400">*</span>
+            <label className="block text-sm font-medium text-gray-600 mb-1">
+              Company Type <span className="text-red-600">*</span>
             </label>
             <select
               value={profile.companyType}
               onChange={(e) => onChange('companyType', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
             >
               <option value="">Select company type</option>
               <option value="sole_proprietor">Sole Proprietor</option>
@@ -1434,13 +1434,13 @@ const CompanyProfileForm: React.FC<{
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
-              Industry Type <span className="text-red-400">*</span>
+            <label className="block text-sm font-medium text-gray-600 mb-1">
+              Industry Type <span className="text-red-600">*</span>
             </label>
             <select
               value={profile.industryType}
               onChange={(e) => onChange('industryType', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
             >
               <option value="">Select industry</option>
               {industries.map(industry => (
@@ -1450,14 +1450,14 @@ const CompanyProfileForm: React.FC<{
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
-              Year Established <span className="text-red-400">*</span>
+            <label className="block text-sm font-medium text-gray-600 mb-1">
+              Year Established <span className="text-red-600">*</span>
             </label>
             <input
               type="number"
               value={profile.yearEstablished}
               onChange={(e) => onChange('yearEstablished', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="e.g. 2020"
               min="1800"
               max={new Date().getFullYear()}
@@ -1465,82 +1465,82 @@ const CompanyProfileForm: React.FC<{
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
-              Company Email <span className="text-red-400">*</span>
+            <label className="block text-sm font-medium text-gray-600 mb-1">
+              Company Email <span className="text-red-600">*</span>
             </label>
             <input
               type="email"
               value={profile.companyEmail}
               onChange={(e) => onChange('companyEmail', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="contact@company.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
-              Company Phone <span className="text-red-400">*</span>
+            <label className="block text-sm font-medium text-gray-600 mb-1">
+              Company Phone <span className="text-red-600">*</span>
             </label>
             <input
               type="tel"
               value={profile.companyPhone}
               onChange={(e) => onChange('companyPhone', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="+1 (555) 123-4567"
             />
           </div>
         </div>
 
         {/* Registered Address */}
-        <h4 className="text-md font-medium text-white mt-6 mb-3">Registered Address <span className="text-red-400">*</span></h4>
+        <h4 className="text-md font-medium text-gray-800 mt-6 mb-3">Registered Address <span className="text-red-600">*</span></h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-slate-300 mb-1">Street Address</label>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Street Address</label>
             <input
               type="text"
               value={profile.registeredAddressStreet}
               onChange={(e) => onChange('registeredAddressStreet', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="123 Business Street, Suite 100"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">City</label>
+            <label className="block text-sm font-medium text-gray-600 mb-1">City</label>
             <input
               type="text"
               value={profile.registeredAddressCity}
               onChange={(e) => onChange('registeredAddressCity', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="City"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">State / Province</label>
+            <label className="block text-sm font-medium text-gray-600 mb-1">State / Province</label>
             <input
               type="text"
               value={profile.registeredAddressState}
               onChange={(e) => onChange('registeredAddressState', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="State / Province"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Postal Code</label>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Postal Code</label>
             <input
               type="text"
               value={profile.registeredAddressPostal}
               onChange={(e) => onChange('registeredAddressPostal', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="Postal Code"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Country</label>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Country</label>
             <input
               type="text"
               value={profile.registeredAddressCountry}
               onChange={(e) => onChange('registeredAddressCountry', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="Country"
             />
           </div>
@@ -1554,44 +1554,44 @@ const CompanyProfileForm: React.FC<{
       </div>
 
       {/* Optional Fields Section */}
-      <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-        <h3 className="text-lg font-semibold text-white mb-4">Optional Company Information</h3>
+      <div className="bg-gray-50 rounded-none p-4 border border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Optional Company Information</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Trading Name / DBA
             </label>
             <input
               type="text"
               value={profile.tradingName || ''}
               onChange={(e) => onChange('tradingName', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="Doing business as..."
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Company Website
             </label>
             <input
               type="url"
               value={profile.companyWebsite || ''}
               onChange={(e) => onChange('companyWebsite', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="https://www.company.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Number of Employees
             </label>
             <select
               value={profile.numberOfEmployees || ''}
               onChange={(e) => onChange('numberOfEmployees', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
             >
               <option value="">Select range</option>
               <option value="1-10">1-10</option>
@@ -1604,13 +1604,13 @@ const CompanyProfileForm: React.FC<{
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Annual Revenue Range
             </label>
             <select
               value={profile.annualRevenueRange || ''}
               onChange={(e) => onChange('annualRevenueRange', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
             >
               <option value="">Select range</option>
               <option value="<100k">Less than $100K</option>
@@ -1623,27 +1623,27 @@ const CompanyProfileForm: React.FC<{
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Tax ID / VAT Number
             </label>
             <input
               type="text"
               value={profile.taxId || ''}
               onChange={(e) => onChange('taxId', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="Tax identification number"
             />
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 mb-1">
               Company Description
             </label>
             <textarea
               value={profile.companyDescription || ''}
               onChange={(e) => onChange('companyDescription', e.target.value)}
               rows={3}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300 resize-none"
               placeholder="Describe your company, products, and services..."
             />
           </div>
@@ -1651,47 +1651,47 @@ const CompanyProfileForm: React.FC<{
       </div>
 
       {/* Social Media Section */}
-      <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-        <h3 className="text-lg font-semibold text-white mb-4">Social Media Links (Optional)</h3>
+      <div className="bg-gray-50 rounded-none p-4 border border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Social Media Links (Optional)</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Facebook</label>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Facebook</label>
             <input
               type="url"
               value={profile.socialFacebook || ''}
               onChange={(e) => onChange('socialFacebook', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="https://facebook.com/yourpage"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Instagram</label>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Instagram</label>
             <input
               type="url"
               value={profile.socialInstagram || ''}
               onChange={(e) => onChange('socialInstagram', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="https://instagram.com/yourpage"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">LinkedIn</label>
+            <label className="block text-sm font-medium text-gray-600 mb-1">LinkedIn</label>
             <input
               type="url"
               value={profile.socialLinkedIn || ''}
               onChange={(e) => onChange('socialLinkedIn', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="https://linkedin.com/company/yourcompany"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">YouTube</label>
+            <label className="block text-sm font-medium text-gray-600 mb-1">YouTube</label>
             <input
               type="url"
               value={profile.socialYouTube || ''}
               onChange={(e) => onChange('socialYouTube', e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
               placeholder="https://youtube.com/@yourchannel"
             />
           </div>

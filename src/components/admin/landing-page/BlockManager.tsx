@@ -149,7 +149,7 @@ export default function BlockManager({
     const italic = data?.heading_italic || false
 
     return (
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1">
         {/* Alignment buttons */}
         <div className="flex items-center gap-1">
           <button
@@ -159,10 +159,10 @@ export default function BlockManager({
                 data: { ...data, heading_align: 'left' }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               textAlign === 'left'
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Align Left"
           >
@@ -175,10 +175,10 @@ export default function BlockManager({
                 data: { ...data, heading_align: 'center' }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               textAlign === 'center'
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Align Center"
           >
@@ -191,10 +191,10 @@ export default function BlockManager({
                 data: { ...data, heading_align: 'right' }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               textAlign === 'right'
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Align Right"
           >
@@ -211,10 +211,10 @@ export default function BlockManager({
                 data: { ...data, heading_bold: !bold }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               bold
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Bold"
           >
@@ -227,10 +227,10 @@ export default function BlockManager({
                 data: { ...data, heading_italic: !italic }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               italic
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Italic"
           >
@@ -242,12 +242,12 @@ export default function BlockManager({
         <div className="relative">
           <button
             onClick={() => setShowBgColorPicker(showBgColorPicker === sizeKey ? null : sizeKey)}
-            className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+            className="px-2 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-none border border-gray-200"
           >
             {Math.round(parseFloat(fontSize) * 16) || 16}
           </button>
           {showBgColorPicker === sizeKey && (
-            <div className="absolute right-0 top-full mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+            <div className="absolute right-0 top-full mt-1 w-20 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-48 overflow-y-auto">
               {[12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64, 72, 80, 96].map(size => (
                 <button
                   key={size}
@@ -258,8 +258,8 @@ export default function BlockManager({
                     })
                     setShowBgColorPicker(null)
                   }}
-                  className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                    Math.round(parseFloat(fontSize) * 16) === size ? 'bg-violet-600 text-white' : 'text-slate-200'
+                  className={`w-full px-2 py-1 text-left text-xs hover:bg-gray-200 ${
+                    Math.round(parseFloat(fontSize) * 16) === size ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                   }`}
                 >
                   {size}
@@ -273,12 +273,12 @@ export default function BlockManager({
         <div className="relative">
           <button
             onClick={() => setShowBgColorPicker(showBgColorPicker === fontKey ? null : fontKey)}
-            className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+            className="px-2 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-none border border-gray-200"
           >
             {fontFamily.split(' ')[0]}
           </button>
           {showBgColorPicker === fontKey && (
-            <div className="absolute right-0 top-full mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-64 overflow-y-auto">
+            <div className="absolute right-0 top-full mt-1 w-40 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-64 overflow-y-auto">
               {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
                 <button
                   key={font}
@@ -289,8 +289,8 @@ export default function BlockManager({
                     })
                     setShowBgColorPicker(null)
                   }}
-                  className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                    fontFamily === font ? 'bg-violet-600 text-white' : 'text-slate-200'
+                  className={`w-full px-2 py-1 text-left text-xs hover:bg-gray-200 ${
+                    fontFamily === font ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                   }`}
                 >
                   {font}
@@ -304,13 +304,13 @@ export default function BlockManager({
         <div className="relative flex flex-col items-center gap-0.5">
           <button
             onClick={() => setShowBgColorPicker(showBgColorPicker === textColorKey ? null : textColorKey)}
-            className="w-7 h-7 rounded border border-slate-600 cursor-pointer hover:scale-110 transition-transform"
+            className="w-7 h-7 rounded-none border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
             style={{ backgroundColor: textColor }}
             title="Text color"
           />
-          <span className="text-[9px] text-slate-500">Text</span>
+          <span className="text-[9px] text-gray-400">Text</span>
           {showBgColorPicker === textColorKey && (
-            <div className="absolute right-0 top-full mt-2 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50">
+            <div className="absolute right-0 top-full mt-2 p-3 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50">
               <div className="grid grid-cols-7 gap-2">
                 {COLOR_PALETTE.map((c) => (
                   <button
@@ -322,7 +322,7 @@ export default function BlockManager({
                       })
                       setShowBgColorPicker(null)
                     }}
-                    className="w-7 h-7 rounded border-2 hover:scale-110 transition-transform"
+                    className="w-7 h-7 rounded-none border-2 hover:scale-110 transition-transform"
                     style={{
                       backgroundColor: c.value,
                       borderColor: textColor === c.value ? '#a855f7' : '#475569'
@@ -339,13 +339,13 @@ export default function BlockManager({
         <div className="relative flex flex-col items-center gap-0.5">
           <button
             onClick={() => setShowBgColorPicker(showBgColorPicker === bgColorKey ? null : bgColorKey)}
-            className="w-7 h-7 rounded border border-slate-600 cursor-pointer hover:scale-110 transition-transform"
+            className="w-7 h-7 rounded-none border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
             style={{ backgroundColor: bgColor }}
             title="Background color"
           />
-          <span className="text-[9px] text-slate-500">BG</span>
+          <span className="text-[9px] text-gray-400">BG</span>
           {showBgColorPicker === bgColorKey && (
-            <div className="absolute right-0 top-full mt-2 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50">
+            <div className="absolute right-0 top-full mt-2 p-3 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50">
               <div className="grid grid-cols-7 gap-2">
                 {COLOR_PALETTE.map((c) => (
                   <button
@@ -357,7 +357,7 @@ export default function BlockManager({
                       })
                       setShowBgColorPicker(null)
                     }}
-                    className="w-7 h-7 rounded border-2 hover:scale-110 transition-transform"
+                    className="w-7 h-7 rounded-none border-2 hover:scale-110 transition-transform"
                     style={{
                       backgroundColor: c.value,
                       borderColor: bgColor === c.value ? '#a855f7' : '#475569'
@@ -389,7 +389,7 @@ export default function BlockManager({
     const italic = data?.heading_italic || false
 
     return (
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1">
         {/* Alignment buttons */}
         <div className="flex items-center gap-1">
           <button
@@ -399,10 +399,10 @@ export default function BlockManager({
                 data: { ...data, heading_align: 'left' }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               textAlign === 'left'
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Align Left"
           >
@@ -415,10 +415,10 @@ export default function BlockManager({
                 data: { ...data, heading_align: 'center' }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               textAlign === 'center'
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Align Center"
           >
@@ -431,10 +431,10 @@ export default function BlockManager({
                 data: { ...data, heading_align: 'right' }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               textAlign === 'right'
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Align Right"
           >
@@ -451,10 +451,10 @@ export default function BlockManager({
                 data: { ...data, heading_bold: !bold }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               bold
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Bold"
           >
@@ -467,10 +467,10 @@ export default function BlockManager({
                 data: { ...data, heading_italic: !italic }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               italic
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Italic"
           >
@@ -482,12 +482,12 @@ export default function BlockManager({
         <div className="relative">
           <button
             onClick={() => setShowBgColorPicker(showBgColorPicker === sizeKey ? null : sizeKey)}
-            className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+            className="px-2 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-none border border-gray-200"
           >
             {Math.round(parseFloat(fontSize) * 16) || 16}
           </button>
           {showBgColorPicker === sizeKey && (
-            <div className="absolute right-0 top-full mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+            <div className="absolute right-0 top-full mt-1 w-20 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-48 overflow-y-auto">
               {[12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64, 72, 80, 96].map(size => (
                 <button
                   key={size}
@@ -498,8 +498,8 @@ export default function BlockManager({
                     })
                     setShowBgColorPicker(null)
                   }}
-                  className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                    Math.round(parseFloat(fontSize) * 16) === size ? 'bg-violet-600 text-white' : 'text-slate-200'
+                  className={`w-full px-2 py-1 text-left text-xs hover:bg-gray-200 ${
+                    Math.round(parseFloat(fontSize) * 16) === size ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                   }`}
                 >
                   {size}
@@ -513,12 +513,12 @@ export default function BlockManager({
         <div className="relative">
           <button
             onClick={() => setShowBgColorPicker(showBgColorPicker === fontKey ? null : fontKey)}
-            className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+            className="px-2 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-none border border-gray-200"
           >
             {fontFamily.split(' ')[0]}
           </button>
           {showBgColorPicker === fontKey && (
-            <div className="absolute right-0 top-full mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-64 overflow-y-auto">
+            <div className="absolute right-0 top-full mt-1 w-40 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-64 overflow-y-auto">
               {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
                 <button
                   key={font}
@@ -529,8 +529,8 @@ export default function BlockManager({
                     })
                     setShowBgColorPicker(null)
                   }}
-                  className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                    fontFamily === font ? 'bg-violet-600 text-white' : 'text-slate-200'
+                  className={`w-full px-2 py-1 text-left text-xs hover:bg-gray-200 ${
+                    fontFamily === font ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                   }`}
                 >
                   {font}
@@ -544,13 +544,13 @@ export default function BlockManager({
         <div className="relative flex flex-col items-center gap-0.5">
           <button
             onClick={() => setShowBgColorPicker(showBgColorPicker === textColorKey ? null : textColorKey)}
-            className="w-7 h-7 rounded border border-slate-600 cursor-pointer hover:scale-110 transition-transform"
+            className="w-7 h-7 rounded-none border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
             style={{ backgroundColor: textColor }}
             title="Text color"
           />
-          <span className="text-[9px] text-slate-500">Text</span>
+          <span className="text-[9px] text-gray-400">Text</span>
           {showBgColorPicker === textColorKey && (
-            <div className="absolute right-0 top-full mt-2 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50">
+            <div className="absolute right-0 top-full mt-2 p-3 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50">
               <div className="grid grid-cols-7 gap-2">
                 {COLOR_PALETTE.map((c) => (
                   <button
@@ -562,7 +562,7 @@ export default function BlockManager({
                       })
                       setShowBgColorPicker(null)
                     }}
-                    className="w-7 h-7 rounded border-2 hover:scale-110 transition-transform"
+                    className="w-7 h-7 rounded-none border-2 hover:scale-110 transition-transform"
                     style={{
                       backgroundColor: c.value,
                       borderColor: textColor === c.value ? '#a855f7' : '#475569'
@@ -579,13 +579,13 @@ export default function BlockManager({
         <div className="relative flex flex-col items-center gap-0.5">
           <button
             onClick={() => setShowBgColorPicker(showBgColorPicker === bgColorKey ? null : bgColorKey)}
-            className="w-7 h-7 rounded border border-slate-600 cursor-pointer hover:scale-110 transition-transform"
+            className="w-7 h-7 rounded-none border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
             style={{ backgroundColor: bgColor }}
             title="Background color"
           />
-          <span className="text-[9px] text-slate-500">BG</span>
+          <span className="text-[9px] text-gray-400">BG</span>
           {showBgColorPicker === bgColorKey && (
-            <div className="absolute right-0 top-full mt-2 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50">
+            <div className="absolute right-0 top-full mt-2 p-3 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50">
               <div className="grid grid-cols-7 gap-2">
                 {COLOR_PALETTE.map((c) => (
                   <button
@@ -597,7 +597,7 @@ export default function BlockManager({
                       })
                       setShowBgColorPicker(null)
                     }}
-                    className="w-7 h-7 rounded border-2 hover:scale-110 transition-transform"
+                    className="w-7 h-7 rounded-none border-2 hover:scale-110 transition-transform"
                     style={{
                       backgroundColor: c.value,
                       borderColor: bgColor === c.value ? '#a855f7' : '#475569'
@@ -630,7 +630,7 @@ export default function BlockManager({
     const overallLayout = data?.overall_layout || 'vertical'
 
     return (
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1">
         {/* Alignment buttons */}
         <div className="flex items-center gap-1">
           <button
@@ -640,10 +640,10 @@ export default function BlockManager({
                 data: { ...data, heading_align: 'left' }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               textAlign === 'left'
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Align Left"
           >
@@ -656,10 +656,10 @@ export default function BlockManager({
                 data: { ...data, heading_align: 'center' }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               textAlign === 'center'
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Align Center"
           >
@@ -672,10 +672,10 @@ export default function BlockManager({
                 data: { ...data, heading_align: 'right' }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               textAlign === 'right'
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Align Right"
           >
@@ -692,10 +692,10 @@ export default function BlockManager({
                 data: { ...data, heading_bold: !bold }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               bold
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Bold"
           >
@@ -708,10 +708,10 @@ export default function BlockManager({
                 data: { ...data, heading_italic: !italic }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               italic
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Italic"
           >
@@ -723,12 +723,12 @@ export default function BlockManager({
         <div className="relative">
           <button
             onClick={() => setShowBgColorPicker(showBgColorPicker === sizeKey ? null : sizeKey)}
-            className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+            className="px-2 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-none border border-gray-200"
           >
             {Math.round(parseFloat(fontSize) * 16) || 16}
           </button>
           {showBgColorPicker === sizeKey && (
-            <div className="absolute right-0 top-full mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+            <div className="absolute right-0 top-full mt-1 w-20 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-48 overflow-y-auto">
               {[12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64, 72, 80, 96].map(size => (
                 <button
                   key={size}
@@ -739,8 +739,8 @@ export default function BlockManager({
                     })
                     setShowBgColorPicker(null)
                   }}
-                  className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                    Math.round(parseFloat(fontSize) * 16) === size ? 'bg-violet-600 text-white' : 'text-slate-200'
+                  className={`w-full px-2 py-1 text-left text-xs hover:bg-gray-200 ${
+                    Math.round(parseFloat(fontSize) * 16) === size ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                   }`}
                 >
                   {size}
@@ -754,12 +754,12 @@ export default function BlockManager({
         <div className="relative">
           <button
             onClick={() => setShowBgColorPicker(showBgColorPicker === fontKey ? null : fontKey)}
-            className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+            className="px-2 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-none border border-gray-200"
           >
             {fontFamily.split(' ')[0]}
           </button>
           {showBgColorPicker === fontKey && (
-            <div className="absolute right-0 top-full mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-64 overflow-y-auto">
+            <div className="absolute right-0 top-full mt-1 w-40 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-64 overflow-y-auto">
               {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
                 <button
                   key={font}
@@ -770,8 +770,8 @@ export default function BlockManager({
                     })
                     setShowBgColorPicker(null)
                   }}
-                  className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                    fontFamily === font ? 'bg-violet-600 text-white' : 'text-slate-200'
+                  className={`w-full px-2 py-1 text-left text-xs hover:bg-gray-200 ${
+                    fontFamily === font ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                   }`}
                 >
                   {font}
@@ -785,13 +785,13 @@ export default function BlockManager({
         <div className="relative flex flex-col items-center gap-0.5">
           <button
             onClick={() => setShowBgColorPicker(showBgColorPicker === textColorKey ? null : textColorKey)}
-            className="w-7 h-7 rounded border border-slate-600 cursor-pointer hover:scale-110 transition-transform"
+            className="w-7 h-7 rounded-none border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
             style={{ backgroundColor: textColor }}
             title="Text color"
           />
-          <span className="text-[9px] text-slate-500">Text</span>
+          <span className="text-[9px] text-gray-400">Text</span>
           {showBgColorPicker === textColorKey && (
-            <div className="absolute right-0 top-full mt-2 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50">
+            <div className="absolute right-0 top-full mt-2 p-3 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50">
               <div className="grid grid-cols-7 gap-2">
                 {COLOR_PALETTE.map((c) => (
                   <button
@@ -803,7 +803,7 @@ export default function BlockManager({
                       })
                       setShowBgColorPicker(null)
                     }}
-                    className="w-7 h-7 rounded border-2 hover:scale-110 transition-transform"
+                    className="w-7 h-7 rounded-none border-2 hover:scale-110 transition-transform"
                     style={{
                       backgroundColor: c.value,
                       borderColor: textColor === c.value ? '#a855f7' : '#475569'
@@ -825,11 +825,11 @@ export default function BlockManager({
                 data: { ...data, overall_layout: 'vertical' }
               })
             }}
-            className={`px-2 py-0.5 text-xs rounded ${
+            className={`px-2 py-0.5 text-xs rounded-none ${
               overallLayout === 'vertical'
-                ? 'bg-violet-600 text-white'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-            } border border-slate-600`}
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            } border border-gray-200`}
             title="Vertical Layout"
           >
             ↓
@@ -841,11 +841,11 @@ export default function BlockManager({
                 data: { ...data, overall_layout: 'horizontal' }
               })
             }}
-            className={`px-2 py-0.5 text-xs rounded ${
+            className={`px-2 py-0.5 text-xs rounded-none ${
               overallLayout === 'horizontal'
-                ? 'bg-violet-600 text-white'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-            } border border-slate-600`}
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            } border border-gray-200`}
             title="Horizontal Layout"
           >
             →
@@ -856,13 +856,13 @@ export default function BlockManager({
         <div className="relative flex flex-col items-center gap-0.5">
           <button
             onClick={() => setShowBgColorPicker(showBgColorPicker === bgColorKey ? null : bgColorKey)}
-            className="w-7 h-7 rounded border border-slate-600 cursor-pointer hover:scale-110 transition-transform"
+            className="w-7 h-7 rounded-none border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
             style={{ backgroundColor: bgColor }}
             title="Background color"
           />
-          <span className="text-[9px] text-slate-500">BG</span>
+          <span className="text-[9px] text-gray-400">BG</span>
           {showBgColorPicker === bgColorKey && (
-            <div className="absolute right-0 top-full mt-2 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50">
+            <div className="absolute right-0 top-full mt-2 p-3 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50">
               <div className="grid grid-cols-7 gap-2">
                 {COLOR_PALETTE.map((c) => (
                   <button
@@ -874,7 +874,7 @@ export default function BlockManager({
                       })
                       setShowBgColorPicker(null)
                     }}
-                    className="w-7 h-7 rounded border-2 hover:scale-110 transition-transform"
+                    className="w-7 h-7 rounded-none border-2 hover:scale-110 transition-transform"
                     style={{
                       backgroundColor: c.value,
                       borderColor: bgColor === c.value ? '#a855f7' : '#475569'
@@ -906,7 +906,7 @@ export default function BlockManager({
     const italic = data?.heading_italic || false
 
     return (
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1">
         {/* Alignment buttons */}
         <div className="flex items-center gap-1">
           <button
@@ -916,10 +916,10 @@ export default function BlockManager({
                 data: { ...data, heading_align: 'left' }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               textAlign === 'left'
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Align Left"
           >
@@ -932,10 +932,10 @@ export default function BlockManager({
                 data: { ...data, heading_align: 'center' }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               textAlign === 'center'
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Align Center"
           >
@@ -948,10 +948,10 @@ export default function BlockManager({
                 data: { ...data, heading_align: 'right' }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               textAlign === 'right'
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Align Right"
           >
@@ -968,10 +968,10 @@ export default function BlockManager({
                 data: { ...data, heading_bold: !bold }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               bold
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Bold"
           >
@@ -984,10 +984,10 @@ export default function BlockManager({
                 data: { ...data, heading_italic: !italic }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               italic
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Italic"
           >
@@ -999,12 +999,12 @@ export default function BlockManager({
         <div className="relative">
           <button
             onClick={() => setShowBgColorPicker(showBgColorPicker === sizeKey ? null : sizeKey)}
-            className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+            className="px-2 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-none border border-gray-200"
           >
             {Math.round(parseFloat(fontSize) * 16) || 40}
           </button>
           {showBgColorPicker === sizeKey && (
-            <div className="absolute right-0 top-full mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+            <div className="absolute right-0 top-full mt-1 w-20 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-48 overflow-y-auto">
               {[12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64, 72, 80, 96].map(size => (
                 <button
                   key={size}
@@ -1015,8 +1015,8 @@ export default function BlockManager({
                     })
                     setShowBgColorPicker(null)
                   }}
-                  className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                    Math.round(parseFloat(fontSize) * 16) === size ? 'bg-violet-600 text-white' : 'text-slate-200'
+                  className={`w-full px-2 py-1 text-left text-xs hover:bg-gray-200 ${
+                    Math.round(parseFloat(fontSize) * 16) === size ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                   }`}
                 >
                   {size}
@@ -1030,12 +1030,12 @@ export default function BlockManager({
         <div className="relative">
           <button
             onClick={() => setShowBgColorPicker(showBgColorPicker === fontKey ? null : fontKey)}
-            className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+            className="px-2 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-none border border-gray-200"
           >
             {fontFamily.split(' ')[0]}
           </button>
           {showBgColorPicker === fontKey && (
-            <div className="absolute right-0 top-full mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-64 overflow-y-auto">
+            <div className="absolute right-0 top-full mt-1 w-40 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-64 overflow-y-auto">
               {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
                 <button
                   key={font}
@@ -1046,8 +1046,8 @@ export default function BlockManager({
                     })
                     setShowBgColorPicker(null)
                   }}
-                  className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                    fontFamily === font ? 'bg-violet-600 text-white' : 'text-slate-200'
+                  className={`w-full px-2 py-1 text-left text-xs hover:bg-gray-200 ${
+                    fontFamily === font ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                   }`}
                 >
                   {font}
@@ -1061,13 +1061,13 @@ export default function BlockManager({
         <div className="relative flex flex-col items-center gap-0.5">
           <button
             onClick={() => setShowBgColorPicker(showBgColorPicker === textColorKey ? null : textColorKey)}
-            className="w-7 h-7 rounded border border-slate-600 cursor-pointer hover:scale-110 transition-transform"
+            className="w-7 h-7 rounded-none border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
             style={{ backgroundColor: textColor }}
             title="Text color"
           />
-          <span className="text-[9px] text-slate-500">Text</span>
+          <span className="text-[9px] text-gray-400">Text</span>
           {showBgColorPicker === textColorKey && (
-            <div className="absolute right-0 top-full mt-2 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50">
+            <div className="absolute right-0 top-full mt-2 p-3 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50">
               <div className="grid grid-cols-7 gap-2">
                 {COLOR_PALETTE.map((c) => (
                   <button
@@ -1079,7 +1079,7 @@ export default function BlockManager({
                       })
                       setShowBgColorPicker(null)
                     }}
-                    className="w-7 h-7 rounded border-2 hover:scale-110 transition-transform"
+                    className="w-7 h-7 rounded-none border-2 hover:scale-110 transition-transform"
                     style={{
                       backgroundColor: c.value,
                       borderColor: textColor === c.value ? '#a855f7' : '#475569'
@@ -1096,13 +1096,13 @@ export default function BlockManager({
         <div className="relative flex flex-col items-center gap-0.5">
           <button
             onClick={() => setShowBgColorPicker(showBgColorPicker === bgColorKey ? null : bgColorKey)}
-            className="w-7 h-7 rounded border border-slate-600 cursor-pointer hover:scale-110 transition-transform"
+            className="w-7 h-7 rounded-none border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
             style={{ backgroundColor: bgColor }}
             title="Background color"
           />
-          <span className="text-[9px] text-slate-500">BG</span>
+          <span className="text-[9px] text-gray-400">BG</span>
           {showBgColorPicker === bgColorKey && (
-            <div className="absolute right-0 top-full mt-2 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50">
+            <div className="absolute right-0 top-full mt-2 p-3 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50">
               <div className="grid grid-cols-7 gap-2">
                 {COLOR_PALETTE.map((c) => (
                   <button
@@ -1114,7 +1114,7 @@ export default function BlockManager({
                       })
                       setShowBgColorPicker(null)
                     }}
-                    className="w-7 h-7 rounded border-2 hover:scale-110 transition-transform"
+                    className="w-7 h-7 rounded-none border-2 hover:scale-110 transition-transform"
                     style={{
                       backgroundColor: c.value,
                       borderColor: bgColor === c.value ? '#a855f7' : '#475569'
@@ -1146,7 +1146,7 @@ export default function BlockManager({
     const italic = data?.headline_italic || false
 
     return (
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1">
         {/* Alignment buttons */}
         <div className="flex items-center gap-1">
           <button
@@ -1156,10 +1156,10 @@ export default function BlockManager({
                 data: { ...data, headline_align: 'left', text_align: 'left' }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               textAlign === 'left'
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Align Left"
           >
@@ -1172,10 +1172,10 @@ export default function BlockManager({
                 data: { ...data, headline_align: 'center', text_align: 'center' }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               textAlign === 'center'
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Align Center"
           >
@@ -1188,10 +1188,10 @@ export default function BlockManager({
                 data: { ...data, headline_align: 'right', text_align: 'right' }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               textAlign === 'right'
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Align Right"
           >
@@ -1208,10 +1208,10 @@ export default function BlockManager({
                 data: { ...data, headline_bold: !bold }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               bold
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Bold"
           >
@@ -1224,10 +1224,10 @@ export default function BlockManager({
                 data: { ...data, headline_italic: !italic }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               italic
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Italic"
           >
@@ -1239,12 +1239,12 @@ export default function BlockManager({
         <div className="relative">
           <button
             onClick={() => setShowBgColorPicker(showBgColorPicker === sizeKey ? null : sizeKey)}
-            className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+            className="px-2 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-none border border-gray-200"
           >
             {Math.round(parseFloat(fontSize) * 16) || 16}
           </button>
           {showBgColorPicker === sizeKey && (
-            <div className="absolute right-0 top-full mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+            <div className="absolute right-0 top-full mt-1 w-20 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-48 overflow-y-auto">
               {[12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64, 72, 80, 96].map(size => (
                 <button
                   key={size}
@@ -1255,8 +1255,8 @@ export default function BlockManager({
                     })
                     setShowBgColorPicker(null)
                   }}
-                  className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                    Math.round(parseFloat(fontSize) * 16) === size ? 'bg-violet-600 text-white' : 'text-slate-200'
+                  className={`w-full px-2 py-1 text-left text-xs hover:bg-gray-200 ${
+                    Math.round(parseFloat(fontSize) * 16) === size ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                   }`}
                 >
                   {size}
@@ -1270,12 +1270,12 @@ export default function BlockManager({
         <div className="relative">
           <button
             onClick={() => setShowBgColorPicker(showBgColorPicker === fontKey ? null : fontKey)}
-            className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+            className="px-2 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-none border border-gray-200"
           >
             {fontFamily.split(' ')[0]}
           </button>
           {showBgColorPicker === fontKey && (
-            <div className="absolute right-0 top-full mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-64 overflow-y-auto">
+            <div className="absolute right-0 top-full mt-1 w-40 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-64 overflow-y-auto">
               {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
                 <button
                   key={font}
@@ -1286,8 +1286,8 @@ export default function BlockManager({
                     })
                     setShowBgColorPicker(null)
                   }}
-                  className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                    fontFamily === font ? 'bg-violet-600 text-white' : 'text-slate-200'
+                  className={`w-full px-2 py-1 text-left text-xs hover:bg-gray-200 ${
+                    fontFamily === font ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                   }`}
                 >
                   {font}
@@ -1301,13 +1301,13 @@ export default function BlockManager({
         <div className="relative flex flex-col items-center gap-0.5">
           <button
             onClick={() => setShowBgColorPicker(showBgColorPicker === textColorKey ? null : textColorKey)}
-            className="w-7 h-7 rounded border border-slate-600 cursor-pointer hover:scale-110 transition-transform"
+            className="w-7 h-7 rounded-none border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
             style={{ backgroundColor: textColor }}
             title="Text color"
           />
-          <span className="text-[9px] text-slate-500">Text</span>
+          <span className="text-[9px] text-gray-400">Text</span>
           {showBgColorPicker === textColorKey && (
-            <div className="absolute right-0 top-full mt-2 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50">
+            <div className="absolute right-0 top-full mt-2 p-3 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50">
               <div className="grid grid-cols-7 gap-2">
                 {COLOR_PALETTE.map((c) => (
                   <button
@@ -1319,7 +1319,7 @@ export default function BlockManager({
                       })
                       setShowBgColorPicker(null)
                     }}
-                    className="w-7 h-7 rounded border-2 hover:scale-110 transition-transform"
+                    className="w-7 h-7 rounded-none border-2 hover:scale-110 transition-transform"
                     style={{
                       backgroundColor: c.value,
                       borderColor: textColor === c.value ? '#a855f7' : '#475569'
@@ -1336,13 +1336,13 @@ export default function BlockManager({
         <div className="relative flex flex-col items-center gap-0.5">
           <button
             onClick={() => setShowBgColorPicker(showBgColorPicker === bgColorKey ? null : bgColorKey)}
-            className="w-7 h-7 rounded border border-slate-600 cursor-pointer hover:scale-110 transition-transform"
+            className="w-7 h-7 rounded-none border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
             style={{ backgroundColor: bgColor }}
             title="Background color"
           />
-          <span className="text-[9px] text-slate-500">BG</span>
+          <span className="text-[9px] text-gray-400">BG</span>
           {showBgColorPicker === bgColorKey && (
-            <div className="absolute right-0 top-full mt-2 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50">
+            <div className="absolute right-0 top-full mt-2 p-3 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50">
               <div className="grid grid-cols-7 gap-2">
                 {COLOR_PALETTE.map((c) => (
                   <button
@@ -1354,7 +1354,7 @@ export default function BlockManager({
                       })
                       setShowBgColorPicker(null)
                     }}
-                    className="w-7 h-7 rounded border-2 hover:scale-110 transition-transform"
+                    className="w-7 h-7 rounded-none border-2 hover:scale-110 transition-transform"
                     style={{
                       backgroundColor: c.value,
                       borderColor: bgColor === c.value ? '#a855f7' : '#475569'
@@ -1386,7 +1386,7 @@ export default function BlockManager({
     const italic = data?.headline_italic || false
 
     return (
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1">
         {/* Alignment buttons */}
         <div className="flex items-center gap-1">
           <button
@@ -1396,10 +1396,10 @@ export default function BlockManager({
                 data: { ...data, headline_text_align: 'left' }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               textAlign === 'left'
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Align Left"
           >
@@ -1412,10 +1412,10 @@ export default function BlockManager({
                 data: { ...data, headline_text_align: 'center' }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               textAlign === 'center'
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Align Center"
           >
@@ -1428,10 +1428,10 @@ export default function BlockManager({
                 data: { ...data, headline_text_align: 'right' }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               textAlign === 'right'
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Align Right"
           >
@@ -1448,10 +1448,10 @@ export default function BlockManager({
                 data: { ...data, headline_bold: !bold }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               bold
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Bold"
           >
@@ -1464,10 +1464,10 @@ export default function BlockManager({
                 data: { ...data, headline_italic: !italic }
               })
             }}
-            className={`p-1 rounded ${
+            className={`p-1 rounded-none ${
               italic
-                ? 'bg-violet-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
             title="Italic"
           >
@@ -1479,7 +1479,7 @@ export default function BlockManager({
         <div className="relative">
           <button
             onClick={() => setShowBgColorPicker(showBgColorPicker === sizeKey ? null : sizeKey)}
-            className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+            className="px-2 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-none border border-gray-200"
           >
             {(() => {
               // Extract size from clamp or simple rem value
@@ -1488,7 +1488,7 @@ export default function BlockManager({
             })()}
           </button>
           {showBgColorPicker === sizeKey && (
-            <div className="absolute right-0 top-full mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+            <div className="absolute right-0 top-full mt-1 w-20 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-48 overflow-y-auto">
               {[12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64, 72, 80, 96].map(size => (
                 <button
                   key={size}
@@ -1499,11 +1499,11 @@ export default function BlockManager({
                     })
                     setShowBgColorPicker(null)
                   }}
-                  className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
+                  className={`w-full px-2 py-1 text-left text-xs hover:bg-gray-200 ${
                     (() => {
                       const match = fontSize.match(/clamp\(([\d.]+)rem/) || fontSize.match(/([\d.]+)rem/)
                       const currentSize = match ? Math.round(parseFloat(match[1]) * 16) : 16
-                      return currentSize === size ? 'bg-violet-600 text-white' : 'text-slate-200'
+                      return currentSize === size ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                     })()
                   }`}
                 >
@@ -1518,12 +1518,12 @@ export default function BlockManager({
         <div className="relative">
           <button
             onClick={() => setShowBgColorPicker(showBgColorPicker === fontKey ? null : fontKey)}
-            className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+            className="px-2 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-none border border-gray-200"
           >
             {fontFamily.split(' ')[0]}
           </button>
           {showBgColorPicker === fontKey && (
-            <div className="absolute right-0 top-full mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-64 overflow-y-auto">
+            <div className="absolute right-0 top-full mt-1 w-40 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-64 overflow-y-auto">
               {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
                 <button
                   key={font}
@@ -1534,8 +1534,8 @@ export default function BlockManager({
                     })
                     setShowBgColorPicker(null)
                   }}
-                  className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                    fontFamily === font ? 'bg-violet-600 text-white' : 'text-slate-200'
+                  className={`w-full px-2 py-1 text-left text-xs hover:bg-gray-200 ${
+                    fontFamily === font ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                   }`}
                 >
                   {font}
@@ -1549,13 +1549,13 @@ export default function BlockManager({
         <div className="relative flex flex-col items-center gap-0.5">
           <button
             onClick={() => setShowBgColorPicker(showBgColorPicker === textColorKey ? null : textColorKey)}
-            className="w-7 h-7 rounded border border-slate-600 cursor-pointer hover:scale-110 transition-transform"
+            className="w-7 h-7 rounded-none border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
             style={{ backgroundColor: textColor }}
             title="Text color"
           />
-          <span className="text-[9px] text-slate-500">Text</span>
+          <span className="text-[9px] text-gray-400">Text</span>
           {showBgColorPicker === textColorKey && (
-            <div className="absolute right-0 top-full mt-2 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50">
+            <div className="absolute right-0 top-full mt-2 p-3 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50">
               <div className="grid grid-cols-7 gap-2">
                 {COLOR_PALETTE.map((c) => (
                   <button
@@ -1567,7 +1567,7 @@ export default function BlockManager({
                       })
                       setShowBgColorPicker(null)
                     }}
-                    className="w-7 h-7 rounded border-2 hover:scale-110 transition-transform"
+                    className="w-7 h-7 rounded-none border-2 hover:scale-110 transition-transform"
                     style={{
                       backgroundColor: c.value,
                       borderColor: textColor === c.value ? '#a855f7' : '#475569'
@@ -1584,13 +1584,13 @@ export default function BlockManager({
         <div className="relative flex flex-col items-center gap-0.5">
           <button
             onClick={() => setShowBgColorPicker(showBgColorPicker === bgColorKey ? null : bgColorKey)}
-            className="w-7 h-7 rounded border border-slate-600 cursor-pointer hover:scale-110 transition-transform"
+            className="w-7 h-7 rounded-none border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
             style={{ backgroundColor: bgColor }}
             title="Background color"
           />
-          <span className="text-[9px] text-slate-500">BG</span>
+          <span className="text-[9px] text-gray-400">BG</span>
           {showBgColorPicker === bgColorKey && (
-            <div className="absolute right-0 top-full mt-2 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50">
+            <div className="absolute right-0 top-full mt-2 p-3 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50">
               <div className="grid grid-cols-7 gap-2">
                 {COLOR_PALETTE.map((c) => (
                   <button
@@ -1602,7 +1602,7 @@ export default function BlockManager({
                       })
                       setShowBgColorPicker(null)
                     }}
-                    className="w-7 h-7 rounded border-2 hover:scale-110 transition-transform"
+                    className="w-7 h-7 rounded-none border-2 hover:scale-110 transition-transform"
                     style={{
                       backgroundColor: c.value,
                       borderColor: bgColor === c.value ? '#a855f7' : '#475569'
@@ -1692,7 +1692,7 @@ export default function BlockManager({
 
       default:
         return (
-          <div className="text-slate-400 text-sm">
+          <div className="text-gray-500 text-xs">
             <p>Unknown block type: {block.type}</p>
           </div>
         )
@@ -1700,7 +1700,7 @@ export default function BlockManager({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {/* Block List */}
       {blocks.length > 0 ? (
         <DragDropContext onDragEnd={handleDragEnd}>
@@ -1709,7 +1709,7 @@ export default function BlockManager({
               <div
                 {...provided.droppableProps}
                 ref={provided.innerRef}
-                className="space-y-3"
+                className="space-y-2"
               >
                 {blocks.map((block, index) => (
                   <Draggable key={block.id} draggableId={block.id} index={index}>
@@ -1737,7 +1737,7 @@ export default function BlockManager({
                                     handleTranslateBlock(index)
                                   }}
                                   disabled={translatingBlockIndex === index}
-                                  className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs flex items-center gap-1 disabled:opacity-50"
+                                  className="px-2 py-1 bg-green-50 border border-green-200 hover:bg-green-100 text-gray-800 rounded-none text-xs flex items-center gap-1 disabled:opacity-50"
                                 >
                                   {translatingBlockIndex === index ? (
                                     <Loader2 className="w-3 h-3 animate-spin" />
@@ -1770,11 +1770,11 @@ export default function BlockManager({
           </Droppable>
         </DragDropContext>
       ) : (
-        <div className="bg-slate-800/30 border-2 border-dashed border-slate-600 rounded-lg p-12 text-center">
-          <div className="text-slate-500 mb-4">
-            <div className="text-4xl mb-3">📦</div>
-            <h3 className="text-lg font-medium text-slate-400 mb-2">No blocks yet</h3>
-            <p className="text-sm">Add your first block to start building your landing page</p>
+        <div className="bg-white/30 border border-dashed border-gray-300 rounded-none p-4 text-center">
+          <div className="text-gray-400 mb-2">
+            <div className="text-xl mb-1">📦</div>
+            <h3 className="text-xs font-medium text-gray-500 mb-1">No blocks yet</h3>
+            <p className="text-xs">Add your first block to start building your landing page</p>
           </div>
         </div>
       )}
@@ -1782,9 +1782,9 @@ export default function BlockManager({
       {/* Add Block Button */}
       <button
         onClick={() => setShowBlockPicker(true)}
-        className="w-full py-4 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+        className="w-full py-2 bg-violet-50 border border-violet-200 hover:bg-violet-100 text-gray-800 rounded-none text-xs font-medium transition-colors flex items-center justify-center gap-1"
       >
-        <Plus className="w-5 h-5" />
+        <Plus className="w-3.5 h-3.5" />
         Add Block
       </button>
 

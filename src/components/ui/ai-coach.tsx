@@ -35,6 +35,8 @@ interface AIStaff {
 interface AICoachProps {
   className?: string
   businessUnit?: string
+  country?: string
+  language?: string
   initialOpen?: boolean
   selectedStaff?: AIStaff | null
   aiStaffList?: AIStaff[]
@@ -73,12 +75,18 @@ const getRoleGreeting = (staff: AIStaff | null, lang: Language, userName?: strin
   return personalGreeting + t.greeting(staff.name, roleEmoji, tasks)
 }
 
-const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = false, selectedStaff = null, aiStaffList = [] }: AICoachProps) => {
+const AICoach = ({ className = '', businessUnit = 'skincoach', country, language, initialOpen = false, selectedStaff = null, aiStaffList = [] }: AICoachProps) => {
   const [isOpen, setIsOpen] = useState(false) // Always start closed to avoid hydration error
   const [currentStaff, setCurrentStaff] = useState<AIStaff | null>(
     selectedStaff || (aiStaffList.length > 0 ? aiStaffList[0] : null)
   )
-  const [selectedLanguage, setSelectedLanguage] = useState<Language>('en')
+  // Initialize language from prop — map short URL codes (tw/cn) to Language type (zh-TW/zh-CN)
+  const mapLangToLanguageType = (lang?: string): Language => {
+    if (!lang) return 'en'
+    const mapping: Record<string, Language> = { 'tw': 'zh-TW', 'cn': 'zh-CN', 'en': 'en', 'vi': 'vi', 'zh-TW': 'zh-TW', 'zh-CN': 'zh-CN' }
+    return mapping[lang] || 'en'
+  }
+  const [selectedLanguage, setSelectedLanguage] = useState<Language>(mapLangToLanguageType(language))
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -110,6 +118,13 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
       setIsOpen(true)
     }
   }, [initialOpen])
+
+  // Sync language prop to selectedLanguage state when prop changes
+  useEffect(() => {
+    if (language) {
+      setSelectedLanguage(mapLangToLanguageType(language))
+    }
+  }, [language])
 
   // Update greeting when current staff, language, or userName changes
   useEffect(() => {
@@ -333,7 +348,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
       // Import client-safe API functions dynamically
       const { loadKnowledge, loadTrainingData, loadGuidelines } = await import('@/lib/api-client')
 
-      // Load data from Supabase
+      // Load data from Supabase — pass locale params so data is filtered by country/language
       let knowledgeBase = []
       let trainingData = []
       let guidelines = []
@@ -341,9 +356,9 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
       try {
         // Load all data in parallel for faster performance
         const [kb, td, gl] = await Promise.all([
-          loadKnowledge(businessUnit),
+          loadKnowledge(businessUnit, country, language),
           loadTrainingData(businessUnit),
-          loadGuidelines(businessUnit)
+          loadGuidelines(businessUnit, language)
         ])
 
         knowledgeBase = kb || []
@@ -538,9 +553,9 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', initialOpen = fal
   }
 
   const handleCategoryClick = async (category: string) => {
-    // Load FAQs from Supabase
+    // Load FAQs from Supabase — pass businessUnit and language for locale filtering
     try {
-      const allFaqs = await loadFAQs()
+      const allFaqs = await loadFAQs(businessUnit, language)
       const categoryFaqs = allFaqs.filter((faq: any) => faq.category === category && faq.is_active)
 
       if (categoryFaqs.length > 0) {

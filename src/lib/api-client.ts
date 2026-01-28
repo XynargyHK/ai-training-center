@@ -308,10 +308,11 @@ export async function deleteTrainingSession(id: string) {
 // KNOWLEDGE API
 // ============================================
 
-export async function loadKnowledge(businessUnitId?: string) {
-  const url = businessUnitId
-    ? `/api/knowledge?action=load_knowledge&businessUnitId=${encodeURIComponent(businessUnitId)}`
-    : '/api/knowledge?action=load_knowledge'
+export async function loadKnowledge(businessUnitId?: string, country?: string, language?: string) {
+  let url = `/api/knowledge?action=load_knowledge`
+  if (businessUnitId) url += `&businessUnitId=${encodeURIComponent(businessUnitId)}`
+  if (country) url += `&country=${encodeURIComponent(country)}`
+  if (language) url += `&language=${encodeURIComponent(language)}`
   const res = await fetch(url)
   const json = await res.json()
   if (!res.ok) throw new Error(json.error || 'Failed to load knowledge')
@@ -336,10 +337,10 @@ export async function deleteKnowledge(id: string) {
   if (!res.ok) throw new Error(json.error || 'Failed to delete knowledge')
 }
 
-export async function loadFAQs(businessUnitId?: string) {
-  const url = businessUnitId
-    ? `/api/knowledge?action=load_faqs&businessUnitId=${encodeURIComponent(businessUnitId)}`
-    : '/api/knowledge?action=load_faqs'
+export async function loadFAQs(businessUnitId?: string, language?: string) {
+  let url = `/api/knowledge?action=load_faqs`
+  if (businessUnitId) url += `&businessUnitId=${encodeURIComponent(businessUnitId)}`
+  if (language) url += `&language=${encodeURIComponent(language)}`
   const res = await fetch(url)
   const json = await res.json()
   if (!res.ok) throw new Error(json.error || 'Failed to load FAQs')
@@ -364,10 +365,10 @@ export async function deleteFAQ(id: string) {
   if (!res.ok) throw new Error(json.error || 'Failed to delete FAQ')
 }
 
-export async function loadCannedMessages(businessUnitId?: string) {
-  const url = businessUnitId
-    ? `/api/knowledge?action=load_canned_messages&businessUnitId=${encodeURIComponent(businessUnitId)}`
-    : '/api/knowledge?action=load_canned_messages'
+export async function loadCannedMessages(businessUnitId?: string, language?: string) {
+  let url = `/api/knowledge?action=load_canned_messages`
+  if (businessUnitId) url += `&businessUnitId=${encodeURIComponent(businessUnitId)}`
+  if (language) url += `&language=${encodeURIComponent(language)}`
   const res = await fetch(url)
   const json = await res.json()
   if (!res.ok) throw new Error(json.error || 'Failed to load canned messages')
@@ -430,10 +431,10 @@ export async function deleteCategory(name: string) {
   if (!res.ok) throw new Error(json.error || 'Failed to delete category')
 }
 
-export async function loadGuidelines(businessUnitId?: string) {
-  const url = businessUnitId
-    ? `/api/knowledge?action=load_guidelines&businessUnitId=${encodeURIComponent(businessUnitId)}`
-    : '/api/knowledge?action=load_guidelines'
+export async function loadGuidelines(businessUnitId?: string, language?: string) {
+  let url = `/api/knowledge?action=load_guidelines`
+  if (businessUnitId) url += `&businessUnitId=${encodeURIComponent(businessUnitId)}`
+  if (language) url += `&language=${encodeURIComponent(language)}`
   const res = await fetch(url)
   const json = await res.json()
   if (!res.ok) throw new Error(json.error || 'Failed to load guidelines')

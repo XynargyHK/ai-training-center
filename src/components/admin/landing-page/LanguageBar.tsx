@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Globe, Plus, Trash2 } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Globe, Plus, Trash2, RefreshCw, ChevronDown } from 'lucide-react'
 
 interface LandingPageLocale {
   id: string
@@ -15,6 +15,7 @@ interface LanguageBarProps {
   businessUnitId: string
   currentCountry: string
   currentLanguage: string
+  filterCountry?: string
   onLocaleChange: (country: string, language: string) => void
   onAddLocale: () => void
   onSyncRequest?: (sourceCountry: string, sourceLanguage: string) => void
@@ -25,6 +26,7 @@ export default function LanguageBar({
   businessUnitId,
   currentCountry,
   currentLanguage,
+  filterCountry,
   onLocaleChange,
   onAddLocale,
   onSyncRequest,
@@ -32,10 +34,22 @@ export default function LanguageBar({
 }: LanguageBarProps) {
   const [locales, setLocales] = useState<LandingPageLocale[]>([])
   const [loading, setLoading] = useState(true)
+  const [open, setOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     loadLocales()
   }, [businessUnitId])
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const loadLocales = async () => {
     try {
@@ -53,127 +67,119 @@ export default function LanguageBar({
 
   const getFlagEmoji = (country: string) => {
     const flags: { [key: string]: string } = {
-      'US': '🇺🇸',
-      'HK': '🇭🇰',
-      'CN': '🇨🇳',
-      'TW': '🇹🇼',
-      'JP': '🇯🇵',
-      'KR': '🇰🇷',
-      'GB': '🇬🇧',
-      'FR': '🇫🇷',
-      'DE': '🇩🇪',
-      'ES': '🇪🇸'
+      'US': '🇺🇸', 'HK': '🇭🇰', 'CN': '🇨🇳', 'TW': '🇹🇼',
+      'JP': '🇯🇵', 'KR': '🇰🇷', 'GB': '🇬🇧', 'FR': '🇫🇷',
+      'DE': '🇩🇪', 'ES': '🇪🇸'
     }
     return flags[country] || '🌍'
   }
 
   const getLanguageName = (code: string) => {
     const names: { [key: string]: string } = {
-      'en': 'English',
-      'tw': '繁體中文',
-      'cn': '简体中文',
-      'ja': '日本語',
-      'ko': '한국어',
-      'fr': 'Français',
-      'de': 'Deutsch',
-      'es': 'Español'
+      'en': 'EN', 'tw': '繁', 'cn': '简',
+      'ja': '日', 'ko': '한', 'fr': 'FR',
+      'de': 'DE', 'es': 'ES'
     }
     return names[code] || code
   }
 
+  const displayedLocales = filterCountry
+    ? locales.filter(l => l.country === filterCountry)
+    : locales
+
+  const showSync = onSyncRequest && !(currentCountry === 'US' && currentLanguage === 'en')
+
   if (loading) {
     return (
-      <div className="bg-slate-800 border-b border-slate-700 px-6 py-3">
-        <div className="flex items-center gap-2 text-slate-400">
-          <Globe className="w-4 h-4 animate-spin" />
-          <span className="text-sm">Loading locales...</span>
-        </div>
+      <div className="flex items-center gap-1 text-gray-500 text-xs py-1">
+        <Globe className="w-3 h-3 animate-spin" />
+        <span>Loading...</span>
       </div>
     )
   }
 
-  const currentLocale = locales.find(
-    l => l.country === currentCountry && l.language_code === currentLanguage
-  )
-
   return (
-    <div className="bg-slate-800 border-b border-slate-700 px-6 py-3">
-      <div className="flex items-center justify-between">
-        {/* Left: Language tabs */}
-        <div className="flex items-center gap-2">
-          <Globe className="w-4 h-4 text-slate-400" />
-          <span className="text-sm text-slate-400 mr-2">Languages:</span>
+    <div className="relative inline-block" ref={dropdownRef}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-none px-2 py-1 text-xs text-gray-800 transition-colors"
+      >
+        <Globe className="w-3 h-3 text-gray-500" />
+        <span>{getFlagEmoji(currentCountry)} {currentCountry}/{getLanguageName(currentLanguage)}</span>
+        <ChevronDown className={`w-3 h-3 text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
 
-          <div className="flex items-center gap-1">
-            {locales.map((locale) => {
-              const isActive = locale.country === currentCountry && locale.language_code === currentLanguage
-              return (
-                <div key={`${locale.country}-${locale.language_code}`} className="flex items-center">
-                  <button
-                    onClick={() => onLocaleChange(locale.country, locale.language_code)}
-                    className={`
-                      px-3 py-1.5 rounded-l text-sm font-medium transition-colors
-                      ${isActive
-                        ? 'bg-violet-600 text-white'
-                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                      }
-                    `}
-                  >
-                    {getFlagEmoji(locale.country)} {locale.country}/{getLanguageName(locale.language_code)}
-                  </button>
-                  {onDeleteLocale && locales.length > 1 && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        if (confirm(`Delete ${locale.country}/${locale.language_code} locale?`)) {
-                          onDeleteLocale(locale.country, locale.language_code)
-                        }
-                      }}
-                      className={`
-                        px-2 py-1.5 rounded-r text-sm transition-colors border-l border-slate-600
-                        ${isActive
-                          ? 'bg-violet-700 text-violet-200 hover:bg-red-600 hover:text-white'
-                          : 'bg-slate-700 text-slate-400 hover:bg-red-600 hover:text-white'
-                        }
-                      `}
-                      title="Delete locale"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-              )
-            })}
-
-            <button
-              onClick={onAddLocale}
-              className="px-3 py-1.5 rounded text-sm font-medium bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors flex items-center gap-1"
-            >
-              <Plus className="w-3 h-3" />
-              Add
-            </button>
-
-            {/* Sync button - only show when NOT on US/en (the master locale) */}
-            {onSyncRequest && !(currentCountry === 'US' && currentLanguage === 'en') && (
-              <button
-                onClick={() => onSyncRequest('US', 'en')}
-                className="px-3 py-1.5 rounded text-sm font-medium bg-amber-600 text-white hover:bg-amber-700 transition-colors flex items-center gap-1"
-                title="Sync structure from US/English"
+      {open && (
+        <div className="absolute left-0 mt-1 w-48 bg-white border border-gray-200 rounded-none shadow-sm z-50 py-1">
+          {/* Locale options */}
+          {displayedLocales.map((locale) => {
+            const isActive = locale.country === currentCountry && locale.language_code === currentLanguage
+            return (
+              <div
+                key={`${locale.country}-${locale.language_code}`}
+                className={`flex items-center justify-between px-2 py-1 text-xs cursor-pointer transition-colors ${
+                  isActive ? 'bg-violet-50 text-violet-600' : 'text-gray-600 hover:bg-gray-100'
+                }`}
               >
-                <Plus className="w-3 h-3" />
-                Sync from US
-              </button>
-            )}
-          </div>
-        </div>
+                <button
+                  onClick={() => {
+                    onLocaleChange(locale.country, locale.language_code)
+                    setOpen(false)
+                  }}
+                  className="flex-1 text-left"
+                >
+                  {getFlagEmoji(locale.country)} {locale.country}/{getLanguageName(locale.language_code)}
+                  {isActive && ' ✓'}
+                </button>
+                {onDeleteLocale && displayedLocales.length > 1 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (confirm(`Delete ${locale.country}/${locale.language_code} locale?`)) {
+                        onDeleteLocale(locale.country, locale.language_code)
+                        setOpen(false)
+                      }
+                    }}
+                    className="p-0.5 text-gray-400 hover:text-red-600 transition-colors"
+                    title="Delete locale"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            )
+          })}
 
-        {/* Right: Current locale info */}
-        <div className="text-sm text-slate-400">
-          Currently editing: <span className="text-white font-medium">
-            {getFlagEmoji(currentCountry)} {currentCountry}/{getLanguageName(currentLanguage)}
-          </span>
+          {/* Divider */}
+          <div className="border-t border-gray-200 my-1" />
+
+          {/* Add locale */}
+          <button
+            onClick={() => {
+              onAddLocale()
+              setOpen(false)
+            }}
+            className="w-full flex items-center gap-1.5 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 transition-colors"
+          >
+            <Plus className="w-3 h-3" />
+            Add Language
+          </button>
+
+          {/* Sync from US */}
+          {showSync && (
+            <button
+              onClick={() => {
+                onSyncRequest!('US', 'en')
+                setOpen(false)
+              }}
+              className="w-full flex items-center gap-1.5 px-2 py-1 text-xs text-amber-600 hover:bg-gray-100 transition-colors"
+            >
+              <RefreshCw className="w-3 h-3" />
+              Sync from US/EN
+            </button>
+          )}
         </div>
-      </div>
+      )}
     </div>
   )
 }

@@ -29,18 +29,18 @@ export default function BlockPreview({ blocks }: BlockPreviewProps) {
   }
 
   return (
-    <div className="bg-slate-700/50 rounded-lg border border-slate-600 overflow-hidden">
+    <div className="bg-gray-50 rounded-none border border-gray-200 overflow-hidden">
       <button
         onClick={() => setShowPreview(!showPreview)}
-        className="w-full px-6 py-3 flex items-center justify-between bg-slate-800/50 hover:bg-slate-700/50 transition-colors"
+        className="w-full px-6 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-50 transition-colors"
       >
         <div className="flex items-center gap-2">
           {showPreview ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-          <span className="font-medium text-white">
+          <span className="font-medium text-gray-800">
             {showPreview ? 'Hide Preview' : 'Show Preview'}
           </span>
         </div>
-        <span className="text-sm text-slate-400">
+        <span className="text-sm text-gray-500">
           {blocks.length} block{blocks.length !== 1 ? 's' : ''}
         </span>
       </button>

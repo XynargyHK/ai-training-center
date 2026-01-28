@@ -368,19 +368,19 @@ const BundleManager: React.FC<BundleManagerProps> = ({ businessUnitId, language 
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-white">Bundle Manager</h2>
-          <p className="text-sm text-slate-400 mt-1">
+          <h2 className="text-xs font-medium text-gray-800">Bundle Manager</h2>
+          <p className="text-xs text-gray-500 mt-1">
             Create product bundles with discounts and subscription options
           </p>
         </div>
 
         <button
           onClick={createNewBundle}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          className="flex items-center gap-2 px-2 py-1 text-xs bg-purple-50 border border-purple-200 text-gray-800 rounded-none hover:bg-purple-100 transition-colors"
         >
           <Plus className="w-4 h-4" />
           Create Bundle
@@ -389,15 +389,15 @@ const BundleManager: React.FC<BundleManagerProps> = ({ businessUnitId, language 
 
       {/* Bundle List */}
       {bundles.length === 0 ? (
-        <div className="bg-slate-700/50 rounded-lg p-12 text-center">
-          <Layers className="w-16 h-16 text-slate-500 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-white mb-2">No Bundles Yet</h3>
-          <p className="text-slate-400 mb-4">
+        <div className="bg-gray-50 rounded-none p-4 text-center">
+          <Layers className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+          <h3 className="text-xs font-medium text-gray-800 mb-1">No Bundles Yet</h3>
+          <p className="text-xs text-gray-500 mb-2">
             Create your first bundle to offer products together at a special price.
           </p>
           <button
             onClick={createNewBundle}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+            className="inline-flex items-center gap-2 px-2 py-1 text-xs bg-purple-50 border border-purple-200 text-gray-800 rounded-none hover:bg-purple-100"
           >
             <Plus className="w-4 h-4" />
             Create Your First Bundle
@@ -408,48 +408,48 @@ const BundleManager: React.FC<BundleManagerProps> = ({ businessUnitId, language 
           {bundles.map(bundle => (
             <div
               key={bundle.id}
-              className={`bg-slate-700 rounded-lg p-4 border ${
-                bundle.is_active ? 'border-slate-600' : 'border-slate-700 opacity-60'
+              className={`bg-gray-100 rounded-none p-4 border ${
+                bundle.is_active ? 'border-gray-200' : 'border-gray-200 opacity-60'
               }`}
             >
               <div className="flex items-start justify-between">
-                <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 bg-slate-600 rounded-lg flex items-center justify-center overflow-hidden">
+                <div className="flex items-start gap-2">
+                  <div className="w-10 h-10 bg-gray-200 rounded-none flex items-center justify-center overflow-hidden">
                     {bundle.thumbnail ? (
                       <img src={bundle.thumbnail} alt={bundle.name} className="w-full h-full object-cover" />
                     ) : (
-                      <Layers className="w-8 h-8 text-purple-400" />
+                      <Layers className="w-5 h-5 text-purple-600" />
                     )}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-medium text-white">{bundle.name}</h3>
-                      <span className={`text-xs px-2 py-0.5 rounded ${
+                      <h3 className="font-medium text-gray-800">{bundle.name}</h3>
+                      <span className={`text-xs px-2 py-0.5 rounded-none ${
                         bundle.bundle_type === 'subscription'
-                          ? 'bg-blue-900 text-blue-300'
-                          : 'bg-purple-900 text-purple-300'
+                          ? 'bg-blue-50 text-blue-600'
+                          : 'bg-purple-50 text-purple-600'
                       }`}>
                         {bundle.bundle_type === 'subscription' ? 'Subscription' : 'Fixed'}
                       </span>
                       {bundle.is_featured && (
-                        <span className="text-xs bg-yellow-900 text-yellow-300 px-2 py-0.5 rounded">
+                        <span className="text-xs bg-yellow-50 text-yellow-600 px-2 py-0.5 rounded-none">
                           Featured
                         </span>
                       )}
                     </div>
                     {bundle.description && (
-                      <p className="text-sm text-slate-400 mt-1">{bundle.description}</p>
+                      <p className="text-xs text-gray-500 mt-1">{bundle.description}</p>
                     )}
                     <div className="flex items-center gap-4 mt-2">
                       <div className="flex items-center gap-1 text-sm">
-                        <span className="text-slate-400 line-through">${bundle.original_price?.toFixed(2)}</span>
-                        <span className="font-medium text-green-400">${bundle.final_price?.toFixed(2)}</span>
+                        <span className="text-gray-500 line-through">${bundle.original_price?.toFixed(2)}</span>
+                        <span className="font-medium text-green-600">${bundle.final_price?.toFixed(2)}</span>
                       </div>
-                      <div className="flex items-center gap-1 text-sm text-orange-400">
+                      <div className="flex items-center gap-1 text-sm text-orange-600">
                         <Percent className="w-3 h-3" />
                         Save ${bundle.savings?.toFixed(2)}
                       </div>
-                      <div className="text-sm text-slate-400">
+                      <div className="text-xs text-gray-500">
                         {bundle.products?.length || 0} items
                       </div>
                     </div>
@@ -459,8 +459,8 @@ const BundleManager: React.FC<BundleManagerProps> = ({ businessUnitId, language 
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => toggleActive(bundle)}
-                    className={`p-2 rounded-lg transition-colors ${
-                      bundle.is_active ? 'text-green-400 hover:bg-green-900/30' : 'text-slate-400 hover:bg-slate-600'
+                    className={`p-2 rounded-none transition-colors ${
+                      bundle.is_active ? 'text-green-600 hover:bg-green-50' : 'text-gray-500 hover:bg-gray-200'
                     }`}
                     title={bundle.is_active ? 'Active' : 'Inactive'}
                   >
@@ -468,13 +468,13 @@ const BundleManager: React.FC<BundleManagerProps> = ({ businessUnitId, language 
                   </button>
                   <button
                     onClick={() => editBundle(bundle)}
-                    className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-900/30 rounded-lg transition-colors"
+                    className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-none transition-colors"
                   >
                     <Edit className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => deleteBundle(bundle.id)}
-                    className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-900/30 rounded-lg transition-colors"
+                    className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-none transition-colors"
                   >
                     <Trash2 className="w-5 h-5" />
                   </button>
@@ -483,19 +483,19 @@ const BundleManager: React.FC<BundleManagerProps> = ({ businessUnitId, language 
 
               {/* Products Preview */}
               {bundle.products && bundle.products.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-slate-600">
+                <div className="mt-4 pt-4 border-t border-gray-200">
                   <div className="flex flex-wrap gap-2">
                     {bundle.products.map((bp, i) => {
                       const product = products.find(p => p.id === bp.product_id)
                       return (
                         <div
                           key={i}
-                          className="flex items-center gap-2 px-3 py-1.5 bg-slate-600 rounded-lg text-sm"
+                          className="flex items-center gap-2 px-3 py-1.5 bg-gray-200 rounded-none text-sm"
                         >
-                          <Package className="w-4 h-4 text-slate-400" />
-                          <span className="text-slate-200">{product?.title || 'Unknown Product'}</span>
+                          <Package className="w-4 h-4 text-gray-500" />
+                          <span className="text-gray-700">{product?.title || 'Unknown Product'}</span>
                           {bp.quantity > 1 && (
-                            <span className="text-xs text-slate-400">x{bp.quantity}</span>
+                            <span className="text-xs text-gray-500">x{bp.quantity}</span>
                           )}
                         </div>
                       )
@@ -510,43 +510,43 @@ const BundleManager: React.FC<BundleManagerProps> = ({ businessUnitId, language 
 
       {/* Editor Modal */}
       {showEditor && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-none w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
-              <h3 className="font-semibold text-xl text-white flex items-center gap-3">
-                <Layers className="w-6 h-6 text-purple-400" />
+            <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200">
+              <h3 className="text-xs font-medium text-gray-800 flex items-center gap-2">
+                <Layers className="w-4 h-4 text-purple-600" />
                 {editingBundle ? 'Edit Bundle' : 'Create Bundle'}
               </h3>
               <button
                 onClick={() => setShowEditor(false)}
-                className="p-2 text-slate-400 hover:text-white rounded-lg"
+                className="p-2 text-gray-500 hover:text-gray-800 rounded-none"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            <div className="flex-1 overflow-y-auto p-3 space-y-3">
               {/* Basic Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm text-slate-300 mb-1">Bundle Name *</label>
+                  <label className="block text-xs text-gray-600 mb-1">Bundle Name *</label>
                   <input
                     type="text"
                     value={formData.name || ''}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white"
+                    className="w-full px-2 py-1.5 text-xs bg-gray-100 border border-gray-200 rounded-none text-gray-800"
                     placeholder="e.g., Eye Care Essential Bundle"
                   />
                 </div>
 
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm text-slate-300 mb-1">Bundle Type</label>
+                  <label className="block text-xs text-gray-600 mb-1">Bundle Type</label>
                   <select
                     value={formData.bundle_type || 'fixed'}
                     onChange={(e) => setFormData({ ...formData, bundle_type: e.target.value as any })}
-                    className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white"
+                    className="w-full px-2 py-1.5 text-xs bg-gray-100 border border-gray-200 rounded-none text-gray-800"
                   >
                     <option value="fixed">Fixed Bundle (One-time purchase)</option>
                     <option value="subscription">Subscription Bundle (Recurring)</option>
@@ -554,11 +554,11 @@ const BundleManager: React.FC<BundleManagerProps> = ({ businessUnitId, language 
                 </div>
 
                 <div className="col-span-2">
-                  <label className="block text-sm text-slate-300 mb-1">Description</label>
+                  <label className="block text-xs text-gray-600 mb-1">Description</label>
                   <textarea
                     value={formData.description || ''}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white"
+                    className="w-full px-2 py-1.5 text-xs bg-gray-100 border border-gray-200 rounded-none text-gray-800"
                     rows={2}
                     placeholder="Describe what's included in this bundle"
                   />
@@ -568,8 +568,8 @@ const BundleManager: React.FC<BundleManagerProps> = ({ businessUnitId, language 
               {/* Subscription Duration (if subscription type) */}
               {formData.bundle_type === 'subscription' && (
                 <div>
-                  <label className="block text-sm text-slate-300 mb-2">Subscription Duration</label>
-                  <div className="grid grid-cols-4 gap-3">
+                  <label className="block text-xs text-gray-600 mb-2">Subscription Duration</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {DURATION_OPTIONS.map(opt => (
                       <button
                         key={opt.value}
@@ -577,10 +577,10 @@ const BundleManager: React.FC<BundleManagerProps> = ({ businessUnitId, language 
                           setFormData({ ...formData, subscription_duration: opt.value as any })
                           updateDiscount('percentage', opt.discount)
                         }}
-                        className={`p-3 rounded-lg border text-center transition-colors ${
+                        className={`p-3 rounded-none border text-center transition-colors ${
                           formData.subscription_duration === opt.value
-                            ? 'bg-purple-600 border-purple-500 text-white'
-                            : 'bg-slate-700 border-slate-600 text-slate-300 hover:border-purple-500'
+                            ? 'bg-purple-50 border border-purple-200 border-purple-500 text-gray-800'
+                            : 'bg-gray-100 border-gray-200 text-gray-600 hover:border-purple-500'
                         }`}
                       >
                         <div className="flex items-center justify-center gap-2 mb-1">
@@ -588,7 +588,7 @@ const BundleManager: React.FC<BundleManagerProps> = ({ businessUnitId, language 
                           <span className="font-medium">{opt.label}</span>
                         </div>
                         {opt.discount > 0 && (
-                          <span className="text-xs text-green-400">Save {opt.discount}%</span>
+                          <span className="text-xs text-green-600">Save {opt.discount}%</span>
                         )}
                       </button>
                     ))}
@@ -598,19 +598,19 @@ const BundleManager: React.FC<BundleManagerProps> = ({ businessUnitId, language 
 
               {/* Bundle Image */}
               <div>
-                <label className="block text-sm text-slate-300 mb-2">Bundle Image</label>
+                <label className="block text-xs text-gray-600 mb-2">Bundle Image</label>
                 <div className="flex items-center gap-4">
-                  <div className="w-24 h-24 bg-slate-700 rounded-lg flex items-center justify-center overflow-hidden border-2 border-slate-600">
+                  <div className="w-24 h-24 bg-gray-100 rounded-none flex items-center justify-center overflow-hidden border-2 border-gray-200">
                     {formData.thumbnail ? (
                       <img src={formData.thumbnail} alt="Bundle" className="w-full h-full object-cover" />
                     ) : (
-                      <ImageIcon className="w-8 h-8 text-slate-500" />
+                      <ImageIcon className="w-8 h-8 text-gray-400" />
                     )}
                   </div>
                   <button
                     onClick={generateImage}
                     disabled={isGeneratingImage || !formData.name}
-                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 rounded-lg text-white transition-colors"
+                    className="flex items-center gap-2 px-2 py-1 text-xs bg-purple-50 border border-purple-200 hover:bg-purple-50 disabled:opacity-50 rounded-none text-gray-800 transition-colors"
                   >
                     {isGeneratingImage ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -624,7 +624,7 @@ const BundleManager: React.FC<BundleManagerProps> = ({ businessUnitId, language 
 
               {/* Product Selection */}
               <div>
-                <label className="block text-sm text-slate-300 mb-2">
+                <label className="block text-xs text-gray-600 mb-2">
                   Select Products ({(formData.products?.length || 0)} selected)
                 </label>
 
@@ -634,13 +634,13 @@ const BundleManager: React.FC<BundleManagerProps> = ({ businessUnitId, language 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search products..."
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white mb-3"
+                  className="w-full px-2 py-1.5 text-xs bg-gray-100 border border-gray-200 rounded-none text-gray-800 mb-3"
                 />
 
                 {/* Product List with Checkboxes */}
                 <div className="grid gap-2 max-h-48 overflow-y-auto">
                   {filteredProducts.length === 0 ? (
-                    <div className="text-center py-8 text-slate-400">
+                    <div className="text-center py-8 text-gray-500">
                       No products found. Add products first.
                     </div>
                   ) : (
@@ -651,29 +651,29 @@ const BundleManager: React.FC<BundleManagerProps> = ({ businessUnitId, language 
                       return (
                         <div
                           key={product.id}
-                          className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
-                            isSelected ? 'bg-purple-900/30 border border-purple-500' : 'bg-slate-700 hover:bg-slate-600'
+                          className={`flex items-center gap-3 p-3 rounded-none cursor-pointer transition-colors ${
+                            isSelected ? 'bg-purple-50 border border-purple-500' : 'bg-gray-100 hover:bg-gray-200'
                           }`}
                           onClick={() => toggleProduct(product.id)}
                         >
-                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                            isSelected ? 'bg-purple-600 border-purple-600' : 'border-slate-500'
+                          <div className={`w-5 h-5 rounded-none border-2 flex items-center justify-center ${
+                            isSelected ? 'bg-purple-50 border border-purple-200 border-purple-600' : 'border-gray-300'
                           }`}>
-                            {isSelected && <Check className="w-3 h-3 text-white" />}
+                            {isSelected && <Check className="w-3 h-3 text-gray-800" />}
                           </div>
 
-                          <div className="w-10 h-10 bg-slate-600 rounded overflow-hidden flex-shrink-0">
+                          <div className="w-10 h-10 bg-gray-200 rounded-none overflow-hidden flex-shrink-0">
                             {product.thumbnail ? (
                               <img src={product.thumbnail} alt="" className="w-full h-full object-cover" />
                             ) : (
-                              <Package className="w-5 h-5 text-slate-400 m-auto mt-2.5" />
+                              <Package className="w-5 h-5 text-gray-500 m-auto mt-2.5" />
                             )}
                           </div>
 
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium text-white truncate">{product.title || product.name}</div>
+                            <div className="font-medium text-gray-800 truncate">{product.title || product.name}</div>
                             {product.price && (
-                              <div className="text-sm text-green-400">${product.price.toFixed(2)}</div>
+                              <div className="text-sm text-green-600">${product.price.toFixed(2)}</div>
                             )}
                           </div>
 
@@ -684,17 +684,17 @@ const BundleManager: React.FC<BundleManagerProps> = ({ businessUnitId, language 
                                   e.stopPropagation()
                                   updateQuantity(product.id, (bundleProduct?.quantity || 1) - 1)
                                 }}
-                                className="w-7 h-7 bg-slate-600 hover:bg-slate-500 rounded text-white"
+                                className="w-7 h-7 bg-gray-200 hover:bg-gray-100 rounded-none text-gray-800"
                               >
                                 -
                               </button>
-                              <span className="w-8 text-center text-white">{bundleProduct?.quantity || 1}</span>
+                              <span className="w-8 text-center text-gray-800">{bundleProduct?.quantity || 1}</span>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   updateQuantity(product.id, (bundleProduct?.quantity || 1) + 1)
                                 }}
-                                className="w-7 h-7 bg-slate-600 hover:bg-slate-500 rounded text-white"
+                                className="w-7 h-7 bg-gray-200 hover:bg-gray-100 rounded-none text-gray-800"
                               >
                                 +
                               </button>
@@ -708,13 +708,13 @@ const BundleManager: React.FC<BundleManagerProps> = ({ businessUnitId, language 
               </div>
 
               {/* Discount Settings */}
-              <div className="bg-slate-700/50 rounded-lg p-4">
-                <label className="block text-sm text-slate-300 mb-3">Discount</label>
+              <div className="bg-gray-50 rounded-none p-4">
+                <label className="block text-xs text-gray-600 mb-3">Discount</label>
                 <div className="flex items-center gap-4">
                   <select
                     value={formData.discount_type || 'percentage'}
                     onChange={(e) => updateDiscount(e.target.value as any, formData.discount_value || 0)}
-                    className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white"
+                    className="px-2 py-1.5 text-xs bg-gray-100 border border-gray-200 rounded-none text-gray-800"
                   >
                     <option value="percentage">Percentage (%)</option>
                     <option value="fixed_amount">Fixed Amount ($)</option>
@@ -728,12 +728,12 @@ const BundleManager: React.FC<BundleManagerProps> = ({ businessUnitId, language 
                         formData.discount_type || 'percentage',
                         parseFloat(e.target.value) || 0
                       )}
-                      className="w-24 px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white"
+                      className="w-24 px-2 py-1.5 text-xs bg-gray-100 border border-gray-200 rounded-none text-gray-800"
                       placeholder="0"
                       min="0"
                       step={formData.discount_type === 'percentage' ? '1' : '0.01'}
                     />
-                    <span className="text-slate-400">
+                    <span className="text-gray-500">
                       {formData.discount_type === 'percentage' ? '%' : '$'}
                     </span>
                   </div>
@@ -741,20 +741,20 @@ const BundleManager: React.FC<BundleManagerProps> = ({ businessUnitId, language 
 
                 {/* Pricing Summary */}
                 {(formData.products?.length || 0) > 0 && (
-                  <div className="mt-4 pt-4 border-t border-slate-600 space-y-2">
+                  <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-400">Original Price:</span>
-                      <span className="text-slate-300 line-through">${(formData.original_price || 0).toFixed(2)}</span>
+                      <span className="text-gray-500">Original Price:</span>
+                      <span className="text-gray-600 line-through">${(formData.original_price || 0).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-400">Discount:</span>
-                      <span className="text-orange-400">-${(formData.savings || 0).toFixed(2)}</span>
+                      <span className="text-gray-500">Discount:</span>
+                      <span className="text-orange-600">-${(formData.savings || 0).toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between text-lg font-medium">
-                      <span className="text-white">Bundle Price:</span>
-                      <span className="text-green-400">${(formData.final_price || 0).toFixed(2)}</span>
+                    <div className="flex justify-between text-xs font-medium">
+                      <span className="text-gray-800">Bundle Price:</span>
+                      <span className="text-green-600">${(formData.final_price || 0).toFixed(2)}</span>
                     </div>
-                    <div className="text-center text-sm text-green-400 bg-green-900/30 rounded py-2">
+                    <div className="text-center text-sm text-green-600 bg-green-50 rounded-none py-2">
                       Customers save ${(formData.savings || 0).toFixed(2)} ({formData.discount_type === 'percentage' ? `${formData.discount_value}%` : 'flat'})
                     </div>
                   </div>
@@ -768,34 +768,34 @@ const BundleManager: React.FC<BundleManagerProps> = ({ businessUnitId, language 
                     type="checkbox"
                     checked={formData.is_active}
                     onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                    className="w-4 h-4 rounded"
+                    className="w-4 h-4 rounded-none"
                   />
-                  <span className="text-slate-300">Active (visible to customers)</span>
+                  <span className="text-gray-600">Active (visible to customers)</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={formData.is_featured}
                     onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
-                    className="w-4 h-4 rounded"
+                    className="w-4 h-4 rounded-none"
                   />
-                  <span className="text-slate-300">Featured Bundle</span>
+                  <span className="text-gray-600">Featured Bundle</span>
                 </label>
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-700">
+            <div className="flex items-center justify-end gap-2 px-3 py-2 border-t border-gray-200">
               <button
                 onClick={() => setShowEditor(false)}
-                className="px-6 py-2 text-slate-400 hover:text-white transition-colors"
+                className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-800 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={saveBundle}
                 disabled={!formData.name || (formData.products?.length || 0) === 0 || isSaving}
-                className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 disabled:opacity-50 transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 text-xs bg-green-50 border border-green-200 text-gray-800 rounded-none hover:bg-green-50 disabled:opacity-50 transition-colors"
               >
                 {isSaving ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -810,8 +810,8 @@ const BundleManager: React.FC<BundleManagerProps> = ({ businessUnitId, language 
       )}
 
       {/* Help Text */}
-      <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-4">
-        <h4 className="font-medium text-purple-300 mb-2">Bundle Tips:</h4>
+      <div className="bg-purple-50 border border-purple-500/30 rounded-none p-4">
+        <h4 className="font-medium text-purple-600 mb-2">Bundle Tips:</h4>
         <ul className="text-sm text-purple-200/80 space-y-1">
           <li><strong>Fixed Bundle:</strong> Products sold together at a one-time discounted price</li>
           <li><strong>Subscription Bundle:</strong> Recurring delivery with increasing discounts (3mo: 15%, 6mo: 25%, 12mo: 35%)</li>

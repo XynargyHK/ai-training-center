@@ -344,7 +344,7 @@ export default function ProductTemplateSelector({
         <button
           onClick={saveConfiguration}
           disabled={isSaving}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 text-gray-800 rounded-none font-medium hover:bg-blue-100 disabled:opacity-50"
         >
           {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Save Configuration
@@ -398,7 +398,7 @@ export default function ProductTemplateSelector({
             return (
               <div
                 key={template.id}
-                className={`border-2 rounded-lg overflow-hidden transition-all cursor-pointer ${
+                className={`border-2 rounded-none overflow-hidden transition-all cursor-pointer ${
                   isSelected
                     ? 'border-blue-500 bg-blue-50 shadow-md'
                     : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
@@ -410,7 +410,7 @@ export default function ProductTemplateSelector({
                   className="p-4"
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <div className={`p-2 rounded-lg ${isSelected ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                    <div className={`p-2 rounded-none ${isSelected ? 'bg-blue-100' : 'bg-gray-100'}`}>
                       <IconComponent className={`w-6 h-6 ${isSelected ? 'text-blue-600' : 'text-gray-600'}`} />
                     </div>
                     {isSelected && (
@@ -444,7 +444,7 @@ export default function ProductTemplateSelector({
                       {fields.map((field) => (
                         <div
                           key={field.id}
-                          className="text-xs px-2 py-1 bg-white rounded border flex items-center justify-between"
+                          className="text-xs px-2 py-1 bg-white rounded-none border flex items-center justify-between"
                         >
                           <span className="text-gray-700">{field.field_label}</span>
                           <span className="text-gray-400 capitalize">{field.field_type}</span>
@@ -466,7 +466,7 @@ export default function ProductTemplateSelector({
           <div className="flex justify-end">
             <button
               onClick={() => setShowAddField(!showAddField)}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
+              className="flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 text-gray-800 rounded-none font-medium hover:bg-green-100"
             >
               <Plus className="w-4 h-4" />
               Add Custom Field
@@ -475,7 +475,7 @@ export default function ProductTemplateSelector({
 
           {/* Add Field Form */}
           {showAddField && (
-            <div className="bg-gray-50 border rounded-lg p-4 space-y-4">
+            <div className="bg-gray-50 border rounded-none p-4 space-y-4">
               <h4 className="font-medium text-gray-800">New Custom Field</h4>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -489,7 +489,7 @@ export default function ProductTemplateSelector({
                       field_key: e.target.value.toLowerCase().replace(/\s+/g, '_')
                     })}
                     placeholder="e.g., Serving Size"
-                    className="w-full px-3 py-2 border rounded-lg"
+                    className="w-full px-3 py-2 border rounded-none"
                   />
                 </div>
                 <div>
@@ -499,7 +499,7 @@ export default function ProductTemplateSelector({
                     value={newField.field_key || ''}
                     onChange={(e) => setNewField({ ...newField, field_key: e.target.value })}
                     placeholder="serving_size"
-                    className="w-full px-3 py-2 border rounded-lg bg-gray-100"
+                    className="w-full px-3 py-2 border rounded-none bg-gray-100"
                   />
                 </div>
                 <div>
@@ -507,7 +507,7 @@ export default function ProductTemplateSelector({
                   <select
                     value={newField.field_type || 'text'}
                     onChange={(e) => setNewField({ ...newField, field_type: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
+                    className="w-full px-3 py-2 border rounded-none"
                   >
                     {FIELD_TYPES.map(type => (
                       <option key={type.value} value={type.value}>{type.label}</option>
@@ -519,7 +519,7 @@ export default function ProductTemplateSelector({
                   <select
                     value={newField.display_section || 'main'}
                     onChange={(e) => setNewField({ ...newField, display_section: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg"
+                    className="w-full px-3 py-2 border rounded-none"
                   >
                     {DISPLAY_SECTIONS.map(section => (
                       <option key={section.value} value={section.value}>{section.label}</option>
@@ -533,7 +533,7 @@ export default function ProductTemplateSelector({
                     value={newField.placeholder || ''}
                     onChange={(e) => setNewField({ ...newField, placeholder: e.target.value })}
                     placeholder="Enter placeholder text..."
-                    className="w-full px-3 py-2 border rounded-lg"
+                    className="w-full px-3 py-2 border rounded-none"
                   />
                 </div>
                 <div className="col-span-2 flex items-center gap-2">
@@ -550,14 +550,14 @@ export default function ProductTemplateSelector({
               <div className="flex justify-end gap-2">
                 <button
                   onClick={() => setShowAddField(false)}
-                  className="px-4 py-2 border rounded-lg hover:bg-gray-100"
+                  className="px-4 py-2 border rounded-none hover:bg-gray-100"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={addCustomField}
                   disabled={!newField.field_label}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  className="px-4 py-2 bg-blue-50 border border-blue-200 text-gray-800 rounded-none hover:bg-blue-100 disabled:opacity-50"
                 >
                   Add Field
                 </button>
@@ -569,7 +569,7 @@ export default function ProductTemplateSelector({
           {customFields.length > 0 ? (
             <div className="space-y-2">
               {Object.entries(fieldsBySection).map(([section, fields]) => (
-                <div key={section} className="border rounded-lg overflow-hidden">
+                <div key={section} className="border rounded-none overflow-hidden">
                   <div className="bg-gray-100 px-4 py-2 font-medium text-sm text-gray-700 capitalize">
                     {DISPLAY_SECTIONS.find(s => s.value === section)?.label || section}
                   </div>
@@ -586,7 +586,7 @@ export default function ProductTemplateSelector({
                                 <span className="text-xs text-red-500">*</span>
                               )}
                               {field.is_from_template && (
-                                <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-600 rounded">
+                                <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-600 rounded-none">
                                   from template
                                 </span>
                               )}
@@ -609,7 +609,7 @@ export default function ProductTemplateSelector({
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed">
+            <div className="text-center py-12 bg-gray-50 rounded-none border-2 border-dashed">
               <Settings className="w-12 h-12 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-500">No custom fields yet</p>
               <p className="text-sm text-gray-400 mt-1">
@@ -624,9 +624,9 @@ export default function ProductTemplateSelector({
       {activeView === 'url' && (
         <div className="space-y-6">
           {/* URL Input */}
-          <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6">
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-none p-6">
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-white rounded-lg shadow-sm">
+              <div className="p-3 bg-white rounded-none shadow-sm">
                 <Sparkles className="w-6 h-6 text-purple-600" />
               </div>
               <div className="flex-1">
@@ -641,12 +641,12 @@ export default function ProductTemplateSelector({
                     value={importUrl}
                     onChange={(e) => setImportUrl(e.target.value)}
                     placeholder="https://example.com/products/sample-product"
-                    className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    className="flex-1 px-4 py-2 border rounded-none focus:ring-2 focus:ring-purple-300 focus:border-purple-500"
                   />
                   <button
                     onClick={handleUrlImport}
                     disabled={isImporting || !importUrl.trim()}
-                    className="px-6 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2"
+                    className="px-6 py-2 bg-purple-50 border border-purple-200 text-gray-800 rounded-none font-medium hover:bg-purple-100 disabled:opacity-50 flex items-center gap-2"
                   >
                     {isImporting ? (
                       <>
@@ -667,7 +667,7 @@ export default function ProductTemplateSelector({
 
           {/* Import Error */}
           {importError && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+            <div className="bg-red-50 border border-red-200 rounded-none p-4 flex items-start gap-3">
               <X className="w-5 h-5 text-red-500 mt-0.5" />
               <div>
                 <h4 className="font-medium text-red-800">Failed to analyze URL</h4>
@@ -678,7 +678,7 @@ export default function ProductTemplateSelector({
 
           {/* Imported Fields Preview */}
           {importedFields.length > 0 && (
-            <div className="border rounded-lg overflow-hidden">
+            <div className="border rounded-none overflow-hidden">
               <div className="bg-green-50 px-4 py-3 border-b flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Check className="w-5 h-5 text-green-600" />
@@ -688,7 +688,7 @@ export default function ProductTemplateSelector({
                 </div>
                 <button
                   onClick={applyImportedFields}
-                  className="px-4 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
+                  className="px-4 py-1.5 bg-green-50 border border-green-200 text-gray-800 rounded-none text-sm font-medium hover:bg-green-100"
                 >
                   Apply These Fields
                 </button>
@@ -709,7 +709,7 @@ export default function ProductTemplateSelector({
           )}
 
           {/* Example Sites */}
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-gray-50 rounded-none p-4">
             <h4 className="font-medium text-gray-700 mb-3">Example reference sites:</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
               <span className="text-gray-500">Shopify stores</span>
@@ -723,7 +723,7 @@ export default function ProductTemplateSelector({
 
       {/* Current Config Status */}
       {currentConfig && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-none p-4">
           <h4 className="font-medium text-blue-800 mb-2">Current Configuration</h4>
           <div className="text-sm text-blue-700 space-y-1">
             <p>

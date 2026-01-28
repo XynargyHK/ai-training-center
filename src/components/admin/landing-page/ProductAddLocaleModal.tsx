@@ -104,14 +104,14 @@ export default function ProductAddLocaleModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-slate-800 rounded-lg shadow-xl max-w-md w-full border border-slate-700">
+    <div className="fixed inset-0 bg-black/10 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-none shadow-sm max-w-md w-full border border-gray-200">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-700">
-          <h2 className="text-xl font-semibold text-white">Add Product Locale</h2>
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-800">Add Product Locale</h2>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors"
+            className="text-gray-500 hover:text-gray-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -122,13 +122,13 @@ export default function ProductAddLocaleModal({
           {/* Country & Language Selection */}
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-gray-600 mb-2">
                 Country
               </label>
               <select
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
-                className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
+                className="w-full bg-gray-100 border border-gray-200 rounded-none px-3 py-2 text-gray-800"
               >
                 <option value="">Select country...</option>
                 {countries.map(c => (
@@ -138,13 +138,13 @@ export default function ProductAddLocaleModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label className="block text-sm font-medium text-gray-600 mb-2">
                 Language
               </label>
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
+                className="w-full bg-gray-100 border border-gray-200 rounded-none px-3 py-2 text-gray-800"
               >
                 <option value="">Select language...</option>
                 {languages.map(l => (
@@ -156,7 +156,7 @@ export default function ProductAddLocaleModal({
 
           {/* Creation Mode */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-3">
+            <label className="block text-sm font-medium text-gray-600 mb-3">
               Create by:
             </label>
             <div className="space-y-3">
@@ -171,13 +171,13 @@ export default function ProductAddLocaleModal({
                   className="mt-1"
                 />
                 <div>
-                  <div className="text-white font-medium">Duplicating from:</div>
-                  <div className="text-sm text-slate-400">Copy all products as-is without translation</div>
+                  <div className="text-gray-800 font-medium">Duplicating from:</div>
+                  <div className="text-sm text-gray-500">Copy all products as-is without translation</div>
                   {creationMode === 'copy' && (
                     <select
                       value={sourceLocale}
                       onChange={(e) => setSourceLocale(e.target.value)}
-                      className="mt-2 w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white text-sm"
+                      className="mt-2 w-full bg-gray-100 border border-gray-200 rounded-none px-3 py-2 text-gray-800 text-sm"
                     >
                       <option value="">Select source locale...</option>
                       {existingLocales.map(l => (
@@ -201,13 +201,13 @@ export default function ProductAddLocaleModal({
                   className="mt-1"
                 />
                 <div>
-                  <div className="text-white font-medium">Translating from:</div>
-                  <div className="text-sm text-slate-400">Copy products and AI-translate text fields</div>
+                  <div className="text-gray-800 font-medium">Translating from:</div>
+                  <div className="text-sm text-gray-500">Copy products and AI-translate text fields</div>
                   {creationMode === 'translate' && (
                     <select
                       value={sourceLocale}
                       onChange={(e) => setSourceLocale(e.target.value)}
-                      className="mt-2 w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white text-sm"
+                      className="mt-2 w-full bg-gray-100 border border-gray-200 rounded-none px-3 py-2 text-gray-800 text-sm"
                     >
                       <option value="">Select source locale...</option>
                       {existingLocales.map(l => (
@@ -231,8 +231,8 @@ export default function ProductAddLocaleModal({
                   className="mt-1"
                 />
                 <div>
-                  <div className="text-white font-medium">Starting empty</div>
-                  <div className="text-sm text-slate-400">Add products manually from scratch</div>
+                  <div className="text-gray-800 font-medium">Starting empty</div>
+                  <div className="text-sm text-gray-500">Add products manually from scratch</div>
                 </div>
               </label>
             </div>
@@ -240,17 +240,17 @@ export default function ProductAddLocaleModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-700">
+        <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
+            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleCreate}
             disabled={creating || !country || !language}
-            className="px-4 py-2 bg-violet-600 text-white rounded hover:bg-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-4 py-2 bg-violet-50 border border-violet-200 text-gray-800 rounded-none hover:bg-violet-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {creating ? (
               <>

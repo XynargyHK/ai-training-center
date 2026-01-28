@@ -115,15 +115,15 @@ export default function AccordionBlockEditor({ block, onUpdate }: AccordionBlock
     <div className="space-y-4">
       {/* FAQ Items */}
       {data.items.map((item, index) => (
-        <div key={index} className="bg-slate-800/50 rounded-lg p-4 border border-slate-600">
+        <div key={index} className="bg-gray-50 rounded-none p-2 border border-gray-200">
           <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-medium text-slate-300">Item {index + 1}</span>
+            <span className="text-xs font-medium text-gray-600">Item {index + 1}</span>
             <div className="flex items-center gap-2">
               {/* Move Up */}
               <button
                 onClick={() => moveUp(index)}
                 disabled={index === 0}
-                className="text-slate-400 hover:text-white p-1 disabled:opacity-30 disabled:cursor-not-allowed"
+                className="text-gray-500 hover:text-gray-800 p-1 disabled:opacity-30 disabled:cursor-not-allowed"
                 title="Move up"
               >
                 <ChevronUp className="w-4 h-4" />
@@ -132,7 +132,7 @@ export default function AccordionBlockEditor({ block, onUpdate }: AccordionBlock
               <button
                 onClick={() => moveDown(index)}
                 disabled={index === data.items.length - 1}
-                className="text-slate-400 hover:text-white p-1 disabled:opacity-30 disabled:cursor-not-allowed"
+                className="text-gray-500 hover:text-gray-800 p-1 disabled:opacity-30 disabled:cursor-not-allowed"
                 title="Move down"
               >
                 <ChevronDown className="w-4 h-4" />
@@ -140,7 +140,7 @@ export default function AccordionBlockEditor({ block, onUpdate }: AccordionBlock
               {/* Delete */}
               <button
                 onClick={() => deleteItem(index)}
-                className="text-red-400 hover:text-red-300 p-1"
+                className="text-red-600 hover:text-red-600 p-1"
                 title="Delete"
               >
                 <Trash2 className="w-4 h-4" />
@@ -192,7 +192,7 @@ export default function AccordionBlockEditor({ block, onUpdate }: AccordionBlock
 
       <button
         onClick={addItem}
-        className="w-full py-2 bg-green-500/20 text-green-400 hover:bg-green-500/30 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+        className="w-full py-2 bg-green-50 text-green-600 hover:bg-green-50/30 rounded-none font-medium transition-colors flex items-center justify-center gap-2"
       >
         <Plus className="w-4 h-4" />
         Add Item

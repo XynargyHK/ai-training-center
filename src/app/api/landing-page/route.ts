@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
     const businessUnitParam = searchParams.get('businessUnit')
     const country = searchParams.get('country') || 'US'
     const languageCode = searchParams.get('language') || 'en'
+    const isPreview = searchParams.get('preview') === 'true'
 
     if (!businessUnitParam) {
       return NextResponse.json({ error: 'businessUnit parameter required' }, { status: 400 })
@@ -75,12 +76,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch landing page' }, { status: 500 })
     }
 
+    // Preview mode: return draft (row fields as-is)
+    // Live mode: return published copy if available, otherwise row fields (backward compatible)
+    let resolvedPage = landingPage
+    if (!isPreview && landingPage?.published_data) {
+      const { published_data, ...metadata } = landingPage
+      resolvedPage = { ...metadata, ...published_data }
+    }
+
     return NextResponse.json({
-      landingPage: landingPage || null,
+      landingPage: resolvedPage || null,
       businessUnit,
-      hasLandingPage: !!landingPage,
+      hasLandingPage: !!resolvedPage,
       availableLocales: availableLocales || [],
-      currentLocale: { country, language: languageCode }
+      currentLocale: { country, language: languageCode },
+      isPreview
     })
 
   } catch (err) {

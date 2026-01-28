@@ -581,31 +581,31 @@ export default function CatalogSetupWizard({
   }
 
   return (
-    <div className="flex flex-col h-full bg-slate-900 rounded-xl overflow-hidden">
+    <div className="flex flex-col h-full bg-white rounded-none overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-700 bg-slate-800">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200 bg-white">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-purple-600 rounded-lg">
-            <Sparkles className="w-5 h-5 text-white" />
+          <div className="p-2 bg-purple-50 border border-purple-200 rounded-none">
+            <Sparkles className="w-5 h-5 text-gray-800" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-white">Catalog Setup</h2>
-            <p className="text-xs sm:text-sm text-slate-400">AI-guided setup</p>
+            <h2 className="text-lg font-semibold text-gray-800">Catalog Setup</h2>
+            <p className="text-xs sm:text-sm text-gray-500">AI-guided setup</p>
           </div>
         </div>
         {onClose && (
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-none transition-colors"
             title="Close (work is saved)"
           >
-            <X className="w-5 h-5 text-slate-400" />
+            <X className="w-5 h-5 text-gray-500" />
           </button>
         )}
       </div>
 
       {/* Status bar */}
-      <div className="px-4 sm:px-6 py-2 border-b border-slate-700 bg-slate-800/50 text-xs text-slate-400">
+      <div className="px-4 sm:px-6 py-2 border-b border-gray-200 bg-gray-50 text-xs text-gray-500">
         {situation && (
           <span>
             {situation.categoryCount} categories | {situation.productCount} products
@@ -619,18 +619,18 @@ export default function CatalogSetupWizard({
         {messages.map((message) => (
           <div key={message.id} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}>
             {message.role === 'assistant' && (
-              <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
-                <Bot className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 rounded-full bg-purple-50 border border-purple-200 flex items-center justify-center flex-shrink-0">
+                <Bot className="w-5 h-5 text-gray-800" />
               </div>
             )}
 
             <div className={`max-w-[85%] ${message.role === 'user' ? 'order-first' : ''}`}>
-              <div className={`rounded-lg px-4 py-3 ${
+              <div className={`rounded-none px-4 py-3 ${
                 message.role === 'user'
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-blue-50 border border-blue-200 text-gray-800'
                   : message.role === 'system'
-                  ? 'bg-slate-700 text-slate-300 italic'
-                  : 'bg-slate-800 text-slate-100'
+                  ? 'bg-gray-100 text-gray-600 italic'
+                  : 'bg-white text-slate-100'
               }`}>
                 <p className="whitespace-pre-wrap text-sm sm:text-base">{message.content}</p>
               </div>
@@ -646,7 +646,7 @@ export default function CatalogSetupWizard({
                         key={idx}
                         onClick={() => handleAction(action)}
                         disabled={isLoading}
-                        className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors disabled:opacity-50"
+                        className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-gray-100 hover:bg-gray-100 text-gray-700 rounded-none text-xs sm:text-sm font-medium transition-colors disabled:opacity-50"
                       >
                         <IconComponent className="w-4 h-4" />
                         {action.label}
@@ -658,104 +658,104 @@ export default function CatalogSetupWizard({
 
               {/* Extracted products preview */}
               {message.extractedProducts && message.extractedProducts.length > 0 && (
-                <div className="mt-3 bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
-                  <div className="px-4 py-2 bg-slate-700 text-sm font-medium text-slate-200">
+                <div className="mt-3 bg-white rounded-none border border-gray-200 overflow-hidden">
+                  <div className="px-4 py-2 bg-gray-100 text-sm font-medium text-gray-700">
                     Products to Import ({message.extractedProducts.length})
                   </div>
                   <div className="max-h-64 overflow-y-auto">
                     {message.extractedProducts.map((product, idx) => (
-                      <div key={idx} className="px-4 py-3 border-b border-slate-700 last:border-0">
+                      <div key={idx} className="px-4 py-3 border-b border-gray-200 last:border-0">
                         <div className="flex items-start gap-3">
-                          <Package className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" />
+                          <Package className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-white text-sm">{product.title}</h4>
+                            <h4 className="font-medium text-gray-800 text-sm">{product.title}</h4>
                             {product.title_en && product.title_en !== product.title && (
-                              <p className="text-xs text-slate-400">{product.title_en}</p>
+                              <p className="text-xs text-gray-500">{product.title_en}</p>
                             )}
                             {product.tagline && (
-                              <p className="text-xs text-slate-400 truncate">{product.tagline}</p>
+                              <p className="text-xs text-gray-500 truncate">{product.tagline}</p>
                             )}
 
                             {/* Price row */}
                             <div className="flex flex-wrap items-center gap-2 mt-1 text-xs">
                               {product.price && (
-                                <span className="text-green-400 font-medium">
+                                <span className="text-green-600 font-medium">
                                   {product.currency || '$'}{product.price}
                                   {product.original_price && product.original_price !== product.price && (
-                                    <span className="text-slate-500 line-through ml-1">{product.original_price}</span>
+                                    <span className="text-gray-400 line-through ml-1">{product.original_price}</span>
                                   )}
                                 </span>
                               )}
-                              {product.sku && <span className="text-slate-500">SKU: {product.sku}</span>}
-                              {product.volume && <span className="text-slate-500">{product.volume}</span>}
-                              {product.brand && <span className="text-slate-500">{product.brand}</span>}
+                              {product.sku && <span className="text-gray-400">SKU: {product.sku}</span>}
+                              {product.volume && <span className="text-gray-400">{product.volume}</span>}
+                              {product.brand && <span className="text-gray-400">{product.brand}</span>}
                             </div>
 
                             {/* Industry-specific tags */}
                             <div className="flex flex-wrap gap-1 mt-1">
                               {/* Apparel */}
                               {product.colors?.length > 0 && (
-                                <span className="text-xs bg-slate-700 px-1.5 py-0.5 rounded text-slate-300">
+                                <span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded-none text-gray-600">
                                   {product.colors.length} colors
                                 </span>
                               )}
                               {product.sizes?.length > 0 && (
-                                <span className="text-xs bg-slate-700 px-1.5 py-0.5 rounded text-slate-300">
+                                <span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded-none text-gray-600">
                                   {product.sizes.join(', ')}
                                 </span>
                               )}
 
                               {/* Skincare */}
                               {product.skin_type && (
-                                <span className="text-xs bg-pink-900/50 px-1.5 py-0.5 rounded text-pink-300">
+                                <span className="text-xs bg-pink-900/50 px-1.5 py-0.5 rounded-none text-pink-600">
                                   {product.skin_type}
                                 </span>
                               )}
                               {product.concerns?.length > 0 && (
-                                <span className="text-xs bg-pink-900/50 px-1.5 py-0.5 rounded text-pink-300">
+                                <span className="text-xs bg-pink-900/50 px-1.5 py-0.5 rounded-none text-pink-600">
                                   {product.concerns.slice(0, 2).join(', ')}
                                 </span>
                               )}
 
                               {/* Restaurant */}
                               {product.calories && (
-                                <span className="text-xs bg-orange-900/50 px-1.5 py-0.5 rounded text-orange-300">
+                                <span className="text-xs bg-orange-50/50 px-1.5 py-0.5 rounded-none text-orange-600">
                                   {product.calories} cal
                                 </span>
                               )}
                               {product.dietary?.length > 0 && (
-                                <span className="text-xs bg-green-900/50 px-1.5 py-0.5 rounded text-green-300">
+                                <span className="text-xs bg-green-50/50 px-1.5 py-0.5 rounded-none text-green-600">
                                   {product.dietary.join(', ')}
                                 </span>
                               )}
                               {product.spice_level && (
-                                <span className="text-xs bg-red-900/50 px-1.5 py-0.5 rounded text-red-300">
+                                <span className="text-xs bg-red-50/50 px-1.5 py-0.5 rounded-none text-red-600">
                                   {product.spice_level} spice
                                 </span>
                               )}
 
                               {/* Florist */}
                               {product.flowers?.length > 0 && (
-                                <span className="text-xs bg-pink-900/50 px-1.5 py-0.5 rounded text-pink-300">
+                                <span className="text-xs bg-pink-900/50 px-1.5 py-0.5 rounded-none text-pink-600">
                                   {product.flowers.slice(0, 3).join(', ')}
                                 </span>
                               )}
                               {product.occasion?.length > 0 && (
-                                <span className="text-xs bg-purple-900/50 px-1.5 py-0.5 rounded text-purple-300">
+                                <span className="text-xs bg-purple-50/50 px-1.5 py-0.5 rounded-none text-purple-600">
                                   {product.occasion[0]}
                                 </span>
                               )}
 
                               {/* Electronics */}
                               {product.warranty && (
-                                <span className="text-xs bg-blue-900/50 px-1.5 py-0.5 rounded text-blue-300">
+                                <span className="text-xs bg-blue-50/50 px-1.5 py-0.5 rounded-none text-blue-600">
                                   {product.warranty}
                                 </span>
                               )}
 
                               {/* Category suggestion (all) */}
                               {product.category_suggestion && (
-                                <span className="text-xs bg-purple-900/50 px-1.5 py-0.5 rounded text-purple-300">
+                                <span className="text-xs bg-purple-50/50 px-1.5 py-0.5 rounded-none text-purple-600">
                                   {product.category_suggestion}
                                 </span>
                               )}
@@ -763,17 +763,17 @@ export default function CatalogSetupWizard({
 
                             {/* Features/Key info */}
                             {product.features?.length > 0 && (
-                              <p className="text-xs text-slate-500 mt-1 truncate">
+                              <p className="text-xs text-gray-400 mt-1 truncate">
                                 {product.features.slice(0, 3).join(' • ')}
                               </p>
                             )}
                             {product.key_actives && (
-                              <p className="text-xs text-slate-500 mt-1 truncate">
+                              <p className="text-xs text-gray-400 mt-1 truncate">
                                 Key actives: {product.key_actives}
                               </p>
                             )}
                             {product.ingredients && !product.key_actives && (
-                              <p className="text-xs text-slate-500 mt-1 truncate">
+                              <p className="text-xs text-gray-400 mt-1 truncate">
                                 {product.ingredients.substring(0, 60)}...
                               </p>
                             )}
@@ -787,8 +787,8 @@ export default function CatalogSetupWizard({
             </div>
 
             {message.role === 'user' && (
-              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
-                <User className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center flex-shrink-0">
+                <User className="w-5 h-5 text-gray-800" />
               </div>
             )}
           </div>
@@ -796,11 +796,11 @@ export default function CatalogSetupWizard({
 
         {isLoading && (
           <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center">
-              <Loader2 className="w-5 h-5 text-white animate-spin" />
+            <div className="w-8 h-8 rounded-full bg-purple-50 border border-purple-200 flex items-center justify-center">
+              <Loader2 className="w-5 h-5 text-gray-800 animate-spin" />
             </div>
-            <div className="bg-slate-800 rounded-lg px-4 py-3">
-              <div className="flex items-center gap-2 text-slate-400 text-sm">
+            <div className="bg-white rounded-none px-4 py-3">
+              <div className="flex items-center gap-2 text-gray-500 text-sm">
                 <span>Working</span>
                 <span className="animate-pulse">...</span>
               </div>
@@ -813,27 +813,27 @@ export default function CatalogSetupWizard({
 
       {/* URL Import Panel */}
       {showUrlImport && (
-        <div className="px-4 sm:px-6 py-4 border-t border-slate-700 bg-slate-800">
+        <div className="px-4 sm:px-6 py-4 border-t border-gray-200 bg-white">
           <div className="flex gap-2">
             <input
               type="url"
               value={importUrl}
               onChange={(e) => setImportUrl(e.target.value)}
               placeholder="https://example.com/product-page"
-              className="flex-1 px-3 sm:px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+              className="flex-1 px-3 sm:px-4 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-300 text-sm"
               onKeyDown={(e) => e.key === 'Enter' && handleUrlImport()}
             />
             <button
               onClick={handleUrlImport}
               disabled={isLoading || !importUrl.trim()}
-              className="px-3 sm:px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium disabled:opacity-50 flex items-center gap-2 text-sm"
+              className="px-3 sm:px-4 py-2 bg-purple-50 border border-purple-200 hover:bg-purple-100 text-gray-800 rounded-none font-medium disabled:opacity-50 flex items-center gap-2 text-sm"
             >
               <Sparkles className="w-4 h-4" />
               <span className="hidden sm:inline">Analyze</span>
             </button>
             <button
               onClick={() => { setShowUrlImport(false); setImportUrl('') }}
-              className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg"
+              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-none"
             >
               <X className="w-4 h-4" />
             </button>
@@ -843,7 +843,7 @@ export default function CatalogSetupWizard({
 
       {/* File Upload Panel */}
       {showFileUpload && (
-        <div className="px-4 sm:px-6 py-4 border-t border-slate-700 bg-slate-800">
+        <div className="px-4 sm:px-6 py-4 border-t border-gray-200 bg-white">
           <div className="flex gap-2 items-center">
             <input
               ref={fileInputRef}
@@ -855,14 +855,14 @@ export default function CatalogSetupWizard({
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading}
-              className="flex-1 px-4 py-3 border-2 border-dashed border-slate-600 rounded-lg text-slate-300 hover:border-purple-500 hover:text-purple-400 transition-colors flex items-center justify-center gap-2 text-sm"
+              className="flex-1 px-4 py-3 border-2 border-dashed border-gray-300 rounded-none text-gray-600 hover:border-purple-500 hover:text-purple-600 transition-colors flex items-center justify-center gap-2 text-sm"
             >
               <Upload className="w-5 h-5" />
               Click to upload (PDF, Excel, CSV, etc.)
             </button>
             <button
               onClick={() => setShowFileUpload(false)}
-              className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg"
+              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-none"
             >
               <X className="w-4 h-4" />
             </button>
@@ -871,26 +871,26 @@ export default function CatalogSetupWizard({
       )}
 
       {/* Text Input - always visible for free typing */}
-      <div className="px-4 sm:px-6 py-4 border-t border-slate-700 bg-slate-800">
+      <div className="px-4 sm:px-6 py-4 border-t border-gray-200 bg-white">
         <div className="flex gap-2">
           <input
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Type your answer or describe what you need..."
-            className="flex-1 px-3 sm:px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+            className="flex-1 px-3 sm:px-4 py-3 bg-gray-100 border border-gray-200 rounded-none text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-300 text-sm"
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
             disabled={isLoading}
           />
           <button
             onClick={handleSendMessage}
             disabled={isLoading || !inputValue.trim()}
-            className="px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg disabled:opacity-50 transition-colors"
+            className="px-4 py-3 bg-purple-50 border border-purple-200 hover:bg-purple-100 text-gray-800 rounded-none disabled:opacity-50 transition-colors"
           >
             <Send className="w-5 h-5" />
           </button>
         </div>
-        <p className="text-xs text-slate-500 mt-2">
+        <p className="text-xs text-gray-400 mt-2">
           Select a button above or type your own response
         </p>
       </div>

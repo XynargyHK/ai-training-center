@@ -242,12 +242,12 @@ const PolicyManager: React.FC<PolicyManagerProps> = ({ businessUnitId, language 
   // Get color classes
   const getColorClasses = (color: string) => {
     const colors: Record<string, { bg: string; text: string; border: string }> = {
-      blue: { bg: 'bg-blue-600/20', text: 'text-blue-400', border: 'border-blue-600/30' },
-      green: { bg: 'bg-green-600/20', text: 'text-green-400', border: 'border-green-600/30' },
-      purple: { bg: 'bg-purple-600/20', text: 'text-purple-400', border: 'border-purple-600/30' },
-      orange: { bg: 'bg-orange-600/20', text: 'text-orange-400', border: 'border-orange-600/30' },
-      red: { bg: 'bg-red-600/20', text: 'text-red-400', border: 'border-red-600/30' },
-      slate: { bg: 'bg-slate-600/20', text: 'text-slate-400', border: 'border-slate-600/30' }
+      blue: { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-600/30' },
+      green: { bg: 'bg-green-50', text: 'text-green-600', border: 'border-green-600/30' },
+      purple: { bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-600/30' },
+      orange: { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-600/30' },
+      red: { bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-600/30' },
+      slate: { bg: 'bg-gray-200/20', text: 'text-gray-500', border: 'border-gray-200/30' }
     }
     return colors[color] || colors.slate
   }
@@ -264,8 +264,8 @@ const PolicyManager: React.FC<PolicyManagerProps> = ({ businessUnitId, language 
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-semibold text-white">Business Policies</h2>
-        <p className="text-sm text-slate-400 mt-1">
+        <h2 className="text-xl font-semibold text-gray-800">Business Policies</h2>
+        <p className="text-sm text-gray-500 mt-1">
           Set up your store policies. Fill in the form fields and we'll generate the policy text.
         </p>
       </div>
@@ -281,24 +281,24 @@ const PolicyManager: React.FC<PolicyManagerProps> = ({ businessUnitId, language 
           return (
             <div
               key={policyType.id}
-              className={`rounded-xl border ${colors.border} ${
-                existingPolicy ? colors.bg : 'bg-slate-800/50'
+              className={`rounded-none border ${colors.border} ${
+                existingPolicy ? colors.bg : 'bg-gray-50'
               } overflow-hidden`}
             >
               {/* Card Header */}
               <div className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-lg ${colors.bg} flex items-center justify-center`}>
+                  <div className={`w-10 h-10 rounded-none ${colors.bg} flex items-center justify-center`}>
                     <Icon className={`w-5 h-5 ${colors.text}`} />
                   </div>
                   <div>
-                    <h3 className="font-medium text-white">{policyType.name}</h3>
+                    <h3 className="font-medium text-gray-800">{policyType.name}</h3>
                     {existingPolicy ? (
-                      <span className="text-xs text-green-400 flex items-center gap-1">
+                      <span className="text-xs text-green-600 flex items-center gap-1">
                         <Check className="w-3 h-3" /> Configured
                       </span>
                     ) : (
-                      <span className="text-xs text-slate-500">Not set up</span>
+                      <span className="text-xs text-gray-400">Not set up</span>
                     )}
                   </div>
                 </div>
@@ -307,7 +307,7 @@ const PolicyManager: React.FC<PolicyManagerProps> = ({ businessUnitId, language 
                   {!isEditing && (
                     <button
                       onClick={() => startEditing(policyType.id)}
-                      className={`p-2 rounded-lg ${colors.text} hover:${colors.bg}`}
+                      className={`p-2 rounded-none ${colors.text} hover:${colors.bg}`}
                     >
                       <Edit className="w-4 h-4" />
                     </button>
@@ -315,7 +315,7 @@ const PolicyManager: React.FC<PolicyManagerProps> = ({ businessUnitId, language 
                   {existingPolicy && !isEditing && (
                     <button
                       onClick={() => deletePolicy(existingPolicy.id)}
-                      className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-600/10"
+                      className="p-2 rounded-none text-gray-500 hover:text-red-600 hover:bg-red-50 border border-red-200/10"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -325,17 +325,17 @@ const PolicyManager: React.FC<PolicyManagerProps> = ({ businessUnitId, language 
 
               {/* Edit Form */}
               {isEditing && (
-                <div className="border-t border-slate-700 p-4 space-y-4">
+                <div className="border-t border-gray-200 p-4 space-y-4">
                   {policyType.fields.map(field => (
                     <div key={field.key}>
-                      <label className="block text-sm text-slate-400 mb-1">
+                      <label className="block text-sm text-gray-500 mb-1">
                         {field.label}
                       </label>
                       {field.type === 'select' ? (
                         <select
                           value={formData[field.key] || ''}
                           onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
-                          className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm"
+                          className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-sm"
                         >
                           <option value="">Select...</option>
                           {field.options?.map(opt => (
@@ -346,7 +346,7 @@ const PolicyManager: React.FC<PolicyManagerProps> = ({ businessUnitId, language 
                         <textarea
                           value={formData[field.key] || ''}
                           onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
-                          className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm"
+                          className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-sm"
                           rows={3}
                         />
                       ) : (
@@ -354,16 +354,16 @@ const PolicyManager: React.FC<PolicyManagerProps> = ({ businessUnitId, language 
                           type={field.type}
                           value={formData[field.key] || ''}
                           onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
-                          className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm"
+                          className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-sm"
                         />
                       )}
                     </div>
                   ))}
 
                   {/* Preview */}
-                  <div className="pt-4 border-t border-slate-700">
-                    <label className="block text-sm text-slate-400 mb-2">Preview</label>
-                    <div className="p-3 bg-slate-900 rounded-lg text-sm text-slate-300 whitespace-pre-wrap max-h-40 overflow-y-auto">
+                  <div className="pt-4 border-t border-gray-200">
+                    <label className="block text-sm text-gray-500 mb-2">Preview</label>
+                    <div className="p-3 bg-white rounded-none text-sm text-gray-600 whitespace-pre-wrap max-h-40 overflow-y-auto">
                       {generateContent(policyType.id, formData) || 'Fill in the fields above to generate policy text'}
                     </div>
                   </div>
@@ -375,14 +375,14 @@ const PolicyManager: React.FC<PolicyManagerProps> = ({ businessUnitId, language 
                         setEditingPolicy(null)
                         setFormData({})
                       }}
-                      className="px-3 py-1.5 text-sm text-slate-400 hover:text-white"
+                      className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-800"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={() => savePolicy(policyType.id)}
                       disabled={isSaving}
-                      className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
+                      className="flex items-center gap-2 px-4 py-1.5 bg-blue-50 border border-blue-200 text-gray-800 rounded-none text-sm hover:bg-blue-100 disabled:opacity-50"
                     >
                       {isSaving ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -397,8 +397,8 @@ const PolicyManager: React.FC<PolicyManagerProps> = ({ businessUnitId, language 
 
               {/* Existing Policy Preview */}
               {existingPolicy && !isEditing && (
-                <div className="border-t border-slate-700/50 p-4">
-                  <p className="text-sm text-slate-400 line-clamp-3">
+                <div className="border-t border-gray-200/50 p-4">
+                  <p className="text-sm text-gray-500 line-clamp-3">
                     {existingPolicy.content}
                   </p>
                 </div>
@@ -409,7 +409,7 @@ const PolicyManager: React.FC<PolicyManagerProps> = ({ businessUnitId, language 
       </div>
 
       {/* Help */}
-      <div className="bg-slate-700/30 rounded-lg p-4 text-sm text-slate-400">
+      <div className="bg-gray-50 rounded-none p-4 text-sm text-gray-500">
         <p><strong>Tip:</strong> Fill in the form fields for each policy type. The system will automatically generate professional policy text that you can customize further.</p>
       </div>
     </div>

@@ -208,23 +208,23 @@ export default function AddonMatchingModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-800 rounded-xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-none w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
+        <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200">
           <div>
-            <h2 className="text-lg font-semibold text-white">
+            <h2 className="text-xs font-medium text-gray-800">
               Select Add-ons for: {product.title}
             </h2>
-            <p className="text-sm text-slate-400 mt-1">
-              Category: <span className="text-blue-400 capitalize">{product.category}</span>
+            <p className="text-xs text-gray-500 mt-1">
+              Category: <span className="text-blue-600 capitalize">{product.category}</span>
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-none transition-colors"
           >
-            <X className="w-5 h-5 text-slate-400" />
+            <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
@@ -235,8 +235,8 @@ export default function AddonMatchingModal({
               <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
             </div>
           ) : Object.keys(optionsByAttribute).length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-              <Zap className="w-12 h-12 mb-4 opacity-30" />
+            <div className="flex flex-col items-center justify-center py-4 text-gray-500">
+              <Zap className="w-6 h-6 mb-2 opacity-30" />
               <p className="text-center">
                 No add-ons available for {product.category} options.
                 <br />
@@ -244,23 +244,23 @@ export default function AddonMatchingModal({
               </p>
             </div>
           ) : (
-            <div className="p-6">
+            <div className="p-3">
               {Object.entries(optionsByAttribute).map(([attrName, attrOptions]) => (
-                <div key={attrName} className="mb-6">
-                  <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">
+                <div key={attrName} className="mb-3">
+                  <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
                     {product.category.toUpperCase()} {attrName.toUpperCase()}
                   </h3>
 
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-slate-700">
-                        <th className="text-left py-3 px-4 text-sm font-medium text-slate-400 w-1/3">
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 w-1/3">
                           {attrName.replace('Skin ', '')}
                         </th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-slate-400">
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">
                           Add-on
                         </th>
-                        <th className="text-center py-3 px-4 text-sm font-medium text-slate-400 w-20">
+                        <th className="text-center py-3 px-4 text-sm font-medium text-gray-500 w-20">
                           Select
                         </th>
                       </tr>
@@ -272,14 +272,14 @@ export default function AddonMatchingModal({
                         return addonsForOption.map((addon, addonIdx) => (
                           <tr
                             key={`${option.id}-${addon.id}`}
-                            className={`border-b border-slate-700/50 hover:bg-slate-700/30 ${
-                              selectedAddonIds.has(addon.id) ? 'bg-blue-900/20' : ''
+                            className={`border-b border-gray-200/50 hover:bg-gray-50 ${
+                              selectedAddonIds.has(addon.id) ? 'bg-blue-50' : ''
                             }`}
                           >
                             {/* Show option name only on first row */}
                             <td className="py-3 px-4">
                               {addonIdx === 0 && (
-                                <span className="font-medium text-white">
+                                <span className="font-medium text-gray-800">
                                   {option.name}
                                 </span>
                               )}
@@ -292,19 +292,19 @@ export default function AddonMatchingModal({
                                   <img
                                     src={addon.thumbnail}
                                     alt=""
-                                    className="w-8 h-8 rounded object-cover"
+                                    className="w-8 h-8 rounded-none object-cover"
                                   />
                                 ) : (
-                                  <div className="w-8 h-8 rounded bg-slate-700 flex items-center justify-center">
-                                    <Package className="w-4 h-4 text-slate-500" />
+                                  <div className="w-8 h-8 rounded-none bg-gray-100 flex items-center justify-center">
+                                    <Package className="w-4 h-4 text-gray-400" />
                                   </div>
                                 )}
                                 <span className={`text-sm ${
-                                  selectedAddonIds.has(addon.id) ? 'text-blue-300' : 'text-slate-300'
+                                  selectedAddonIds.has(addon.id) ? 'text-blue-600' : 'text-gray-600'
                                 }`}>
                                   {addon.title}
                                   {addon.tradeName && (
-                                    <span className="text-slate-500 ml-1">({addon.tradeName})</span>
+                                    <span className="text-gray-400 ml-1">({addon.tradeName})</span>
                                   )}
                                 </span>
                               </div>
@@ -314,14 +314,14 @@ export default function AddonMatchingModal({
                             <td className="py-3 px-4 text-center">
                               <button
                                 onClick={() => toggleAddon(addon.id)}
-                                className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+                                className={`w-6 h-6 rounded-none border-2 flex items-center justify-center transition-colors ${
                                   selectedAddonIds.has(addon.id)
-                                    ? 'bg-blue-600 border-blue-600'
-                                    : 'border-slate-500 hover:border-slate-400'
+                                    ? 'bg-blue-50 border border-blue-200 border-blue-600'
+                                    : 'border-gray-300 hover:border-slate-400'
                                 }`}
                               >
                                 {selectedAddonIds.has(addon.id) && (
-                                  <Check className="w-4 h-4 text-white" />
+                                  <Check className="w-4 h-4 text-gray-800" />
                                 )}
                               </button>
                             </td>
@@ -337,21 +337,21 @@ export default function AddonMatchingModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-slate-700 bg-slate-800/50">
-          <div className="text-sm text-slate-400">
-            Selected: <span className="text-blue-400 font-medium">{selectedAddonIds.size}</span> add-ons
+        <div className="flex items-center justify-between px-3 py-2 border-t border-gray-200 bg-gray-50">
+          <div className="text-xs text-gray-500">
+            Selected: <span className="text-blue-600 font-medium">{selectedAddonIds.size}</span> add-ons
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-slate-400 hover:text-white transition-colors"
+              className="px-2 py-1 text-xs text-gray-500 hover:text-gray-800 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-2 py-1 text-xs bg-blue-50 border border-blue-200 hover:bg-blue-100 text-gray-800 rounded-none font-medium transition-colors disabled:opacity-50"
             >
               {isSaving ? (
                 <>

@@ -6,7 +6,8 @@ import {
   Upload, Search, Grid, List,
   Loader2, X, BookOpen, Globe, Layout, Save, Image, Video, Copy, Check,
   ChevronDown, ChevronUp, Zap, MessageSquare, Shield, ShoppingCart,
-  AlignLeft, AlignCenter, AlignRight, Menu, Sparkles, Bold, Italic, Languages
+  AlignLeft, AlignCenter, AlignRight, Menu, Sparkles, Bold, Italic, Languages,
+  Eye, EyeOff
 } from 'lucide-react'
 import PolicyManager from './policy-manager'
 import ProductCatalogManager from './product-catalog-manager'
@@ -49,6 +50,7 @@ interface IndustryKnowledge {
 interface KnowledgeBaseProps {
   businessUnitId: string
   language: Language
+  country?: string
 }
 
 type ActiveSubTab = 'industry' | 'products' | 'services' | 'landing' | 'media'
@@ -63,7 +65,7 @@ interface MediaFile {
 }
 type ViewMode = 'grid' | 'list'
 
-const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language }) => {
+const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language, country: parentCountry }) => {
   const t = getTranslation(language)
 
   // State
@@ -94,7 +96,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
   const [hasLandingPage, setHasLandingPage] = useState(false)
   const [landingPageLoading, setLandingPageLoading] = useState(false)
   const [landingPageSaving, setLandingPageSaving] = useState(false)
-  const [selectedCountry, setSelectedCountry] = useState('US')
+  const [selectedCountry, setSelectedCountry] = useState(parentCountry || 'US')
   const [selectedLangCode, setSelectedLangCode] = useState('en')
   const [availableLocales, setAvailableLocales] = useState<{country: string, language_code: string}[]>([])
   const [products, setProducts] = useState<any[]>([])
@@ -132,7 +134,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
   const [editingPolicyType, setEditingPolicyType] = useState<string | null>(null) // policy being edited
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null)
   const [showAddBlockMenu, setShowAddBlockMenu] = useState(false)
-  const [footerCollapsed, setFooterCollapsed] = useState(false)
+  const [footerCollapsed, setFooterCollapsed] = useState(true)
   const [showAddLocaleModal, setShowAddLocaleModal] = useState(false)
   const [translationMode, setTranslationMode] = useState(false)
   const [translationSourceData, setTranslationSourceData] = useState<any>(null)
@@ -160,6 +162,25 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
   const pdfInputRef = useRef<HTMLInputElement>(null)
   const industryDocInputRef = useRef<HTMLInputElement>(null)
   const mediaInputRef = useRef<HTMLInputElement>(null)
+
+  // Sync selectedCountry from parent prop when it changes
+  useEffect(() => {
+    if (parentCountry && parentCountry !== selectedCountry) {
+      setSelectedCountry(parentCountry)
+      // Find first available locale for this country and switch to it
+      const localeForCountry = availableLocales.find(l => l.country === parentCountry)
+      if (localeForCountry) {
+        setSelectedLangCode(localeForCountry.language_code)
+        setLandingPageData(null)
+        loadLandingPage(parentCountry, localeForCountry.language_code)
+      } else {
+        // Default to 'en' if no locales found yet
+        setSelectedLangCode('en')
+        setLandingPageData(null)
+        loadLandingPage(parentCountry, 'en')
+      }
+    }
+  }, [parentCountry])
 
   // Load data on mount
   useEffect(() => {
@@ -196,8 +217,14 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
       if (activeSubTab === 'industry') {
         const response = await fetch(`/api/knowledge?action=load_knowledge&businessUnitId=${businessUnitId}`)
         const data = await response.json()
-        // API returns { data: knowledge } not { success: true, entries: [...] }
-        if (data.data) setIndustryKnowledge(data.data || [])
+        // Only show entries from knowledge_base table — products/services/landing page
+        // have their own tabs and are not deletable from here
+        if (data.data) {
+          const industryOnly = (data.data || []).filter((e: any) =>
+            !e.id?.startsWith('product-') && !e.id?.startsWith('service-') && !e.id?.startsWith('landing-page-')
+          )
+          setIndustryKnowledge(industryOnly)
+        }
       } else if (activeSubTab === 'services') {
         // Use booking services table (same as Booking Management)
         const response = await fetch(`/api/booking/services?businessUnitId=${businessUnitId}`)
@@ -1349,7 +1376,6 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
     if (!confirm('Are you sure you want to delete this knowledge entry?')) return
 
     try {
-      // API uses DELETE method with query params
       const response = await fetch(`/api/knowledge?action=delete_knowledge&id=${id}`, {
         method: 'DELETE'
       })
@@ -1357,9 +1383,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
       const result = await response.json()
       if (result.success) {
         loadData()
+      } else {
+        console.error('Delete failed:', result)
+        alert(`Delete failed: ${result.error || 'Unknown error'}`)
       }
     } catch (error) {
       console.error('Delete knowledge error:', error)
+      alert(`Delete failed: ${error}`)
     }
   }
 
@@ -1421,85 +1451,85 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
   // Get category color
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
-      'skincare': 'bg-pink-500/20 text-pink-300',
-      'supplements': 'bg-green-500/20 text-green-300',
-      'devices': 'bg-blue-500/20 text-blue-300',
-      'consultation': 'bg-purple-500/20 text-purple-300',
-      'treatment': 'bg-cyan-500/20 text-cyan-300',
-      'default': 'bg-slate-500/20 text-slate-300'
+      'skincare': 'bg-pink-50 text-pink-600',
+      'supplements': 'bg-green-50 text-green-600',
+      'devices': 'bg-blue-50 text-blue-600',
+      'consultation': 'bg-purple-50 text-purple-600',
+      'treatment': 'bg-cyan-50 text-cyan-600',
+      'default': 'bg-slate-500/20 text-gray-600'
     }
     return colors[category.toLowerCase()] || colors.default
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Sub-tab Navigation */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex gap-2 flex-wrap">
           {/* Industry Knowledge Tab */}
           <button
             onClick={() => setActiveSubTab('industry')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-none transition-all ${
               activeSubTab === 'industry'
-                ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                ? 'bg-blue-50 border border-blue-200 text-gray-800'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            <BookOpen className="w-4 h-4" />
-            Industry Knowledge
+            <BookOpen className="w-3.5 h-3.5" />
+            {t.industryKnowledge}
           </button>
 
           {/* Products Tab */}
           <button
             onClick={() => setActiveSubTab('products')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-none transition-all ${
               activeSubTab === 'products'
-                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                ? 'bg-purple-50 border border-purple-200 text-gray-800'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            <Package className="w-4 h-4" />
-            Products
+            <Package className="w-3.5 h-3.5" />
+            {t.products}
           </button>
 
           {/* Services Tab */}
           <button
             onClick={() => setActiveSubTab('services')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-none transition-all ${
               activeSubTab === 'services'
-                ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                ? 'bg-green-50 border border-green-200 text-gray-800'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            <Wrench className="w-4 h-4" />
-            Services
+            <Wrench className="w-3.5 h-3.5" />
+            {t.services}
             <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">{services.length}</span>
           </button>
 
           {/* Landing Page Tab */}
           <button
             onClick={() => setActiveSubTab('landing')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-none transition-all ${
               activeSubTab === 'landing'
-                ? 'bg-gradient-to-r from-violet-500 to-purple-500 text-white'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            <Layout className="w-4 h-4" />
-            Landing Page
+            <Layout className="w-3.5 h-3.5" />
+            {t.landingPageTab}
           </button>
 
           {/* Image Library Tab */}
           <button
             onClick={() => setActiveSubTab('media')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-none transition-all ${
               activeSubTab === 'media'
-                ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-gray-800'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            <Image className="w-4 h-4" />
-            Image Library
+            <Image className="w-3.5 h-3.5" />
+            {t.imageLibrary}
           </button>
         </div>
 
@@ -1508,13 +1538,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
           <div className="flex items-center gap-2">
             <button
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded ${viewMode === 'list' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}
+              className={`p-2 rounded-none ${viewMode === 'list' ? 'bg-gray-100 text-gray-700' : 'text-gray-500 hover:text-gray-800'}`}
             >
               <List className="w-4 h-4" />
             </button>
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded ${viewMode === 'grid' ? 'bg-slate-600 text-white' : 'text-slate-400 hover:text-white'}`}
+              className={`p-2 rounded-none ${viewMode === 'grid' ? 'bg-gray-100 text-gray-700' : 'text-gray-500 hover:text-gray-800'}`}
             >
               <Grid className="w-4 h-4" />
             </button>
@@ -1533,51 +1563,51 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
 
       {/* Processing Overlay */}
       {isProcessing && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-slate-800 rounded-xl p-6 flex items-center gap-4">
-            <Loader2 className="w-6 h-6 text-purple-400 animate-spin" />
+        <div className="fixed inset-0 bg-black/10 flex items-center justify-center z-50">
+          <div className="bg-white rounded-none p-4 flex items-center gap-3">
+            <Loader2 className="w-6 h-6 text-purple-600 animate-spin" />
             <div>
-              <p className="text-white font-medium">{processingMessage}</p>
-              <p className="text-sm text-slate-400">Please wait...</p>
+              <p className="text-gray-800 font-medium">{processingMessage}</p>
+              <p className="text-xs text-gray-500">Please wait...</p>
             </div>
           </div>
         </div>
       )}
 
       {/* Content Area */}
-      <div className="bg-slate-700/50 rounded-xl p-4 min-h-[400px]">
+      <div className="bg-gray-50 rounded-none p-3">
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+            <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
           </div>
         ) : (
           <>
             {/* Industry Knowledge Tab */}
             {activeSubTab === 'industry' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <h2 className="text-xl font-semibold text-white">Industry Knowledge</h2>
-                    <p className="text-sm text-slate-400 mt-1">
-                      Upload documents or scrape websites for AI staff to learn from
+                    <h2 className="text-xs font-semibold text-gray-800">{t.industryKnowledge}</h2>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {t.uploadDocumentsDesc}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
                       onClick={() => setShowUrlModal(true)}
                       disabled={isProcessing}
-                      className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-slate-600"
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-purple-50 border border-purple-200 text-gray-800 rounded-none hover:bg-purple-100 disabled:bg-gray-200"
                     >
-                      <Globe className="w-4 h-4" />
+                      <Globe className="w-3.5 h-3.5" />
                       Add URL
                     </button>
                     <button
                       onClick={() => industryDocInputRef.current?.click()}
                       disabled={isProcessing}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-slate-600"
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-blue-50 border border-blue-200 text-gray-800 rounded-none hover:bg-blue-100 disabled:bg-gray-200"
                     >
-                      <Upload className="w-4 h-4" />
-                      Upload Document
+                      <Upload className="w-3.5 h-3.5" />
+                      {t.uploadDocument}
                     </button>
                   </div>
                 </div>
@@ -1591,54 +1621,36 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                   className="hidden"
                 />
 
-                {/* Document upload area */}
-                <div className="border-2 border-dashed border-slate-600 rounded-xl p-12 text-center">
-                  <BookOpen className="w-16 h-16 text-slate-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-slate-300 mb-2">
-                    Upload Industry Documents
-                  </h3>
-                  <p className="text-sm text-slate-400 mb-4">
-                    PDFs, Word docs, product manuals, training guides, FAQs, etc.
-                  </p>
-                  <button
-                    onClick={() => industryDocInputRef.current?.click()}
-                    disabled={isProcessing}
-                    className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 disabled:bg-slate-600"
-                  >
-                    Browse Files
-                  </button>
-                </div>
-
                 {/* Uploaded documents list */}
                 {isLoading ? (
-                  <div className="flex items-center justify-center py-12">
+                  <div className="flex items-center justify-center py-4">
                     <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
                   </div>
                 ) : industryKnowledge.length === 0 ? (
-                  <div className="bg-slate-700/50 rounded-lg p-4">
-                    <p className="text-slate-400 text-sm text-center">
+                  <div className="bg-gray-50 rounded-none p-4">
+                    <p className="text-gray-500 text-xs text-center">
                       No documents uploaded yet. Upload a document to get started.
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    <h3 className="text-lg font-medium text-white">
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-medium text-gray-600 uppercase tracking-wide">
                       Uploaded Documents ({industryKnowledge.length})
                     </h3>
-                    <div className="grid gap-3">
+                    <div className="grid gap-2">
                       {industryKnowledge.map((entry) => (
                         <div
                           key={entry.id}
-                          className="bg-slate-700/50 rounded-lg p-4 hover:bg-slate-700 transition-colors"
+                          className="bg-gray-50 rounded-none p-3 hover:bg-gray-50 transition-colors"
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <h4 className="text-white font-medium">{entry.topic}</h4>
-                              <p className="text-slate-400 text-sm mt-1 line-clamp-2">
+                              <h4 className="text-gray-800 text-xs font-medium">{entry.topic}</h4>
+                              <p className="text-gray-500 text-xs mt-1 line-clamp-2">
                                 {entry.content.substring(0, 200)}...
                               </p>
-                              <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
-                                <span className="bg-slate-600 px-2 py-0.5 rounded">
+                              <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
+                                <span className="bg-gray-200 px-2 py-0.5 rounded-none">
                                   {entry.category}
                                 </span>
                                 <span>
@@ -1648,8 +1660,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                             </div>
                             <button
                               onClick={() => handleDeleteIndustryKnowledge(entry.id)}
-                              className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-600 rounded-lg transition-colors"
-                              title="Delete"
+                              className="p-2 text-gray-500 hover:text-red-600 hover:bg-gray-200 rounded-none transition-colors"
+                              title={t.delete}
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1667,17 +1679,18 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
               <ProductCatalogManager
                 businessUnitId={businessUnitId}
                 language={language}
+                country={parentCountry}
               />
             )}
 
             {/* Services Tab */}
             {activeSubTab === 'services' && (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Header with Add Button */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <h3 className="text-lg font-semibold text-white">Manage Services</h3>
-                    <p className="text-slate-400 text-sm">Create and manage services for booking</p>
+                    <h3 className="text-xs font-semibold text-gray-800">Manage Services</h3>
+                    <p className="text-gray-500 text-xs">Create and manage services for booking</p>
                   </div>
                   <button
                     onClick={() => {
@@ -1685,35 +1698,69 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                       setEditingService(null)
                       setShowServiceModal(true)
                     }}
-                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition-colors"
+                    className="flex items-center gap-1.5 bg-green-50 border border-green-200 hover:bg-green-100 px-3 py-1.5 text-xs rounded-none transition-colors"
                   >
-                    <Plus className="w-4 h-4" />
-                    Add Service
+                    <Plus className="w-3.5 h-3.5" />
+                    {t.addService}
                   </button>
                 </div>
 
                 {/* Services List */}
                 {filteredServices.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-64 text-slate-400 bg-slate-800 rounded-lg">
-                    <Wrench className="w-12 h-12 mb-4 opacity-50" />
-                    <p>No services yet</p>
-                    <p className="text-sm">Click "Add Service" to create your first service</p>
+                  <div className="flex flex-col items-center justify-center h-40 text-gray-500 bg-gray-50 rounded-none">
+                    <Wrench className="w-8 h-8 mb-2 opacity-50" />
+                    <p className="text-xs">{t.noServicesYet}</p>
+                    <p className="text-xs">Click "Add Service" to create your first service</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {filteredServices.map(service => (
-                      <div key={service.id} className="bg-slate-800 rounded-lg p-4 border border-slate-600">
+                      <div key={service.id} className="bg-gray-50 rounded-none p-3 border border-gray-200/50">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-1">
-                              <h4 className="font-semibold text-lg">{service.name}</h4>
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <h4 className="font-medium text-xs">{service.name}</h4>
                               {service.price && (
-                                <span className="text-green-400 font-semibold">${parseFloat(String(service.price)).toFixed(2)}</span>
+                                <span className="text-green-600 text-xs font-semibold">${parseFloat(String(service.price)).toFixed(2)}</span>
                               )}
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                service.is_active
+                                  ? 'bg-green-50 text-green-600'
+                                  : 'bg-yellow-500/20 text-yellow-600'
+                              }`}>
+                                {service.is_active ? 'Published' : 'Draft'}
+                              </span>
                             </div>
-                            <p className="text-slate-400 text-sm">{service.description}</p>
+                            <p className="text-gray-500 text-xs">{service.description}</p>
                           </div>
                           <div className="flex gap-2 ml-4">
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const response = await fetch('/api/booking/services', {
+                                    method: 'PATCH',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ id: service.id, is_active: !service.is_active })
+                                  })
+                                  if (response.ok) {
+                                    const result = await response.json()
+                                    setServices(services.map(s => s.id === service.id ? result.data : s))
+                                  } else {
+                                    throw new Error('Failed to toggle status')
+                                  }
+                                } catch (error: any) {
+                                  alert(`Error: ${error.message}`)
+                                }
+                              }}
+                              className={`p-2 rounded-none transition-colors ${
+                                service.is_active
+                                  ? 'bg-yellow-50 hover:bg-yellow-700'
+                                  : 'bg-green-50 border border-green-200 hover:bg-green-100'
+                              }`}
+                              title={service.is_active ? 'Switch to Draft' : 'Publish'}
+                            >
+                              {service.is_active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
                             <button
                               onClick={() => {
                                 setEditingService(service)
@@ -1724,7 +1771,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                 })
                                 setShowServiceModal(true)
                               }}
-                              className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                              className="p-2 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-none transition-colors"
                             >
                               <Edit className="w-4 h-4" />
                             </button>
@@ -1746,7 +1793,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                   }
                                 }
                               }}
-                              className="p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                              className="p-2 bg-red-50 border border-red-200 hover:bg-red-700 rounded-none transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1760,33 +1807,33 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                 {/* Add/Edit Service Modal */}
                 {showServiceModal && (
                   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4 border border-slate-600">
-                      <h3 className="text-xl font-semibold mb-4">
-                        {editingService ? 'Edit Service' : 'Add New Service'}
+                    <div className="bg-white rounded-none p-4 max-w-md w-full mx-4 border border-gray-200/50">
+                      <h3 className="text-xs font-semibold mb-3">
+                        {editingService ? t.update : t.addService}
                       </h3>
-                      <div className="space-y-4">
+                      <div className="space-y-3">
                         <div>
-                          <label className="block text-sm font-medium mb-2">Service Name</label>
+                          <label className="block text-xs font-medium mb-1">{t.serviceName}</label>
                           <input
                             type="text"
                             value={newService.name}
                             onChange={(e) => setNewService({ ...newService, name: e.target.value })}
                             placeholder="e.g., Facial Treatment"
-                            className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            className="w-full px-3 py-1.5 text-xs bg-gray-100 border border-gray-200 rounded-none focus:outline-none focus:ring-2 focus:ring-cyan-500"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-2">Description</label>
+                          <label className="block text-xs font-medium mb-1">{t.description}</label>
                           <textarea
                             value={newService.description}
                             onChange={(e) => setNewService({ ...newService, description: e.target.value })}
                             placeholder="Describe the service..."
                             rows={3}
-                            className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            className="w-full px-3 py-1.5 text-xs bg-gray-100 border border-gray-200 rounded-none focus:outline-none focus:ring-2 focus:ring-cyan-500"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-2">Price (USD)</label>
+                          <label className="block text-xs font-medium mb-1">{t.priceUsd}</label>
                           <input
                             type="number"
                             step="0.01"
@@ -1794,11 +1841,11 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                             value={newService.price}
                             onChange={(e) => setNewService({ ...newService, price: e.target.value })}
                             placeholder="0.00"
-                            className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            className="w-full px-3 py-1.5 text-xs bg-gray-100 border border-gray-200 rounded-none focus:outline-none focus:ring-2 focus:ring-cyan-500"
                           />
                         </div>
                       </div>
-                      <div className="flex gap-3 mt-6">
+                      <div className="flex gap-2 mt-4">
                         <button
                           onClick={async () => {
                             if (!newService.name || !newService.description) {
@@ -1837,9 +1884,9 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                               alert(`Error: ${error.message}`)
                             }
                           }}
-                          className="flex-1 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition-colors"
+                          className="flex-1 bg-green-50 border border-green-200 hover:bg-green-100 px-3 py-1.5 text-xs rounded-none transition-colors"
                         >
-                          {editingService ? 'Update' : 'Create'}
+                          {editingService ? t.update : t.create}
                         </button>
                         <button
                           onClick={() => {
@@ -1847,9 +1894,9 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                             setNewService({ name: '', description: '', price: '' })
                             setEditingService(null)
                           }}
-                          className="flex-1 bg-slate-600 hover:bg-slate-500 px-4 py-2 rounded-lg transition-colors"
+                          className="flex-1 bg-gray-200 hover:bg-gray-100 px-3 py-1.5 text-xs rounded-none transition-colors"
                         >
-                          Cancel
+                          {t.cancel}
                         </button>
                       </div>
                     </div>
@@ -1861,279 +1908,161 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
             {/* Landing Page Tab Content */}
             {activeSubTab === 'landing' && (
               <div>
-                {/* Language Bar */}
-                <LanguageBar
-                  businessUnitId={businessUnitId}
-                  currentCountry={selectedCountry}
-                  currentLanguage={selectedLangCode}
-                  onLocaleChange={(country, lang) => {
-                    // Clear current data first to prevent stale data showing
-                    setLandingPageData(null)
-                    landingPageDataRef.current = null
-                    // Also clear translation mode when switching locales
-                    setTranslationMode(false)
-                    setTranslationSourceData(null)
-                    setSelectedCountry(country)
-                    setSelectedLangCode(lang)
-                    // Reload landing page for new locale - pass values directly to avoid stale state
-                    loadLandingPage(country, lang)
-                  }}
-                  onAddLocale={() => setShowAddLocaleModal(true)}
-                  onDeleteLocale={async (country, lang) => {
-                    try {
-                      const response = await fetch(
-                        `/api/landing-pages/delete-locale?businessUnit=${businessUnitId}&country=${country}&language=${lang}`,
-                        { method: 'DELETE' }
-                      )
-                      const data = await response.json()
-                      if (data.success) {
-                        // If deleting current locale, switch to first available
-                        if (country === selectedCountry && lang === selectedLangCode) {
-                          const otherLocale = availableLocales.find(
-                            l => l.country !== country || l.language_code !== lang
-                          )
-                          if (otherLocale) {
-                            setSelectedCountry(otherLocale.country)
-                            setSelectedLangCode(otherLocale.language_code)
-                            // Reload with new locale values
-                            loadLandingPage(otherLocale.country, otherLocale.language_code)
-                          }
-                        } else {
-                          // Reload current locale
-                          loadLandingPage(selectedCountry, selectedLangCode)
-                        }
-                      } else {
-                        alert(data.error || 'Failed to delete locale')
-                      }
-                    } catch (err) {
-                      console.error('Delete locale error:', err)
-                      alert('Failed to delete locale')
-                    }
-                  }}
-                  onSyncRequest={async (sourceCountry, sourceLanguage) => {
-                    // Sync from source locale to current locale
-                    if (confirm(`Sync ALL content from ${sourceCountry}/${sourceLanguage} to ${selectedCountry}/${selectedLangCode}?\n\nThis will copy: blocks, hero slides, menu, announcements, footer, logo, and all other content.\n\nYour locale's currency settings will be preserved.`)) {
-                      try {
-                        // Get source locale data
-                        console.log('[Sync] Fetching source:', sourceCountry, sourceLanguage)
-                        const sourceResponse = await fetch(
-                          `/api/landing-page?businessUnit=${businessUnitId}&country=${sourceCountry}&language=${sourceLanguage}`
-                        )
-                        const sourceData = await sourceResponse.json()
-                        console.log('[Sync] Source data blocks:', sourceData.landingPage?.blocks?.length || 0)
-
-                        if (!sourceData.landingPage) {
-                          alert('Source locale (US/en) not found. Create it first.')
-                          return
-                        }
-
-                        // Copy ALL content from source, keeping only locale-specific settings
-                        const source = sourceData.landingPage
-                        const currentData = landingPageData || {}
-
-                        // Keep target locale's settings
-                        const localeSettings = {
-                          country: selectedCountry,
-                          language_code: selectedLangCode,
-                          currency: currentData.currency,
-                          currency_symbol: currentData.currency_symbol,
-                        }
-
-                        // Copy everything from source except id and locale settings
-                        const { id, business_unit_id, country, language_code, currency, currency_symbol, created_at, updated_at, ...sourceContent } = source
-
-                        const syncedData = {
-                          ...sourceContent,
-                          ...localeSettings,
-                        }
-
-                        console.log('[Sync] Syncing all content:', {
-                          blocks: syncedData.blocks?.length || 0,
-                          hero_slides: syncedData.hero_slides?.length || 0,
-                          menu_items: syncedData.menu_items?.length || 0,
-                          announcements: syncedData.announcements?.length || 0,
-                        })
-
-                        // Save synced data
-                        const saveResponse = await fetch('/api/landing-page', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            businessUnitId,
-                            country: selectedCountry,
-                            language_code: selectedLangCode,
-                            ...syncedData
-                          })
-                        })
-
-                        const saveResult = await saveResponse.json()
-                        console.log('[Sync] Save result:', saveResult)
-                        if (saveResult.success) {
-                          // Force a full reload to ensure fresh data
-                          alert('Sync complete! Page will reload.')
-                          window.location.reload()
-                        } else {
-                          console.error('[Sync] Failed:', saveResult)
-                          alert(`Sync failed: ${saveResult.error || 'Unknown error'}${saveResult.details ? '\n\nDetails: ' + saveResult.details : ''}`)
-                        }
-                      } catch (err) {
-                        console.error('Sync error:', err)
-                        alert('Failed to sync locales: ' + (err instanceof Error ? err.message : String(err)))
-                      }
-                    }
-                  }}
-                />
-
                 {/* Header Row with Title and Action Buttons */}
-                <div className="flex items-center justify-between mb-4 mt-4">
-                  <h2 className="text-2xl font-bold flex items-center gap-2 text-white">
-                    <Layout className="w-6 h-6 text-violet-400" />
-                    {t.landingPageEditor || 'Landing Page Editor'}
+                <div className="flex flex-wrap items-center justify-between mb-3 mt-3 gap-2">
+                  <h2 className="text-xs font-bold flex items-center gap-1.5 text-gray-800">
+                    <Layout className="w-4 h-4 text-violet-600" />
+                    {t.landingPageEditor}
                   </h2>
                   {landingPageData && (
-                    <div className="flex gap-2 items-center">
+                    <div className="flex flex-wrap gap-2 items-center">
                       <button
                         onClick={saveLandingPage}
                         disabled={landingPageSaving}
-                        className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
+                        className="flex items-center gap-1.5 bg-gray-200 hover:bg-gray-100 text-gray-800 px-3 py-1.5 rounded-none text-xs font-medium transition-all disabled:opacity-50"
                       >
                         <Save className="w-4 h-4" />
-                        {landingPageSaving ? 'Saving...' : 'Save'}
+                        {landingPageSaving ? t.saving : t.save}
                       </button>
                       <button
-                        onClick={() => window.open(`/livechat?businessUnit=${businessUnitId}&country=${landingPageData.country || 'US'}&lang=${landingPageData.language_code || 'en'}`, '_blank')}
-                        className="flex items-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
+                        onClick={() => {
+                          const previewUrl = landingPageData.slug
+                            ? `/${landingPageData.slug}?preview=true`
+                            : `/livechat?businessUnit=${businessUnitId}&country=${landingPageData.country || 'US'}&lang=${landingPageData.language_code || 'en'}&preview=true`
+                          window.open(previewUrl, '_blank')
+                        }}
+                        className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-100 text-gray-700 px-3 py-1.5 rounded-none text-xs font-medium transition-all"
                       >
                         <Globe className="w-4 h-4" />
-                        Preview
+                        {t.preview}
                       </button>
 
                       {/* Add Block Button */}
                       <div className="relative">
                         <button
                           onClick={() => setShowAddBlockMenu(!showAddBlockMenu)}
-                          className="flex items-center gap-1.5 bg-violet-600 hover:bg-violet-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
+                          className="flex items-center gap-1.5 bg-violet-50 border border-violet-200 hover:bg-violet-100 text-gray-800 px-3 py-1.5 rounded-none text-xs font-medium transition-all"
                         >
                           <Plus className="w-4 h-4" />
-                          Add Block
+                          {t.addBlock}
                         </button>
 
                         {/* Dropdown Menu */}
                         {showAddBlockMenu && (
-                          <div className="fixed md:absolute left-4 right-4 md:left-auto md:right-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-2 w-auto md:w-64 max-w-xs mx-auto bg-slate-800 border border-slate-600 rounded-lg shadow-2xl z-50 overflow-hidden">
-                            <div className="p-2 border-b border-slate-600">
-                              <p className="text-xs text-slate-400 font-medium">Select Block Type</p>
+                          <div className="fixed md:absolute left-4 right-4 md:left-auto md:right-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-2 w-auto md:w-64 max-w-xs mx-auto bg-white border border-gray-200 rounded-none shadow-2xl z-50 overflow-hidden">
+                            <div className="p-2 border-b border-gray-200">
+                              <p className="text-xs text-gray-500 font-medium">Select Block Type</p>
                             </div>
                             <div className="py-1">
                               {/* Split Block */}
                               <button
                                 onClick={() => handleAddBlock('split')}
-                                className="w-full px-3 py-2.5 hover:bg-slate-700 transition-colors flex items-center gap-3 text-left"
+                                className="w-full px-2 py-1.5 hover:bg-gray-100 transition-colors flex items-center gap-2 text-left"
                               >
-                                <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-2xl">⬌</span>
+                                <div className="w-10 h-10 rounded-none bg-blue-50 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-base">⬌</span>
                                 </div>
                                 <div className="flex-1">
-                                  <div className="text-sm font-medium text-white">Split</div>
-                                  <div className="text-xs text-slate-400">Text alongside image</div>
+                                  <div className="text-xs font-medium text-gray-800">{t.splitBlock}</div>
+                                  <div className="text-xs text-gray-500">{t.splitBlockDesc}</div>
                                 </div>
                               </button>
 
                               {/* Card Block */}
                               <button
                                 onClick={() => handleAddBlock('card')}
-                                className="w-full px-3 py-2.5 hover:bg-slate-700 transition-colors flex items-center gap-3 text-left"
+                                className="w-full px-2 py-1.5 hover:bg-gray-100 transition-colors flex items-center gap-2 text-left"
                               >
-                                <div className="w-10 h-10 rounded-lg bg-pink-500/20 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-2xl">💬</span>
+                                <div className="w-10 h-10 rounded-none bg-pink-50 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-base">💬</span>
                                 </div>
                                 <div className="flex-1">
-                                  <div className="text-sm font-medium text-white">Card</div>
-                                  <div className="text-xs text-slate-400">Testimonials & reviews grid</div>
+                                  <div className="text-xs font-medium text-gray-800">{t.cardBlock}</div>
+                                  <div className="text-xs text-gray-500">{t.cardBlockDesc}</div>
                                 </div>
                               </button>
 
                               {/* Accordion Block */}
                               <button
                                 onClick={() => handleAddBlock('accordion')}
-                                className="w-full px-3 py-2.5 hover:bg-slate-700 transition-colors flex items-center gap-3 text-left"
+                                className="w-full px-2 py-1.5 hover:bg-gray-100 transition-colors flex items-center gap-2 text-left"
                               >
-                                <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-2xl">▼</span>
+                                <div className="w-10 h-10 rounded-none bg-green-50 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-base">▼</span>
                                 </div>
                                 <div className="flex-1">
-                                  <div className="text-sm font-medium text-white">Accordion</div>
-                                  <div className="text-xs text-slate-400">Expandable FAQ sections</div>
+                                  <div className="text-xs font-medium text-gray-800">{t.accordionBlock}</div>
+                                  <div className="text-xs text-gray-500">{t.accordionBlockDesc}</div>
                                 </div>
                               </button>
 
                               {/* Pricing Table Block */}
                               <button
                                 onClick={() => handleAddBlock('pricing')}
-                                className="w-full px-3 py-2.5 hover:bg-slate-700 transition-colors flex items-center gap-3 text-left"
+                                className="w-full px-2 py-1.5 hover:bg-gray-100 transition-colors flex items-center gap-2 text-left"
                               >
-                                <div className="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-2xl">💰</span>
+                                <div className="w-10 h-10 rounded-none bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-base">💰</span>
                                 </div>
                                 <div className="flex-1">
-                                  <div className="text-sm font-medium text-white">Pricing Table</div>
-                                  <div className="text-xs text-slate-400">Pricing comparison with discounts</div>
+                                  <div className="text-xs font-medium text-gray-800">{t.pricingTableBlock}</div>
+                                  <div className="text-xs text-gray-500">{t.pricingTableBlockDesc}</div>
                                 </div>
                               </button>
 
                               {/* Testimonials Block */}
                               <button
                                 onClick={() => handleAddBlock('testimonials')}
-                                className="w-full px-3 py-2.5 hover:bg-slate-700 transition-colors flex items-center gap-3 text-left"
+                                className="w-full px-2 py-1.5 hover:bg-gray-100 transition-colors flex items-center gap-2 text-left"
                               >
-                                <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-2xl">⭐</span>
+                                <div className="w-10 h-10 rounded-none bg-orange-500/20 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-base">⭐</span>
                                 </div>
                                 <div className="flex-1">
-                                  <div className="text-sm font-medium text-white">Testimonials</div>
-                                  <div className="text-xs text-slate-400">Customer reviews carousel</div>
+                                  <div className="text-xs font-medium text-gray-800">{t.testimonialsBlock}</div>
+                                  <div className="text-xs text-gray-500">{t.testimonialsBlockDesc}</div>
                                 </div>
                               </button>
 
                               {/* Steps (Text/Image Grid) Block */}
                               <button
                                 onClick={() => handleAddBlock('steps')}
-                                className="w-full px-3 py-2.5 hover:bg-slate-700 transition-colors flex items-center gap-3 text-left"
+                                className="w-full px-2 py-1.5 hover:bg-gray-100 transition-colors flex items-center gap-2 text-left"
                               >
-                                <div className="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-2xl">📝</span>
+                                <div className="w-10 h-10 rounded-none bg-cyan-50 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-base">📝</span>
                                 </div>
                                 <div className="flex-1">
-                                  <div className="text-sm font-medium text-white">Text/Image Grid</div>
-                                  <div className="text-xs text-slate-400">Flexible text & image layout</div>
+                                  <div className="text-xs font-medium text-gray-800">{t.textImageGridBlock}</div>
+                                  <div className="text-xs text-gray-500">{t.textImageGridBlockDesc}</div>
                                 </div>
                               </button>
 
                               {/* Static Banner Block */}
                               <button
                                 onClick={() => handleAddBlock('static_banner')}
-                                className="w-full px-3 py-2.5 hover:bg-slate-700 transition-colors flex items-center gap-3 text-left"
+                                className="w-full px-2 py-1.5 hover:bg-gray-100 transition-colors flex items-center gap-2 text-left"
                               >
-                                <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-2xl">🖼️</span>
+                                <div className="w-10 h-10 rounded-none bg-purple-50 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-base">🖼️</span>
                                 </div>
                                 <div className="flex-1">
-                                  <div className="text-sm font-medium text-white">Static Banner</div>
-                                  <div className="text-xs text-slate-400">Full-width banner with overlay</div>
+                                  <div className="text-xs font-medium text-gray-800">Static Banner</div>
+                                  <div className="text-xs text-gray-500">Full-width banner with overlay</div>
                                 </div>
                               </button>
 
                               {/* Table Block */}
                               <button
                                 onClick={() => handleAddBlock('table')}
-                                className="w-full px-3 py-2.5 hover:bg-slate-700 transition-colors flex items-center gap-3 text-left"
+                                className="w-full px-2 py-1.5 hover:bg-gray-100 transition-colors flex items-center gap-2 text-left"
                               >
-                                <div className="w-10 h-10 rounded-lg bg-teal-500/20 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-2xl">📊</span>
+                                <div className="w-10 h-10 rounded-none bg-teal-500/20 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-base">📊</span>
                                 </div>
                                 <div className="flex-1">
-                                  <div className="text-sm font-medium text-white">Table</div>
-                                  <div className="text-xs text-slate-400">Customizable rows & columns</div>
+                                  <div className="text-xs font-medium text-gray-800">Table</div>
+                                  <div className="text-xs text-gray-500">Customizable rows & columns</div>
                                 </div>
                               </button>
 
@@ -2145,12 +2074,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                       <button
                         onClick={async () => {
                           if (!hasLandingPage) {
-                            alert('Please save the landing page first before publishing.')
+                            alert(t.saveLandingPageFirst)
                             return
                           }
                           const confirmPublish = landingPageData.is_published
-                            ? confirm('This will unpublish the landing page. Continue?')
-                            : confirm('This will make the landing page live. Continue?')
+                            ? confirm(t.confirmUnpublish)
+                            : confirm(t.confirmPublish)
                           if (!confirmPublish) return
 
                           try {
@@ -2167,80 +2096,131 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                             const result = await response.json()
                             if (response.ok) {
                               setLandingPageData({ ...landingPageData, is_published: !landingPageData.is_published })
-                              alert(landingPageData.is_published ? 'Landing page unpublished!' : 'Landing page is now live!')
+                              alert(landingPageData.is_published ? t.landingPageUnpublished : t.landingPageNowLive)
                             } else {
-                              alert('Failed to update publish status: ' + (result.error || 'Unknown error'))
+                              alert(t.failedToUpdatePublish + ': ' + (result.error || 'Unknown error'))
                             }
                           } catch (err) {
                             alert('Error updating publish status')
                           }
                         }}
                         disabled={!hasLandingPage}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50 ${
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-none text-xs font-medium transition-all disabled:opacity-50 ${
                           landingPageData.is_published
-                            ? 'bg-green-600 hover:bg-green-700 text-white'
-                            : 'bg-amber-500 hover:bg-amber-600 text-white'
+                            ? 'bg-green-50 border border-green-200 hover:bg-green-100 text-gray-800'
+                            : 'bg-amber-500 hover:bg-amber-50 text-gray-800'
                         }`}
                       >
                         {landingPageData.is_published ? (
                           <>
                             <Check className="w-4 h-4" />
-                            Published
+                            {t.publishedStatus}
                           </>
                         ) : (
                           <>
                             <Upload className="w-4 h-4" />
-                            Publish
+                            {t.publish}
                           </>
                         )}
                       </button>
                       {landingPageData.is_published && (
-                        <span className="text-green-400 text-xs">Live</span>
+                        <span className="text-green-600 text-xs">{t.liveStatus}</span>
                       )}
-                    </div>
-                  )}
-                </div>
 
-                {landingPageLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
-                    <span className="ml-3 text-slate-400">Loading...</span>
-                  </div>
-                ) : landingPageData ? (
-                  <>
-                    {/* Translation Mode Header */}
-                    {translationMode && translationSourceData && (
-                      <div className="mb-4 p-3 bg-amber-900/30 border border-amber-500/50 rounded-lg flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Languages className="w-5 h-5 text-amber-400" />
-                          <span className="text-amber-300">
-                            Translation Mode: Copying from <strong>{translationSourceData.country}/{translationSourceData.language_code}</strong>
-                          </span>
-                        </div>
-                        <button
-                          onClick={() => {
-                            setTranslationMode(false)
-                            setTranslationSourceData(null)
-                          }}
-                          className="px-3 py-1 text-sm bg-slate-700 hover:bg-slate-600 text-white rounded"
-                        >
-                          Exit Translation Mode
-                        </button>
-                      </div>
-                    )}
+                      {/* Language Bar Dropdown */}
+                      <LanguageBar
+                        businessUnitId={businessUnitId}
+                        currentCountry={selectedCountry}
+                        currentLanguage={selectedLangCode}
+                        filterCountry={parentCountry}
+                        onLocaleChange={(country, lang) => {
+                          setLandingPageData(null)
+                          landingPageDataRef.current = null
+                          setTranslationMode(false)
+                          setTranslationSourceData(null)
+                          setSelectedCountry(country)
+                          setSelectedLangCode(lang)
+                          loadLandingPage(country, lang)
+                        }}
+                        onAddLocale={() => setShowAddLocaleModal(true)}
+                        onDeleteLocale={async (country, lang) => {
+                          try {
+                            const response = await fetch(
+                              `/api/landing-pages/delete-locale?businessUnit=${businessUnitId}&country=${country}&language=${lang}`,
+                              { method: 'DELETE' }
+                            )
+                            const data = await response.json()
+                            if (data.success) {
+                              if (country === selectedCountry && lang === selectedLangCode) {
+                                const otherLocale = availableLocales.find(
+                                  l => l.country !== country || l.language_code !== lang
+                                )
+                                if (otherLocale) {
+                                  setSelectedCountry(otherLocale.country)
+                                  setSelectedLangCode(otherLocale.language_code)
+                                  loadLandingPage(otherLocale.country, otherLocale.language_code)
+                                }
+                              } else {
+                                loadLandingPage(selectedCountry, selectedLangCode)
+                              }
+                            } else {
+                              alert(data.error || 'Failed to delete locale')
+                            }
+                          } catch (err) {
+                            console.error('Delete locale error:', err)
+                            alert('Failed to delete locale')
+                          }
+                        }}
+                        onSyncRequest={async (sourceCountry, sourceLanguage) => {
+                          if (confirm(`Sync ALL content from ${sourceCountry}/${sourceLanguage} to ${selectedCountry}/${selectedLangCode}?\n\nThis will copy: blocks, hero slides, menu, announcements, footer, logo, and all other content.\n\nYour locale's currency settings will be preserved.`)) {
+                            try {
+                              const sourceResponse = await fetch(
+                                `/api/landing-page?businessUnit=${businessUnitId}&country=${sourceCountry}&language=${sourceLanguage}`
+                              )
+                              const sourceData = await sourceResponse.json()
+                              if (!sourceData.landingPage) {
+                                alert('Source locale (US/en) not found. Create it first.')
+                                return
+                              }
+                              const source = sourceData.landingPage
+                              const currentData = landingPageData || {}
+                              const localeSettings = {
+                                country: selectedCountry,
+                                language_code: selectedLangCode,
+                                currency: currentData.currency,
+                                currency_symbol: currentData.currency_symbol,
+                              }
+                              const { id, business_unit_id, country, language_code, currency, currency_symbol, created_at, updated_at, ...sourceContent } = source
+                              const syncedData = { ...sourceContent, ...localeSettings }
+                              const saveResponse = await fetch('/api/landing-page', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  businessUnitId,
+                                  country: selectedCountry,
+                                  language_code: selectedLangCode,
+                                  ...syncedData
+                                })
+                              })
+                              const saveResult = await saveResponse.json()
+                              if (saveResult.success) {
+                                alert('Sync complete! Page will reload.')
+                                window.location.reload()
+                              } else {
+                                alert(`Sync failed: ${saveResult.error || 'Unknown error'}${saveResult.details ? '\n\nDetails: ' + saveResult.details : ''}`)
+                              }
+                            } catch (err) {
+                              console.error('Sync error:', err)
+                              alert('Failed to sync locales: ' + (err instanceof Error ? err.message : String(err)))
+                            }
+                          }
+                        }}
+                      />
 
-                    {/* Resume Translation Button - shows for non-English locales when not in translation mode */}
-                    {!translationMode && selectedLangCode !== 'en' && (
-                      <div className="mb-4 p-3 bg-blue-900/30 border border-blue-500/50 rounded-lg flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Languages className="w-5 h-5 text-blue-400" />
-                          <span className="text-blue-300">
-                            Viewing <strong>{selectedCountry}/{selectedLangCode}</strong> - Enable translation mode to see translate buttons
-                          </span>
-                        </div>
+                      {/* Enable Translation Button */}
+                      {!translationMode && selectedLangCode !== 'en' && (
                         <button
                           onClick={async () => {
-                            // Load source data (US/en by default)
                             try {
                               const response = await fetch(`/api/landing-page?businessUnit=${businessUnitId}&country=US&language=en`)
                               const data = await response.json()
@@ -2255,33 +2235,87 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                               alert('Failed to load source data')
                             }
                           }}
-                          className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded flex items-center gap-2"
+                          className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-50 border border-blue-200 hover:bg-blue-50 text-gray-800 rounded-none transition-colors"
                         >
-                          <Languages className="w-4 h-4" />
-                          Enable Translation Mode
+                          <Languages className="w-3 h-3" />
+                          {t.enableTranslationMode}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {landingPageLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+                    <span className="ml-3 text-gray-500">{t.loading}</span>
+                  </div>
+                ) : landingPageData ? (
+                  <>
+                    {/* Translation Mode Header */}
+                    {translationMode && translationSourceData && (
+                      <div className="mb-4 p-3 bg-amber-900/30 border border-amber-500/50 rounded-none flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Languages className="w-5 h-5 text-amber-600" />
+                          <span className="text-amber-600">
+                            Translation Mode: Copying from <strong>{translationSourceData.country}/{translationSourceData.language_code}</strong>
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setTranslationMode(false)
+                            setTranslationSourceData(null)
+                          }}
+                          className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-100 text-gray-700 rounded-none"
+                        >
+                          {t.exitTranslationMode}
                         </button>
                       </div>
                     )}
 
                     {/* Main content area */}
-                    <div className="space-y-6">
+                    <div className="space-y-3">
+
+                    {/* Page URL Slug */}
+                    <div className="bg-gray-50 border border-gray-200 rounded-none p-2">
+                      <label className="text-xs font-medium text-gray-600 block mb-1">Page URL Slug</label>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-gray-400 flex-shrink-0">/</span>
+                        <input
+                          type="text"
+                          value={landingPageData.slug || ''}
+                          onChange={(e) => {
+                            const slug = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-')
+                            setLandingPageData({...landingPageData, slug})
+                          }}
+                          placeholder="e.g. micro-infusion-system-face"
+                          className="flex-1 px-2 py-1 bg-white border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                        />
+                      </div>
+                      {landingPageData.slug && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          Public URL: <span className="text-violet-600 font-medium">/{landingPageData.slug}</span>
+                        </p>
+                      )}
+                    </div>
+
                     {/* Announcement Section */}
-                    <div className="bg-gradient-to-r from-amber-900/20 to-slate-800/50 rounded-lg border border-amber-500/30">
+                    <div className="bg-gradient-to-r from-amber-900/20 to-slate-800/50 rounded-none border border-amber-500/30">
                       <div
                         onClick={() => toggleSection('announcement')}
-                        className="w-full flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors rounded-t-lg cursor-pointer"
+                        className="w-full flex items-center justify-between p-2 hover:bg-gray-50 transition-colors rounded-t-lg cursor-pointer"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                            <MessageSquare className="w-5 h-5 text-amber-400" />
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-none bg-amber-500/20 flex items-center justify-center">
+                            <MessageSquare className="w-3.5 h-3.5 text-amber-600" />
                           </div>
                           <div className="text-left">
-                            <h3 className="text-lg font-semibold text-amber-400">Announcement Banner</h3>
-                            <p className="text-xs text-slate-400">Rotating announcements (5s interval)</p>
+                            <h3 className="text-xs font-semibold text-amber-600">{t.announcementBanner}</h3>
+                            <p className="text-xs text-gray-500">{t.rotatingAnnouncements}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="text-sm text-slate-400">
+                          <span className="text-xs text-gray-500">
                             {(landingPageData.announcements || []).length} announcements
                           </span>
                           {translationMode && translationSourceData && (
@@ -2307,20 +2341,20 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                 setTranslatingSectionKey(null)
                               }}
                               disabled={translatingSectionKey === 'announcements'}
-                              className="px-2 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-xs flex items-center gap-1 disabled:opacity-50"
+                              className="px-2 py-1 bg-amber-50 hover:bg-amber-700 text-gray-800 rounded-none text-xs flex items-center gap-1 disabled:opacity-50"
                             >
                               {translatingSectionKey === 'announcements' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Languages className="w-3 h-3" />}
-                              Translate
+                              {t.translateBtn}
                             </button>
                           )}
-                          {collapsedSections.announcement ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronUp className="w-5 h-5 text-slate-400" />}
+                          {collapsedSections.announcement ? <ChevronDown className="w-5 h-5 text-gray-500" /> : <ChevronUp className="w-5 h-5 text-gray-500" />}
                         </div>
                       </div>
 
                       {!collapsedSections.announcement && (
-                        <div className="p-6 pt-2 space-y-4 border-t border-slate-600/50">
+                        <div className="p-2 pt-1.5 space-y-2 border-t border-gray-200/30">
                           <div className="flex justify-between items-center">
-                            <p className="text-sm text-slate-400">Add announcements that rotate every 5 seconds</p>
+                            <p className="text-xs text-gray-500">Add announcements that rotate every 5 seconds</p>
                             <div className="flex items-center gap-2">
                           <select
                             onChange={(e) => {
@@ -2332,7 +2366,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                 e.target.value = ''
                               }
                             }}
-                            className="px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            className="px-2 py-1 bg-white border border-gray-200 rounded-none text-gray-800 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500"
                             defaultValue=""
                           >
                             <option value="" disabled>+ Add from suggestions...</option>
@@ -2352,7 +2386,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                               ...landingPageData,
                               announcements: [...(landingPageData.announcements || []), '']
                             })}
-                            className="flex items-center gap-1 px-3 py-2 text-sm bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 rounded-lg transition-colors"
+                            className="flex items-center gap-1 px-2 py-1 text-xs bg-amber-500/20 text-amber-600 hover:bg-amber-500/30 rounded-none transition-colors"
                           >
                             <Plus className="w-4 h-4" /> Custom
                           </button>
@@ -2360,16 +2394,16 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                           </div>
 
                           {(!landingPageData.announcements || landingPageData.announcements.length === 0) ? (
-                        <div className="text-center py-6 bg-slate-800/50 rounded-lg border border-dashed border-slate-600">
-                          <p className="text-slate-400 mb-3">No announcements yet</p>
-                          <p className="text-slate-500 text-sm">Select from suggestions above or add a custom announcement</p>
-                          <p className="text-amber-400/70 text-xs mt-2">After adding, click "Save" to save</p>
+                        <div className="text-center py-3 bg-gray-50 rounded-none border border-dashed border-gray-300">
+                          <p className="text-gray-500 text-xs mb-1">No announcements yet</p>
+                          <p className="text-gray-400 text-xs">Select from suggestions above or add a custom announcement</p>
+                          <p className="text-amber-600/70 text-xs mt-2">{t.afterAddClickSave}</p>
                         </div>
                       ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-1.5">
                           {landingPageData.announcements.map((announcement: string, index: number) => (
-                            <div key={index} className="flex gap-3 items-center">
-                              <span className="text-slate-500 text-sm w-6">{index + 1}.</span>
+                            <div key={index} className="flex gap-2 items-center">
+                              <span className="text-gray-400 text-xs w-6">{index + 1}.</span>
                               <input
                                 type="text"
                                 value={announcement}
@@ -2379,25 +2413,25 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                   setLandingPageData({...landingPageData, announcements: updated})
                                 }}
                                 placeholder="e.g., FREE SHIPPING ON ORDERS OVER $50"
-                                className="flex-1 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                className="flex-1 px-2 py-1 bg-white border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
                               />
                               <button
                                 onClick={() => {
                                   const updated = landingPageData.announcements.filter((_: string, i: number) => i !== index)
                                   setLandingPageData({...landingPageData, announcements: updated})
                                 }}
-                                className="text-red-400 hover:text-red-300 p-2"
-                                title="Remove"
+                                className="text-red-600 hover:text-red-600 p-2"
+                                title={t.remove}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
                           ))}
-                          <p className="text-xs text-slate-500 mt-2">
+                          <p className="text-xs text-gray-400 mt-2">
                             These announcements will rotate automatically every 5 seconds on your landing page.
                           </p>
-                          <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
-                            <span>*</span> Remember to click "Save" to save your changes.
+                          <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                            <span>*</span> {t.rememberClickSave}
                           </p>
                         </div>
                           )}
@@ -2406,22 +2440,22 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                     </div>
 
                     {/* Menu Bar Section */}
-                    <div className="bg-gradient-to-r from-indigo-900/20 to-slate-800/50 rounded-lg border border-indigo-500/30">
+                    <div className="bg-gradient-to-r from-indigo-900/20 to-slate-800/50 rounded-none border border-indigo-500/30">
                       <div
                         onClick={() => toggleSection('menuBar')}
-                        className="w-full flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors rounded-t-lg cursor-pointer"
+                        className="w-full flex items-center justify-between p-2 hover:bg-gray-50 transition-colors rounded-t-lg cursor-pointer"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
-                            <Menu className="w-5 h-5 text-indigo-400" />
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-none bg-indigo-500/20 flex items-center justify-center">
+                            <Menu className="w-3.5 h-3.5 text-indigo-600" />
                           </div>
                           <div className="text-left">
-                            <h3 className="text-lg font-semibold text-indigo-400">Menu Bar</h3>
-                            <p className="text-xs text-slate-400">Logo, navigation links & utilities</p>
+                            <h3 className="text-xs font-semibold text-indigo-600">{t.menuBar}</h3>
+                            <p className="text-xs text-gray-500">{t.menuBarDesc}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="text-sm text-slate-400">
+                          <span className="text-xs text-gray-500">
                             {(landingPageData.menu_items || []).length} menu items
                           </span>
                           {translationMode && translationSourceData && (
@@ -2447,69 +2481,69 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                 setTranslatingSectionKey(null)
                               }}
                               disabled={translatingSectionKey === 'menu'}
-                              className="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs flex items-center gap-1 disabled:opacity-50"
+                              className="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-gray-800 rounded-none text-xs flex items-center gap-1 disabled:opacity-50"
                             >
                               {translatingSectionKey === 'menu' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Languages className="w-3 h-3" />}
-                              Translate
+                              {t.translateBtn}
                             </button>
                           )}
-                          {collapsedSections.menuBar ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronUp className="w-5 h-5 text-slate-400" />}
+                          {collapsedSections.menuBar ? <ChevronDown className="w-5 h-5 text-gray-500" /> : <ChevronUp className="w-5 h-5 text-gray-500" />}
                         </div>
                       </div>
 
                       {!collapsedSections.menuBar && (
-                        <div className="p-6 pt-2 space-y-6 border-t border-slate-600/50">
+                        <div className="p-2 pt-1.5 space-y-2 border-t border-gray-200/30">
                         {/* Logo Settings Row */}
                         <div>
-                          <label className="block text-sm font-medium mb-2 text-slate-300">Logo Settings</label>
+                          <label className="block text-xs font-medium mb-2 text-gray-600">{t.logoSettings}</label>
                           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                             <div>
-                              <label className="block text-xs text-slate-400 mb-1">Position</label>
+                              <label className="block text-xs text-gray-500 mb-1">{t.positionLabel}</label>
                               <select
                                 value={landingPageData.logo_position || 'left'}
                                 onChange={(e) => setLandingPageData({...landingPageData, logo_position: e.target.value})}
-                                className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
                               >
-                                <option value="left">Left</option>
-                                <option value="center">Center</option>
+                                <option value="left">{t.leftPosition}</option>
+                                <option value="center">{t.centerPosition}</option>
                               </select>
                             </div>
                             <div>
-                              <label className="block text-xs text-slate-400 mb-1">Logo Text</label>
+                              <label className="block text-xs text-gray-500 mb-1">{t.logoText}</label>
                               <input
                                 type="text"
                                 value={landingPageData.logo_text || ''}
                                 onChange={(e) => setLandingPageData({...landingPageData, logo_text: e.target.value})}
-                                placeholder="Brand Name"
-                                className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                placeholder={t.brandNamePlaceholder}
+                                className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                               />
                             </div>
                             <div className="md:col-span-2">
-                              <label className="block text-xs text-slate-400 mb-1">Logo Image</label>
+                              <label className="block text-xs text-gray-500 mb-1">{t.logoImage}</label>
                               <div className="flex items-center gap-2 flex-wrap">
                                 {landingPageData.logo_url ? (
                                   <div className="relative">
                                     <img
                                       src={landingPageData.logo_url}
                                       alt="Logo preview"
-                                      className="h-10 w-auto max-w-[120px] object-contain bg-white rounded p-1"
+                                      className="h-10 w-auto max-w-[120px] object-contain bg-white rounded-none p-1"
                                     />
                                     <button
                                       onClick={() => setLandingPageData({...landingPageData, logo_url: ''})}
-                                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-50 text-gray-800 rounded-full flex items-center justify-center hover:bg-red-50 border border-red-200 transition-colors"
                                     >
                                       <X className="w-3 h-3" />
                                     </button>
                                   </div>
                                 ) : (
-                                  <div className="h-10 w-20 bg-slate-800 border border-dashed border-slate-600 rounded flex items-center justify-center">
-                                    <Image className="w-5 h-5 text-slate-500" />
+                                  <div className="h-10 w-20 bg-white border border-dashed border-gray-300 rounded-none flex items-center justify-center">
+                                    <Image className="w-5 h-5 text-gray-400" />
                                   </div>
                                 )}
                                 <button
                                   onClick={() => logoInputRef.current?.click()}
                                   disabled={logoUploading}
-                                  className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                                  className="px-3 py-1.5 bg-indigo-600 text-gray-800 text-xs rounded-none hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
                                 >
                                   {logoUploading ? (
                                     <>
@@ -2537,10 +2571,10 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
 
                         {/* Menu Items */}
                         <div>
-                          <label className="block text-sm font-medium mb-2 text-slate-300">Menu Items (Left Side)</label>
+                          <label className="block text-xs font-medium mb-2 text-gray-600">{t.menuItemsLeft}</label>
                           <div className="space-y-2">
                             {(landingPageData.menu_items || []).map((item: { label: string; url: string; enabled: boolean }, index: number) => (
-                              <div key={index} className="bg-slate-800/50 p-2 rounded-lg">
+                              <div key={index} className="bg-gray-50 p-2 rounded-none">
                                 <div className="flex items-center gap-2 mb-2">
                                   <input
                                     type="checkbox"
@@ -2550,7 +2584,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                       updated[index] = { ...item, enabled: e.target.checked }
                                       setLandingPageData({...landingPageData, menu_items: updated})
                                     }}
-                                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-indigo-500 focus:ring-indigo-500"
+                                    className="w-4 h-4 rounded-none border-gray-200 bg-gray-100 text-indigo-500 focus:ring-indigo-500"
                                   />
                                   <input
                                     type="text"
@@ -2561,14 +2595,14 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                       setLandingPageData({...landingPageData, menu_items: updated})
                                     }}
                                     placeholder="Label"
-                                    className="flex-1 px-2 py-1 bg-slate-800 border border-slate-600 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    className="flex-1 px-2 py-1 bg-white border border-gray-200 rounded-none text-gray-800 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                   />
                                   <button
                                     onClick={() => {
                                       const updated = (landingPageData.menu_items || []).filter((_: any, i: number) => i !== index)
                                       setLandingPageData({...landingPageData, menu_items: updated})
                                     }}
-                                    className="p-1 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded flex-shrink-0"
+                                    className="p-1 text-red-600 hover:text-red-600 hover:bg-red-50/20 rounded-none flex-shrink-0"
                                   >
                                     <Trash2 className="w-4 h-4" />
                                   </button>
@@ -2582,7 +2616,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                     setLandingPageData({...landingPageData, menu_items: updated})
                                   }}
                                   placeholder="URL or #section"
-                                  className="w-full px-2 py-1 bg-slate-800 border border-slate-600 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                  className="w-full px-2 py-1 bg-white border border-gray-200 rounded-none text-gray-800 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                 />
                               </div>
                             ))}
@@ -2592,7 +2626,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                               const updated = [...(landingPageData.menu_items || []), { label: '', url: '#', enabled: true }]
                               setLandingPageData({...landingPageData, menu_items: updated})
                             }}
-                            className="mt-2 flex items-center gap-1 px-3 py-1.5 text-sm bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 rounded-lg transition-colors"
+                            className="mt-2 flex items-center gap-1 px-3 py-1.5 text-xs bg-indigo-500/20 text-indigo-600 hover:bg-indigo-500/30 rounded-none transition-colors"
                           >
                             <Plus className="w-4 h-4" />
                             Add Menu Item
@@ -2601,31 +2635,31 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
 
                         {/* Right Side Utilities */}
                         <div>
-                          <label className="block text-sm font-medium mb-2 text-slate-300">Right Side Utilities</label>
+                          <label className="block text-xs font-medium mb-2 text-gray-600">{t.rightSideUtilities}</label>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {/* Search */}
-                            <div className="bg-slate-800/50 p-3 rounded-lg">
+                            <div className="bg-gray-50 p-3 rounded-none">
                               <label className="flex items-center gap-2 cursor-pointer">
                                 <input
                                   type="checkbox"
                                   checked={landingPageData.show_search !== false}
                                   onChange={(e) => setLandingPageData({...landingPageData, show_search: e.target.checked})}
-                                  className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-indigo-500 focus:ring-indigo-500"
+                                  className="w-4 h-4 rounded-none border-gray-200 bg-gray-100 text-indigo-500 focus:ring-indigo-500"
                                 />
-                                <span className="text-sm text-slate-300">🔍 Search Bar</span>
+                                <span className="text-xs text-gray-600">🔍 Search Bar</span>
                               </label>
                             </div>
 
                             {/* My Account */}
-                            <div className="bg-slate-800/50 p-3 rounded-lg">
+                            <div className="bg-gray-50 p-3 rounded-none">
                               <label className="flex items-center gap-2 cursor-pointer mb-2">
                                 <input
                                   type="checkbox"
                                   checked={landingPageData.show_account !== false}
                                   onChange={(e) => setLandingPageData({...landingPageData, show_account: e.target.checked})}
-                                  className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-indigo-500 focus:ring-indigo-500"
+                                  className="w-4 h-4 rounded-none border-gray-200 bg-gray-100 text-indigo-500 focus:ring-indigo-500"
                                 />
-                                <span className="text-sm text-slate-300">👤 My Account</span>
+                                <span className="text-xs text-gray-600">👤 My Account</span>
                               </label>
                               {landingPageData.show_account !== false && (
                                 <input
@@ -2633,21 +2667,21 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                   value={landingPageData.account_url || '/account'}
                                   onChange={(e) => setLandingPageData({...landingPageData, account_url: e.target.value})}
                                   placeholder="/account"
-                                  className="w-full px-2 py-1 bg-slate-800 border border-slate-600 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                  className="w-full px-2 py-1 bg-white border border-gray-200 rounded-none text-gray-800 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                 />
                               )}
                             </div>
 
                             {/* Shopping Cart */}
-                            <div className="bg-slate-800/50 p-3 rounded-lg">
+                            <div className="bg-gray-50 p-3 rounded-none">
                               <label className="flex items-center gap-2 cursor-pointer mb-2">
                                 <input
                                   type="checkbox"
                                   checked={landingPageData.show_cart !== false}
                                   onChange={(e) => setLandingPageData({...landingPageData, show_cart: e.target.checked})}
-                                  className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-indigo-500 focus:ring-indigo-500"
+                                  className="w-4 h-4 rounded-none border-gray-200 bg-gray-100 text-indigo-500 focus:ring-indigo-500"
                                 />
-                                <span className="text-sm text-slate-300">🛒 Shopping Cart</span>
+                                <span className="text-xs text-gray-600">🛒 Shopping Cart</span>
                               </label>
                               {landingPageData.show_cart !== false && (
                                 <input
@@ -2655,7 +2689,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                   value={landingPageData.cart_url || '/cart'}
                                   onChange={(e) => setLandingPageData({...landingPageData, cart_url: e.target.value})}
                                   placeholder="/cart"
-                                  className="w-full px-2 py-1 bg-slate-800 border border-slate-600 rounded text-white text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                  className="w-full px-2 py-1 bg-white border border-gray-200 rounded-none text-gray-800 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                 />
                               )}
                             </div>
@@ -2666,22 +2700,22 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                     </div>
 
                     {/* Hero Section */}
-                    <div className="bg-gradient-to-r from-violet-900/20 to-slate-800/50 rounded-lg border border-violet-500/30">
+                    <div className="bg-gradient-to-r from-violet-900/20 to-slate-800/50 rounded-none border border-violet-500/30">
                       <div
                         onClick={() => toggleSection('hero')}
-                        className="w-full flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors rounded-t-lg cursor-pointer"
+                        className="w-full flex items-center justify-between p-2 hover:bg-gray-50 transition-colors rounded-t-lg cursor-pointer"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
-                            <Sparkles className="w-5 h-5 text-violet-400" />
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-none bg-violet-50/20 flex items-center justify-center">
+                            <Sparkles className="w-3.5 h-3.5 text-violet-600" />
                           </div>
                           <div className="text-left">
-                            <h3 className="text-lg font-semibold text-violet-400">Hero Banner</h3>
-                            <p className="text-xs text-slate-400">Carousel with {(landingPageData.hero_slides || []).length} slides</p>
+                            <h3 className="text-xs font-semibold text-violet-600">{t.heroBanner}</h3>
+                            <p className="text-xs text-gray-500">{t.carouselWithSlides((landingPageData.hero_slides || []).length)}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="text-sm text-slate-400">📱 Horizontal Scroll</span>
+                          <span className="text-xs text-gray-500">📱 {t.horizontalScroll}</span>
                           {translationMode && translationSourceData && (
                             <button
                               onClick={async (e) => {
@@ -2705,40 +2739,40 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                 setTranslatingSectionKey(null)
                               }}
                               disabled={translatingSectionKey === 'hero'}
-                              className="px-2 py-1 bg-violet-600 hover:bg-violet-700 text-white rounded text-xs flex items-center gap-1 disabled:opacity-50"
+                              className="px-2 py-1 bg-violet-50 border border-violet-200 hover:bg-violet-100 text-gray-800 rounded-none text-xs flex items-center gap-1 disabled:opacity-50"
                             >
                               {translatingSectionKey === 'hero' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Languages className="w-3 h-3" />}
-                              Translate
+                              {t.translateBtn}
                             </button>
                           )}
-                          {collapsedSections.hero ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronUp className="w-5 h-5 text-slate-400" />}
+                          {collapsedSections.hero ? <ChevronDown className="w-5 h-5 text-gray-500" /> : <ChevronUp className="w-5 h-5 text-gray-500" />}
                         </div>
                       </div>
 
                       {!collapsedSections.hero && (
-                        <div className="p-6 pt-2 space-y-4 border-t border-slate-600/50">
+                        <div className="p-2 pt-1.5 space-y-2 border-t border-gray-200/30">
                           {/* Carousel Slides */}
                           <div className="flex justify-between items-center mb-4">
-                            <label className="text-sm font-medium text-slate-300">Carousel Slides</label>
+                            <label className="text-xs font-medium text-gray-600">{t.carouselSlides}</label>
                             <button
                               onClick={() => {
                                 const slides = [...(landingPageData.hero_slides || [])]
                                 slides.push({ headline: '', subheadline: '', content: '', background_url: '', background_color: '#1e293b', background_type: 'image', cta_text: 'Shop Now', cta_url: '#shop', text_align: 'center', is_carousel: true })
                                 setLandingPageData({...landingPageData, hero_slides: slides})
                               }}
-                              className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
+                              className="flex items-center gap-1 text-xs text-violet-600 hover:text-violet-600"
                             >
                               <Plus className="w-4 h-4" />
-                              Add Slide
+                              {t.addSlide}
                             </button>
                           </div>
 
                       <div className="space-y-4">
                         {(landingPageData.hero_slides || []).map((slide: { headline: string; subheadline: string; content?: string; background_url: string; background_type: string; cta_text: string; cta_url: string; text_align?: 'left' | 'center' | 'right'; original_filename?: string }, index: number) => (
-                          <div key={index} className="bg-slate-800/50 rounded-lg p-4 border border-slate-600">
+                          <div key={index} className="bg-gray-50 rounded-none p-3 border border-gray-200/30">
                             <div className="flex justify-between items-center mb-3">
                               <div className="flex items-center gap-3">
-                                <span className="text-sm font-medium text-slate-300">Slide {index + 1}</span>
+                                <span className="text-xs font-medium text-gray-600">Slide {index + 1}</span>
                                 {/* Carousel Toggle */}
                                 <label className="flex items-center gap-2 cursor-pointer">
                                   <input
@@ -2749,9 +2783,9 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                       slides[index] = { ...slide, is_carousel: e.target.checked }
                                       setLandingPageData({...landingPageData, hero_slides: slides})
                                     }}
-                                    className="w-4 h-4 rounded border-slate-600 text-violet-600 focus:ring-violet-500"
+                                    className="w-4 h-4 rounded-none border-gray-200 text-violet-600 focus:ring-violet-500"
                                   />
-                                  <span className="text-xs text-slate-400">
+                                  <span className="text-xs text-gray-500">
                                     {slide.is_carousel !== false ? 'Carousel' : 'Static Banner'}
                                   </span>
                                 </label>
@@ -2767,8 +2801,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                       slides[index - 1] = temp
                                       setLandingPageData({...landingPageData, hero_slides: slides})
                                     }}
-                                    className="text-slate-400 hover:text-slate-200"
-                                    title="Move up"
+                                    className="text-gray-500 hover:text-gray-700"
+                                    title={t.moveUp}
                                   >
                                     <ChevronUp className="w-4 h-4" />
                                   </button>
@@ -2783,8 +2817,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                       slides[index + 1] = temp
                                       setLandingPageData({...landingPageData, hero_slides: slides})
                                     }}
-                                    className="text-slate-400 hover:text-slate-200"
-                                    title="Move down"
+                                    className="text-gray-500 hover:text-gray-700"
+                                    title={t.moveDown}
                                   >
                                     <ChevronDown className="w-4 h-4" />
                                   </button>
@@ -2797,8 +2831,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                       slides.splice(index, 1)
                                       setLandingPageData({...landingPageData, hero_slides: slides})
                                     }}
-                                    className="text-red-400 hover:text-red-300"
-                                    title="Delete slide"
+                                    className="text-red-600 hover:text-red-600"
+                                    title={t.deleteSlide}
                                   >
                                     <Trash2 className="w-4 h-4" />
                                   </button>
@@ -2809,7 +2843,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                             {/* Background Upload - Hidden for price banners */}
                             {!slide.is_price_banner && (
                               <div className="mb-3">
-                                <label className="block text-xs text-slate-400 mb-1">Background Image/Video</label>
+                                <label className="block text-xs text-gray-500 mb-1">Background Image/Video</label>
                               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   {slide.background_url ? (
@@ -2817,13 +2851,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                       {slide.background_type === 'video' ? (
                                         <video
                                           src={slide.background_url}
-                                          className="h-16 w-28 object-cover rounded bg-slate-800"
+                                          className="h-16 w-28 object-cover rounded-none bg-white"
                                           muted
                                           playsInline
                                           preload="metadata"
                                         />
                                       ) : (
-                                        <img src={slide.background_url} alt="Background" className="h-16 w-28 object-cover rounded" />
+                                        <img src={slide.background_url} alt="Background" className="h-16 w-28 object-cover rounded-none" />
                                       )}
                                       <button
                                         onClick={() => {
@@ -2831,23 +2865,23 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                           slides[index] = { ...slide, background_url: '', background_type: 'image' }
                                           setLandingPageData({...landingPageData, hero_slides: slides})
                                         }}
-                                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-50 text-gray-800 rounded-full flex items-center justify-center hover:bg-red-50 border border-red-200"
                                       >
                                         <X className="w-3 h-3" />
                                       </button>
-                                      <span className="absolute bottom-0.5 right-0.5 text-[10px] bg-black/60 text-white px-1 rounded">
+                                      <span className="absolute bottom-0.5 right-0.5 text-[10px] bg-black/60 text-gray-800 px-1 rounded-none">
                                         {slide.background_type === 'video' ? 'VIDEO' : 'IMAGE'}
                                       </span>
                                     </div>
                                   ) : (
-                                    <div className="h-16 w-28 bg-slate-800 border border-dashed border-slate-600 rounded flex items-center justify-center">
-                                      <Image className="w-6 h-6 text-slate-500" />
+                                    <div className="h-16 w-28 bg-white border border-dashed border-gray-300 rounded-none flex items-center justify-center">
+                                      <Image className="w-6 h-6 text-gray-400" />
                                     </div>
                                   )}
                                   <button
                                     onClick={() => heroSlideInputRefs.current[index]?.click()}
                                     disabled={heroSlideUploading === index}
-                                    className="px-3 py-1.5 bg-violet-600 text-white text-sm rounded hover:bg-violet-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                                    className="px-3 py-1.5 bg-violet-50 border border-violet-200 text-gray-800 text-xs rounded-none hover:bg-violet-100 transition-colors disabled:opacity-50 flex items-center gap-1.5"
                                   >
                                     {heroSlideUploading === index ? (
                                       <>
@@ -2868,7 +2902,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         // Use original_filename if set
                                         if (slide.original_filename) {
                                           return (
-                                            <span className="text-green-300" title={slide.original_filename}>
+                                            <span className="text-green-600" title={slide.original_filename}>
                                               📄 {slide.original_filename}
                                             </span>
                                           )
@@ -2882,7 +2916,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                             const filename = fullName.replace(/^\d+_/, '')
                                             if (filename && filename !== fullName) {
                                               return (
-                                                <span className="text-green-300" title={filename}>
+                                                <span className="text-green-600" title={filename}>
                                                   📄 {filename}
                                                 </span>
                                               )
@@ -2894,7 +2928,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                           const urlPath = new URL(slide.background_url).pathname
                                           const shortName = urlPath.split('/').pop() || ''
                                           return (
-                                            <span className="text-slate-400 text-[10px]" title={shortName}>
+                                            <span className="text-gray-500 text-[10px]" title={shortName}>
                                               📎 {shortName.length > 20 ? shortName.substring(0, 17) + '...' : shortName}
                                             </span>
                                           )
@@ -2909,7 +2943,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                       loadMediaFiles()
                                       setShowMediaPicker(index)
                                     }}
-                                    className="px-3 py-1.5 bg-slate-600 text-white text-sm rounded hover:bg-slate-500 transition-colors flex items-center gap-1.5"
+                                    className="px-3 py-1.5 bg-gray-100 text-gray-700 text-xs rounded-none hover:bg-gray-100 transition-colors flex items-center gap-1.5"
                                   >
                                     <Image className="w-4 h-4" />
                                     Library
@@ -2921,17 +2955,17 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         const key = `bgColor_${index}`
                                         setShowColorPicker(showColorPicker === key ? null : key)
                                       }}
-                                      className="px-3 py-1.5 bg-slate-600 text-white text-sm rounded hover:bg-slate-500 transition-colors flex items-center gap-1.5"
-                                      title="Background Color"
+                                      className="px-3 py-1.5 bg-gray-100 text-gray-700 text-xs rounded-none hover:bg-gray-100 transition-colors flex items-center gap-1.5"
+                                      title={t.bgColor}
                                     >
                                       <div
-                                        className="w-4 h-4 rounded border border-white"
+                                        className="w-4 h-4 rounded-none border border-white"
                                         style={{ backgroundColor: slide.background_color || '#1e293b' }}
                                       />
                                       BG
                                     </button>
                                     {showColorPicker === `bgColor_${index}` && (
-                                      <div className="fixed md:absolute left-4 right-4 md:left-auto md:right-auto top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 z-50 mt-0 md:mt-1 bg-slate-800 border border-slate-600 rounded-lg p-3 shadow-xl max-w-xs mx-auto">
+                                      <div className="fixed md:absolute left-4 right-4 md:left-auto md:right-auto top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 z-50 mt-0 md:mt-1 bg-white border border-gray-200 rounded-none p-3 shadow-sm max-w-xs mx-auto">
                                         <div className="grid grid-cols-7 gap-2 mb-2">
                                           {COLOR_PALETTE.map((color) => (
                                             <button
@@ -2942,7 +2976,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                                 setLandingPageData({...landingPageData, hero_slides: slides})
                                                 setShowColorPicker(null)
                                               }}
-                                              className="w-7 h-7 rounded border-2 border-slate-600 hover:border-violet-400 transition-colors"
+                                              className="w-7 h-7 rounded-none border-2 border-gray-200 hover:border-violet-400 transition-colors"
                                               style={{ backgroundColor: color.value }}
                                               title={color.name}
                                             />
@@ -2950,7 +2984,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         </div>
                                         <button
                                           onClick={() => setShowColorPicker(null)}
-                                          className="w-full text-xs text-slate-400 hover:text-slate-200"
+                                          className="w-full text-xs text-gray-500 hover:text-gray-700"
                                         >
                                           Close
                                         </button>
@@ -2973,8 +3007,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                             {/* Text Overlay */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <label className="text-xs text-slate-400">Headline</label>
+                                <div className="flex flex-wrap items-center gap-2 mb-1">
+                                  <label className="text-xs text-gray-500">Headline</label>
                                   <div className="flex items-center gap-1">
                                     {/* Alignment buttons */}
                                     <button
@@ -2983,12 +3017,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         slides[index] = { ...slide, headline_text_align: 'left' }
                                         setLandingPageData({...landingPageData, hero_slides: slides})
                                       }}
-                                      className={`p-1 rounded ${
+                                      className={`p-1 rounded-none ${
                                         (slide.headline_text_align || 'center') === 'left'
-                                          ? 'bg-violet-600 text-white'
-                                          : 'text-slate-400 hover:text-slate-200'
+                                          ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                                          : 'text-gray-500 hover:text-gray-700'
                                       }`}
-                                      title="Align Left"
+                                      title={t.alignLeft}
                                     >
                                       <AlignLeft className="w-3 h-3" />
                                     </button>
@@ -2998,12 +3032,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         slides[index] = { ...slide, headline_text_align: 'center' }
                                         setLandingPageData({...landingPageData, hero_slides: slides})
                                       }}
-                                      className={`p-1 rounded ${
+                                      className={`p-1 rounded-none ${
                                         (slide.headline_text_align || 'center') === 'center'
-                                          ? 'bg-violet-600 text-white'
-                                          : 'text-slate-400 hover:text-slate-200'
+                                          ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                                          : 'text-gray-500 hover:text-gray-700'
                                       }`}
-                                      title="Align Center"
+                                      title={t.alignCenter}
                                     >
                                       <AlignCenter className="w-3 h-3" />
                                     </button>
@@ -3013,12 +3047,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         slides[index] = { ...slide, headline_text_align: 'right' }
                                         setLandingPageData({...landingPageData, hero_slides: slides})
                                       }}
-                                      className={`p-1 rounded ${
+                                      className={`p-1 rounded-none ${
                                         (slide.headline_text_align || 'center') === 'right'
-                                          ? 'bg-violet-600 text-white'
-                                          : 'text-slate-400 hover:text-slate-200'
+                                          ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                                          : 'text-gray-500 hover:text-gray-700'
                                       }`}
-                                      title="Align Right"
+                                      title={t.alignRight}
                                     >
                                       <AlignRight className="w-3 h-3" />
                                     </button>
@@ -3031,12 +3065,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         slides[index] = { ...slide, headline_bold: !slide.headline_bold }
                                         setLandingPageData({...landingPageData, hero_slides: slides})
                                       }}
-                                      className={`p-1 rounded ${
+                                      className={`p-1 rounded-none ${
                                         slide.headline_bold
-                                          ? 'bg-violet-600 text-white'
-                                          : 'text-slate-400 hover:text-slate-200'
+                                          ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                                          : 'text-gray-500 hover:text-gray-700'
                                       }`}
-                                      title="Bold"
+                                      title={t.boldText}
                                     >
                                       <Bold className="w-3 h-3" />
                                     </button>
@@ -3047,12 +3081,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         slides[index] = { ...slide, headline_italic: !slide.headline_italic }
                                         setLandingPageData({...landingPageData, hero_slides: slides})
                                       }}
-                                      className={`p-1 rounded ${
+                                      className={`p-1 rounded-none ${
                                         slide.headline_italic
-                                          ? 'bg-violet-600 text-white'
-                                          : 'text-slate-400 hover:text-slate-200'
+                                          ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                                          : 'text-gray-500 hover:text-gray-700'
                                       }`}
-                                      title="Italic"
+                                      title={t.italicText}
                                     >
                                       <Italic className="w-3 h-3" />
                                     </button>
@@ -3065,12 +3099,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                           const key = `sizeMenu_${index}_headline`
                                           setShowFontMenu(showFontMenu === key ? null : key)
                                         }}
-                                        className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+                                        className="px-2 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-none border border-gray-200"
                                       >
                                         {Math.round(parseFloat(slide.headline_font_size || '3.75') * 16) || 60}
                                       </button>
                                       {showFontMenu === `sizeMenu_${index}_headline` && (
-                                        <div className="fixed md:absolute left-4 md:left-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+                                        <div className="fixed md:absolute left-4 md:left-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-1 w-20 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-48 overflow-y-auto">
                                           {[24, 32, 40, 48, 56, 64, 72, 80, 96, 112, 128].map(size => (
                                             <button
                                               key={size}
@@ -3080,8 +3114,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                                 setLandingPageData({...landingPageData, hero_slides: slides})
                                                 setShowFontMenu(null)
                                               }}
-                                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                                                Math.round(parseFloat(slide.headline_font_size || '3.75') * 16) === size ? 'bg-violet-600 text-white' : 'text-slate-200'
+                                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-200 ${
+                                                Math.round(parseFloat(slide.headline_font_size || '3.75') * 16) === size ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                                               }`}
                                             >
                                               {size}
@@ -3097,12 +3131,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                           const key = `fontMenu_${index}_headline`
                                           setShowFontMenu(showFontMenu === key ? null : key)
                                         }}
-                                        className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+                                        className="px-2 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-none border border-gray-200"
                                       >
                                         {(slide.headline_font_family || 'Josefin Sans').split(' ')[0]}
                                       </button>
                                       {showFontMenu === `fontMenu_${index}_headline` && (
-                                        <div className="fixed md:absolute left-4 md:left-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-1 w-40 max-w-[calc(100vw-2rem)] bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-64 overflow-y-auto">
+                                        <div className="fixed md:absolute left-4 md:left-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-1 w-40 max-w-[calc(100vw-2rem)] bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-64 overflow-y-auto">
                                           {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
                                             <button
                                               key={font}
@@ -3112,8 +3146,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                                 setLandingPageData({...landingPageData, hero_slides: slides})
                                                 setShowFontMenu(null)
                                               }}
-                                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                                                (slide.headline_font_family || 'Josefin Sans') === font ? 'bg-violet-600 text-white' : 'text-slate-200'
+                                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-200 ${
+                                                (slide.headline_font_family || 'Josefin Sans') === font ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                                               }`}
                                             >
                                               {font}
@@ -3129,12 +3163,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                           const key = `colorPicker_${index}_headline`
                                           setShowColorPicker(showColorPicker === key ? null : key)
                                         }}
-                                        className="w-7 h-7 rounded border border-slate-600 cursor-pointer hover:scale-110 transition-transform"
+                                        className="w-7 h-7 rounded-none border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
                                         style={{ backgroundColor: slide.headline_color || '#ffffff' }}
-                                        title="Headline color"
+                                        title={t.textColor}
                                       />
                                       {showColorPicker === `colorPicker_${index}_headline` && (
-                                        <div className="fixed md:absolute left-4 right-4 md:left-auto md:right-0 top-1/2 -translate-y-1/2 md:top-full md:translate-y-0 mt-0 md:mt-2 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50 max-w-xs mx-auto">
+                                        <div className="fixed md:absolute left-4 right-4 md:left-auto md:right-0 top-1/2 -translate-y-1/2 md:top-full md:translate-y-0 mt-0 md:mt-2 p-3 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-w-xs mx-auto">
                                           <div className="grid grid-cols-7 gap-2">
                                             {COLOR_PALETTE.map((color) => (
                                               <button
@@ -3145,7 +3179,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                                   setLandingPageData({...landingPageData, hero_slides: slides})
                                                   setShowColorPicker(null)
                                                 }}
-                                                className="w-7 h-7 rounded border-2 hover:scale-110 transition-transform"
+                                                className="w-7 h-7 rounded-none border-2 hover:scale-110 transition-transform"
                                                 style={{
                                                   backgroundColor: color.value,
                                                   borderColor: (slide.headline_color || '#ffffff') === color.value ? '#a855f7' : '#475569'
@@ -3168,12 +3202,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                     setLandingPageData({...landingPageData, hero_slides: slides})
                                   }}
                                   placeholder="e.g., Transform Your Skin"
-                                  className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                                  className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500"
                                 />
                               </div>
                               <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <label className="text-xs text-slate-400">Subheadline</label>
+                                <div className="flex flex-wrap items-center gap-2 mb-1">
+                                  <label className="text-xs text-gray-500">Subheadline</label>
                                   <div className="flex items-center gap-1">
                                     {/* Alignment buttons */}
                                     <button
@@ -3182,12 +3216,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         slides[index] = { ...slide, subheadline_text_align: 'left' }
                                         setLandingPageData({...landingPageData, hero_slides: slides})
                                       }}
-                                      className={`p-1 rounded ${
+                                      className={`p-1 rounded-none ${
                                         (slide.subheadline_text_align || 'center') === 'left'
-                                          ? 'bg-violet-600 text-white'
-                                          : 'text-slate-400 hover:text-slate-200'
+                                          ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                                          : 'text-gray-500 hover:text-gray-700'
                                       }`}
-                                      title="Align Left"
+                                      title={t.alignLeft}
                                     >
                                       <AlignLeft className="w-3 h-3" />
                                     </button>
@@ -3197,12 +3231,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         slides[index] = { ...slide, subheadline_text_align: 'center' }
                                         setLandingPageData({...landingPageData, hero_slides: slides})
                                       }}
-                                      className={`p-1 rounded ${
+                                      className={`p-1 rounded-none ${
                                         (slide.subheadline_text_align || 'center') === 'center'
-                                          ? 'bg-violet-600 text-white'
-                                          : 'text-slate-400 hover:text-slate-200'
+                                          ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                                          : 'text-gray-500 hover:text-gray-700'
                                       }`}
-                                      title="Align Center"
+                                      title={t.alignCenter}
                                     >
                                       <AlignCenter className="w-3 h-3" />
                                     </button>
@@ -3212,12 +3246,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         slides[index] = { ...slide, subheadline_text_align: 'right' }
                                         setLandingPageData({...landingPageData, hero_slides: slides})
                                       }}
-                                      className={`p-1 rounded ${
+                                      className={`p-1 rounded-none ${
                                         (slide.subheadline_text_align || 'center') === 'right'
-                                          ? 'bg-violet-600 text-white'
-                                          : 'text-slate-400 hover:text-slate-200'
+                                          ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                                          : 'text-gray-500 hover:text-gray-700'
                                       }`}
-                                      title="Align Right"
+                                      title={t.alignRight}
                                     >
                                       <AlignRight className="w-3 h-3" />
                                     </button>
@@ -3230,12 +3264,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         slides[index] = { ...slide, subheadline_bold: !slide.subheadline_bold }
                                         setLandingPageData({...landingPageData, hero_slides: slides})
                                       }}
-                                      className={`p-1 rounded ${
+                                      className={`p-1 rounded-none ${
                                         slide.subheadline_bold
-                                          ? 'bg-violet-600 text-white'
-                                          : 'text-slate-400 hover:text-slate-200'
+                                          ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                                          : 'text-gray-500 hover:text-gray-700'
                                       }`}
-                                      title="Bold"
+                                      title={t.boldText}
                                     >
                                       <Bold className="w-3 h-3" />
                                     </button>
@@ -3246,12 +3280,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         slides[index] = { ...slide, subheadline_italic: !slide.subheadline_italic }
                                         setLandingPageData({...landingPageData, hero_slides: slides})
                                       }}
-                                      className={`p-1 rounded ${
+                                      className={`p-1 rounded-none ${
                                         slide.subheadline_italic
-                                          ? 'bg-violet-600 text-white'
-                                          : 'text-slate-400 hover:text-slate-200'
+                                          ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                                          : 'text-gray-500 hover:text-gray-700'
                                       }`}
-                                      title="Italic"
+                                      title={t.italicText}
                                     >
                                       <Italic className="w-3 h-3" />
                                     </button>
@@ -3264,12 +3298,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                           const key = `sizeMenu_${index}_subheadline`
                                           setShowFontMenu(showFontMenu === key ? null : key)
                                         }}
-                                        className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+                                        className="px-2 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-none border border-gray-200"
                                       >
                                         {Math.round(parseFloat(slide.subheadline_font_size || '1.25') * 16) || 20}
                                       </button>
                                       {showFontMenu === `sizeMenu_${index}_subheadline` && (
-                                        <div className="fixed md:absolute left-4 md:left-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+                                        <div className="fixed md:absolute left-4 md:left-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-1 w-20 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-48 overflow-y-auto">
                                           {[12, 14, 16, 18, 20, 24, 28, 32, 36, 40].map(size => (
                                             <button
                                               key={size}
@@ -3279,8 +3313,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                                 setLandingPageData({...landingPageData, hero_slides: slides})
                                                 setShowFontMenu(null)
                                               }}
-                                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                                                Math.round(parseFloat(slide.subheadline_font_size || '1.25') * 16) === size ? 'bg-violet-600 text-white' : 'text-slate-200'
+                                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-200 ${
+                                                Math.round(parseFloat(slide.subheadline_font_size || '1.25') * 16) === size ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                                               }`}
                                             >
                                               {size}
@@ -3296,12 +3330,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                           const key = `fontMenu_${index}_subheadline`
                                           setShowFontMenu(showFontMenu === key ? null : key)
                                         }}
-                                        className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+                                        className="px-2 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-none border border-gray-200"
                                       >
                                         {(slide.subheadline_font_family || 'Josefin Sans').split(' ')[0]}
                                       </button>
                                       {showFontMenu === `fontMenu_${index}_subheadline` && (
-                                        <div className="fixed md:absolute left-4 md:left-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-1 w-40 max-w-[calc(100vw-2rem)] bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-64 overflow-y-auto">
+                                        <div className="fixed md:absolute left-4 md:left-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-1 w-40 max-w-[calc(100vw-2rem)] bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-64 overflow-y-auto">
                                           {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
                                             <button
                                               key={font}
@@ -3311,8 +3345,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                                 setLandingPageData({...landingPageData, hero_slides: slides})
                                                 setShowFontMenu(null)
                                               }}
-                                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                                                (slide.subheadline_font_family || 'Josefin Sans') === font ? 'bg-violet-600 text-white' : 'text-slate-200'
+                                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-200 ${
+                                                (slide.subheadline_font_family || 'Josefin Sans') === font ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                                               }`}
                                             >
                                               {font}
@@ -3328,12 +3362,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                           const key = `colorPicker_${index}_subheadline`
                                           setShowColorPicker(showColorPicker === key ? null : key)
                                         }}
-                                        className="w-7 h-7 rounded border border-slate-600 cursor-pointer hover:scale-110 transition-transform"
+                                        className="w-7 h-7 rounded-none border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
                                         style={{ backgroundColor: slide.subheadline_color || '#ffffff' }}
-                                        title="Subheadline color"
+                                        title={t.textColor}
                                       />
                                       {showColorPicker === `colorPicker_${index}_subheadline` && (
-                                        <div className="fixed md:absolute left-4 right-4 md:left-auto md:right-0 top-1/2 -translate-y-1/2 md:top-full md:translate-y-0 mt-0 md:mt-2 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50 max-w-xs mx-auto">
+                                        <div className="fixed md:absolute left-4 right-4 md:left-auto md:right-0 top-1/2 -translate-y-1/2 md:top-full md:translate-y-0 mt-0 md:mt-2 p-3 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-w-xs mx-auto">
                                           <div className="grid grid-cols-7 gap-2">
                                             {COLOR_PALETTE.map((color) => (
                                               <button
@@ -3344,7 +3378,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                                   setLandingPageData({...landingPageData, hero_slides: slides})
                                                   setShowColorPicker(null)
                                                 }}
-                                                className="w-7 h-7 rounded border-2 hover:scale-110 transition-transform"
+                                                className="w-7 h-7 rounded-none border-2 hover:scale-110 transition-transform"
                                                 style={{
                                                   backgroundColor: color.value,
                                                   borderColor: (slide.subheadline_color || '#ffffff') === color.value ? '#a855f7' : '#475569'
@@ -3367,12 +3401,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                     setLandingPageData({...landingPageData, hero_slides: slides})
                                   }}
                                   placeholder="e.g., Discover the secret"
-                                  className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                                  className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500"
                                 />
                               </div>
                               <div className="md:col-span-2">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <label className="text-xs text-slate-400">{slide.is_price_banner ? 'Features' : 'Content (optional)'}</label>
+                                <div className="flex flex-wrap items-center gap-2 mb-1">
+                                  <label className="text-xs text-gray-500">{slide.is_price_banner ? 'Features' : 'Content (optional)'}</label>
                                   <div className="flex items-center gap-1">
                                     {/* Alignment buttons */}
                                     <button
@@ -3381,12 +3415,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         slides[index] = { ...slide, content_text_align: 'left' }
                                         setLandingPageData({...landingPageData, hero_slides: slides})
                                       }}
-                                      className={`p-1 rounded ${
+                                      className={`p-1 rounded-none ${
                                         (slide.content_text_align || 'center') === 'left'
-                                          ? 'bg-violet-600 text-white'
-                                          : 'text-slate-400 hover:text-slate-200'
+                                          ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                                          : 'text-gray-500 hover:text-gray-700'
                                       }`}
-                                      title="Align Left"
+                                      title={t.alignLeft}
                                     >
                                       <AlignLeft className="w-3 h-3" />
                                     </button>
@@ -3396,12 +3430,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         slides[index] = { ...slide, content_text_align: 'center' }
                                         setLandingPageData({...landingPageData, hero_slides: slides})
                                       }}
-                                      className={`p-1 rounded ${
+                                      className={`p-1 rounded-none ${
                                         (slide.content_text_align || 'center') === 'center'
-                                          ? 'bg-violet-600 text-white'
-                                          : 'text-slate-400 hover:text-slate-200'
+                                          ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                                          : 'text-gray-500 hover:text-gray-700'
                                       }`}
-                                      title="Align Center"
+                                      title={t.alignCenter}
                                     >
                                       <AlignCenter className="w-3 h-3" />
                                     </button>
@@ -3411,12 +3445,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         slides[index] = { ...slide, content_text_align: 'right' }
                                         setLandingPageData({...landingPageData, hero_slides: slides})
                                       }}
-                                      className={`p-1 rounded ${
+                                      className={`p-1 rounded-none ${
                                         (slide.content_text_align || 'center') === 'right'
-                                          ? 'bg-violet-600 text-white'
-                                          : 'text-slate-400 hover:text-slate-200'
+                                          ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                                          : 'text-gray-500 hover:text-gray-700'
                                       }`}
-                                      title="Align Right"
+                                      title={t.alignRight}
                                     >
                                       <AlignRight className="w-3 h-3" />
                                     </button>
@@ -3429,12 +3463,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         slides[index] = { ...slide, content_bold: !slide.content_bold }
                                         setLandingPageData({...landingPageData, hero_slides: slides})
                                       }}
-                                      className={`p-1 rounded ${
+                                      className={`p-1 rounded-none ${
                                         slide.content_bold
-                                          ? 'bg-violet-600 text-white'
-                                          : 'text-slate-400 hover:text-slate-200'
+                                          ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                                          : 'text-gray-500 hover:text-gray-700'
                                       }`}
-                                      title="Bold"
+                                      title={t.boldText}
                                     >
                                       <Bold className="w-3 h-3" />
                                     </button>
@@ -3445,12 +3479,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         slides[index] = { ...slide, content_italic: !slide.content_italic }
                                         setLandingPageData({...landingPageData, hero_slides: slides})
                                       }}
-                                      className={`p-1 rounded ${
+                                      className={`p-1 rounded-none ${
                                         slide.content_italic
-                                          ? 'bg-violet-600 text-white'
-                                          : 'text-slate-400 hover:text-slate-200'
+                                          ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                                          : 'text-gray-500 hover:text-gray-700'
                                       }`}
-                                      title="Italic"
+                                      title={t.italicText}
                                     >
                                       <Italic className="w-3 h-3" />
                                     </button>
@@ -3463,12 +3497,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                           const key = `sizeMenu_${index}_content`
                                           setShowFontMenu(showFontMenu === key ? null : key)
                                         }}
-                                        className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+                                        className="px-2 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-none border border-gray-200"
                                       >
                                         {Math.round(parseFloat(slide.content_font_size || '1.125') * 16) || 18}
                                       </button>
                                       {showFontMenu === `sizeMenu_${index}_content` && (
-                                        <div className="fixed md:absolute left-4 md:left-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+                                        <div className="fixed md:absolute left-4 md:left-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-1 w-20 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-48 overflow-y-auto">
                                           {[12, 14, 16, 18, 20, 24, 28, 32].map(size => (
                                             <button
                                               key={size}
@@ -3478,8 +3512,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                                 setLandingPageData({...landingPageData, hero_slides: slides})
                                                 setShowFontMenu(null)
                                               }}
-                                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                                                Math.round(parseFloat(slide.content_font_size || '1.125') * 16) === size ? 'bg-violet-600 text-white' : 'text-slate-200'
+                                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-200 ${
+                                                Math.round(parseFloat(slide.content_font_size || '1.125') * 16) === size ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                                               }`}
                                             >
                                               {size}
@@ -3495,12 +3529,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                           const key = `fontMenu_${index}_content`
                                           setShowFontMenu(showFontMenu === key ? null : key)
                                         }}
-                                        className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+                                        className="px-2 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-none border border-gray-200"
                                       >
                                         {(slide.content_font_family || 'Cormorant Garamond').split(' ')[0]}
                                       </button>
                                       {showFontMenu === `fontMenu_${index}_content` && (
-                                        <div className="fixed md:absolute left-4 md:left-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-1 w-40 max-w-[calc(100vw-2rem)] bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-64 overflow-y-auto">
+                                        <div className="fixed md:absolute left-4 md:left-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-1 w-40 max-w-[calc(100vw-2rem)] bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-64 overflow-y-auto">
                                           {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
                                             <button
                                               key={font}
@@ -3510,8 +3544,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                                 setLandingPageData({...landingPageData, hero_slides: slides})
                                                 setShowFontMenu(null)
                                               }}
-                                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                                                (slide.content_font_family || 'Cormorant Garamond') === font ? 'bg-violet-600 text-white' : 'text-slate-200'
+                                              className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-200 ${
+                                                (slide.content_font_family || 'Cormorant Garamond') === font ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                                               }`}
                                             >
                                               {font}
@@ -3527,12 +3561,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                           const key = `colorPicker_${index}_content`
                                           setShowColorPicker(showColorPicker === key ? null : key)
                                         }}
-                                        className="w-7 h-7 rounded border border-slate-600 cursor-pointer hover:scale-110 transition-transform"
+                                        className="w-7 h-7 rounded-none border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
                                         style={{ backgroundColor: slide.content_color || '#ffffff' }}
-                                        title="Content color"
+                                        title={t.textColor}
                                       />
                                       {showColorPicker === `colorPicker_${index}_content` && (
-                                        <div className="fixed md:absolute left-4 right-4 md:left-auto md:right-0 top-1/2 -translate-y-1/2 md:top-full md:translate-y-0 mt-0 md:mt-2 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50 max-w-xs mx-auto">
+                                        <div className="fixed md:absolute left-4 right-4 md:left-auto md:right-0 top-1/2 -translate-y-1/2 md:top-full md:translate-y-0 mt-0 md:mt-2 p-3 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-w-xs mx-auto">
                                           <div className="grid grid-cols-7 gap-2">
                                             {COLOR_PALETTE.map((color) => (
                                               <button
@@ -3543,7 +3577,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                                   setLandingPageData({...landingPageData, hero_slides: slides})
                                                   setShowColorPicker(null)
                                                 }}
-                                                className="w-7 h-7 rounded border-2 hover:scale-110 transition-transform"
+                                                className="w-7 h-7 rounded-none border-2 hover:scale-110 transition-transform"
                                                 style={{
                                                   backgroundColor: color.value,
                                                   borderColor: (slide.content_color || '#ffffff') === color.value ? '#a855f7' : '#475569'
@@ -3573,7 +3607,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                             setLandingPageData({...landingPageData, hero_slides: slides})
                                           }}
                                           placeholder="Feature description"
-                                          className="flex-1 px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                                          className="flex-1 px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500"
                                         />
                                         <button
                                           onClick={() => {
@@ -3583,8 +3617,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                             slides[index] = { ...slide, features }
                                             setLandingPageData({...landingPageData, hero_slides: slides})
                                           }}
-                                          className="text-red-400 hover:text-red-300 p-1.5"
-                                          title="Remove feature"
+                                          className="text-red-600 hover:text-red-600 p-1.5"
+                                          title={t.removeFeature}
                                         >
                                           <Trash2 className="w-4 h-4" />
                                         </button>
@@ -3597,7 +3631,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         slides[index] = { ...slide, features }
                                         setLandingPageData({...landingPageData, hero_slides: slides})
                                       }}
-                                      className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
+                                      className="flex items-center gap-1 text-xs text-violet-600 hover:text-violet-600"
                                     >
                                       <Plus className="w-4 h-4" />
                                       Add Feature
@@ -3614,7 +3648,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                     }}
                                     placeholder="Additional text content for this slide..."
                                     rows={3}
-                                    className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500 resize-y break-words whitespace-pre-wrap"
+                                    className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500 resize-y break-words whitespace-pre-wrap"
                                   />
                                 )}
                               </div>
@@ -3622,7 +3656,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                               {!slide.is_price_banner && (
                                 <>
                                   <div>
-                                    <label className="block text-xs text-slate-400 mb-1">CTA Button Text</label>
+                                    <label className="block text-xs text-gray-500 mb-1">CTA Button Text</label>
                                     <input
                                       type="text"
                                       value={slide.cta_text || ''}
@@ -3632,11 +3666,11 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         setLandingPageData({...landingPageData, hero_slides: slides})
                                       }}
                                       placeholder="e.g., Shop Now"
-                                      className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500"
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-xs text-slate-400 mb-1">CTA Button URL</label>
+                                    <label className="block text-xs text-gray-500 mb-1">CTA Button URL</label>
                                     <input
                                       type="text"
                                       value={slide.cta_url || ''}
@@ -3646,7 +3680,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         setLandingPageData({...landingPageData, hero_slides: slides})
                                       }}
                                       placeholder="e.g., #shop or /products"
-                                      className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                                      className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500"
                                     />
                                   </div>
                                 </>
@@ -3658,35 +3692,35 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
 
                       {/* Media Picker Modal */}
                       {showMediaPicker !== null && (
-                        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-                          <div className="bg-slate-800 rounded-lg max-w-4xl w-full max-h-[80vh] overflow-hidden">
-                            <div className="flex justify-between items-center p-4 border-b border-slate-700">
-                              <h3 className="text-lg font-semibold text-white">Select from Image Library</h3>
+                        <div className="fixed inset-0 bg-black/20 z-50 flex items-center justify-center p-4">
+                          <div className="bg-white rounded-none max-w-4xl w-full max-h-[80vh] overflow-hidden">
+                            <div className="flex justify-between items-center p-4 border-b border-gray-200">
+                              <h3 className="text-xs font-semibold text-gray-800">Select from Image Library</h3>
                               <button
                                 onClick={() => setShowMediaPicker(null)}
-                                className="text-slate-400 hover:text-white"
+                                className="text-gray-500 hover:text-gray-800"
                               >
                                 <X className="w-5 h-5" />
                               </button>
                             </div>
                             <div className="p-4 overflow-y-auto max-h-[60vh]">
                               {mediaLoading ? (
-                                <div className="flex items-center justify-center py-12">
-                                  <Loader2 className="w-8 h-8 animate-spin text-violet-400" />
+                                <div className="flex items-center justify-center py-4">
+                                  <Loader2 className="w-8 h-8 animate-spin text-violet-600" />
                                 </div>
                               ) : mediaFiles.length === 0 ? (
-                                <div className="text-center py-12 text-slate-400">
+                                <div className="text-center py-4 text-gray-500">
                                   <Image className="w-12 h-12 mx-auto mb-2 opacity-50" />
                                   <p>No images in library</p>
-                                  <p className="text-sm">Upload images in the Image Library tab first</p>
+                                  <p className="text-xs">Upload images in the Image Library tab first</p>
                                 </div>
                               ) : (
-                                <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                                   {mediaFiles.filter(f => f.type.startsWith('image/') || f.type.startsWith('video/')).map((file) => (
                                     <button
                                       key={file.id}
                                       onClick={() => selectMediaForHeroSlide(showMediaPicker, file)}
-                                      className="relative aspect-video bg-slate-700 rounded-lg overflow-hidden hover:ring-2 hover:ring-violet-500 transition-all group"
+                                      className="relative aspect-video bg-gray-100 rounded-none overflow-hidden hover:ring-2 hover:ring-violet-500 transition-all group"
                                     >
                                       {file.type.startsWith('video/') ? (
                                         <video src={file.url} className="w-full h-full object-cover" muted />
@@ -3694,10 +3728,10 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                         <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
                                       )}
                                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                                        <Check className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        <Check className="w-8 h-8 text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity" />
                                       </div>
                                       {file.type.startsWith('video/') && (
-                                        <span className="absolute bottom-1 right-1 text-[10px] bg-black/60 text-white px-1 rounded">VIDEO</span>
+                                        <span className="absolute bottom-1 right-1 text-[10px] bg-black/60 text-gray-800 px-1 rounded-none">VIDEO</span>
                                       )}
                                     </button>
                                   ))}
@@ -3734,9 +3768,9 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                     )}
 
                     {/* Footer Configuration */}
-                    <div className="bg-slate-700/50 rounded-lg p-6 border border-slate-600">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-violet-400 flex items-center gap-2">
+                    <div className="bg-gray-50 rounded-none p-2 border border-gray-200">
+                      <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
+                        <h3 className="text-xs font-semibold text-violet-600 flex items-center gap-2">
                           <FileText className="w-5 h-5" />
                           Footer
                         </h3>
@@ -3762,10 +3796,10 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                               setTranslatingSectionKey(null)
                             }}
                             disabled={translatingSectionKey === 'footer'}
-                            className="px-2 py-1 bg-pink-600 hover:bg-pink-700 text-white rounded text-xs flex items-center gap-1 disabled:opacity-50"
+                            className="px-2 py-1 bg-pink-50 hover:bg-pink-700 text-gray-800 rounded-none text-xs flex items-center gap-1 disabled:opacity-50"
                           >
                             {translatingSectionKey === 'footer' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Languages className="w-3 h-3" />}
-                            Translate
+                            {t.translateBtn}
                           </button>
                         )}
                         {/* Footer Styling Controls - inline with title */}
@@ -3804,39 +3838,39 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                           }
 
                           return (
-                            <div className="flex items-center gap-1">
+                            <div className="flex flex-wrap items-center gap-1">
                               {/* Alignment buttons */}
                               <div className="flex items-center gap-1">
                                 <button
                                   onClick={() => updateFooter('text_align', 'left')}
-                                  className={`p-1 rounded ${
+                                  className={`p-1 rounded-none ${
                                     textAlign === 'left'
-                                      ? 'bg-violet-600 text-white'
-                                      : 'text-slate-400 hover:text-slate-200'
+                                      ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                                      : 'text-gray-500 hover:text-gray-700'
                                   }`}
-                                  title="Align Left"
+                                  title={t.alignLeft}
                                 >
                                   <AlignLeft className="w-3 h-3" />
                                 </button>
                                 <button
                                   onClick={() => updateFooter('text_align', 'center')}
-                                  className={`p-1 rounded ${
+                                  className={`p-1 rounded-none ${
                                     textAlign === 'center'
-                                      ? 'bg-violet-600 text-white'
-                                      : 'text-slate-400 hover:text-slate-200'
+                                      ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                                      : 'text-gray-500 hover:text-gray-700'
                                   }`}
-                                  title="Align Center"
+                                  title={t.alignCenter}
                                 >
                                   <AlignCenter className="w-3 h-3" />
                                 </button>
                                 <button
                                   onClick={() => updateFooter('text_align', 'right')}
-                                  className={`p-1 rounded ${
+                                  className={`p-1 rounded-none ${
                                     textAlign === 'right'
-                                      ? 'bg-violet-600 text-white'
-                                      : 'text-slate-400 hover:text-slate-200'
+                                      ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                                      : 'text-gray-500 hover:text-gray-700'
                                   }`}
-                                  title="Align Right"
+                                  title={t.alignRight}
                                 >
                                   <AlignRight className="w-3 h-3" />
                                 </button>
@@ -3846,23 +3880,23 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                               <div className="flex items-center gap-1">
                                 <button
                                   onClick={() => updateFooter('text_bold', !bold)}
-                                  className={`p-1 rounded ${
+                                  className={`p-1 rounded-none ${
                                     bold
-                                      ? 'bg-violet-600 text-white'
-                                      : 'text-slate-400 hover:text-slate-200'
+                                      ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                                      : 'text-gray-500 hover:text-gray-700'
                                   }`}
-                                  title="Bold"
+                                  title={t.boldText}
                                 >
                                   <Bold className="w-3 h-3" />
                                 </button>
                                 <button
                                   onClick={() => updateFooter('text_italic', !italic)}
-                                  className={`p-1 rounded ${
+                                  className={`p-1 rounded-none ${
                                     italic
-                                      ? 'bg-violet-600 text-white'
-                                      : 'text-slate-400 hover:text-slate-200'
+                                      ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                                      : 'text-gray-500 hover:text-gray-700'
                                   }`}
-                                  title="Italic"
+                                  title={t.italicText}
                                 >
                                   <Italic className="w-3 h-3" />
                                 </button>
@@ -3872,12 +3906,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                               <div className="relative">
                                 <button
                                   onClick={() => setShowFooterPicker(showFooterPicker === 'fontSize' ? null : 'fontSize')}
-                                  className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+                                  className="px-2 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-none border border-gray-200"
                                 >
                                   {Math.round(parseFloat(fontSize) * 16) || 14}
                                 </button>
                                 {showFooterPicker === 'fontSize' && (
-                                  <div className="absolute right-0 top-full mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+                                  <div className="absolute right-0 top-full mt-1 w-20 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-48 overflow-y-auto">
                                     {[10, 12, 14, 16, 18, 20, 24, 28, 32].map(size => (
                                       <button
                                         key={size}
@@ -3885,8 +3919,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                           updateFooter('text_font_size', `${size / 16}rem`)
                                           setShowFooterPicker(null)
                                         }}
-                                        className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                                          Math.round(parseFloat(fontSize) * 16) === size ? 'bg-violet-600 text-white' : 'text-slate-200'
+                                        className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-200 ${
+                                          Math.round(parseFloat(fontSize) * 16) === size ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                                         }`}
                                       >
                                         {size}
@@ -3900,12 +3934,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                               <div className="relative">
                                 <button
                                   onClick={() => setShowFooterPicker(showFooterPicker === 'fontFamily' ? null : 'fontFamily')}
-                                  className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+                                  className="px-2 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-none border border-gray-200"
                                 >
                                   {fontFamily.split(' ')[0]}
                                 </button>
                                 {showFooterPicker === 'fontFamily' && (
-                                  <div className="absolute right-0 top-full mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-64 overflow-y-auto">
+                                  <div className="absolute right-0 top-full mt-1 w-40 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-64 overflow-y-auto">
                                     {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
                                       <button
                                         key={font}
@@ -3913,8 +3947,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                           updateFooter('text_font_family', font)
                                           setShowFooterPicker(null)
                                         }}
-                                        className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                                          fontFamily === font ? 'bg-violet-600 text-white' : 'text-slate-200'
+                                        className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-200 ${
+                                          fontFamily === font ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                                         }`}
                                       >
                                         {font}
@@ -3928,13 +3962,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                               <div className="relative flex flex-col items-center gap-0.5">
                                 <button
                                   onClick={() => setShowFooterPicker(showFooterPicker === 'textColor' ? null : 'textColor')}
-                                  className="w-7 h-7 rounded border border-slate-600 cursor-pointer hover:scale-110 transition-transform"
+                                  className="w-7 h-7 rounded-none border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
                                   style={{ backgroundColor: textColor }}
-                                  title="Text color"
+                                  title={t.textColor}
                                 />
-                                <span className="text-[9px] text-slate-500">Text</span>
+                                <span className="text-[9px] text-gray-400">Text</span>
                                 {showFooterPicker === 'textColor' && (
-                                  <div className="absolute right-0 top-full mt-2 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50">
+                                  <div className="absolute right-0 top-full mt-2 p-3 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50">
                                     <div className="grid grid-cols-7 gap-2">
                                       {COLOR_PALETTE.map((c) => (
                                         <button
@@ -3943,7 +3977,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                             updateFooter('text_color', c.value)
                                             setShowFooterPicker(null)
                                           }}
-                                          className="w-7 h-7 rounded border-2 hover:scale-110 transition-transform"
+                                          className="w-7 h-7 rounded-none border-2 hover:scale-110 transition-transform"
                                           style={{
                                             backgroundColor: c.value,
                                             borderColor: textColor === c.value ? '#a855f7' : '#475569'
@@ -3960,13 +3994,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                               <div className="relative flex flex-col items-center gap-0.5">
                                 <button
                                   onClick={() => setShowFooterPicker(showFooterPicker === 'bgColor' ? null : 'bgColor')}
-                                  className="w-7 h-7 rounded border border-slate-600 cursor-pointer hover:scale-110 transition-transform"
+                                  className="w-7 h-7 rounded-none border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
                                   style={{ backgroundColor: bgColor }}
-                                  title="Background color"
+                                  title={t.bgColor}
                                 />
-                                <span className="text-[9px] text-slate-500">BG</span>
+                                <span className="text-[9px] text-gray-400">BG</span>
                                 {showFooterPicker === 'bgColor' && (
-                                  <div className="absolute right-0 top-full mt-2 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50">
+                                  <div className="absolute right-0 top-full mt-2 p-3 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50">
                                     <div className="grid grid-cols-7 gap-2">
                                       {COLOR_PALETTE.map((c) => (
                                         <button
@@ -3975,7 +4009,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                             updateFooter('background_color', c.value)
                                             setShowFooterPicker(null)
                                           }}
-                                          className="w-7 h-7 rounded border-2 hover:scale-110 transition-transform"
+                                          className="w-7 h-7 rounded-none border-2 hover:scale-110 transition-transform"
                                           style={{
                                             backgroundColor: c.value,
                                             borderColor: bgColor === c.value ? '#a855f7' : '#475569'
@@ -3992,15 +4026,15 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                         })()}
                       </div>
                       {/* Footer Section - Collapsible */}
-                      <div className="mt-6 border border-slate-600 rounded-lg overflow-hidden">
+                      <div className="mt-2 border border-gray-200 rounded-none overflow-hidden">
                         <div
-                          className="flex items-center justify-between px-4 py-3 bg-slate-700 cursor-pointer hover:bg-slate-600 transition-colors"
+                          className="flex items-center justify-between px-2 py-1.5 bg-gray-100 cursor-pointer hover:bg-gray-200 transition-colors"
                           onClick={() => setFooterCollapsed(!footerCollapsed)}
                         >
-                          <h3 className="text-sm font-medium text-white flex items-center gap-2">
+                          <h3 className="text-xs font-medium text-gray-800 flex items-center gap-2">
                             📜 Footer & Policies
                           </h3>
-                          <button className="text-slate-300 hover:text-white">
+                          <button className="text-gray-600 hover:text-gray-800">
                             {footerCollapsed ? (
                               <ChevronDown className="w-5 h-5" />
                             ) : (
@@ -4009,7 +4043,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                           </button>
                         </div>
                         {!footerCollapsed && (
-                          <div className="p-4 bg-slate-800/50">
+                          <div className="p-2 bg-gray-50">
                             <FooterEditor
                               data={landingPageData.footer || {}}
                               onChange={(footerData) => {
@@ -4026,13 +4060,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                     </div>
                   </>
                 ) : (
-                  <div className="text-center py-12">
-                    <p className="text-slate-400 mb-4">{t.noLandingPageYet || 'No landing page configured yet. Create one to customize what customers see.'}</p>
+                  <div className="text-center py-4">
+                    <p className="text-gray-500 text-xs mb-2">{t.noLandingPageYet}</p>
                     <button
                       onClick={() => setLandingPageData(getDefaultLandingPage())}
-                      className="bg-violet-600 hover:bg-violet-700 text-white px-6 py-2 rounded-lg"
+                      className="bg-violet-50 border border-violet-200 hover:bg-violet-100 text-gray-800 text-xs px-3 py-1.5 rounded-none"
                     >
-                      {t.createLandingPage || 'Create Landing Page'}
+                      {t.createLandingPage}
                     </button>
                   </div>
                 )}
@@ -4073,18 +4107,18 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
             {/* Media Library Tab Content */}
             {activeSubTab === 'media' && (
               <div>
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-wrap items-center justify-between mb-3 gap-2">
                   <div>
-                    <h2 className="text-2xl font-bold flex items-center gap-2 text-white">
-                      <Image className="w-6 h-6 text-pink-400" />
-                      Image Library
+                    <h2 className="text-xs font-bold flex items-center gap-2 text-gray-800">
+                      <Image className="w-6 h-6 text-pink-600" />
+                      {t.imageLibrary}
                     </h2>
-                    <p className="text-slate-400 mt-1">Upload and manage images and videos for your landing pages and products.</p>
+                    <p className="text-gray-500 mt-1">Upload and manage images and videos for your landing pages and products.</p>
                   </div>
                   <button
                     onClick={() => mediaInputRef.current?.click()}
                     disabled={mediaUploading}
-                    className="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white px-4 py-2 rounded-lg font-medium transition-all disabled:opacity-50"
+                    className="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-gray-800 px-4 py-2 rounded-none font-medium transition-all disabled:opacity-50"
                   >
                     {mediaUploading ? (
                       <>
@@ -4112,18 +4146,18 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
 
                 {/* Media Grid */}
                 {mediaLoading ? (
-                  <div className="flex items-center justify-center py-12">
+                  <div className="flex items-center justify-center py-4">
                     <Loader2 className="w-8 h-8 animate-spin text-pink-500" />
-                    <span className="ml-3 text-slate-400">Loading media files...</span>
+                    <span className="ml-3 text-gray-500">Loading media files...</span>
                   </div>
                 ) : mediaFiles.length === 0 ? (
-                  <div className="text-center py-16 bg-slate-800/50 rounded-xl border-2 border-dashed border-slate-600">
-                    <Image className="w-16 h-16 mx-auto text-slate-500 mb-4" />
-                    <h3 className="text-xl font-semibold text-slate-300 mb-2">No media files yet</h3>
-                    <p className="text-slate-400 mb-6">Upload images and videos to use in your landing pages and products.</p>
+                  <div className="text-center py-16 bg-gray-50 rounded-none border-2 border-dashed border-gray-300">
+                    <Image className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                    <h3 className="text-xs font-semibold text-gray-600 mb-2">No media files yet</h3>
+                    <p className="text-gray-500 text-xs mb-3">Upload images and videos to use in your landing pages and products.</p>
                     <button
                       onClick={() => mediaInputRef.current?.click()}
-                      className="inline-flex items-center gap-2 bg-pink-600 hover:bg-pink-700 text-white px-6 py-3 rounded-lg font-medium transition-all"
+                      className="inline-flex items-center gap-2 bg-pink-50 hover:bg-pink-700 text-gray-800 px-6 py-3 rounded-none font-medium transition-all"
                     >
                       <Upload className="w-5 h-5" />
                       Upload Your First File
@@ -4132,9 +4166,9 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {mediaFiles.map((file) => (
-                      <div key={file.id || file.name} className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 group">
+                      <div key={file.id || file.name} className="bg-white rounded-none overflow-hidden border border-gray-200 group">
                         {/* Preview */}
-                        <div className="aspect-square relative bg-slate-900">
+                        <div className="aspect-square relative bg-white">
                           {isImage(file.type) ? (
                             <img
                               src={file.url}
@@ -4150,12 +4184,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                                 playsInline
                               />
                               <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                                <Video className="w-12 h-12 text-white/80" />
+                                <Video className="w-12 h-12 text-gray-800/80" />
                               </div>
                             </div>
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
-                              <FileText className="w-12 h-12 text-slate-500" />
+                              <FileText className="w-12 h-12 text-gray-400" />
                             </div>
                           )}
 
@@ -4163,31 +4197,31 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                             <button
                               onClick={() => copyToClipboard(file.url)}
-                              className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-                              title="Copy URL"
+                              className="p-2 bg-white/20 hover:bg-white/30 rounded-none transition-colors"
+                              title={t.copyUrl}
                             >
                               {copiedUrl === file.url ? (
-                                <Check className="w-5 h-5 text-green-400" />
+                                <Check className="w-5 h-5 text-green-600" />
                               ) : (
-                                <Copy className="w-5 h-5 text-white" />
+                                <Copy className="w-5 h-5 text-gray-800" />
                               )}
                             </button>
                             <button
                               onClick={() => deleteMediaFile(file.name)}
-                              className="p-2 bg-red-500/20 hover:bg-red-500/40 rounded-lg transition-colors"
-                              title="Delete"
+                              className="p-2 bg-red-50/20 hover:bg-red-50/40 rounded-none transition-colors"
+                              title={t.delete}
                             >
-                              <Trash2 className="w-5 h-5 text-red-400" />
+                              <Trash2 className="w-5 h-5 text-red-600" />
                             </button>
                           </div>
                         </div>
 
                         {/* File info */}
                         <div className="p-3">
-                          <p className="text-sm text-white truncate" title={file.name}>
+                          <p className="text-xs text-gray-800 truncate" title={file.name}>
                             {file.name.replace(/^\d+_/, '')}
                           </p>
-                          <p className="text-xs text-slate-400 mt-1">
+                          <p className="text-xs text-gray-500 mt-1">
                             {formatFileSize(file.size)}
                           </p>
                         </div>
@@ -4197,18 +4231,18 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                 )}
 
                 {/* Upload tips */}
-                <div className="mt-8 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
-                  <h4 className="text-sm font-medium text-slate-300 mb-2">Supported formats</h4>
+                <div className="mt-8 p-4 bg-gray-50 rounded-none border border-gray-200">
+                  <h4 className="text-xs font-medium text-gray-600 mb-2">Supported formats</h4>
                   <div className="flex flex-wrap gap-2">
-                    <span className="px-2 py-1 bg-slate-700 rounded text-xs text-slate-300">JPG</span>
-                    <span className="px-2 py-1 bg-slate-700 rounded text-xs text-slate-300">PNG</span>
-                    <span className="px-2 py-1 bg-slate-700 rounded text-xs text-slate-300">GIF</span>
-                    <span className="px-2 py-1 bg-slate-700 rounded text-xs text-slate-300">WebP</span>
-                    <span className="px-2 py-1 bg-slate-700 rounded text-xs text-slate-300">SVG</span>
-                    <span className="px-2 py-1 bg-slate-700 rounded text-xs text-slate-300">MP4</span>
-                    <span className="px-2 py-1 bg-slate-700 rounded text-xs text-slate-300">WebM</span>
+                    <span className="px-2 py-1 bg-gray-100 rounded-none text-xs text-gray-600">JPG</span>
+                    <span className="px-2 py-1 bg-gray-100 rounded-none text-xs text-gray-600">PNG</span>
+                    <span className="px-2 py-1 bg-gray-100 rounded-none text-xs text-gray-600">GIF</span>
+                    <span className="px-2 py-1 bg-gray-100 rounded-none text-xs text-gray-600">WebP</span>
+                    <span className="px-2 py-1 bg-gray-100 rounded-none text-xs text-gray-600">SVG</span>
+                    <span className="px-2 py-1 bg-gray-100 rounded-none text-xs text-gray-600">MP4</span>
+                    <span className="px-2 py-1 bg-gray-100 rounded-none text-xs text-gray-600">WebM</span>
                   </div>
-                  <p className="text-xs text-slate-400 mt-2">Maximum file size: 50MB</p>
+                  <p className="text-xs text-gray-500 mt-2">Maximum file size: 50MB</p>
                 </div>
               </div>
             )}
@@ -4218,16 +4252,16 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
 
       {/* URL Scrape Modal */}
       {showUrlModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-xl w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-white flex items-center gap-2">
-                <Globe className="w-5 h-5 text-purple-400" />
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-none w-full max-w-md p-3">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-semibold text-gray-800 flex items-center gap-2">
+                <Globe className="w-5 h-5 text-purple-600" />
                 Add Website URL
               </h3>
               <button
                 onClick={() => { setShowUrlModal(false); setUrlInput(''); }}
-                className="text-slate-400 hover:text-white"
+                className="text-gray-500 hover:text-gray-800"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -4235,7 +4269,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-slate-300 mb-2">
+                <label className="block text-xs text-gray-600 mb-2">
                   Website URL
                 </label>
                 <input
@@ -4243,14 +4277,14 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                   value={urlInput}
                   onChange={(e) => setUrlInput(e.target.value)}
                   placeholder="https://example.com"
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-300"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleUrlScrape()
                   }}
                 />
               </div>
 
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-gray-500">
                 The website content will be scraped and added to your knowledge base for AI training.
               </p>
             </div>
@@ -4258,14 +4292,14 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => { setShowUrlModal(false); setUrlInput(''); }}
-                className="px-4 py-2 text-slate-400 hover:text-white"
+                className="px-4 py-2 text-gray-500 hover:text-gray-800"
               >
-                Cancel
+                {t.cancel}
               </button>
               <button
                 onClick={handleUrlScrape}
                 disabled={!urlInput.trim()}
-                className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-6 py-2 bg-purple-50 border border-purple-200 hover:bg-purple-100 rounded-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Globe className="w-4 h-4" />
                 Scrape Website
@@ -4277,16 +4311,16 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
 
       {/* Copy to Locale Modal */}
       {showCopyModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-xl w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-white flex items-center gap-2">
-                <Copy className="w-5 h-5 text-cyan-400" />
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-none w-full max-w-md p-3">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-semibold text-gray-800 flex items-center gap-2">
+                <Copy className="w-5 h-5 text-cyan-600" />
                 Copy to Another Country
               </h3>
               <button
                 onClick={() => { setShowCopyModal(false); setCopyTargetCountry(''); }}
-                className="text-slate-400 hover:text-white"
+                className="text-gray-500 hover:text-gray-800"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -4294,22 +4328,22 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-slate-300 mb-2">
-                  Source: <span className="font-semibold text-white">{landingPageData?.country || 'US'}/{landingPageData?.language_code || 'en'}</span>
+                <label className="block text-xs text-gray-600 mb-2">
+                  Source: <span className="font-semibold text-gray-800">{landingPageData?.country || 'US'}/{landingPageData?.language_code || 'en'}</span>
                 </label>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-gray-500">
                   All content, blocks, and settings will be copied to the target country with the same language.
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm text-slate-300 mb-2">
+                <label className="block text-xs text-gray-600 mb-2">
                   Target Country
                 </label>
                 <select
                   value={copyTargetCountry}
                   onChange={(e) => setCopyTargetCountry(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 >
                   <option value="">Select a country...</option>
                   {countryOptions
@@ -4328,8 +4362,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
               </div>
 
               {/* Visual list of countries with their status */}
-              <div className="bg-slate-700/50 rounded-lg p-3 max-h-40 overflow-y-auto">
-                <div className="text-xs text-slate-400 mb-2">Available Countries:</div>
+              <div className="bg-gray-50 rounded-none p-3 max-h-40 overflow-y-auto">
+                <div className="text-xs text-gray-500 mb-2">Available Countries:</div>
                 <div className="grid grid-cols-2 gap-1.5">
                   {countryOptions
                     .filter(country => country.code !== (landingPageData?.country || 'US'))
@@ -4340,10 +4374,10 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                       return (
                         <div
                           key={country.code}
-                          className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
+                          className={`flex items-center gap-1.5 px-2 py-1 rounded-none text-xs ${
                             hasExistingPage
-                              ? 'bg-green-500/10 border border-green-500/30 text-green-300'
-                              : 'bg-slate-600/30 border border-slate-600 text-slate-400'
+                              ? 'bg-green-50/10 border border-green-500/30 text-green-600'
+                              : 'bg-gray-200/30 border border-gray-200 text-gray-500'
                           }`}
                         >
                           <span>{country.flag}</span>
@@ -4355,11 +4389,11 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                 </div>
               </div>
 
-              <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-3">
-                <p className="text-xs text-cyan-300">
+              <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-none p-3">
+                <p className="text-xs text-cyan-600">
                   <strong>Note:</strong> Currency will be automatically updated based on the target country.
                   {availableLocales.some(l => l.country === copyTargetCountry && l.language_code === (landingPageData?.language_code || 'en')) && (
-                    <span className="block mt-1 text-amber-300">
+                    <span className="block mt-1 text-amber-600">
                       ⚠️ This will overwrite the existing page for {copyTargetCountry}/{landingPageData?.language_code || 'en'}
                     </span>
                   )}
@@ -4370,15 +4404,15 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => { setShowCopyModal(false); setCopyTargetCountry(''); }}
-                className="px-4 py-2 text-slate-400 hover:text-white"
+                className="px-4 py-2 text-gray-500 hover:text-gray-800"
                 disabled={isCopying}
               >
-                Cancel
+                {t.cancel}
               </button>
               <button
                 onClick={() => copyToLocale(copyTargetCountry)}
                 disabled={!copyTargetCountry || isCopying}
-                className="flex items-center gap-2 px-6 py-2 bg-cyan-600 hover:bg-cyan-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-6 py-2 bg-cyan-50 hover:bg-cyan-700 rounded-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isCopying ? (
                   <>
@@ -4399,21 +4433,21 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
 
       {/* Policy Editor Modal */}
       {editingPolicyType && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-slate-700">
-              <h3 className="text-lg font-semibold text-white">
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-none w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-xs font-semibold text-gray-800">
                 Edit {editingPolicyType.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
               </h3>
               <button
                 onClick={() => setEditingPolicyType(null)}
-                className="text-slate-400 hover:text-white"
+                className="text-gray-500 hover:text-gray-800"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
-              <p className="text-sm text-slate-400 mb-3">
+              <p className="text-xs text-gray-500 mb-3">
                 Select text and use the toolbar to format. Your changes appear exactly as they will on the page.
               </p>
               {(() => {
@@ -4448,13 +4482,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                 return (
                   <>
                     {template && (
-                      <div className="mb-3 p-3 bg-violet-900/30 border border-violet-600/50 rounded">
-                        <p className="text-xs text-violet-300 mb-2">
+                      <div className="mb-3 p-3 bg-violet-900/30 border border-violet-600/50 rounded-none">
+                        <p className="text-xs text-violet-600 mb-2">
                           Available variables (will be replaced with your footer settings):
                         </p>
                         <div className="flex flex-wrap gap-1">
                           {availableVars.map((v: string) => (
-                            <span key={v} className="px-1.5 py-0.5 bg-violet-800/50 rounded text-[10px] text-violet-200 font-mono cursor-pointer hover:bg-violet-700/50"
+                            <span key={v} className="px-1.5 py-0.5 bg-violet-800/50 rounded-none text-[10px] text-violet-200 font-mono cursor-pointer hover:bg-violet-100/50"
                               onClick={() => {
                                 // Insert variable at cursor position
                                 document.execCommand('insertText', false, v)
@@ -4487,16 +4521,16 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language 
                 )
               })()}
             </div>
-            <div className="flex justify-end gap-3 p-4 border-t border-slate-700">
+            <div className="flex justify-end gap-3 p-4 border-t border-gray-200">
               <button
                 onClick={() => setEditingPolicyType(null)}
-                className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
               >
-                Cancel
+                {t.cancel}
               </button>
               <button
                 onClick={() => setEditingPolicyType(null)}
-                className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors"
+                className="px-4 py-2 bg-violet-50 border border-violet-200 hover:bg-violet-100 text-gray-800 rounded-none transition-colors"
               >
                 Done
               </button>

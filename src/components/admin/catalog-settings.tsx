@@ -269,15 +269,15 @@ export default function CatalogSettings({ businessUnitId, onDataChange }: Catalo
   }
 
   return (
-    <div className="bg-slate-800 rounded-lg border border-slate-700">
+    <div className="bg-white rounded-none border border-gray-200">
       {/* Section Tabs */}
-      <div className="flex border-b border-slate-700">
+      <div className="flex border-b border-gray-200">
         <button
           onClick={() => setActiveSection('categories')}
-          className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors ${
+          className={`flex items-center gap-2 px-3 py-2 text-xs font-medium transition-colors ${
             activeSection === 'categories'
-              ? 'text-blue-400 border-b-2 border-blue-400 bg-slate-700/30'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'text-blue-600 border-b-2 border-blue-400 bg-gray-50'
+              : 'text-gray-500 hover:text-gray-700'
           }`}
         >
           <FolderTree className="w-4 h-4" />
@@ -285,10 +285,10 @@ export default function CatalogSettings({ businessUnitId, onDataChange }: Catalo
         </button>
         <button
           onClick={() => setActiveSection('types')}
-          className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors ${
+          className={`flex items-center gap-2 px-3 py-2 text-xs font-medium transition-colors ${
             activeSection === 'types'
-              ? 'text-blue-400 border-b-2 border-blue-400 bg-slate-700/30'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'text-blue-600 border-b-2 border-blue-400 bg-gray-50'
+              : 'text-gray-500 hover:text-gray-700'
           }`}
         >
           <Tag className="w-4 h-4" />
@@ -296,10 +296,10 @@ export default function CatalogSettings({ businessUnitId, onDataChange }: Catalo
         </button>
         <button
           onClick={() => setActiveSection('attributes')}
-          className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors ${
+          className={`flex items-center gap-2 px-3 py-2 text-xs font-medium transition-colors ${
             activeSection === 'attributes'
-              ? 'text-blue-400 border-b-2 border-blue-400 bg-slate-700/30'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'text-blue-600 border-b-2 border-blue-400 bg-gray-50'
+              : 'text-gray-500 hover:text-gray-700'
           }`}
         >
           <Settings className="w-4 h-4" />
@@ -308,20 +308,20 @@ export default function CatalogSettings({ businessUnitId, onDataChange }: Catalo
       </div>
 
       {/* Content */}
-      <div className="p-6">
+      <div className="p-3">
         {/* Categories Section */}
         {activeSection === 'categories' && (
           <div>
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-3">
               <div>
-                <h2 className="text-lg font-semibold text-white">Categories</h2>
-                <p className="text-sm text-slate-400 mt-1">
+                <h2 className="text-xs font-medium text-gray-800">Categories</h2>
+                <p className="text-xs text-gray-500 mt-1">
                   Organize products into categories (e.g., Face, Eye, Body)
                 </p>
               </div>
               <button
                 onClick={() => openModal('category')}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
+                className="flex items-center gap-2 px-2 py-1 text-xs bg-blue-50 border border-blue-200 hover:bg-blue-100 text-gray-800 rounded-none text-sm font-medium"
               >
                 <Plus className="w-4 h-4" />
                 Add Category
@@ -329,45 +329,45 @@ export default function CatalogSettings({ businessUnitId, onDataChange }: Catalo
             </div>
 
             {categories.length === 0 ? (
-              <div className="text-center py-12 border border-dashed border-slate-600 rounded-lg">
-                <FolderTree className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-                <p className="text-slate-400 mb-4">No categories yet</p>
+              <div className="text-center py-4 border border-dashed border-gray-300 rounded-none">
+                <FolderTree className="w-6 h-6 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-500 mb-4">No categories yet</p>
                 <button
                   onClick={() => openModal('category')}
-                  className="text-blue-400 hover:text-blue-300"
+                  className="text-blue-600 hover:text-blue-600"
                 >
                   Add your first category
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                 {categories.map(category => (
-                  <div key={category.id} className="p-4 bg-slate-700/50 rounded-lg border border-slate-600 group hover:border-slate-500 transition-colors">
+                  <div key={category.id} className="p-2 bg-gray-50 rounded-none border border-gray-200 group hover:border-gray-300 transition-colors">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-2">
                         {category.icon && <span className="text-xl">{category.icon}</span>}
                         <div>
-                          <h3 className="font-medium text-white">{category.name}</h3>
-                          <p className="text-sm text-slate-400">{category.handle}</p>
+                          <h3 className="font-medium text-gray-800">{category.name}</h3>
+                          <p className="text-xs text-gray-500">{category.handle}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => openModal('category', category)}
-                          className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-600 rounded"
+                          className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-gray-200 rounded-none"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete('category', category)}
-                          className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-600 rounded"
+                          className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-gray-200 rounded-none"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
                     {category.product_count !== undefined && (
-                      <p className="text-xs text-slate-500 mt-2">
+                      <p className="text-xs text-gray-400 mt-2">
                         {category.product_count} product{category.product_count !== 1 ? 's' : ''}
                       </p>
                     )}
@@ -381,16 +381,16 @@ export default function CatalogSettings({ businessUnitId, onDataChange }: Catalo
         {/* Product Types Section */}
         {activeSection === 'types' && (
           <div>
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-3">
               <div>
-                <h2 className="text-lg font-semibold text-white">Product Types</h2>
-                <p className="text-sm text-slate-400 mt-1">
+                <h2 className="text-xs font-medium text-gray-800">Product Types</h2>
+                <p className="text-xs text-gray-500 mt-1">
                   Define what products are (e.g., Cream, Serum, Booster)
                 </p>
               </div>
               <button
                 onClick={() => openModal('type')}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
+                className="flex items-center gap-2 px-2 py-1 text-xs bg-blue-50 border border-blue-200 hover:bg-blue-100 text-gray-800 rounded-none text-sm font-medium"
               >
                 <Plus className="w-4 h-4" />
                 Add Product Type
@@ -398,49 +398,49 @@ export default function CatalogSettings({ businessUnitId, onDataChange }: Catalo
             </div>
 
             {productTypes.length === 0 ? (
-              <div className="text-center py-12 border border-dashed border-slate-600 rounded-lg">
-                <Tag className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-                <p className="text-slate-400 mb-4">No product types yet</p>
+              <div className="text-center py-4 border border-dashed border-gray-300 rounded-none">
+                <Tag className="w-6 h-6 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-500 mb-4">No product types yet</p>
                 <button
                   onClick={() => openModal('type')}
-                  className="text-blue-400 hover:text-blue-300"
+                  className="text-blue-600 hover:text-blue-600"
                 >
                   Add your first product type
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                 {productTypes.map(type => (
-                  <div key={type.id} className="p-4 bg-slate-700/50 rounded-lg border border-slate-600 group hover:border-slate-500 transition-colors">
+                  <div key={type.id} className="p-2 bg-gray-50 rounded-none border border-gray-200 group hover:border-gray-300 transition-colors">
                     <div className="flex items-start justify-between">
                       <div>
                         <div className="flex items-center gap-2">
-                          <h3 className="font-medium text-white">{type.name}</h3>
+                          <h3 className="font-medium text-gray-800">{type.name}</h3>
                           {type.is_addon && (
-                            <span className="text-xs px-2 py-0.5 bg-orange-600/20 text-orange-400 rounded">
+                            <span className="text-xs px-2 py-0.5 bg-orange-50 text-orange-600 rounded-none">
                               Add-on
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-slate-400 mt-1">{type.handle}</p>
+                        <p className="text-xs text-gray-500 mt-1">{type.handle}</p>
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => openModal('type', type)}
-                          className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-600 rounded"
+                          className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-gray-200 rounded-none"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete('type', type)}
-                          className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-600 rounded"
+                          className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-gray-200 rounded-none"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
                     {type.product_count !== undefined && (
-                      <p className="text-xs text-slate-500 mt-2">
+                      <p className="text-xs text-gray-400 mt-2">
                         {type.product_count} product{type.product_count !== 1 ? 's' : ''}
                       </p>
                     )}
@@ -454,16 +454,16 @@ export default function CatalogSettings({ businessUnitId, onDataChange }: Catalo
         {/* Attributes Section */}
         {activeSection === 'attributes' && (
           <div>
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-3">
               <div>
-                <h2 className="text-lg font-semibold text-white">Attributes</h2>
-                <p className="text-sm text-slate-400 mt-1">
+                <h2 className="text-xs font-medium text-gray-800">Attributes</h2>
+                <p className="text-xs text-gray-500 mt-1">
                   Define filterable features (e.g., Skin Concerns, Skin Type)
                 </p>
               </div>
               <button
                 onClick={() => openModal('attribute')}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
+                className="flex items-center gap-2 px-2 py-1 text-xs bg-blue-50 border border-blue-200 hover:bg-blue-100 text-gray-800 rounded-none text-sm font-medium"
               >
                 <Plus className="w-4 h-4" />
                 Add Attribute
@@ -471,68 +471,68 @@ export default function CatalogSettings({ businessUnitId, onDataChange }: Catalo
             </div>
 
             {attributes.length === 0 ? (
-              <div className="text-center py-12 border border-dashed border-slate-600 rounded-lg">
-                <Settings className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-                <p className="text-slate-400 mb-4">No attributes yet</p>
+              <div className="text-center py-4 border border-dashed border-gray-300 rounded-none">
+                <Settings className="w-6 h-6 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-500 mb-4">No attributes yet</p>
                 <button
                   onClick={() => openModal('attribute')}
-                  className="text-blue-400 hover:text-blue-300"
+                  className="text-blue-600 hover:text-blue-600"
                 >
                   Add your first attribute
                 </button>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {attributes.map(attr => (
-                  <div key={attr.id} className="bg-slate-700/50 rounded-lg border border-slate-600">
+                  <div key={attr.id} className="bg-gray-50 rounded-none border border-gray-200">
                     {/* Attribute Header */}
                     <div
-                      className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-700/70"
+                      className="flex items-center justify-between p-2 cursor-pointer hover:bg-gray-100"
                       onClick={() => toggleAttribute(attr.id)}
                     >
                       <div className="flex items-center gap-3">
                         {expandedAttributes.has(attr.id) ? (
-                          <ChevronDown className="w-5 h-5 text-slate-400" />
+                          <ChevronDown className="w-5 h-5 text-gray-500" />
                         ) : (
-                          <ChevronRight className="w-5 h-5 text-slate-400" />
+                          <ChevronRight className="w-5 h-5 text-gray-500" />
                         )}
                         <div>
                           <div className="flex items-center gap-2">
-                            <h3 className="font-medium text-white">{attr.name}</h3>
-                            <span className="text-xs px-2 py-0.5 bg-slate-600 text-slate-300 rounded">
+                            <h3 className="font-medium text-gray-800">{attr.name}</h3>
+                            <span className="text-xs px-2 py-0.5 bg-gray-200 text-gray-600 rounded-none">
                               {attr.attribute_type}
                             </span>
                             {attr.is_category_linked && (
-                              <span className="text-xs px-2 py-0.5 bg-purple-600/20 text-purple-400 rounded">
+                              <span className="text-xs px-2 py-0.5 bg-purple-50 text-purple-600 rounded-none">
                                 Category-linked
                               </span>
                             )}
                             {attr.is_filterable && (
-                              <span className="text-xs px-2 py-0.5 bg-green-600/20 text-green-400 rounded">
+                              <span className="text-xs px-2 py-0.5 bg-green-50 text-green-600 rounded-none">
                                 Filterable
                               </span>
                             )}
                           </div>
-                          <p className="text-sm text-slate-400">{attr.options?.length || 0} options</p>
+                          <p className="text-xs text-gray-500">{attr.options?.length || 0} options</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                         <button
                           onClick={() => openModal('option', null, attr.id)}
-                          className="flex items-center gap-1 px-3 py-1.5 text-sm bg-slate-600 hover:bg-slate-500 text-white rounded"
+                          className="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-200 hover:bg-gray-100 text-gray-800 rounded-none"
                         >
                           <Plus className="w-3 h-3" />
                           Add Option
                         </button>
                         <button
                           onClick={() => openModal('attribute', attr)}
-                          className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-600 rounded"
+                          className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-gray-200 rounded-none"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete('attribute', attr)}
-                          className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-600 rounded"
+                          className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-gray-200 rounded-none"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -541,16 +541,16 @@ export default function CatalogSettings({ businessUnitId, onDataChange }: Catalo
 
                     {/* Attribute Options */}
                     {expandedAttributes.has(attr.id) && attr.options && attr.options.length > 0 && (
-                      <div className="border-t border-slate-600 p-4">
+                      <div className="border-t border-gray-200 p-2">
                         {attr.is_category_linked ? (
                           // Group by category
-                          <div className="space-y-4">
+                          <div className="space-y-2">
                             {categories.map(cat => {
                               const catOptions = attr.options.filter(o => o.category_id === cat.id)
                               if (catOptions.length === 0) return null
                               return (
                                 <div key={cat.id}>
-                                  <h4 className="text-sm font-medium text-slate-300 mb-2 flex items-center gap-2">
+                                  <h4 className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-2">
                                     {cat.icon && <span>{cat.icon}</span>}
                                     {cat.name}
                                   </h4>
@@ -558,18 +558,18 @@ export default function CatalogSettings({ businessUnitId, onDataChange }: Catalo
                                     {catOptions.map(option => (
                                       <div
                                         key={option.id}
-                                        className="flex items-center gap-2 px-3 py-1.5 bg-slate-600 rounded-lg group"
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-200 rounded-none group"
                                       >
-                                        <span className="text-white text-sm">{option.name}</span>
+                                        <span className="text-gray-800 text-sm">{option.name}</span>
                                         <button
                                           onClick={() => openModal('option', option, attr.id)}
-                                          className="text-slate-400 hover:text-blue-400 opacity-0 group-hover:opacity-100"
+                                          className="text-gray-500 hover:text-blue-600 opacity-0 group-hover:opacity-100"
                                         >
                                           <Edit className="w-3 h-3" />
                                         </button>
                                         <button
                                           onClick={() => handleDelete('option', option)}
-                                          className="text-slate-400 hover:text-red-400 opacity-0 group-hover:opacity-100"
+                                          className="text-gray-500 hover:text-red-600 opacity-0 group-hover:opacity-100"
                                         >
                                           <Trash2 className="w-3 h-3" />
                                         </button>
@@ -582,23 +582,23 @@ export default function CatalogSettings({ businessUnitId, onDataChange }: Catalo
                             {/* Uncategorized options */}
                             {attr.options.filter(o => !o.category_id).length > 0 && (
                               <div>
-                                <h4 className="text-sm font-medium text-slate-500 mb-2">Uncategorized</h4>
+                                <h4 className="text-sm font-medium text-gray-400 mb-2">Uncategorized</h4>
                                 <div className="flex flex-wrap gap-2 ml-6">
                                   {attr.options.filter(o => !o.category_id).map(option => (
                                     <div
                                       key={option.id}
-                                      className="flex items-center gap-2 px-3 py-1.5 bg-slate-600 rounded-lg group"
+                                      className="flex items-center gap-2 px-3 py-1.5 bg-gray-200 rounded-none group"
                                     >
-                                      <span className="text-white text-sm">{option.name}</span>
+                                      <span className="text-gray-800 text-sm">{option.name}</span>
                                       <button
                                         onClick={() => openModal('option', option, attr.id)}
-                                        className="text-slate-400 hover:text-blue-400 opacity-0 group-hover:opacity-100"
+                                        className="text-gray-500 hover:text-blue-600 opacity-0 group-hover:opacity-100"
                                       >
                                         <Edit className="w-3 h-3" />
                                       </button>
                                       <button
                                         onClick={() => handleDelete('option', option)}
-                                        className="text-slate-400 hover:text-red-400 opacity-0 group-hover:opacity-100"
+                                        className="text-gray-500 hover:text-red-600 opacity-0 group-hover:opacity-100"
                                       >
                                         <Trash2 className="w-3 h-3" />
                                       </button>
@@ -614,18 +614,18 @@ export default function CatalogSettings({ businessUnitId, onDataChange }: Catalo
                             {attr.options.map(option => (
                               <div
                                 key={option.id}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-slate-600 rounded-lg group"
+                                className="flex items-center gap-2 px-3 py-1.5 bg-gray-200 rounded-none group"
                               >
-                                <span className="text-white text-sm">{option.name}</span>
+                                <span className="text-gray-800 text-sm">{option.name}</span>
                                 <button
                                   onClick={() => openModal('option', option, attr.id)}
-                                  className="text-slate-400 hover:text-blue-400 opacity-0 group-hover:opacity-100"
+                                  className="text-gray-500 hover:text-blue-600 opacity-0 group-hover:opacity-100"
                                 >
                                   <Edit className="w-3 h-3" />
                                 </button>
                                 <button
                                   onClick={() => handleDelete('option', option)}
-                                  className="text-slate-400 hover:text-red-400 opacity-0 group-hover:opacity-100"
+                                  className="text-gray-500 hover:text-red-600 opacity-0 group-hover:opacity-100"
                                 >
                                   <Trash2 className="w-3 h-3" />
                                 </button>
@@ -645,52 +645,52 @@ export default function CatalogSettings({ businessUnitId, onDataChange }: Catalo
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-xl w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-white">
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-none w-full max-w-md p-3">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-medium text-gray-800">
                 {editingItem ? 'Edit' : 'Add'} {modalType === 'type' ? 'Product Type' : modalType.charAt(0).toUpperCase() + modalType.slice(1)}
               </h3>
-              <button onClick={closeModal} className="text-slate-400 hover:text-white">
+              <button onClick={closeModal} className="text-gray-500 hover:text-gray-800">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-2">
               {/* Name field */}
               <div>
-                <label className="block text-sm text-slate-300 mb-2">Name</label>
+                <label className="block text-xs text-gray-600 mb-2">Name</label>
                 <input
                   type="text"
                   value={formData.name || ''}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder={modalType === 'category' ? 'e.g., Face Care' : modalType === 'type' ? 'e.g., Serum' : 'e.g., Skin Concerns'}
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-2 py-1.5 text-xs bg-gray-100 border border-gray-200 rounded-none text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300"
                 />
               </div>
 
               {/* Handle field */}
               <div>
-                <label className="block text-sm text-slate-300 mb-2">Handle (URL slug)</label>
+                <label className="block text-xs text-gray-600 mb-2">Handle (URL slug)</label>
                 <input
                   type="text"
                   value={formData.handle || ''}
                   onChange={(e) => setFormData({ ...formData, handle: e.target.value })}
                   placeholder="auto-generated if empty"
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-2 py-1.5 text-xs bg-gray-100 border border-gray-200 rounded-none text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300"
                 />
               </div>
 
               {/* Category-specific: Icon */}
               {modalType === 'category' && (
                 <div>
-                  <label className="block text-sm text-slate-300 mb-2">Icon (emoji)</label>
+                  <label className="block text-xs text-gray-600 mb-2">Icon (emoji)</label>
                   <input
                     type="text"
                     value={formData.icon || ''}
                     onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
                     placeholder="e.g., 😊"
-                    className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-2 py-1.5 text-xs bg-gray-100 border border-gray-200 rounded-none text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300"
                   />
                 </div>
               )}
@@ -703,9 +703,9 @@ export default function CatalogSettings({ businessUnitId, onDataChange }: Catalo
                     id="is_addon"
                     checked={formData.is_addon || false}
                     onChange={(e) => setFormData({ ...formData, is_addon: e.target.checked })}
-                    className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-600 focus:ring-blue-500"
+                    className="w-4 h-4 rounded-none border-gray-200 bg-gray-100 text-blue-600 focus:ring-blue-300"
                   />
-                  <label htmlFor="is_addon" className="text-sm text-slate-300">
+                  <label htmlFor="is_addon" className="text-xs text-gray-600">
                     This is an add-on product type
                   </label>
                 </div>
@@ -715,11 +715,11 @@ export default function CatalogSettings({ businessUnitId, onDataChange }: Catalo
               {modalType === 'attribute' && (
                 <>
                   <div>
-                    <label className="block text-sm text-slate-300 mb-2">Attribute Type</label>
+                    <label className="block text-xs text-gray-600 mb-2">Attribute Type</label>
                     <select
                       value={formData.attribute_type || 'feature'}
                       onChange={(e) => setFormData({ ...formData, attribute_type: e.target.value })}
-                      className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-2 py-1.5 text-xs bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
                     >
                       <option value="concern">Concern (problems to solve)</option>
                       <option value="feature">Feature (product characteristics)</option>
@@ -733,9 +733,9 @@ export default function CatalogSettings({ businessUnitId, onDataChange }: Catalo
                       id="is_category_linked"
                       checked={formData.is_category_linked || false}
                       onChange={(e) => setFormData({ ...formData, is_category_linked: e.target.checked })}
-                      className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-600 focus:ring-blue-500"
+                      className="w-4 h-4 rounded-none border-gray-200 bg-gray-100 text-blue-600 focus:ring-blue-300"
                     />
-                    <label htmlFor="is_category_linked" className="text-sm text-slate-300">
+                    <label htmlFor="is_category_linked" className="text-xs text-gray-600">
                       Options are linked to categories (e.g., Face→Wrinkles, Eye→Dark Circles)
                     </label>
                   </div>
@@ -745,9 +745,9 @@ export default function CatalogSettings({ businessUnitId, onDataChange }: Catalo
                       id="is_filterable"
                       checked={formData.is_filterable ?? true}
                       onChange={(e) => setFormData({ ...formData, is_filterable: e.target.checked })}
-                      className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-600 focus:ring-blue-500"
+                      className="w-4 h-4 rounded-none border-gray-200 bg-gray-100 text-blue-600 focus:ring-blue-300"
                     />
-                    <label htmlFor="is_filterable" className="text-sm text-slate-300">
+                    <label htmlFor="is_filterable" className="text-xs text-gray-600">
                       Show in filters and quiz
                     </label>
                   </div>
@@ -757,11 +757,11 @@ export default function CatalogSettings({ businessUnitId, onDataChange }: Catalo
               {/* Option-specific: Category selection */}
               {modalType === 'option' && (
                 <div>
-                  <label className="block text-sm text-slate-300 mb-2">Category (optional)</label>
+                  <label className="block text-xs text-gray-600 mb-2">Category (optional)</label>
                   <select
                     value={formData.category_id || ''}
                     onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                    className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-2 py-1.5 text-xs bg-gray-100 border border-gray-200 rounded-none text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
                   >
                     <option value="">No category (global)</option>
                     {categories.map(cat => (
@@ -774,16 +774,16 @@ export default function CatalogSettings({ businessUnitId, onDataChange }: Catalo
               )}
             </div>
 
-            <div className="flex justify-end gap-3 mt-6">
+            <div className="flex justify-end gap-2 mt-3">
               <button
                 onClick={closeModal}
-                className="px-4 py-2 text-slate-400 hover:text-white"
+                className="px-2 py-1 text-xs text-gray-500 hover:text-gray-800"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
-                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+                className="px-3 py-1.5 text-xs bg-blue-50 border border-blue-200 hover:bg-blue-100 text-gray-800 rounded-none"
               >
                 {editingItem ? 'Save Changes' : 'Add'}
               </button>

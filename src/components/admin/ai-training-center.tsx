@@ -5,6 +5,7 @@ import { Brain, Database, Plus, Edit, Trash2, Save, BarChart3, Book, Sparkles, U
 import ProfileModal from './profile-modal'
 import RoleplayTraining from './roleplay-training'
 import KnowledgeBase from './knowledge-base'
+import AddLocaleModal from './landing-page/AddLocaleModal'
 import { FAQ, CannedMessage } from '@/lib/faq-library'
 import { type Language, languageNames, getTranslation } from '@/lib/translations'
 import {
@@ -71,6 +72,18 @@ const AITrainingCenter = () => {
   const [trainingMemory, setTrainingMemory] = useState<{[key: string]: string[]}>({})
   const [completedTrainingSessions, setCompletedTrainingSessions] = useState<any[]>([])
   const [selectedLanguage, setSelectedLanguage] = useState<Language>('en')
+
+  // Locale state: country + language code (e.g., "US" + "en", "HK" + "tw")
+  const [selectedCountry, setSelectedCountry] = useState<string>('US')
+  const [selectedLangCode, setSelectedLangCode] = useState<string>('en')
+  const [availableLocales, setAvailableLocales] = useState<{country: string, language_code: string}[]>([])
+  const [showAddLocaleModal, setShowAddLocaleModal] = useState(false)
+
+  // Map short lang code to Language type for UI translations
+  const langCodeToLanguage = (code: string): Language => {
+    const map: Record<string, Language> = { 'tw': 'zh-TW', 'cn': 'zh-CN', 'en': 'en', 'vi': 'vi' }
+    return map[code] || 'en'
+  }
 
   // Get translations
   const t = getTranslation(selectedLanguage)
@@ -224,6 +237,18 @@ const AITrainingCenter = () => {
     if (selectedBusinessUnit) {
       loadData()
       loadTrainingMemoryAndSessions()
+      // Fetch available locales for this business unit
+      fetch(`/api/landing-pages/locales?businessUnit=${selectedBusinessUnit}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.locales?.length > 0) {
+            setAvailableLocales(data.locales.map((l: any) => ({ country: l.country, language_code: l.language_code })))
+          } else {
+            // Default locale if none exist yet
+            setAvailableLocales([{ country: 'US', language_code: 'en' }])
+          }
+        })
+        .catch(() => setAvailableLocales([{ country: 'US', language_code: 'en' }]))
     }
   }, [selectedBusinessUnit])
 
@@ -504,15 +529,15 @@ const AITrainingCenter = () => {
       setKnowledgeEntries(knowledgeData || [])
       console.log(`✅ Loaded ${knowledgeData?.length || 0} knowledge entries`)
 
-      // Load FAQs
-      const faqData = await loadFAQs(selectedBusinessUnit, selectedLanguage)
+      // Load FAQs — filtered by selected locale
+      const faqData = await loadFAQs(selectedBusinessUnit, selectedLangCode)
       setFaqs(faqData || [])
-      console.log(`✅ Loaded ${faqData?.length || 0} FAQs for language: ${selectedLanguage}`)
+      console.log(`✅ Loaded ${faqData?.length || 0} FAQs for locale: ${selectedCountry}/${selectedLangCode}`)
 
-      // Load canned messages
-      const cannedData = await loadCannedMessages(selectedBusinessUnit)
+      // Load canned messages — filtered by selected locale
+      const cannedData = await loadCannedMessages(selectedBusinessUnit, selectedLangCode)
       setCannedMsgs(cannedData || [])
-      console.log(`✅ Loaded ${cannedData?.length || 0} canned messages`)
+      console.log(`✅ Loaded ${cannedData?.length || 0} canned messages for locale: ${selectedCountry}/${selectedLangCode}`)
 
       // Load FAQ categories
       const faqCategoriesData = await loadFAQCategories(selectedBusinessUnit)
@@ -579,10 +604,10 @@ const AITrainingCenter = () => {
       setTrainingData(trainingDataFile || [])
       console.log(`✅ Loaded ${trainingDataFile?.length || 0} training data entries from Supabase`)
 
-      // Load guidelines from Supabase (no auto-initialization)
-      const guidelinesData = await loadGuidelines(selectedBusinessUnit)
+      // Load guidelines from Supabase — filtered by selected locale
+      const guidelinesData = await loadGuidelines(selectedBusinessUnit, selectedLangCode)
       setGuidelines(guidelinesData || [])
-      console.log(`✅ Loaded ${guidelinesData?.length || 0} guidelines from Supabase`)
+      console.log(`✅ Loaded ${guidelinesData?.length || 0} guidelines for locale: ${selectedCountry}/${selectedLangCode}`)
 
     } catch (error) {
       console.error('Error loading data:', error)
@@ -1624,48 +1649,97 @@ Format as JSON array:
   )
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      <div className="max-w-7xl mx-auto p-3 sm:p-6">
+    <div className="min-h-screen bg-gray-50 text-gray-900 tracking-tight" style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
+      <div className="max-w-7xl mx-auto p-2 sm:p-3">
         {/* Header */}
-        <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="mb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-cyan-600 bg-clip-text text-transparent mb-2">
+            <h1 className="text-xs font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-cyan-600 bg-clip-text text-transparent mb-0.5">
               {t.adminTitle}
             </h1>
-            <p className="text-gray-500 text-sm sm:text-base">{t.adminSubtitle}</p>
+            <p className="text-gray-500 text-xs">{t.adminSubtitle}</p>
           </div>
 
-          {/* Profile, Language Selector and View Live Chat */}
-          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto flex-wrap justify-end">
+          {/* Biz Unit, Country, Profile, Language, Live Chat */}
+          <div className="flex items-center gap-1.5 w-full sm:w-auto flex-wrap justify-end">
+            {/* Business Unit Dropdown */}
+            <div className="flex items-center gap-0.5">
+              <select
+                value={selectedBusinessUnit}
+                onChange={(e) => {
+                  const value = e.target.value
+                  if (value === '__add__') {
+                    setShowAddBusinessUnit(true)
+                    return
+                  }
+                  setSelectedBusinessUnit(value)
+                }}
+                className="bg-gray-100 border border-gray-200 rounded-none px-2 py-1.5 text-xs text-gray-700 cursor-pointer"
+              >
+                {businessUnits.map((unit) => (
+                  <option key={unit.id} value={unit.id}>
+                    {unit.name} ({unit.industry})
+                  </option>
+                ))}
+                <option value="__add__">＋ Add</option>
+              </select>
+              {selectedBusinessUnit !== 'skincoach' && (
+                <button
+                  onClick={() => handleDeleteBusinessUnit(selectedBusinessUnit)}
+                  className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                  title="Delete business unit"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+
+            {/* Country Dropdown */}
+            <select
+              value={selectedCountry}
+              onChange={(e) => {
+                const value = e.target.value
+                if (value === '__add__') {
+                  setShowAddLocaleModal(true)
+                  return
+                }
+                setSelectedCountry(value)
+                const firstLocale = availableLocales.find(l => l.country === value)
+                if (firstLocale) {
+                  setSelectedLangCode(firstLocale.language_code)
+                  setSelectedLanguage(langCodeToLanguage(firstLocale.language_code))
+                }
+              }}
+              className="bg-gray-100 border border-gray-200 rounded-none px-2 py-1.5 text-xs text-gray-700 cursor-pointer"
+            >
+              {[...new Set(availableLocales.map(l => l.country))].map((country) => {
+                const flags: Record<string, string> = { US: '🇺🇸', HK: '🇭🇰', CN: '🇨🇳', TW: '🇹🇼', JP: '🇯🇵', KR: '🇰🇷', GB: '🇬🇧', FR: '🇫🇷', DE: '🇩🇪', ES: '🇪🇸' }
+                return (
+                  <option key={country} value={country}>
+                    {flags[country] || '🌍'} {country}
+                  </option>
+                )
+              })}
+              <option value="__add__">＋ Add</option>
+            </select>
+
             {/* Profile Button */}
             <button
               onClick={() => setShowProfileModal(true)}
-              className="bg-white border border-gray-300 hover:border-purple-500 text-gray-900 px-2.5 sm:px-4 py-2 sm:py-3 rounded-xl font-semibold flex items-center gap-1.5 sm:gap-2 transition-all duration-200 hover:shadow-lg text-sm sm:text-base"
+              className="bg-white border border-gray-200 hover:border-purple-500 text-gray-900 px-2 py-1.5 rounded-none font-medium flex items-center gap-1 transition-all duration-200 hover:shadow-sm text-xs"
               title={t.profile || 'Profile'}
             >
-              <User className="w-4 h-4 sm:w-5 sm:h-5" />
+              <User className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">{t.profile || 'Profile'}</span>
             </button>
 
-            {/* Language Selector */}
+            {/* Admin UI Language */}
             <div className="relative">
               <select
                 value={selectedLanguage}
-                onChange={async (e) => {
-                  const newLanguage = e.target.value as Language
-                  setSelectedLanguage(newLanguage)
-                  console.log(`🌍 Language changed to: ${newLanguage}`)
-                  // Reload FAQs with new language immediately
-                  setIsLoading(true)
-                  console.log(`📥 Loading FAQs for business unit: ${selectedBusinessUnit}, language: ${newLanguage}`)
-                  const faqData = await loadFAQs(selectedBusinessUnit, newLanguage)
-                  console.log(`✅ Loaded ${faqData?.length || 0} FAQs:`, faqData?.slice(0, 2))
-                  setFaqs(faqData || [])
-                  setIsLoading(false)
-                  alert(`Loaded ${faqData?.length || 0} FAQs in ${newLanguage}\nFirst FAQ: ${faqData?.[0]?.question || 'none'}`)
-                }}
-                className="appearance-none bg-white border border-gray-300 rounded-xl px-2.5 sm:px-4 py-2 sm:py-3 pr-7 sm:pr-10 text-sm sm:text-base text-gray-900 hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer transition-colors"
-                title={t.language}
+                onChange={(e) => setSelectedLanguage(e.target.value as Language)}
+                className="appearance-none bg-white border border-gray-200 rounded-none px-2 py-1.5 pr-6 text-xs text-gray-900 hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-300 cursor-pointer transition-colors"
+                title="Admin UI Language"
               >
                 {Object.entries(languageNames).map(([code, name]) => (
                   <option key={code} value={code}>
@@ -1678,103 +1752,48 @@ Format as JSON array:
 
             {/* View Live Chat Button */}
             <a
-              href={`/livechat?businessUnit=${selectedBusinessUnit}`}
+              href={`/livechat?businessUnit=${selectedBusinessUnit}&country=${selectedCountry}&lang=${selectedLangCode}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 hover:from-purple-600 hover:via-pink-600 hover:to-cyan-600 text-gray-900 px-3 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold flex items-center gap-1.5 sm:gap-2 transition-all duration-200 hover:shadow-lg hover:scale-105 text-sm sm:text-base justify-center"
+              className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 hover:from-purple-600 hover:via-pink-600 hover:to-cyan-600 text-gray-900 px-2 py-1.5 rounded-none font-medium flex items-center gap-1 transition-all duration-200 hover:shadow-sm hover:scale-105 text-xs justify-center"
             >
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Sparkles className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">{t.viewLiveChat}</span>
               <span className="sm:hidden">Chat</span>
             </a>
           </div>
         </div>
 
-        {/* Business Unit Selector */}
-        <div className="mb-6 bg-white rounded-xl p-3 sm:p-4 border border-gray-200">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-            <h3 className="text-sm font-medium text-gray-500 shrink-0">{t.businessUnit}:</h3>
-            <div className="flex gap-2 flex-wrap overflow-x-auto pb-1 -mb-1">
-              {businessUnits.map((unit) => (
-                <button
-                  key={unit.id}
-                  onClick={() => setSelectedBusinessUnit(unit.id)}
-                  className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-colors flex items-center gap-1 sm:gap-2 text-sm sm:text-base whitespace-nowrap ${
-                    selectedBusinessUnit === unit.id
-                      ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-gray-900'
-                      : 'bg-gray-100 text-gray-600 hover:bg-slate-600'
-                  }`}
-                >
-                  <span>{unit.name}</span>
-                  {selectedBusinessUnit === unit.id && (
-                    <span className="text-xs opacity-75 hidden sm:inline">({unit.industry})</span>
-                  )}
-                  {unit.id !== 'skincoach' && selectedBusinessUnit === unit.id && (
-                    <span
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteBusinessUnit(unit.id)
-                      }}
-                      className="ml-1 sm:ml-2 text-red-400 hover:text-red-300 cursor-pointer"
-                      title="Delete business unit"
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          handleDeleteBusinessUnit(unit.id)
-                        }
-                      }}
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </span>
-                  )}
-                </button>
-              ))}
-              {!showAddBusinessUnit && (
-                <button
-                  onClick={() => setShowAddBusinessUnit(true)}
-                  className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-slate-600 transition-colors flex items-center gap-1 sm:gap-2 text-sm sm:text-base whitespace-nowrap"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span className="hidden sm:inline">{t.addBusinessUnit}</span>
-                  <span className="sm:hidden">Add</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Add Business Unit Form */}
-          {showAddBusinessUnit && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
+        {/* Add Business Unit Form */}
+        {showAddBusinessUnit && (
+          <div className="mb-3 bg-white rounded-none p-2 border border-gray-100">
               <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-500 mb-2">{t.businessName}</label>
+                  <label className="block text-xs font-medium text-gray-500 mb-2">{t.businessName}</label>
                   <input
                     type="text"
                     value={newBusinessUnitName}
                     onChange={(e) => setNewBusinessUnitName(e.target.value)}
                     placeholder={t.businessNamePlaceholder}
-                    className="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 placeholder-gray-400 text-sm sm:text-base"
+                    className="w-full bg-gray-100 border border-gray-200 rounded-none px-3 py-2 text-gray-900 placeholder-gray-400 text-xs"
                     autoFocus
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-500 mb-2">{t.industry}</label>
+                  <label className="block text-xs font-medium text-gray-500 mb-2">{t.industry}</label>
                   <input
                     type="text"
                     value={newBusinessUnitIndustry}
                     onChange={(e) => setNewBusinessUnitIndustry(e.target.value)}
                     placeholder={t.industryPlaceholder}
-                    className="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 placeholder-gray-400 text-sm sm:text-base"
+                    className="w-full bg-gray-100 border border-gray-200 rounded-none px-3 py-2 text-gray-900 placeholder-gray-400 text-xs"
                   />
                 </div>
                 <div className="flex gap-2 sm:gap-3">
                   <button
                     onClick={addBusinessUnit}
                     disabled={!newBusinessUnitName.trim()}
-                    className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 disabled:bg-slate-600 px-4 py-2 rounded-lg transition-colors text-white text-sm sm:text-base"
+                    className="flex-1 sm:flex-none bg-green-50 border border-green-200 hover:bg-green-100 disabled:bg-gray-200 px-4 py-2 rounded-none transition-colors text-gray-800 text-xs"
                   >
                     {t.add}
                   </button>
@@ -1784,7 +1803,7 @@ Format as JSON array:
                       setNewBusinessUnitName('')
                       setNewBusinessUnitIndustry('')
                     }}
-                    className="flex-1 sm:flex-none bg-slate-600 hover:bg-gray-500 px-4 py-2 rounded-lg transition-colors text-white text-sm sm:text-base"
+                    className="flex-1 sm:flex-none bg-gray-200 hover:bg-gray-500 px-4 py-2 rounded-none transition-colors text-gray-800 text-xs"
                   >
                     {t.cancel}
                   </button>
@@ -1792,11 +1811,10 @@ Format as JSON array:
               </div>
             </div>
           )}
-        </div>
 
         {/* Navigation Tabs */}
-        <div className="overflow-x-auto mb-6 sm:mb-8 -mx-3 sm:mx-0 px-3 sm:px-0">
-          <div className="flex space-x-1 bg-white rounded-xl p-1 min-w-max sm:min-w-0">
+        <div className="mb-3">
+          <div className="flex flex-wrap gap-0.5 bg-white rounded-none p-0.5">
             {[
               { id: 'knowledge', label: t.knowledge, icon: Book },
               { id: 'booking', label: t.booking, icon: Calendar },
@@ -1804,19 +1822,18 @@ Format as JSON array:
               { id: 'faq', label: t.faq, icon: HelpCircle },
               { id: 'canned', label: t.cannedMessages, icon: Mail },
               { id: 'roleplay', label: t.roleplay, icon: Users },
-              { id: 'analytics', label: t.analytics, icon: BarChart3 },
               { id: 'aimodel', label: t.aiModel, icon: Settings }
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => setActiveTab(id as any)}
-                className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all whitespace-nowrap text-sm sm:text-base ${
+                className={`flex items-center gap-1 px-2 py-1 rounded-none transition-all whitespace-nowrap text-xs ${
                   activeTab === id
                     ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-gray-900'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-3 h-3" />
                 <span className="hidden sm:inline">{label}</span>
                 <span className="sm:hidden">{label.split(' ')[0]}</span>
               </button>
@@ -1824,64 +1841,40 @@ Format as JSON array:
           </div>
         </div>
 
-        {/* Search and Actions */}
-        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center mb-6 gap-3">
-          <input
-            type="text"
-            placeholder={t.searchEntries}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-gray-900 placeholder-gray-400 w-full sm:w-80 text-sm sm:text-base"
-          />
-          <div className="flex gap-2">
-            {/* Training tab action buttons removed - guidelines management hidden from UI */}
-
-            {activeTab === 'model' && modelInfo && (
-              <button
-                onClick={deployModel}
-                disabled={isLoading}
-                className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-600 px-4 py-2 rounded-lg transition-colors"
-              >
-                <Sparkles className="w-4 h-4" />
-                Deploy Model
-              </button>
-            )}
-          </div>
-        </div>
-
         {/* Content Sections */}
-        <div className="bg-white rounded-xl p-6">
+        <div className="bg-white rounded-none p-3">
 
           {/* Knowledge Base Tab */}
           {activeTab === 'knowledge' && (
             <KnowledgeBase
               businessUnitId={selectedBusinessUnit}
               language={selectedLanguage}
+              country={selectedCountry}
             />
           )}
 
           {/* Training Data Tab */}
           {activeTab === 'training' && (
             <div>
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <Brain className="w-6 h-6 text-purple-400" />
+              <h2 className="text-xs font-bold mb-3 flex items-center gap-2">
+                <Brain className="w-4 h-4 text-purple-600" />
                 {t.trainingDataTitle}
               </h2>
 
               {/* Training Guidelines Section */}
-              <div className="mb-8">
-                <div className="flex justify-between items-center mb-4">
+              <div className="mb-3">
+                <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                      <Book className="w-5 h-5 text-blue-400" />
+                    <h3 className="text-xs font-semibold text-gray-900 flex items-center gap-2">
+                      <Book className="w-3.5 h-3.5 text-blue-600" />
                       {t.trainingGuidelines}
                     </h3>
                     <p className="text-xs text-gray-500 mt-1">
                       {t.guidelinesDescription}
-                      <span className="text-cyan-300 ml-2">FAQ</span> = FAQ generation,
-                      <span className="text-purple-300 ml-2">CANNED</span> = Canned message generation,
-                      <span className="text-pink-300 ml-2">ROLEPLAY</span> = Roleplay training,
-                      <span className="text-blue-300 ml-2">GENERAL</span> = Chatbot + all features
+                      <span className="text-cyan-600 ml-2">FAQ</span> = FAQ generation,
+                      <span className="text-purple-600 ml-2">CANNED</span> = Canned message generation,
+                      <span className="text-pink-600 ml-2">ROLEPLAY</span> = Roleplay training,
+                      <span className="text-blue-600 ml-2">GENERAL</span> = Chatbot + all features
                     </p>
                   </div>
                   <button
@@ -1896,7 +1889,7 @@ Format as JSON array:
                       }
                       setEditingEntry(newGuideline)
                     }}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors"
+                    className="flex items-center gap-1 bg-blue-50 border border-blue-200 hover:bg-blue-100 px-2 py-1 rounded-none text-xs transition-colors"
                   >
                     <Plus className="w-4 h-4" />
                     {t.addGuideline}
@@ -1904,9 +1897,9 @@ Format as JSON array:
                 </div>
 
                 {guidelines.length === 0 ? (
-                  <div className="bg-gray-100 rounded-lg p-6 text-center">
+                  <div className="bg-gray-100 rounded-none p-3 text-center">
                     <p className="text-gray-500">{t.noGuidelinesYet}</p>
-                    <p className="text-slate-500 text-sm mt-2">{t.addGuidelinesHelp}</p>
+                    <p className="text-gray-400 text-xs mt-2">{t.addGuidelinesHelp}</p>
                   </div>
                 ) : (
                   <div className="max-h-[600px] overflow-y-auto pr-2 space-y-3 custom-scrollbar">
@@ -1916,18 +1909,18 @@ Format as JSON array:
                       const hasMoreContent = guideline.content.length > 100 || guideline.content.includes('\n')
 
                       return (
-                        <div key={guideline.id} className="bg-gray-100 rounded-lg p-4 border border-gray-300">
+                        <div key={guideline.id} className="bg-gray-100 rounded-none p-2.5 border border-gray-200">
                           <div className="flex justify-between items-start mb-2">
                             <div className="flex gap-2 items-center flex-1">
-                              <span className={`px-2 py-1 rounded text-xs ${
-                                guideline.category === 'faq' ? 'bg-cyan-500/20 text-cyan-300' :
-                                guideline.category === 'canned' ? 'bg-purple-500/20 text-purple-300' :
-                                guideline.category === 'roleplay' ? 'bg-pink-500/20 text-pink-300' :
-                                'bg-blue-500/20 text-blue-300'
+                              <span className={`px-2 py-1 rounded-none text-xs ${
+                                guideline.category === 'faq' ? 'bg-cyan-50 text-cyan-600' :
+                                guideline.category === 'canned' ? 'bg-purple-50 text-purple-600' :
+                                guideline.category === 'roleplay' ? 'bg-pink-50 text-pink-600' :
+                                'bg-blue-50 text-blue-600'
                               }`}>
                                 {guideline.category.toUpperCase()}
                               </span>
-                              <h4 className="font-semibold text-gray-900">{guideline.title}</h4>
+                              <h4 className="font-medium text-xs text-gray-900">{guideline.title}</h4>
                             </div>
                             <div className="flex gap-2">
                               {hasMoreContent && (
@@ -1949,7 +1942,7 @@ Format as JSON array:
                               )}
                               <button
                                 onClick={() => setEditingEntry(guideline)}
-                                className="text-blue-400 hover:text-blue-300"
+                                className="text-blue-600 hover:text-blue-600"
                                 title={t.editGuideline}
                               >
                                 <Edit className="w-4 h-4" />
@@ -1962,7 +1955,7 @@ Format as JSON array:
                                     setGuidelines(updated)
                                   }
                                 }}
-                                className="text-red-400 hover:text-red-300"
+                                className="text-red-600 hover:text-red-600"
                                 title={t.deleteGuideline}
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -1970,16 +1963,16 @@ Format as JSON array:
                             </div>
                           </div>
 
-                          <div className="text-gray-600 text-sm whitespace-pre-wrap">
+                          <div className="text-gray-600 text-xs whitespace-pre-wrap">
                             {isExpanded ? guideline.content : (
                               <>
                                 {contentPreview}
-                                {hasMoreContent && <span className="text-slate-500">...</span>}
+                                {hasMoreContent && <span className="text-gray-400">...</span>}
                               </>
                             )}
                           </div>
 
-                          <div className="flex gap-4 mt-3 text-xs text-gray-500">
+                          <div className="flex gap-2 mt-3 text-xs text-gray-500">
                             <span>{t.created}: {new Date(guideline.createdAt).toLocaleDateString()}</span>
                             <span>{t.updated}: {new Date(guideline.updatedAt).toLocaleDateString()}</span>
                           </div>
@@ -2012,17 +2005,17 @@ Format as JSON array:
 
               {/* Guideline Edit Modal */}
               {editingEntry && 'title' in editingEntry && 'category' in editingEntry && !('scenario' in editingEntry) && !('question' in editingEntry) && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                  <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                    <h3 className="text-xl font-bold mb-4">{t.editGuideline}</h3>
+                <div className="fixed inset-0 bg-black/10 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white rounded-none p-3 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <h3 className="text-xs font-bold mb-4">{t.editGuideline}</h3>
 
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       <div>
-                        <label className="block text-sm font-medium mb-2">{t.category}</label>
+                        <label className="block text-xs font-medium mb-2">{t.category}</label>
                         <select
                           value={(editingEntry as any).category}
                           onChange={(e) => setEditingEntry({ ...editingEntry, category: e.target.value })}
-                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
+                          className="w-full bg-gray-100 border border-gray-200 rounded-none px-2 py-1.5 text-gray-900 text-xs"
                         >
                           <option value="faq">{t.categoryFaqLibrary}</option>
                           <option value="canned">{t.categoryCannedMessages}</option>
@@ -2032,29 +2025,29 @@ Format as JSON array:
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2">{t.title}</label>
+                        <label className="block text-xs font-medium mb-2">{t.title}</label>
                         <input
                           type="text"
                           value={(editingEntry as any).title}
                           onChange={(e) => setEditingEntry({ ...editingEntry, title: e.target.value })}
-                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
+                          className="w-full bg-gray-100 border border-gray-200 rounded-none px-2 py-1.5 text-gray-900 text-xs"
                           placeholder={t.guidelineTitlePlaceholder}
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2">{t.content}</label>
+                        <label className="block text-xs font-medium mb-2">{t.content}</label>
                         <textarea
                           value={(editingEntry as any).content}
                           onChange={(e) => setEditingEntry({ ...editingEntry, content: e.target.value })}
                           rows={10}
-                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900"
+                          className="w-full bg-gray-100 border border-gray-200 rounded-none px-2 py-1.5 text-gray-900 text-xs"
                           placeholder={t.guidelineContentPlaceholder}
                         />
                       </div>
                     </div>
 
-                    <div className="flex gap-2 mt-6">
+                    <div className="flex gap-2 mt-3">
                       <button
                         onClick={async () => {
                           const guidelineToSave = { ...editingEntry, updatedAt: new Date() } as Guideline
@@ -2077,13 +2070,13 @@ Format as JSON array:
                           setGuidelines(updated)
                           setEditingEntry(null)
                         }}
-                        className="flex-1 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg"
+                        className="flex-1 bg-green-50 border border-green-200 hover:bg-green-100 px-3 py-1.5 rounded-none text-xs"
                       >
                         {t.save}
                       </button>
                       <button
                         onClick={() => setEditingEntry(null)}
-                        className="flex-1 bg-slate-600 hover:bg-gray-100 px-4 py-2 rounded-lg"
+                        className="flex-1 bg-gray-200 hover:bg-gray-100 px-3 py-1.5 rounded-none text-xs"
                       >
                         {t.cancel}
                       </button>
@@ -2093,24 +2086,24 @@ Format as JSON array:
               )}
 
               {/* Training Sessions History */}
-              <div className="mb-8">
-                <h3 className="text-xl font-semibold mb-4 text-gray-900">{t.completedTrainingSessions}</h3>
+              <div className="mb-3">
+                <h3 className="text-xs font-semibold mb-4 text-gray-900">{t.completedTrainingSessions}</h3>
                 {trainingSessions.length === 0 ? (
-                  <div className="bg-gray-100 rounded-lg p-6 text-center">
+                  <div className="bg-gray-100 rounded-none p-3 text-center">
                     <p className="text-gray-500">{t.noTrainingSessionsYet}</p>
-                    <p className="text-slate-500 text-sm mt-2">{t.trainingSessionsHelp}</p>
+                    <p className="text-gray-400 text-xs mt-2">{t.trainingSessionsHelp}</p>
                   </div>
                 ) : (
-                  <div className="grid gap-4">
+                  <div className="grid gap-2">
                     {trainingSessions.map((session, idx) => (
-                      <div key={session.id || idx} className="bg-gray-100 rounded-lg p-4 border border-gray-300">
+                      <div key={session.id || idx} className="bg-gray-100 rounded-none p-2.5 border border-gray-200">
                         <div className="flex justify-between items-start mb-3">
                           <div>
-                            <h4 className="font-semibold text-gray-900">{session.scenario?.name || t.trainingSession}</h4>
-                            <p className="text-gray-600 text-sm">{session.customerPersona} {t.customer}</p>
+                            <h4 className="font-medium text-xs text-gray-900">{session.scenario?.name || t.trainingSession}</h4>
+                            <p className="text-gray-600 text-xs">{session.customerPersona} {t.customer}</p>
                           </div>
                           <div className="text-right">
-                            <span className="bg-green-500/20 text-green-300 px-2 py-1 rounded text-xs">
+                            <span className="bg-green-50 text-green-600 px-2 py-1 rounded-none text-xs">
                               {t.score}: {session.score || 0}%
                             </span>
                             <p className="text-gray-500 text-xs mt-1">
@@ -2120,10 +2113,10 @@ Format as JSON array:
                         </div>
 
                         <div className="mb-3">
-                          <p className="text-gray-600 text-sm">{session.summary}</p>
+                          <p className="text-gray-600 text-xs">{session.summary}</p>
                         </div>
 
-                        <div className="grid md:grid-cols-3 gap-4 text-sm">
+                        <div className="grid md:grid-cols-3 gap-2 text-xs">
                           <div>
                             <span className="text-gray-500">{t.messages}:</span>
                             <span className="text-gray-900 ml-1">{session.conversation?.length || 0}</span>
@@ -2148,7 +2141,7 @@ Format as JSON array:
                             <p className="text-gray-500 text-xs">{t.objectives}:</p>
                             <div className="flex flex-wrap gap-1 mt-1">
                               {session.objectives.map((obj, objIdx) => (
-                                <span key={objIdx} className="bg-slate-600 text-gray-600 px-2 py-1 rounded text-xs">
+                                <span key={objIdx} className="bg-gray-200 text-gray-600 px-2 py-1 rounded-none text-xs">
                                   {obj}
                                 </span>
                               ))}
@@ -2161,33 +2154,33 @@ Format as JSON array:
                 )}
               </div>
 
-              <div className="grid gap-4">
+              <div className="grid gap-2">
                 {filteredTraining.map((entry) => (
-                  <div key={entry.id} className="bg-gray-100 rounded-lg p-4 border border-gray-300">
+                  <div key={entry.id} className="bg-gray-100 rounded-none p-2.5 border border-gray-200">
                     <div className="flex justify-between items-start mb-3 gap-3">
                       <div className="flex gap-2 items-center flex-wrap min-w-0">
-                        <span className="bg-purple-500/20 text-purple-300 px-2 py-1 rounded text-sm whitespace-nowrap">
+                        <span className="bg-purple-50 text-purple-600 px-2 py-1 rounded-none text-xs whitespace-nowrap">
                           {entry.category}
                         </span>
-                        <span className={`px-2 py-1 rounded text-xs whitespace-nowrap ${
-                          entry.active ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
+                        <span className={`px-2 py-1 rounded-none text-xs whitespace-nowrap ${
+                          entry.active ? 'bg-green-50 text-green-600' : 'bg-red-50/20 text-red-600'
                         }`}>
                           {entry.active ? t.active : t.inactive}
                         </span>
-                        <span className="bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded text-xs whitespace-nowrap">
+                        <span className="bg-yellow-500/20 text-yellow-600 px-2 py-1 rounded-none text-xs whitespace-nowrap">
                           {t.priority}: {entry.priority}
                         </span>
                       </div>
                       <div className="flex gap-2 flex-shrink-0">
                         <button
                           onClick={() => setEditingEntry(entry)}
-                          className="text-blue-400 hover:text-blue-300 p-1"
+                          className="text-blue-600 hover:text-blue-600 p-1"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => deleteEntry(entry.id, 'training')}
-                          className="text-red-400 hover:text-red-300 p-1"
+                          className="text-red-600 hover:text-red-600 p-1"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -2195,25 +2188,25 @@ Format as JSON array:
                     </div>
 
                     <div className="mb-3">
-                      <h4 className="font-semibold text-cyan-300 mb-1">{t.question}:</h4>
-                      <p className="text-gray-600 break-words">{entry.question}</p>
+                      <h4 className="font-medium text-xs text-cyan-600 mb-0.5">{t.question}:</h4>
+                      <p className="text-gray-600 text-xs break-words">{entry.question}</p>
                     </div>
 
                     <div className="mb-3">
-                      <h4 className="font-semibold text-green-300 mb-1">{t.answer}:</h4>
-                      <p className="text-gray-600 break-words">{entry.answer}</p>
+                      <h4 className="font-medium text-xs text-green-600 mb-0.5">{t.answer}:</h4>
+                      <p className="text-gray-600 text-xs break-words">{entry.answer}</p>
                     </div>
 
                     <div className="flex flex-wrap gap-2 mb-2">
                       {entry.keywords.map((keyword, idx) => (
-                        <span key={idx} className="bg-slate-600 text-gray-600 px-2 py-1 rounded-full text-xs">
+                        <span key={idx} className="bg-gray-200 text-gray-600 px-2 py-1 rounded-full text-xs">
                           {keyword}
                         </span>
                       ))}
                     </div>
 
                     {entry.variations.length > 0 && (
-                      <div className="text-sm text-gray-500">
+                      <div className="text-xs text-gray-500">
                         {t.variations}: {entry.variations.join(', ')}
                       </div>
                     )}
@@ -2226,25 +2219,25 @@ Format as JSON array:
           {/* AI Testing Tab */}
           {activeTab === 'testing' && (
             <div>
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <TestTube className="w-6 h-6 text-green-400" />
+              <h2 className="text-xs font-bold mb-3 flex items-center gap-2">
+                <TestTube className="w-4 h-4 text-green-600" />
                 AI Testing
               </h2>
 
-              <div className="bg-gray-100 rounded-lg p-6">
-                <div className="mb-6">
-                  <label className="block text-sm font-medium mb-2">{t.testQuery}</label>
+              <div className="bg-gray-100 rounded-none p-3">
+                <div className="mb-3">
+                  <label className="block text-xs font-medium mb-2">{t.testQuery}</label>
                   <input
                     type="text"
                     value={testQuery}
                     onChange={(e) => setTestQuery(e.target.value)}
                     placeholder={t.testQueryPlaceholder}
-                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900"
+                    className="w-full bg-white border border-gray-200 rounded-none px-2 py-1.5 text-gray-900 text-xs"
                   />
                   <button
                     onClick={testAI}
                     disabled={isLoading || !testQuery.trim()}
-                    className="mt-3 bg-green-600 hover:bg-green-700 disabled:bg-slate-600 px-6 py-2 rounded-lg transition-colors"
+                    className="mt-2 bg-green-50 border border-green-200 hover:bg-green-100 disabled:bg-gray-200 px-2 py-1 rounded-none text-xs transition-colors"
                   >
                     {isLoading ? 'Testing...' : 'Test AI Response'}
                   </button>
@@ -2252,8 +2245,8 @@ Format as JSON array:
 
                 {testResponse && (
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t.aiResponse}</label>
-                    <div className="bg-white border border-gray-300 rounded-lg p-4">
+                    <label className="block text-xs font-medium mb-2">{t.aiResponse}</label>
+                    <div className="bg-white border border-gray-200 rounded-none p-4">
                       <p className="text-gray-600 whitespace-pre-wrap">{testResponse}</p>
                     </div>
                   </div>
@@ -2289,15 +2282,15 @@ Format as JSON array:
           {/* FAQ Library Tab */}
           {activeTab === 'faq' && (
             <div>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold flex items-center gap-2">
-                  <HelpCircle className="w-6 h-6 text-cyan-400" />
+              <div className="flex flex-wrap justify-between items-center mb-3 gap-2">
+                <h2 className="text-xs font-bold flex items-center gap-2">
+                  <HelpCircle className="w-4 h-4 text-cyan-600" />
                   {t.faqLibrary}
                 </h2>
                 <button
                   onClick={handleGenerateFaqs}
                   disabled={knowledgeEntries.length === 0 || generatingFaqs}
-                  className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-slate-600 disabled:to-slate-600 px-4 py-2 rounded-lg transition-colors"
+                  className="flex items-center gap-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-slate-600 disabled:to-slate-600 px-2 py-1 rounded-none text-xs transition-colors"
                   title={t.generateFaqTitle}
                 >
                   <Sparkles className="w-4 h-4" />
@@ -2306,7 +2299,7 @@ Format as JSON array:
               </div>
 
               {/* Category Tabs Row */}
-              <div className="mb-6 flex flex-wrap gap-2 items-center">
+              <div className="mb-3 flex flex-wrap gap-2 items-center">
                 {faqCategories.map((category) => (
                   editingCategory === category ? (
                     <div key={category} className="flex gap-2">
@@ -2320,7 +2313,7 @@ Format as JSON array:
                         }}
                         onBlur={handleCategoryEdit}
                         placeholder={t.leaveBlankToDelete}
-                        className="bg-gray-100 border border-purple-500 rounded-lg px-3 py-2 text-gray-900 text-sm capitalize"
+                        className="bg-gray-100 border border-purple-500 rounded-none px-2 py-1 text-gray-900 text-xs capitalize"
                         autoFocus
                       />
                     </div>
@@ -2329,10 +2322,10 @@ Format as JSON array:
                       key={category}
                       onClick={() => setSelectedFaqCategory(category)}
                       onDoubleClick={() => handleCategoryDoubleClick(category)}
-                      className={`px-4 py-2 rounded-lg transition-colors capitalize ${
+                      className={`px-2 py-1 rounded-none text-xs transition-colors capitalize ${
                         selectedFaqCategory === category
-                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-gray-900'
-                          : 'bg-gray-100 text-gray-600 hover:bg-slate-600'
+                          ? 'bg-purple-50 border border-purple-200 text-gray-900'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                       title={t.doubleClickToEdit}
                     >
@@ -2348,12 +2341,12 @@ Format as JSON array:
                       onChange={(e) => setNewCategoryName(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && addFaqCategory()}
                       placeholder={t.categoryNamePlaceholder}
-                      className="bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 text-sm"
+                      className="bg-gray-100 border border-gray-200 rounded-none px-2 py-1 text-gray-900 text-xs"
                       autoFocus
                     />
                     <button
                       onClick={addFaqCategory}
-                      className="bg-green-600 hover:bg-green-700 px-3 py-2 rounded-lg text-sm"
+                      className="bg-green-50 border border-green-200 hover:bg-green-100 px-2 py-1 rounded-none text-xs"
                     >
                       {t.add}
                     </button>
@@ -2362,7 +2355,7 @@ Format as JSON array:
                         setShowAddCategory(false)
                         setNewCategoryName('')
                       }}
-                      className="bg-slate-600 hover:bg-gray-100 px-3 py-2 rounded-lg text-sm"
+                      className="bg-gray-200 hover:bg-gray-100 px-2 py-1 rounded-none text-xs"
                     >
                       {t.cancel}
                     </button>
@@ -2370,7 +2363,7 @@ Format as JSON array:
                 ) : (
                   <button
                     onClick={() => setShowAddCategory(true)}
-                    className="px-4 py-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-slate-600 transition-colors flex items-center gap-2"
+                    className="px-2 py-1 rounded-none bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors flex items-center gap-1 text-xs"
                   >
                     <Plus className="w-4 h-4" />
                     {t.addCategory}
@@ -2378,20 +2371,20 @@ Format as JSON array:
                 )}
               </div>
 
-              <div className="grid gap-4">
+              <div className="grid gap-2">
                 {faqs.filter(faq => faq.category === selectedFaqCategory).map((faq) => (
-                  <div key={faq.id} className="bg-gray-100 rounded-lg p-4 border border-gray-300">
+                  <div key={faq.id} className="bg-gray-100 rounded-none p-2.5 border border-gray-200">
                     <div className="flex justify-between items-start mb-3 gap-3">
                       <div className="flex-1 min-w-0">
-                        <span className="bg-cyan-500/20 text-cyan-300 px-2 py-1 rounded text-sm whitespace-nowrap inline-block">
+                        <span className="bg-cyan-50 text-cyan-600 px-2 py-1 rounded-none text-xs whitespace-nowrap inline-block">
                           {faq.category}
                         </span>
-                        <h3 className="text-lg font-semibold mt-2 break-words">{faq.question}</h3>
+                        <h3 className="text-xs font-medium mt-1 break-words">{faq.question}</h3>
                       </div>
                       <div className="flex gap-2 flex-shrink-0">
                         <button
                           onClick={() => setEditingEntry(faq)}
-                          className="text-blue-400 hover:text-blue-300 p-1"
+                          className="text-blue-600 hover:text-blue-600 p-1"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
@@ -2403,25 +2396,25 @@ Format as JSON array:
                               setFaqs(updatedFaqs)
                             }
                           }}
-                          className="text-red-400 hover:text-red-300 p-1"
+                          className="text-red-600 hover:text-red-600 p-1"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
 
-                    <p className="text-gray-600 mb-3 whitespace-pre-line break-words">{faq.answer}</p>
+                    <p className="text-gray-600 text-xs mb-2 whitespace-pre-line break-words">{faq.answer}</p>
 
                     <div className="flex flex-wrap gap-2 mb-2">
                       {faq.keywords.map((keyword, idx) => (
-                        <span key={idx} className="bg-slate-600 text-gray-600 px-2 py-1 rounded-full text-xs">
+                        <span key={idx} className="bg-gray-200 text-gray-600 px-2 py-1 rounded-full text-xs">
                           {keyword}
                         </span>
                       ))}
                     </div>
 
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className={`px-2 py-1 rounded ${faq.is_active ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className={`px-2 py-1 rounded-none ${faq.is_active ? 'bg-green-50 text-green-600' : 'bg-red-50/20 text-red-600'}`}>
                         {faq.is_active ? t.active : t.inactive}
                       </span>
                     </div>
@@ -2430,17 +2423,17 @@ Format as JSON array:
               </div>
 
               {editingEntry && 'question' in editingEntry && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                  <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                    <h3 className="text-xl font-bold mb-4">{t.editFaq}</h3>
+                <div className="fixed inset-0 bg-black/10 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white rounded-none p-3 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <h3 className="text-xs font-bold mb-4">{t.editFaq}</h3>
 
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       <div>
-                        <label className="block text-sm font-medium mb-2">{t.category}</label>
+                        <label className="block text-xs font-medium mb-2">{t.category}</label>
                         <select
                           value={(editingEntry as FAQ).category}
                           onChange={(e) => setEditingEntry({ ...editingEntry, category: e.target.value as FAQ['category'] })}
-                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2"
+                          className="w-full bg-gray-100 border border-gray-200 rounded-none px-2 py-1.5 text-xs"
                         >
                           {faqCategories.map((cat) => (
                             <option key={cat} value={cat} className="capitalize">
@@ -2451,22 +2444,22 @@ Format as JSON array:
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2">{t.question}</label>
+                        <label className="block text-xs font-medium mb-2">{t.question}</label>
                         <input
                           type="text"
                           value={(editingEntry as FAQ).question}
                           onChange={(e) => setEditingEntry({ ...editingEntry, question: e.target.value })}
-                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2"
+                          className="w-full bg-gray-100 border border-gray-200 rounded-none px-2 py-1.5 text-xs"
                         />
                       </div>
 
                       <div>
                         <div className="flex justify-between items-center mb-2">
-                          <label className="block text-sm font-medium">{t.answer}</label>
+                          <label className="block text-xs font-medium">{t.answer}</label>
                           <button
                             onClick={regenerateFaqAnswer}
                             disabled={regeneratingAnswer}
-                            className="flex items-center gap-1 text-xs bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 disabled:cursor-not-allowed px-3 py-1 rounded"
+                            className="flex items-center gap-1 text-xs bg-purple-50 border border-purple-200 hover:bg-purple-100 disabled:bg-purple-800 disabled:cursor-not-allowed px-3 py-1 rounded-none"
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -2478,12 +2471,12 @@ Format as JSON array:
                           value={(editingEntry as FAQ).answer}
                           onChange={(e) => setEditingEntry({ ...editingEntry, answer: e.target.value })}
                           rows={6}
-                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2"
+                          className="w-full bg-gray-100 border border-gray-200 rounded-none px-2 py-1.5 text-xs"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2">
+                        <label className="block text-xs font-medium mb-2">
                           Comments
                           <span className="text-gray-500 text-xs ml-2">{t.commentsNote}</span>
                         </label>
@@ -2491,13 +2484,13 @@ Format as JSON array:
                           value={(editingEntry as FAQ).comments || ''}
                           onChange={(e) => setEditingEntry({ ...editingEntry, comments: e.target.value })}
                           rows={3}
-                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2"
+                          className="w-full bg-gray-100 border border-gray-200 rounded-none px-2 py-1.5 text-xs"
                           placeholder={t.commentsPlaceholder}
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2">{t.keywords}</label>
+                        <label className="block text-xs font-medium mb-2">{t.keywords}</label>
                         <input
                           type="text"
                           value={(editingEntry as FAQ).keywords.join(', ')}
@@ -2505,7 +2498,7 @@ Format as JSON array:
                             ...editingEntry,
                             keywords: e.target.value.split(',').map(k => k.trim()).filter(k => k)
                           })}
-                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2"
+                          className="w-full bg-gray-100 border border-gray-200 rounded-none px-2 py-1.5 text-xs"
                           placeholder={t.keywordsPlaceholder}
                         />
                       </div>
@@ -2517,11 +2510,11 @@ Format as JSON array:
                           onChange={(e) => setEditingEntry({ ...editingEntry, is_active: e.target.checked })}
                           className="w-4 h-4"
                         />
-                        <label className="text-sm">Active</label>
+                        <label className="text-xs">Active</label>
                       </div>
                     </div>
 
-                    <div className="flex gap-2 mt-6">
+                    <div className="flex gap-2 mt-3">
                       <button
                         onClick={async () => {
                           const faq = editingEntry as FAQ
@@ -2556,13 +2549,13 @@ Format as JSON array:
 
                           setEditingEntry(null)
                         }}
-                        className="flex-1 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg"
+                        className="flex-1 bg-green-50 border border-green-200 hover:bg-green-100 px-3 py-1.5 rounded-none text-xs"
                       >
                         Save
                       </button>
                       <button
                         onClick={() => setEditingEntry(null)}
-                        className="flex-1 bg-slate-600 hover:bg-gray-100 px-4 py-2 rounded-lg"
+                        className="flex-1 bg-gray-200 hover:bg-gray-100 px-3 py-1.5 rounded-none text-xs"
                       >
                         Cancel
                       </button>
@@ -2577,9 +2570,9 @@ Format as JSON array:
           {/* Canned Messages Tab */}
           {activeTab === 'canned' && (
             <div>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold flex items-center gap-2">
-                  <Mail className="w-6 h-6 text-pink-400" />
+              <div className="flex flex-wrap justify-between items-center mb-3 gap-2">
+                <h2 className="text-xs font-bold flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-pink-600" />
                   {t.cannedMessages}
                 </h2>
                 <div className="flex gap-2 items-center flex-wrap justify-end">
@@ -2590,10 +2583,10 @@ Format as JSON array:
                         setCannedGenerationSource('knowledge')
                         setShowKnowledgeSelector(!showKnowledgeSelector)
                       }}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors border ${
+                      className={`flex items-center gap-1 px-2 py-1 rounded-none text-xs transition-colors border ${
                         cannedGenerationSource === 'knowledge' && selectedKnowledgeEntries.length > 0
-                          ? 'bg-cyan-600 hover:bg-cyan-700 border-cyan-500'
-                          : 'bg-gray-100 hover:bg-slate-600 border-gray-300'
+                          ? 'bg-cyan-50 hover:bg-cyan-700 border-cyan-500'
+                          : 'bg-gray-100 hover:bg-gray-200 border-gray-300'
                       }`}
                     >
                       <Database className="w-4 h-4" />
@@ -2609,10 +2602,10 @@ Format as JSON array:
                     </button>
 
                     {showKnowledgeSelector && (
-                      <div className="absolute right-0 mt-2 w-96 max-w-[90vw] bg-gray-100 rounded-lg shadow-lg border border-gray-300 z-10 max-h-96 overflow-y-auto">
+                      <div className="absolute right-0 mt-2 w-96 max-w-[90vw] bg-gray-100 rounded-none shadow-sm border border-gray-200 z-10 max-h-96 overflow-y-auto">
                         <div className="sticky top-0 bg-gray-100 border-b border-gray-300 p-3">
                           <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-semibold text-gray-900">{t.selectKnowledgeFiles}</h4>
+                            <h4 className="font-medium text-xs text-gray-900">{t.selectKnowledgeFiles}</h4>
                             <button
                               onClick={() => setShowKnowledgeSelector(false)}
                               className="text-gray-500 hover:text-gray-900"
@@ -2627,7 +2620,7 @@ Format as JSON array:
                               onClick={() => {
                                 setSelectedKnowledgeEntries(knowledgeEntries.map(e => e.id))
                               }}
-                              className="text-xs bg-slate-600 hover:bg-slate-500 px-2 py-1 rounded"
+                              className="text-xs bg-gray-200 hover:bg-gray-100 px-2 py-1 rounded-none"
                             >
                               {t.selectAll}
                             </button>
@@ -2635,7 +2628,7 @@ Format as JSON array:
                               onClick={() => {
                                 setSelectedKnowledgeEntries([])
                               }}
-                              className="text-xs bg-slate-600 hover:bg-slate-500 px-2 py-1 rounded"
+                              className="text-xs bg-gray-200 hover:bg-gray-100 px-2 py-1 rounded-none"
                             >
                               {t.clearAll}
                             </button>
@@ -2646,14 +2639,14 @@ Format as JSON array:
                           {knowledgeEntries.length === 0 ? (
                             <div className="text-center py-8 text-gray-500">
                               <p>{t.noKnowledgeYet}</p>
-                              <p className="text-sm mt-2">{t.uploadInKnowledgeTab}</p>
+                              <p className="text-xs mt-2">{t.uploadInKnowledgeTab}</p>
                             </div>
                           ) : (
                             <div className="space-y-1">
                               {knowledgeEntries.map((entry) => (
                                 <label
                                   key={entry.id}
-                                  className="flex items-start gap-3 p-2 hover:bg-slate-600 rounded cursor-pointer transition-colors"
+                                  className="flex items-start gap-2 p-1.5 hover:bg-gray-200 rounded-none cursor-pointer transition-colors text-xs"
                                 >
                                   <input
                                     type="checkbox"
@@ -2698,10 +2691,10 @@ Format as JSON array:
                         }
                       }}
                       disabled={isResearching}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors border ${
+                      className={`flex items-center gap-1 px-2 py-1 rounded-none text-xs transition-colors border ${
                         cannedGenerationSource === 'research' && selectedResearchSources.length > 0
-                          ? 'bg-purple-600 hover:bg-purple-700 border-purple-500'
-                          : 'bg-gray-100 hover:bg-slate-600 border-gray-300'
+                          ? 'bg-purple-50 border border-purple-200 hover:bg-purple-100 border-purple-500'
+                          : 'bg-gray-100 hover:bg-gray-200 border-gray-300'
                       } ${isResearching ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       <Brain className="w-4 h-4" />
@@ -2720,10 +2713,10 @@ Format as JSON array:
 
                     {/* Research Sources Selector */}
                     {showResearchSources && researchSources.length > 0 && (
-                      <div className="absolute right-0 mt-2 w-96 max-w-[90vw] bg-gray-100 rounded-lg shadow-lg border border-gray-300 z-10 max-h-96 overflow-y-auto">
+                      <div className="absolute right-0 mt-2 w-96 max-w-[90vw] bg-gray-100 rounded-none shadow-sm border border-gray-200 z-10 max-h-96 overflow-y-auto">
                         <div className="sticky top-0 bg-gray-100 border-b border-gray-300 p-3">
                           <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-semibold text-gray-900">{t.selectExpertSources}</h4>
+                            <h4 className="font-medium text-xs text-gray-900">{t.selectExpertSources}</h4>
                             <button
                               onClick={() => setShowResearchSources(false)}
                               className="text-gray-500 hover:text-gray-900"
@@ -2738,7 +2731,7 @@ Format as JSON array:
                               onClick={() => {
                                 setSelectedResearchSources(researchSources.map(s => s.id))
                               }}
-                              className="text-xs bg-slate-600 hover:bg-slate-500 px-2 py-1 rounded"
+                              className="text-xs bg-gray-200 hover:bg-gray-100 px-2 py-1 rounded-none"
                             >
                               {t.selectAll}
                             </button>
@@ -2746,13 +2739,13 @@ Format as JSON array:
                               onClick={() => {
                                 setSelectedResearchSources([])
                               }}
-                              className="text-xs bg-slate-600 hover:bg-slate-500 px-2 py-1 rounded"
+                              className="text-xs bg-gray-200 hover:bg-gray-100 px-2 py-1 rounded-none"
                             >
                               {t.clearAll}
                             </button>
                             <button
                               onClick={handleDeepResearch}
-                              className="text-xs bg-purple-600 hover:bg-purple-500 px-2 py-1 rounded ml-auto"
+                              className="text-xs bg-purple-50 border border-purple-200 hover:bg-purple-50 px-2 py-1 rounded-none ml-auto"
                             >
                               {t.researchAgain}
                             </button>
@@ -2764,7 +2757,7 @@ Format as JSON array:
                             {researchSources.map((source) => (
                               <label
                                 key={source.id}
-                                className="flex items-start gap-3 p-3 hover:bg-slate-600 rounded cursor-pointer transition-colors border border-gray-300"
+                                className="flex items-start gap-2 p-2 hover:bg-gray-200 rounded-none cursor-pointer transition-colors text-xs border border-gray-200"
                               >
                                 <input
                                   type="checkbox"
@@ -2781,11 +2774,11 @@ Format as JSON array:
                                 <div className="flex-1 min-w-0">
                                   <div className="font-medium text-gray-900 flex items-center gap-2">
                                     {source.name}
-                                    <span className="text-xs bg-green-600/20 text-green-300 px-2 py-0.5 rounded">
+                                    <span className="text-xs bg-green-50 text-green-600 px-2 py-0.5 rounded-none">
                                       {source.credibility}
                                     </span>
                                   </div>
-                                  <div className="text-sm text-gray-600 mt-1">
+                                  <div className="text-xs text-gray-600 mt-1">
                                     {source.description}
                                   </div>
                                 </div>
@@ -2800,7 +2793,7 @@ Format as JSON array:
                   <button
                     onClick={handleGenerateCannedMessages}
                     disabled={generatingFaqs || (cannedGenerationSource === 'knowledge' && knowledgeEntries.length === 0)}
-                    className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded-lg transition-colors"
+                    className="flex items-center gap-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed px-2 py-1 rounded-none text-xs transition-colors"
                   >
                     <Sparkles className="w-4 h-4" />
                     {generatingFaqs ? t.generating : t.generate}
@@ -2809,7 +2802,7 @@ Format as JSON array:
               </div>
 
               {/* Category Tabs Row */}
-              <div className="mb-6 flex flex-wrap gap-2 items-center">
+              <div className="mb-3 flex flex-wrap gap-2 items-center">
                 {cannedCategories.map((category) => (
                   editingCannedCategory === category ? (
                     <div key={category} className="flex gap-2">
@@ -2823,7 +2816,7 @@ Format as JSON array:
                         }}
                         onBlur={handleCannedCategoryEdit}
                         placeholder={t.leaveBlankToDelete}
-                        className="bg-gray-100 border border-pink-500 rounded-lg px-3 py-2 text-gray-900 text-sm capitalize"
+                        className="bg-gray-100 border border-pink-500 rounded-none px-2 py-1 text-gray-900 text-xs capitalize"
                         autoFocus
                       />
                     </div>
@@ -2832,10 +2825,10 @@ Format as JSON array:
                       key={category}
                       onClick={() => setSelectedCannedCategory(category)}
                       onDoubleClick={() => handleCannedCategoryDoubleClick(category)}
-                      className={`px-4 py-2 rounded-lg transition-colors capitalize ${
+                      className={`px-2 py-1 rounded-none text-xs transition-colors capitalize ${
                         selectedCannedCategory === category
-                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-gray-900'
-                          : 'bg-gray-100 text-gray-600 hover:bg-slate-600'
+                          ? 'bg-purple-50 border border-purple-200 text-gray-900'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                       title={t.doubleClickToEdit}
                     >
@@ -2851,12 +2844,12 @@ Format as JSON array:
                       onChange={(e) => setNewCannedCategoryName(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && addCannedCategory()}
                       placeholder={t.categoryNamePlaceholder}
-                      className="bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-gray-900 text-sm"
+                      className="bg-gray-100 border border-gray-200 rounded-none px-2 py-1 text-gray-900 text-xs"
                       autoFocus
                     />
                     <button
                       onClick={addCannedCategory}
-                      className="bg-green-600 hover:bg-green-700 px-3 py-2 rounded-lg text-sm"
+                      className="bg-green-50 border border-green-200 hover:bg-green-100 px-2 py-1 rounded-none text-xs"
                     >
                       {t.add}
                     </button>
@@ -2865,7 +2858,7 @@ Format as JSON array:
                         setShowAddCannedCategory(false)
                         setNewCannedCategoryName('')
                       }}
-                      className="bg-slate-600 hover:bg-gray-100 px-3 py-2 rounded-lg text-sm"
+                      className="bg-gray-200 hover:bg-gray-100 px-2 py-1 rounded-none text-xs"
                     >
                       {t.cancel}
                     </button>
@@ -2873,7 +2866,7 @@ Format as JSON array:
                 ) : (
                   <button
                     onClick={() => setShowAddCannedCategory(true)}
-                    className="px-4 py-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-slate-600 transition-colors flex items-center gap-2"
+                    className="px-2 py-1 rounded-none bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors flex items-center gap-1 text-xs"
                   >
                     <Plus className="w-4 h-4" />
                     {t.addCategory}
@@ -2881,20 +2874,20 @@ Format as JSON array:
                 )}
               </div>
 
-              <div className="grid gap-4">
+              <div className="grid gap-2">
                 {cannedMsgs.filter(msg => msg.category === selectedCannedCategory).map((msg) => (
-                  <div key={msg.id} className="bg-gray-100 rounded-lg p-4 border border-gray-300">
+                  <div key={msg.id} className="bg-gray-100 rounded-none p-2.5 border border-gray-200">
                     <div className="flex justify-between items-start mb-3 gap-3">
                       <div className="flex-1 min-w-0">
-                        <span className="bg-pink-500/20 text-pink-300 px-2 py-1 rounded text-sm capitalize whitespace-nowrap inline-block">
+                        <span className="bg-pink-50 text-pink-600 px-2 py-1 rounded-none text-xs capitalize whitespace-nowrap inline-block">
                           {msg.category || 'general responses'}
                         </span>
-                        <h3 className="text-lg font-semibold mt-2 break-words">{msg.scenario}</h3>
+                        <h3 className="text-xs font-medium mt-1 break-words">{msg.scenario}</h3>
                       </div>
                       <div className="flex gap-2 flex-shrink-0">
                         <button
                           onClick={() => setEditingEntry(msg)}
-                          className="text-blue-400 hover:text-blue-300 p-1"
+                          className="text-blue-600 hover:text-blue-600 p-1"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
@@ -2906,20 +2899,20 @@ Format as JSON array:
                               setCannedMsgs(updated)
                             }
                           }}
-                          className="text-red-400 hover:text-red-300 p-1"
+                          className="text-red-600 hover:text-red-600 p-1"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
 
-                    <p className="text-gray-600 mb-3 whitespace-pre-line break-words">{msg.template}</p>
+                    <p className="text-gray-600 text-xs mb-2 whitespace-pre-line break-words">{msg.template}</p>
 
                     {msg.variables && msg.variables.length > 0 && (
                       <div className="flex flex-wrap gap-2">
-                        <span className="text-sm text-gray-500">{t.variablesLabel}:</span>
+                        <span className="text-xs text-gray-500">{t.variablesLabel}:</span>
                         {msg.variables.map((variable, idx) => (
-                          <span key={idx} className="bg-slate-600 text-gray-600 px-2 py-1 rounded-full text-xs">
+                          <span key={idx} className="bg-gray-200 text-gray-600 px-2 py-1 rounded-full text-xs">
                             {variable}
                           </span>
                         ))}
@@ -2930,17 +2923,17 @@ Format as JSON array:
               </div>
 
               {editingEntry && 'scenario' in editingEntry && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                  <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                    <h3 className="text-xl font-bold mb-4">{t.editCannedMessage}</h3>
+                <div className="fixed inset-0 bg-black/10 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white rounded-none p-3 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <h3 className="text-xs font-bold mb-4">{t.editCannedMessage}</h3>
 
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       <div>
-                        <label className="block text-sm font-medium mb-2">{t.category}</label>
+                        <label className="block text-xs font-medium mb-2">{t.category}</label>
                         <select
                           value={(editingEntry as CannedMessage).category || selectedCannedCategory}
                           onChange={(e) => setEditingEntry({ ...editingEntry, category: e.target.value })}
-                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-900 capitalize"
+                          className="w-full bg-gray-100 border border-gray-200 rounded-none px-3 py-2 text-gray-900 capitalize"
                         >
                           {cannedCategories.map((cat) => (
                             <option key={cat} value={cat} className="capitalize">
@@ -2951,38 +2944,38 @@ Format as JSON array:
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2">{t.id}</label>
+                        <label className="block text-xs font-medium mb-2">{t.id}</label>
                         <input
                           type="text"
                           value={(editingEntry as CannedMessage).id}
                           onChange={(e) => setEditingEntry({ ...editingEntry, id: e.target.value })}
-                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2"
+                          className="w-full bg-gray-100 border border-gray-200 rounded-none px-2 py-1.5 text-xs"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2">{t.scenarioDescription}</label>
+                        <label className="block text-xs font-medium mb-2">{t.scenarioDescription}</label>
                         <input
                           type="text"
                           value={(editingEntry as CannedMessage).scenario}
                           onChange={(e) => setEditingEntry({ ...editingEntry, scenario: e.target.value })}
-                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2"
+                          className="w-full bg-gray-100 border border-gray-200 rounded-none px-2 py-1.5 text-xs"
                           placeholder={t.scenarioPlaceholder}
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2">{t.template}</label>
+                        <label className="block text-xs font-medium mb-2">{t.template}</label>
                         <textarea
                           value={(editingEntry as CannedMessage).template}
                           onChange={(e) => setEditingEntry({ ...editingEntry, template: e.target.value })}
                           rows={8}
-                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2"
+                          className="w-full bg-gray-100 border border-gray-200 rounded-none px-2 py-1.5 text-xs"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2">{t.variables}</label>
+                        <label className="block text-xs font-medium mb-2">{t.variables}</label>
                         <input
                           type="text"
                           value={(editingEntry as CannedMessage).variables?.join(', ') || ''}
@@ -2990,13 +2983,13 @@ Format as JSON array:
                             ...editingEntry,
                             variables: e.target.value.split(',').map(v => v.trim()).filter(v => v)
                           })}
-                          className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2"
+                          className="w-full bg-gray-100 border border-gray-200 rounded-none px-2 py-1.5 text-xs"
                           placeholder={t.variablesPlaceholder}
                         />
                       </div>
                     </div>
 
-                    <div className="flex gap-2 mt-6">
+                    <div className="flex gap-2 mt-3">
                       <button
                         onClick={async () => {
                           const msg = editingEntry as CannedMessage
@@ -3005,13 +2998,13 @@ Format as JSON array:
                           setCannedMsgs(updated)
                           setEditingEntry(null)
                         }}
-                        className="flex-1 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg"
+                        className="flex-1 bg-green-50 border border-green-200 hover:bg-green-100 px-3 py-1.5 rounded-none text-xs"
                       >
                         {t.save}
                       </button>
                       <button
                         onClick={() => setEditingEntry(null)}
-                        className="flex-1 bg-slate-600 hover:bg-gray-100 px-4 py-2 rounded-lg"
+                        className="flex-1 bg-gray-200 hover:bg-gray-100 px-3 py-1.5 rounded-none text-xs"
                       >
                         {t.cancel}
                       </button>
@@ -3025,38 +3018,38 @@ Format as JSON array:
           {/* Analytics Tab */}
           {activeTab === 'analytics' && (
             <div>
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <BarChart3 className="w-6 h-6 text-orange-400" />
+              <h2 className="text-xs font-bold mb-3 flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-orange-600" />
                 Analytics
               </h2>
 
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="bg-gray-100 rounded-lg p-6 border border-gray-300">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="bg-gray-100 rounded-none p-3 border border-gray-200">
                   <div className="flex items-center gap-3 mb-3">
-                    <Database className="w-8 h-8 text-cyan-400" />
+                    <Database className="w-8 h-8 text-cyan-600" />
                     <div>
                       <h3 className="font-semibold">{t.knowledgeEntries}</h3>
-                      <p className="text-2xl font-bold text-cyan-400">{knowledgeEntries.length}</p>
+                      <p className="text-xs font-bold text-cyan-600">{knowledgeEntries.length}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-gray-100 rounded-lg p-6 border border-gray-300">
+                <div className="bg-gray-100 rounded-none p-3 border border-gray-200">
                   <div className="flex items-center gap-3 mb-3">
-                    <Brain className="w-8 h-8 text-purple-400" />
+                    <Brain className="w-8 h-8 text-purple-600" />
                     <div>
                       <h3 className="font-semibold">{t.trainingExamples}</h3>
-                      <p className="text-2xl font-bold text-purple-400">{trainingData.length}</p>
+                      <p className="text-xs font-bold text-purple-600">{trainingData.length}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-gray-100 rounded-lg p-6 border border-gray-300">
+                <div className="bg-gray-100 rounded-none p-3 border border-gray-200">
                   <div className="flex items-center gap-3 mb-3">
-                    <Sparkles className="w-8 h-8 text-green-400" />
+                    <Sparkles className="w-8 h-8 text-green-600" />
                     <div>
                       <h3 className="font-semibold">{t.activeTraining}</h3>
-                      <p className="text-2xl font-bold text-green-400">
+                      <p className="text-xs font-bold text-green-600">
                         {trainingData.filter(t => t.active).length}
                       </p>
                     </div>
@@ -3069,71 +3062,71 @@ Format as JSON array:
           {/* Booking Management Tab */}
           {activeTab === 'booking' && (
             <div>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold flex items-center gap-2">
-                  <Calendar className="w-6 h-6 text-cyan-400" />
+              <div className="flex flex-wrap items-center justify-between mb-3 gap-2">
+                <h2 className="text-xs font-bold flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-cyan-600" />
                   {t.bookingManagement}
                 </h2>
                 <a
                   href="/booking"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg transition-colors"
+                  className="flex items-center gap-1 bg-green-50 border border-green-200 hover:bg-green-100 px-2 py-1 rounded-none transition-colors text-xs"
                 >
-                  <Users className="w-5 h-5" />
+                  <Users className="w-3.5 h-3.5" />
                   {t.manageAppointments}
                 </a>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-3">
 
                 {/* Staff Management */}
-                <div className="bg-gray-100 rounded-lg p-6 border border-gray-300">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-semibold">{t.staff}</h3>
+                <div className="bg-gray-100 rounded-none p-3 border border-gray-200">
+                  <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
+                    <h3 className="text-xs font-semibold">{t.staff}</h3>
                     <button
                       onClick={() => {
                         setNewStaff({ name: '', email: '', staff_type: '' })
                         setEditingStaff(null)
                         setShowAddStaff(true)
                       }}
-                      className="flex items-center gap-2 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition-colors"
+                      className="flex items-center gap-1 bg-green-50 border border-green-200 hover:bg-green-100 px-2 py-1 rounded-none transition-colors text-xs"
                     >
-                      <Plus className="w-4 h-4" />
+                      <Plus className="w-3 h-3" />
                       {t.addStaffMember}
                     </button>
                   </div>
-                  <p className="text-gray-500 text-sm mb-4">
+                  <p className="text-gray-500 text-xs mb-4">
                     {t.staffDescription}
                   </p>
 
                   {/* Staff List */}
                   {staff.length === 0 ? (
-                    <div className="text-gray-600 text-center py-8 bg-white rounded-lg">
+                    <div className="text-gray-600 text-center py-3 text-xs bg-white rounded-none">
                       {t.noStaffYet}
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {staff.map((member) => (
-                        <div key={member.id} className="bg-white rounded-lg p-4 border border-gray-300">
+                        <div key={member.id} className="bg-white rounded-none p-2.5 border border-gray-200">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
-                                <h4 className="font-semibold text-lg">{member.name}</h4>
+                                <h4 className="font-medium text-xs">{member.name}</h4>
                                 <a
                                   href={`/booking?staff=${member.id}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="p-1.5 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
+                                  className="p-0.5 bg-purple-50 border border-purple-200 hover:bg-purple-100 rounded-none transition-colors"
                                   title={t.viewSchedule}
                                 >
                                   <Calendar className="w-4 h-4" />
                                 </a>
                               </div>
-                              <div className="text-gray-500 text-sm space-y-1">
+                              <div className="text-gray-500 text-xs space-y-1">
                                 {member.email && <p>{t.email}: {member.email}</p>}
                                 {member.staff_type && <p>{t.type}: {member.staff_type}</p>}
-                                <p>{t.status}: <span className={member.is_active ? 'text-green-400' : 'text-red-400'}>{member.is_active ? t.active : t.inactive}</span></p>
+                                <p>{t.status}: <span className={member.is_active ? 'text-green-600' : 'text-red-600'}>{member.is_active ? t.active : t.inactive}</span></p>
                               </div>
                             </div>
                             <div className="flex gap-2 ml-4">
@@ -3143,7 +3136,7 @@ Format as JSON array:
                                   setNewStaff({ name: member.name, email: member.email || '', staff_type: member.staff_type || '' })
                                   setShowAddStaff(true)
                                 }}
-                                className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                                className="p-1 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-none transition-colors"
                               >
                                 <Edit className="w-4 h-4" />
                               </button>
@@ -3159,7 +3152,7 @@ Format as JSON array:
                                     }
                                   }
                                 }}
-                                className="p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                                className="p-1 bg-red-50 border border-red-200 hover:bg-red-700 rounded-none transition-colors"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -3173,43 +3166,43 @@ Format as JSON array:
                   {/* Add/Edit Staff Modal */}
                   {showAddStaff && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 border border-gray-300">
-                        <h3 className="text-xl font-semibold mb-4">
+                      <div className="bg-white rounded-none p-3 max-w-md w-full mx-4 border border-gray-200">
+                        <h3 className="text-xs font-semibold mb-4">
                           {editingStaff ? t.editStaffMember : t.addNewStaffMember}
                         </h3>
-                        <div className="space-y-4">
+                        <div className="space-y-2">
                           <div>
-                            <label className="block text-sm font-medium mb-2">{t.nameRequired}</label>
+                            <label className="block text-xs font-medium mb-2">{t.nameRequired}</label>
                             <input
                               type="text"
                               value={newStaff.name}
                               onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
                               placeholder={t.namePlaceholder}
-                              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium mb-2">{t.emailOptional}</label>
+                            <label className="block text-xs font-medium mb-2">{t.emailOptional}</label>
                             <input
                               type="email"
                               value={newStaff.email}
                               onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
                               placeholder={t.emailPlaceholder}
-                              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium mb-2">{t.staffTypeOptional}</label>
+                            <label className="block text-xs font-medium mb-2">{t.staffTypeOptional}</label>
                             <input
                               type="text"
                               value={newStaff.staff_type}
                               onChange={(e) => setNewStaff({ ...newStaff, staff_type: e.target.value })}
                               placeholder={t.staffTypePlaceholder}
-                              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             />
                           </div>
                         </div>
-                        <div className="flex gap-3 mt-6">
+                        <div className="flex gap-2 mt-3">
                           <button
                             onClick={async () => {
                               if (!newStaff.name) {
@@ -3234,7 +3227,7 @@ Format as JSON array:
                                 alert(t.error(error.message))
                               }
                             }}
-                            className="flex-1 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition-colors"
+                            className="flex-1 bg-green-50 border border-green-200 hover:bg-green-100 px-3 py-1.5 rounded-none text-xs transition-colors"
                           >
                             {editingStaff ? t.update : t.create}
                           </button>
@@ -3244,7 +3237,7 @@ Format as JSON array:
                               setNewStaff({ name: '', email: '', staff_type: '' })
                               setEditingStaff(null)
                             }}
-                            className="flex-1 bg-slate-600 hover:bg-slate-500 px-4 py-2 rounded-lg transition-colors"
+                            className="flex-1 bg-gray-200 hover:bg-gray-100 px-3 py-1.5 rounded-none text-xs transition-colors"
                           >
                             {t.cancel}
                           </button>
@@ -3255,47 +3248,47 @@ Format as JSON array:
                 </div>
 
                 {/* Service-Staff Assignments */}
-                <div className="bg-gray-100 rounded-lg p-6 border border-gray-300">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-semibold">{t.serviceAssignments}</h3>
+                <div className="bg-gray-100 rounded-none p-3 border border-gray-200">
+                  <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
+                    <h3 className="text-xs font-semibold">{t.serviceAssignments}</h3>
                     <button
                       onClick={() => {
                         setSelectedServiceForAssignment('')
                         setSelectedStaffIds([])
                         setShowAddAssignment(true)
                       }}
-                      className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors"
+                      className="flex items-center gap-1 bg-blue-50 border border-blue-200 hover:bg-blue-100 px-2 py-1 rounded-none transition-colors text-xs"
                     >
-                      <Plus className="w-4 h-4" />
+                      <Plus className="w-3 h-3" />
                       {t.manageStaffAssignments}
                     </button>
                   </div>
-                  <p className="text-gray-500 text-sm mb-4">
+                  <p className="text-gray-500 text-xs mb-4">
                     {t.assignmentsDescription}
                   </p>
 
                   {assignments.length === 0 ? (
-                    <div className="text-gray-600 text-center py-8 bg-white rounded-lg">
+                    <div className="text-gray-600 text-center py-3 text-xs bg-white rounded-none">
                       {t.noAssignmentsYet}
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       {/* Group assignments by service */}
                       {services.map((service) => {
                         const serviceAssignments = assignments.filter(a => a.service_id === service.id)
                         if (serviceAssignments.length === 0) return null
 
                         return (
-                          <div key={service.id} className="bg-white rounded-lg p-4 border border-gray-300">
+                          <div key={service.id} className="bg-white rounded-none p-2.5 border border-gray-200">
                             <div className="flex items-center justify-between mb-3">
-                              <h4 className="font-semibold text-cyan-400">{service.name}</h4>
+                              <h4 className="font-medium text-xs text-cyan-600">{service.name}</h4>
                               <button
                                 onClick={() => {
                                   setSelectedServiceForAssignment(service.id)
                                   setSelectedStaffIds(serviceAssignments.map(a => a.staff_id))
                                   setShowAddAssignment(true)
                                 }}
-                                className="text-sm px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+                                className="text-xs px-3 py-1 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-none transition-colors"
                               >
                                 {t.edit}
                               </button>
@@ -3304,7 +3297,7 @@ Format as JSON array:
                               {serviceAssignments.map((assignment) => (
                                 <span
                                   key={assignment.id}
-                                  className="px-3 py-1 bg-gray-100 rounded-full text-sm border border-gray-300"
+                                  className="px-3 py-1 bg-gray-100 rounded-full text-xs border border-gray-200"
                                 >
                                   {assignment.staff?.name}
                                 </span>
@@ -3319,11 +3312,11 @@ Format as JSON array:
                   {/* Add Assignment Modal */}
                   {showAddAssignment && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 border border-gray-300 max-h-[90vh] overflow-y-auto">
-                        <h3 className="text-xl font-semibold mb-4">{t.assignStaffToService}</h3>
-                        <div className="space-y-4">
+                      <div className="bg-white rounded-none p-3 max-w-md w-full mx-4 border border-gray-200 max-h-[90vh] overflow-y-auto">
+                        <h3 className="text-xs font-semibold mb-4">{t.assignStaffToService}</h3>
+                        <div className="space-y-2">
                           <div>
-                            <label className="block text-sm font-medium mb-2">{t.service}</label>
+                            <label className="block text-xs font-medium mb-2">{t.service}</label>
                             <select
                               value={selectedServiceForAssignment}
                               onChange={(e) => {
@@ -3332,7 +3325,7 @@ Format as JSON array:
                                 const existingAssignments = assignments.filter(a => a.service_id === e.target.value)
                                 setSelectedStaffIds(existingAssignments.map(a => a.staff_id))
                               }}
-                              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             >
                               <option value="">{t.selectService}</option>
                               {services.map(service => (
@@ -3343,14 +3336,14 @@ Format as JSON array:
 
                           {selectedServiceForAssignment && (
                             <div>
-                              <label className="block text-sm font-medium mb-2">
+                              <label className="block text-xs font-medium mb-2">
                                 {t.staffMembers(selectedStaffIds.length)}
                               </label>
-                              <div className="space-y-2 max-h-64 overflow-y-auto bg-gray-100 rounded-lg p-3 border border-gray-300">
+                              <div className="space-y-2 max-h-64 overflow-y-auto bg-gray-100 rounded-none p-3 border border-gray-200">
                                 {staff.map(member => (
                                   <label
                                     key={member.id}
-                                    className="flex items-center gap-3 p-2 hover:bg-slate-600 rounded cursor-pointer"
+                                    className="flex items-center gap-2 p-1.5 hover:bg-gray-200 rounded-none cursor-pointer text-xs"
                                   >
                                     <input
                                       type="checkbox"
@@ -3362,7 +3355,7 @@ Format as JSON array:
                                           setSelectedStaffIds(selectedStaffIds.filter(id => id !== member.id))
                                         }
                                       }}
-                                      className="w-4 h-4 text-cyan-500 bg-white border-gray-300 rounded focus:ring-cyan-500 focus:ring-2"
+                                      className="w-4 h-4 text-cyan-500 bg-white border-gray-300 rounded-none focus:ring-cyan-500 focus:ring-2"
                                     />
                                     <span>{member.name}</span>
                                   </label>
@@ -3371,7 +3364,7 @@ Format as JSON array:
                             </div>
                           )}
                         </div>
-                        <div className="flex gap-3 mt-6">
+                        <div className="flex gap-2 mt-3">
                           <button
                             onClick={async () => {
                               if (!selectedServiceForAssignment) {
@@ -3433,7 +3426,7 @@ Format as JSON array:
                                 alert(t.error(error.message))
                               }
                             }}
-                            className="flex-1 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors"
+                            className="flex-1 bg-blue-50 border border-blue-200 hover:bg-blue-100 px-3 py-1.5 rounded-none text-xs transition-colors"
                           >
                             {t.saveAssignments}
                           </button>
@@ -3443,7 +3436,7 @@ Format as JSON array:
                               setSelectedServiceForAssignment('')
                               setSelectedStaffIds([])
                             }}
-                            className="flex-1 bg-slate-600 hover:bg-slate-500 px-4 py-2 rounded-lg transition-colors"
+                            className="flex-1 bg-gray-200 hover:bg-gray-100 px-3 py-1.5 rounded-none text-xs transition-colors"
                           >
                             {t.cancel}
                           </button>
@@ -3454,9 +3447,9 @@ Format as JSON array:
                 </div>
 
                 {/* Outlets Management */}
-                <div className="bg-gray-100 rounded-lg p-6 border border-gray-300">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-semibold">{t.outlets}</h3>
+                <div className="bg-gray-100 rounded-none p-3 border border-gray-200">
+                  <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
+                    <h3 className="text-xs font-semibold">{t.outlets}</h3>
                     <button
                       onClick={() => {
                         setNewOutlet({
@@ -3474,38 +3467,38 @@ Format as JSON array:
                         setEditingOutlet(null)
                         setShowAddOutlet(true)
                       }}
-                      className="flex items-center gap-2 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition-colors"
+                      className="flex items-center gap-1 bg-green-50 border border-green-200 hover:bg-green-100 px-2 py-1 rounded-none transition-colors text-xs"
                     >
-                      <Plus className="w-4 h-4" />
+                      <Plus className="w-3 h-3" />
                       {t.addOutlet}
                     </button>
                   </div>
-                  <p className="text-gray-500 text-sm mb-4">
+                  <p className="text-gray-500 text-xs mb-4">
                     {t.outletsDescription}
                   </p>
 
                   {outlets.length === 0 ? (
-                    <div className="text-gray-600 text-center py-8 bg-white rounded-lg">
+                    <div className="text-gray-600 text-center py-3 text-xs bg-white rounded-none">
                       {t.noOutletsYet}
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {outlets.map((outlet) => (
-                        <div key={outlet.id} className="bg-white rounded-lg p-4 border border-gray-300">
+                        <div key={outlet.id} className="bg-white rounded-none p-2.5 border border-gray-200">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <h4 className="font-semibold text-lg mb-1">{outlet.name}</h4>
-                              <p className="text-gray-500 text-sm">{outlet.address_line1}</p>
-                              {outlet.address_line2 && <p className="text-gray-500 text-sm">{outlet.address_line2}</p>}
-                              <p className="text-gray-500 text-sm">
+                              <h4 className="font-medium text-xs mb-0.5">{outlet.name}</h4>
+                              <p className="text-gray-500 text-xs">{outlet.address_line1}</p>
+                              {outlet.address_line2 && <p className="text-gray-500 text-xs">{outlet.address_line2}</p>}
+                              <p className="text-gray-500 text-xs">
                                 {outlet.city}{outlet.state_province ? `, ${outlet.state_province}` : ''} {outlet.postal_code}
                               </p>
                               {outlet.country && outlet.country !== 'USA' && (
-                                <p className="text-gray-500 text-sm">{outlet.country}</p>
+                                <p className="text-gray-500 text-xs">{outlet.country}</p>
                               )}
-                              {outlet.phone && <p className="text-gray-500 text-sm mt-1">📞 {outlet.phone}</p>}
-                              {outlet.email && <p className="text-gray-500 text-sm">✉️ {outlet.email}</p>}
-                              <p className="text-gray-500 text-sm mt-1">{t.status}: <span className={outlet.is_active ? 'text-green-400' : 'text-red-400'}>{outlet.is_active ? t.active : t.inactive}</span></p>
+                              {outlet.phone && <p className="text-gray-500 text-xs mt-1">📞 {outlet.phone}</p>}
+                              {outlet.email && <p className="text-gray-500 text-xs">✉️ {outlet.email}</p>}
+                              <p className="text-gray-500 text-xs mt-1">{t.status}: <span className={outlet.is_active ? 'text-green-600' : 'text-red-600'}>{outlet.is_active ? t.active : t.inactive}</span></p>
                             </div>
                             <div className="flex gap-2 ml-4">
                               <button
@@ -3525,7 +3518,7 @@ Format as JSON array:
                                   })
                                   setShowAddOutlet(true)
                                 }}
-                                className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                                className="p-1 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-none transition-colors"
                               >
                                 <Edit className="w-4 h-4" />
                               </button>
@@ -3541,7 +3534,7 @@ Format as JSON array:
                                     }
                                   }
                                 }}
-                                className="p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                                className="p-1 bg-red-50 border border-red-200 hover:bg-red-700 rounded-none transition-colors"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -3555,120 +3548,120 @@ Format as JSON array:
                   {/* Add/Edit Outlet Modal */}
                   {showAddOutlet && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 border border-gray-300 max-h-[90vh] overflow-y-auto">
-                        <h3 className="text-xl font-semibold mb-4">
+                      <div className="bg-white rounded-none p-3 max-w-2xl w-full mx-4 border border-gray-200 max-h-[90vh] overflow-y-auto">
+                        <h3 className="text-xs font-semibold mb-4">
                           {editingOutlet ? t.editOutlet : t.addNewOutlet}
                         </h3>
-                        <div className="space-y-4">
+                        <div className="space-y-2">
                           <div>
-                            <label className="block text-sm font-medium mb-2">{t.outletNameRequired}</label>
+                            <label className="block text-xs font-medium mb-2">{t.outletNameRequired}</label>
                             <input
                               type="text"
                               value={newOutlet.name}
                               onChange={(e) => setNewOutlet({ ...newOutlet, name: e.target.value })}
                               placeholder={t.outletNamePlaceholder}
-                              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium mb-2">{t.addressLine1Required}</label>
+                            <label className="block text-xs font-medium mb-2">{t.addressLine1Required}</label>
                             <input
                               type="text"
                               value={newOutlet.address_line1}
                               onChange={(e) => setNewOutlet({ ...newOutlet, address_line1: e.target.value })}
                               placeholder={t.addressLine1Placeholder}
-                              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium mb-2">{t.addressLine2}</label>
+                            <label className="block text-xs font-medium mb-2">{t.addressLine2}</label>
                             <input
                               type="text"
                               value={newOutlet.address_line2}
                               onChange={(e) => setNewOutlet({ ...newOutlet, address_line2: e.target.value })}
                               placeholder={t.addressLine2Placeholder}
-                              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             />
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <label className="block text-sm font-medium mb-2">{t.cityRequired}</label>
+                              <label className="block text-xs font-medium mb-2">{t.cityRequired}</label>
                               <input
                                 type="text"
                                 value={newOutlet.city}
                                 onChange={(e) => setNewOutlet({ ...newOutlet, city: e.target.value })}
                                 placeholder={t.cityPlaceholder}
-                                className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium mb-2">{t.stateProvince}</label>
+                              <label className="block text-xs font-medium mb-2">{t.stateProvince}</label>
                               <input
                                 type="text"
                                 value={newOutlet.state_province}
                                 onChange={(e) => setNewOutlet({ ...newOutlet, state_province: e.target.value })}
                                 placeholder={t.statePlaceholder}
-                                className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
                               />
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <label className="block text-sm font-medium mb-2">{t.postalCode}</label>
+                              <label className="block text-xs font-medium mb-2">{t.postalCode}</label>
                               <input
                                 type="text"
                                 value={newOutlet.postal_code}
                                 onChange={(e) => setNewOutlet({ ...newOutlet, postal_code: e.target.value })}
                                 placeholder={t.postalPlaceholder}
-                                className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium mb-2">{t.country}</label>
+                              <label className="block text-xs font-medium mb-2">{t.country}</label>
                               <input
                                 type="text"
                                 value={newOutlet.country}
                                 onChange={(e) => setNewOutlet({ ...newOutlet, country: e.target.value })}
                                 placeholder={t.countryPlaceholder}
-                                className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
                               />
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <label className="block text-sm font-medium mb-2">{t.phone}</label>
+                              <label className="block text-xs font-medium mb-2">{t.phone}</label>
                               <input
                                 type="tel"
                                 value={newOutlet.phone}
                                 onChange={(e) => setNewOutlet({ ...newOutlet, phone: e.target.value })}
                                 placeholder={t.phonePlaceholder}
-                                className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium mb-2">{t.email}</label>
+                              <label className="block text-xs font-medium mb-2">{t.email}</label>
                               <input
                                 type="email"
                                 value={newOutlet.email}
                                 onChange={(e) => setNewOutlet({ ...newOutlet, email: e.target.value })}
                                 placeholder={t.emailLocationPlaceholder}
-                                className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
                               />
                             </div>
                           </div>
                           <div>
-                            <label className="block text-sm font-medium mb-2">{t.displayOrder}</label>
+                            <label className="block text-xs font-medium mb-2">{t.displayOrder}</label>
                             <input
                               type="number"
                               value={newOutlet.display_order}
                               onChange={(e) => setNewOutlet({ ...newOutlet, display_order: parseInt(e.target.value) || 0 })}
                               placeholder="0"
-                              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             />
                             <p className="text-gray-500 text-xs mt-1">{t.displayOrderHelp}</p>
                           </div>
                         </div>
-                        <div className="flex justify-end gap-3 mt-6">
+                        <div className="flex justify-end gap-2 mt-3">
                           <button
                             onClick={async () => {
                               if (!newOutlet.name || !newOutlet.address_line1 || !newOutlet.city) {
@@ -3691,13 +3684,13 @@ Format as JSON array:
                                 alert(t.error(error.message))
                               }
                             }}
-                            className="px-6 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+                            className="px-3 py-1.5 bg-green-50 border border-green-200 hover:bg-green-100 rounded-none text-xs transition-colors"
                           >
                             {editingOutlet ? t.update : t.create}
                           </button>
                           <button
                             onClick={() => setShowAddOutlet(false)}
-                            className="px-6 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg transition-colors"
+                            className="px-3 py-1.5 bg-gray-200 hover:bg-gray-100 rounded-none text-xs transition-colors"
                           >
                             {t.cancel}
                           </button>
@@ -3708,27 +3701,27 @@ Format as JSON array:
                 </div>
 
                 {/* Rooms Management */}
-                <div className="bg-gray-100 rounded-lg p-6 border border-gray-300">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-semibold">{t.treatmentRooms}</h3>
+                <div className="bg-gray-100 rounded-none p-3 border border-gray-200">
+                  <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
+                    <h3 className="text-xs font-semibold">{t.treatmentRooms}</h3>
                     <button
                       onClick={() => {
                         setNewRoom({ room_number: '', room_name: '', outlet_id: '' })
                         setEditingRoom(null)
                         setShowAddRoom(true)
                       }}
-                      className="flex items-center gap-2 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition-colors"
+                      className="flex items-center gap-1 bg-green-50 border border-green-200 hover:bg-green-100 px-2 py-1 rounded-none transition-colors text-xs"
                     >
-                      <Plus className="w-4 h-4" />
+                      <Plus className="w-3 h-3" />
                       {t.addRoom}
                     </button>
                   </div>
-                  <p className="text-gray-500 text-sm mb-4">
+                  <p className="text-gray-500 text-xs mb-4">
                     {t.roomsDescription}
                   </p>
 
                   {rooms.length === 0 ? (
-                    <div className="text-gray-600 text-center py-8 bg-white rounded-lg">
+                    <div className="text-gray-600 text-center py-3 text-xs bg-white rounded-none">
                       {t.noRoomsYet}
                     </div>
                   ) : (
@@ -3738,26 +3731,26 @@ Format as JSON array:
                         const roomServices = allRoomServices.filter(rs => rs.room_id === room.id)
                         const assignedServiceNames = roomServices.map(rs => rs.appointment_services?.name).filter(Boolean)
                         return (
-                        <div key={room.id} className="bg-white rounded-lg p-4 border border-gray-300">
+                        <div key={room.id} className="bg-white rounded-none p-2.5 border border-gray-200">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <h4 className="font-semibold text-lg mb-1">{t.room(room.room_number)}</h4>
-                              {room.room_name && <p className="text-gray-500 text-sm">{room.room_name}</p>}
+                              <h4 className="font-medium text-xs mb-0.5">{t.room(room.room_number)}</h4>
+                              {room.room_name && <p className="text-gray-500 text-xs">{room.room_name}</p>}
                               {outlet && (
-                                <p className="text-gray-500 text-sm mt-1">
+                                <p className="text-gray-500 text-xs mt-1">
                                   {t.locationDisplay(outlet.name, outlet.city)}
                                 </p>
                               )}
                               {assignedServiceNames.length > 0 ? (
-                                <p className="text-gray-500 text-sm mt-1">
+                                <p className="text-gray-500 text-xs mt-1">
                                   {t.roomServicesDisplay(assignedServiceNames.join(', '))}
                                 </p>
                               ) : (
-                                <p className="text-gray-500 text-sm mt-1">
+                                <p className="text-gray-500 text-xs mt-1">
                                   {t.roomServicesDisplay(t.allServicesText)}
                                 </p>
                               )}
-                              <p className="text-gray-500 text-sm mt-1">{t.status}: <span className={room.is_active ? 'text-green-400' : 'text-red-400'}>{room.is_active ? t.active : t.inactive}</span></p>
+                              <p className="text-gray-500 text-xs mt-1">{t.status}: <span className={room.is_active ? 'text-green-600' : 'text-red-600'}>{room.is_active ? t.active : t.inactive}</span></p>
                             </div>
                             <div className="flex gap-2 ml-4">
                               <button
@@ -3771,7 +3764,7 @@ Format as JSON array:
                                     alert(t.error(error.message))
                                   }
                                 }}
-                                className="p-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
+                                className="p-1 bg-purple-50 border border-purple-200 hover:bg-purple-100 rounded-none transition-colors"
                                 title={t.manageServicesBtn}
                               >
                                 <Settings className="w-4 h-4" />
@@ -3786,7 +3779,7 @@ Format as JSON array:
                                   })
                                   setShowAddRoom(true)
                                 }}
-                                className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                                className="p-1 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-none transition-colors"
                               >
                                 <Edit className="w-4 h-4" />
                               </button>
@@ -3802,7 +3795,7 @@ Format as JSON array:
                                     }
                                   }
                                 }}
-                                className="p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                                className="p-1 bg-red-50 border border-red-200 hover:bg-red-700 rounded-none transition-colors"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -3817,17 +3810,17 @@ Format as JSON array:
                   {/* Add/Edit Room Modal */}
                   {showAddRoom && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 border border-gray-300">
-                        <h3 className="text-xl font-semibold mb-4">
+                      <div className="bg-white rounded-none p-3 max-w-md w-full mx-4 border border-gray-200">
+                        <h3 className="text-xs font-semibold mb-4">
                           {editingRoom ? t.editRoom : t.addNewRoom}
                         </h3>
-                        <div className="space-y-4">
+                        <div className="space-y-2">
                           <div>
-                            <label className="block text-sm font-medium mb-2">{t.outletLocation}</label>
+                            <label className="block text-xs font-medium mb-2">{t.outletLocation}</label>
                             <select
                               value={newRoom.outlet_id}
                               onChange={(e) => setNewRoom({ ...newRoom, outlet_id: e.target.value })}
-                              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             >
                               <option value="">{t.selectOutletOptional}</option>
                               {outlets.map((outlet) => (
@@ -3841,27 +3834,27 @@ Format as JSON array:
                             </p>
                           </div>
                           <div>
-                            <label className="block text-sm font-medium mb-2">{t.roomNumberRequired}</label>
+                            <label className="block text-xs font-medium mb-2">{t.roomNumberRequired}</label>
                             <input
                               type="text"
                               value={newRoom.room_number}
                               onChange={(e) => setNewRoom({ ...newRoom, room_number: e.target.value })}
                               placeholder={t.roomNumberPlaceholder}
-                              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium mb-2">{t.roomNameOptional}</label>
+                            <label className="block text-xs font-medium mb-2">{t.roomNameOptional}</label>
                             <input
                               type="text"
                               value={newRoom.room_name}
                               onChange={(e) => setNewRoom({ ...newRoom, room_name: e.target.value })}
                               placeholder={t.roomNamePlaceholder}
-                              className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             />
                           </div>
                         </div>
-                        <div className="flex gap-3 mt-6">
+                        <div className="flex gap-2 mt-3">
                           <button
                             onClick={async () => {
                               if (!newRoom.room_number) {
@@ -3886,7 +3879,7 @@ Format as JSON array:
                                 alert(t.error(error.message))
                               }
                             }}
-                            className="flex-1 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition-colors"
+                            className="flex-1 bg-green-50 border border-green-200 hover:bg-green-100 px-3 py-1.5 rounded-none text-xs transition-colors"
                           >
                             {editingRoom ? t.update : t.create}
                           </button>
@@ -3896,7 +3889,7 @@ Format as JSON array:
                               setNewRoom({ room_number: '', room_name: '', outlet_id: '' })
                               setEditingRoom(null)
                             }}
-                            className="flex-1 bg-slate-600 hover:bg-slate-500 px-4 py-2 rounded-lg transition-colors"
+                            className="flex-1 bg-gray-200 hover:bg-gray-100 px-3 py-1.5 rounded-none text-xs transition-colors"
                           >
                             {t.cancel}
                           </button>
@@ -3908,21 +3901,21 @@ Format as JSON array:
                   {/* Manage Room Services Modal */}
                   {showRoomServices && selectedRoomForServices && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 border border-gray-300 max-h-[90vh] overflow-y-auto">
-                        <h3 className="text-xl font-semibold mb-4">
+                      <div className="bg-white rounded-none p-3 max-w-2xl w-full mx-4 border border-gray-200 max-h-[90vh] overflow-y-auto">
+                        <h3 className="text-xs font-semibold mb-4">
                           {t.manageServicesForRoom(selectedRoomForServices.room_number)}
                         </h3>
-                        <p className="text-gray-500 text-sm mb-4">
+                        <p className="text-gray-500 text-xs mb-4">
                           {t.roomServicesDescription}
                         </p>
-                        <div className="space-y-2 mb-6">
+                        <div className="space-y-2 mb-3">
                           {services.length === 0 ? (
-                            <p className="text-gray-500 text-sm">{t.noServicesAvailable}</p>
+                            <p className="text-gray-500 text-xs">{t.noServicesAvailable}</p>
                           ) : (
                             services.map((service) => (
                               <label
                                 key={service.id}
-                                className="flex items-start gap-3 p-3 bg-gray-100 rounded-lg hover:bg-slate-600 cursor-pointer transition-colors"
+                                className="flex items-start gap-2 p-2 bg-gray-100 rounded-none hover:bg-gray-200 cursor-pointer transition-colors"
                               >
                                 <input
                                   type="checkbox"
@@ -3937,11 +3930,11 @@ Format as JSON array:
                                   className="mt-1 w-4 h-4"
                                 />
                                 <div className="flex-1">
-                                  <h4 className="font-semibold text-slate-200">{service.name}</h4>
+                                  <h4 className="font-medium text-xs text-gray-900">{service.name}</h4>
                                   {service.description && (
-                                    <p className="text-sm text-gray-500 mt-1">{service.description}</p>
+                                    <p className="text-xs text-gray-500 mt-1">{service.description}</p>
                                   )}
-                                  <p className="text-xs text-slate-500 mt-1">
+                                  <p className="text-xs text-gray-400 mt-1">
                                     {service.duration_minutes} {t.min}
                                     {service.price && ` • $${service.price}`}
                                   </p>
@@ -3950,7 +3943,7 @@ Format as JSON array:
                             ))
                           )}
                         </div>
-                        <div className="flex justify-end gap-3">
+                        <div className="flex justify-end gap-2">
                           <button
                             onClick={async () => {
                               try {
@@ -3970,7 +3963,7 @@ Format as JSON array:
                                 alert(t.error(error.message))
                               }
                             }}
-                            className="px-6 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+                            className="px-3 py-1.5 bg-green-50 border border-green-200 hover:bg-green-100 rounded-none text-xs transition-colors"
                           >
                             {t.saveServices}
                           </button>
@@ -3980,7 +3973,7 @@ Format as JSON array:
                               setSelectedRoomForServices(null)
                               setRoomServiceIds([])
                             }}
-                            className="px-6 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg transition-colors"
+                            className="px-3 py-1.5 bg-gray-200 hover:bg-gray-100 rounded-none text-xs transition-colors"
                           >
                             {t.cancel}
                           </button>
@@ -3996,18 +3989,18 @@ Format as JSON array:
           {/* AI Model Settings Tab */}
           {activeTab === 'aimodel' && (
             <div>
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <Settings className="w-6 h-6 text-cyan-400" />
+              <h2 className="text-xs font-bold mb-3 flex items-center gap-2">
+                <Settings className="w-6 h-6 text-cyan-600" />
                 {t.aiModelSettings}
               </h2>
 
-              <div className="bg-gray-100 rounded-lg p-6 border border-gray-300 max-w-3xl">
-                <div className="mb-6">
+              <div className="bg-gray-100 rounded-none p-3 border border-gray-200 max-w-3xl">
+                <div className="mb-3">
                   <p className="text-gray-600 mb-4">
                     {t.aiModelDescription}
                   </p>
-                  <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-4 mb-6">
-                    <p className="text-blue-300 text-sm" dangerouslySetInnerHTML={{ __html: t.securityNote }} />
+                  <div className="bg-blue-50 border border-blue-700 rounded-none p-4 mb-3">
+                    <p className="text-blue-600 text-xs" dangerouslySetInnerHTML={{ __html: t.securityNote }} />
                   </div>
                 </div>
 
@@ -4017,13 +4010,13 @@ Format as JSON array:
                 }} className="space-y-6">
                   {/* Provider Selection */}
                   <div>
-                    <label className="block text-sm font-medium mb-2">
+                    <label className="block text-xs font-medium mb-2">
                       {t.llmProvider}
                     </label>
                     <select
                       value={llmSettings.provider}
                       onChange={(e) => setLLMSettings({ ...llmSettings, provider: e.target.value as any })}
-                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                      className="w-full px-4 py-2 bg-white border border-gray-200 rounded-none focus:outline-none focus:ring-2 focus:ring-cyan-500"
                     >
                       <option value="anthropic">{t.providerAnthropic}</option>
                       <option value="ollama">{t.providerOllama}</option>
@@ -4033,7 +4026,7 @@ Format as JSON array:
 
                   {/* Model Name */}
                   <div>
-                    <label className="block text-sm font-medium mb-2">
+                    <label className="block text-xs font-medium mb-2">
                       {t.modelName}
                     </label>
                     <input
@@ -4045,10 +4038,10 @@ Format as JSON array:
                         llmSettings.provider === 'ollama' ? t.modelPlaceholderOllama :
                         t.modelPlaceholderOpenAI
                       }
-                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                      className="w-full px-4 py-2 bg-white border border-gray-200 rounded-none focus:outline-none focus:ring-2 focus:ring-cyan-500"
                       required
                     />
-                    <p className="text-gray-500 text-sm mt-1">
+                    <p className="text-gray-500 text-xs mt-1">
                       {llmSettings.provider === 'anthropic' && t.modelExamplesAnthropic}
                       {llmSettings.provider === 'ollama' && t.modelExamplesOllama}
                       {llmSettings.provider === 'openai' && t.modelExamplesOpenAI}
@@ -4058,7 +4051,7 @@ Format as JSON array:
                   {/* Ollama Base URL */}
                   {llmSettings.provider === 'ollama' && (
                     <div>
-                      <label className="block text-sm font-medium mb-2">
+                      <label className="block text-xs font-medium mb-2">
                         {t.ollamaBaseUrl}
                       </label>
                       <input
@@ -4066,16 +4059,16 @@ Format as JSON array:
                         value={llmSettings.ollamaUrl}
                         onChange={(e) => setLLMSettings({ ...llmSettings, ollamaUrl: e.target.value })}
                         placeholder={t.ollamaUrlPlaceholder}
-                        className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono text-sm"
+                        className="w-full px-4 py-2 bg-white border border-gray-200 rounded-none focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono text-xs"
                         required
                       />
-                      <p className="text-gray-500 text-sm mt-1" dangerouslySetInnerHTML={{ __html: t.ollamaHelp + ' <a href="https://ollama.com/" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline">Install Ollama</a>' }} />
+                      <p className="text-gray-500 text-xs mt-1" dangerouslySetInnerHTML={{ __html: t.ollamaHelp + ' <a href="https://ollama.com/" target="_blank" rel="noopener noreferrer" class="text-cyan-600 hover:underline">Install Ollama</a>' }} />
                     </div>
                   )}
 
                   {/* Temperature */}
                   <div>
-                    <label className="block text-sm font-medium mb-2">
+                    <label className="block text-xs font-medium mb-2">
                       {t.temperature(llmSettings.temperature.toString())}
                     </label>
                     <input
@@ -4087,16 +4080,16 @@ Format as JSON array:
                       onChange={(e) => setLLMSettings({ ...llmSettings, temperature: parseFloat(e.target.value) })}
                       className="w-full"
                     />
-                    <p className="text-gray-500 text-sm mt-1">
+                    <p className="text-gray-500 text-xs mt-1">
                       {t.temperatureHelp}
                     </p>
                   </div>
 
                   {/* Save Button */}
-                  <div className="flex gap-4">
+                  <div className="flex gap-2">
                     <button
                       type="submit"
-                      className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-gray-900 px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2"
+                      className="flex-1 bg-cyan-50 border border-cyan-200 hover:from-cyan-600 hover:to-blue-600 text-gray-900 px-6 py-3 rounded-none font-medium transition-all flex items-center justify-center gap-2"
                     >
                       <Save className="w-5 h-5" />
                       {t.saveSettings}
@@ -4105,9 +4098,9 @@ Format as JSON array:
 
                   {/* Current Status */}
                   {llmSettings.provider && (
-                    <div className="mt-6 p-4 bg-white rounded-lg border border-gray-300">
-                      <h4 className="font-medium mb-2 text-green-400">{t.currentConfiguration}</h4>
-                      <div className="space-y-1 text-sm text-gray-600">
+                    <div className="mt-6 p-4 bg-white rounded-none border border-gray-200">
+                      <h4 className="font-medium mb-2 text-green-600">{t.currentConfiguration}</h4>
+                      <div className="space-y-1 text-xs text-gray-600">
                         <p><strong>{t.provider}:</strong> {llmSettings.provider}</p>
                         <p><strong>{t.model}:</strong> {llmSettings.model}</p>
                         <p><strong>Temperature:</strong> {llmSettings.temperature}</p>
@@ -4129,6 +4122,19 @@ Format as JSON array:
           language={selectedLanguage}
         />
       )}
+
+      <AddLocaleModal
+        isOpen={showAddLocaleModal}
+        onClose={() => setShowAddLocaleModal(false)}
+        businessUnitId={selectedBusinessUnit}
+        existingLocales={availableLocales}
+        onLocaleCreated={(country, language) => {
+          setAvailableLocales(prev => [...prev, { country, language_code: language }])
+          setSelectedCountry(country)
+          setSelectedLangCode(language)
+          setSelectedLanguage(langCodeToLanguage(language))
+        }}
+      />
     </div>
   )
 }

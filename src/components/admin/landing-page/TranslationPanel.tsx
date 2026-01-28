@@ -88,40 +88,40 @@ export default function TranslationPanel({
     const allTranslated = items.every((_, i) => translatedSections.has(sectionType + '-' + i))
     
     return (
-      <div className="border border-slate-600 rounded-lg overflow-hidden">
-        <div className="flex items-center justify-between p-3 bg-slate-700 cursor-pointer" onClick={() => toggleExpand(sectionType)}>
+      <div className="border border-gray-200 rounded-none overflow-hidden">
+        <div className="flex items-center justify-between p-3 bg-gray-100 cursor-pointer" onClick={() => toggleExpand(sectionType)}>
           <div className="flex items-center gap-2">
             {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
             <span className="font-medium">{sectionLabel}</span>
-            <span className="text-slate-400 text-sm">({items.length})</span>
-            {allTranslated && <Check className="w-4 h-4 text-green-400" />}
+            <span className="text-gray-500 text-sm">({items.length})</span>
+            {allTranslated && <Check className="w-4 h-4 text-green-600" />}
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); translateAllInSection(sectionType, items) }}
             disabled={translatingSection !== null || allTranslated}
-            className="px-2 py-1 text-xs bg-violet-600 hover:bg-violet-700 rounded disabled:opacity-50"
+            className="px-2 py-1 text-xs bg-violet-50 border border-violet-200 hover:bg-violet-100 rounded-none disabled:opacity-50"
           >
             Translate All
           </button>
         </div>
         
         {isExpanded && (
-          <div className="divide-y divide-slate-700">
+          <div className="divide-y divide-gray-200">
             {items.map((item, index) => {
               const key = sectionType + '-' + index
               const isTranslating = translatingSection === key
               const isTranslated = translatedSections.has(key)
               
               return (
-                <div key={index} className="flex items-center justify-between p-3 bg-slate-800">
+                <div key={index} className="flex items-center justify-between p-3 bg-white">
                   <div className="flex-1 min-w-0">
-                    <span className="text-slate-400 text-xs mr-2">#{index + 1}</span>
+                    <span className="text-gray-500 text-xs mr-2">#{index + 1}</span>
                     <span className="text-sm truncate">{getPreviewText(item)}...</span>
                   </div>
                   <button
                     onClick={() => translateSection(sectionType, index, item)}
                     disabled={isTranslating || isTranslated}
-                    className={`ml-2 px-3 py-1 text-xs rounded flex items-center gap-1 ${isTranslated ? 'bg-green-600/20 text-green-400' : 'bg-violet-600 hover:bg-violet-700'} disabled:opacity-50`}
+                    className={`ml-2 px-3 py-1 text-xs rounded-none flex items-center gap-1 ${isTranslated ? 'bg-green-50 text-green-600' : 'bg-violet-50 border border-violet-200 hover:bg-violet-100'} disabled:opacity-50`}
                   >
                     {isTranslating ? <><Loader2 className="w-3 h-3 animate-spin" />Translating...</> : isTranslated ? <><Check className="w-3 h-3" />Done</> : <><Languages className="w-3 h-3" />Translate</>}
                   </button>
@@ -135,18 +135,18 @@ export default function TranslationPanel({
   }
 
   return (
-    <div className="fixed right-0 top-0 h-full w-96 bg-slate-800 border-l border-slate-700 shadow-xl z-40 flex flex-col">
-      <div className="flex items-center justify-between p-4 border-b border-slate-700">
+    <div className="fixed right-0 top-0 h-full w-96 bg-white border-l border-gray-200 shadow-sm z-40 flex flex-col">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200">
         <div className="flex items-center gap-2">
-          <Languages className="w-5 h-5 text-violet-400" />
-          <h3 className="font-semibold text-white">Translation Assistant</h3>
+          <Languages className="w-5 h-5 text-violet-600" />
+          <h3 className="font-semibold text-gray-800">Translation Assistant</h3>
         </div>
-        <button onClick={onClose} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
+        <button onClick={onClose} className="text-gray-500 hover:text-gray-800"><X className="w-5 h-5" /></button>
       </div>
       
-      <div className="p-4 bg-slate-700/50 border-b border-slate-700">
-        <p className="text-sm text-slate-300">Translating to: <span className="font-medium text-violet-400">{languageNames[targetLanguage] || targetLanguage}</span></p>
-        <p className="text-xs text-slate-400 mt-1">Click Translate on each section one by one.</p>
+      <div className="p-4 bg-gray-50 border-b border-gray-200">
+        <p className="text-sm text-gray-600">Translating to: <span className="font-medium text-violet-600">{languageNames[targetLanguage] || targetLanguage}</span></p>
+        <p className="text-xs text-gray-500 mt-1">Click Translate on each section one by one.</p>
       </div>
       
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -157,8 +157,8 @@ export default function TranslationPanel({
         {renderSectionItems('footer_columns', sourceData.footer_columns || [], 'Footer Columns')}
       </div>
       
-      <div className="p-4 border-t border-slate-700">
-        <p className="text-xs text-slate-400 text-center">{translatedSections.size} sections translated</p>
+      <div className="p-4 border-t border-gray-200">
+        <p className="text-xs text-gray-500 text-center">{translatedSections.size} sections translated</p>
       </div>
     </div>
   )

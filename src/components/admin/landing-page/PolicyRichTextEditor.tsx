@@ -354,8 +354,8 @@ export default function PolicyRichTextEditor({
         e.preventDefault() // Prevent focus loss from editor
         onClick()
       }}
-      className={`p-1.5 rounded hover:bg-slate-600 transition-colors ${
-        active ? 'bg-violet-600 text-white' : 'text-slate-300'
+      className={`p-1.5 rounded-none hover:bg-gray-200 transition-colors ${
+        active ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-600'
       }`}
       title={title}
       type="button"
@@ -365,13 +365,13 @@ export default function PolicyRichTextEditor({
   )
 
   const ToolbarDivider = () => (
-    <div className="w-px h-6 bg-slate-600 mx-1" />
+    <div className="w-px h-6 bg-gray-200 mx-1" />
   )
 
   return (
-    <div className="border border-slate-600 rounded-lg overflow-hidden bg-white">
+    <div className="border border-gray-200 rounded-none overflow-hidden bg-white">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-1 p-2 bg-slate-700 border-b border-slate-600">
+      <div className="flex flex-wrap items-center gap-1 p-2 bg-gray-100 border-b border-gray-200">
         {/* Undo/Redo */}
         <ToolbarButton onClick={handleUndo} icon={Undo} title="Undo" />
         <ToolbarButton onClick={handleRedo} icon={Redo} title="Redo" />
@@ -389,13 +389,13 @@ export default function PolicyRichTextEditor({
               setShowFontWeightMenu(false)
               setShowColorPicker(false)
             }}
-            className="px-2 py-1 text-xs bg-slate-600 hover:bg-slate-500 text-slate-200 rounded border border-slate-500 min-w-[80px] text-left"
+            className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-100 text-gray-700 rounded-none border border-gray-300 min-w-[80px] text-left"
             type="button"
           >
             {currentFontFamily.split(' ')[0]}
           </button>
           {showFontFamilyMenu && (
-            <div className="absolute top-full left-0 mt-1 w-40 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+            <div className="absolute top-full left-0 mt-1 w-40 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-48 overflow-y-auto">
               {FONT_FAMILIES.map(font => (
                 <button
                   key={font}
@@ -403,8 +403,8 @@ export default function PolicyRichTextEditor({
                     e.preventDefault()
                     handleFontFamily(font)
                   }}
-                  className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                    currentFontFamily === font ? 'bg-violet-600 text-white' : 'text-slate-200'
+                  className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-200 ${
+                    currentFontFamily === font ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                   }`}
                   style={{ fontFamily: FONT_STYLE_MAP[font] || font }}
                   type="button"
@@ -427,13 +427,13 @@ export default function PolicyRichTextEditor({
               setShowFontWeightMenu(false)
               setShowColorPicker(false)
             }}
-            className="px-2 py-1 text-xs bg-slate-600 hover:bg-slate-500 text-slate-200 rounded border border-slate-500 min-w-[40px]"
+            className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-100 text-gray-700 rounded-none border border-gray-300 min-w-[40px]"
             type="button"
           >
             {FONT_SIZES.find(s => s.value === currentFontSize)?.label || '16'}
           </button>
           {showFontSizeMenu && (
-            <div className="absolute top-full left-0 mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+            <div className="absolute top-full left-0 mt-1 w-20 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-48 overflow-y-auto">
               {FONT_SIZES.map(size => (
                 <button
                   key={size.value}
@@ -441,8 +441,8 @@ export default function PolicyRichTextEditor({
                     e.preventDefault()
                     handleFontSize(size.value)
                   }}
-                  className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                    currentFontSize === size.value ? 'bg-violet-600 text-white' : 'text-slate-200'
+                  className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-200 ${
+                    currentFontSize === size.value ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                   }`}
                   type="button"
                 >
@@ -464,13 +464,13 @@ export default function PolicyRichTextEditor({
               setShowFontFamilyMenu(false)
               setShowColorPicker(false)
             }}
-            className="px-2 py-1 text-xs bg-slate-600 hover:bg-slate-500 text-slate-200 rounded border border-slate-500 min-w-[60px]"
+            className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-100 text-gray-700 rounded-none border border-gray-300 min-w-[60px]"
             type="button"
           >
             {FONT_WEIGHTS.find(w => w.value === currentFontWeight)?.label || 'Normal'}
           </button>
           {showFontWeightMenu && (
-            <div className="absolute top-full left-0 mt-1 w-24 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+            <div className="absolute top-full left-0 mt-1 w-24 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-48 overflow-y-auto">
               {FONT_WEIGHTS.map(weight => (
                 <button
                   key={weight.value}
@@ -478,8 +478,8 @@ export default function PolicyRichTextEditor({
                     e.preventDefault()
                     handleFontWeight(weight.value)
                   }}
-                  className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                    currentFontWeight === weight.value ? 'bg-violet-600 text-white' : 'text-slate-200'
+                  className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-200 ${
+                    currentFontWeight === weight.value ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                   }`}
                   style={{ fontWeight: weight.value }}
                   type="button"
@@ -504,7 +504,7 @@ export default function PolicyRichTextEditor({
               setShowFontFamilyMenu(false)
               setShowFontWeightMenu(false)
             }}
-            className="w-7 h-7 rounded border border-slate-500 cursor-pointer hover:scale-105 transition-transform flex items-center justify-center"
+            className="w-7 h-7 rounded-none border border-gray-300 cursor-pointer hover:scale-105 transition-transform flex items-center justify-center"
             style={{ backgroundColor: currentColor }}
             title="Text color"
             type="button"
@@ -512,7 +512,7 @@ export default function PolicyRichTextEditor({
             <Type className="w-3 h-3" style={{ color: currentColor === '#000000' ? '#fff' : '#000' }} />
           </button>
           {showColorPicker && (
-            <div className="absolute top-full left-0 mt-1 p-2 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50">
+            <div className="absolute top-full left-0 mt-1 p-2 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50">
               <div className="grid grid-cols-5 gap-1.5">
                 {COLOR_PALETTE.map((color) => (
                   <button
@@ -521,7 +521,7 @@ export default function PolicyRichTextEditor({
                       e.preventDefault()
                       handleColor(color.value)
                     }}
-                    className="w-6 h-6 rounded border-2 hover:scale-110 transition-transform"
+                    className="w-6 h-6 rounded-none border-2 hover:scale-110 transition-transform"
                     style={{
                       backgroundColor: color.value,
                       borderColor: currentColor === color.value ? '#a855f7' : '#475569'

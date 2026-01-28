@@ -160,7 +160,7 @@ const RoleplayTraining = ({ onTrainingSessionsUpdate, businessUnit, knowledgeEnt
       personality: 'Angry Customer',
       traits: ['Impatient', 'Demanding', 'Skeptical'],
       difficulty: 'Hard',
-      color: 'bg-red-500',
+      color: 'bg-red-50',
       description: 'Customer with a bad experience who needs careful handling'
     },
     {
@@ -187,7 +187,7 @@ const RoleplayTraining = ({ onTrainingSessionsUpdate, businessUnit, knowledgeEnt
       personality: 'Tech-Savvy Customer',
       traits: ['Detail-oriented', 'Knowledgeable', 'Wants specifics'],
       difficulty: 'Easy',
-      color: 'bg-blue-500',
+      color: 'bg-blue-50',
       description: 'Customer with technical knowledge who asks detailed questions'
     },
     {
@@ -196,7 +196,7 @@ const RoleplayTraining = ({ onTrainingSessionsUpdate, businessUnit, knowledgeEnt
       personality: 'Enthusiastic Customer',
       traits: ['Excited', 'Eager to learn', 'Open to suggestions'],
       difficulty: 'Easy',
-      color: 'bg-green-500',
+      color: 'bg-green-50',
       description: 'Customer who is excited about skincare and eager to try new products'
     }
   ]
@@ -1737,28 +1737,28 @@ Now provide your REVISED response to the customer's question above:`
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-2 sm:space-y-3">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
-            <Users className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
+          <h2 className="text-xs font-bold text-gray-800 flex items-center gap-2">
+            <Users className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
             {t.aiStaffTrainingCenter}
           </h2>
-          <p className="text-slate-400 text-sm sm:text-base">{t.aiStaffTrainingDesc}</p>
+          <p className="text-gray-500 text-xs">{t.aiStaffTrainingDesc}</p>
         </div>
       </div>
 
       {/* AI Staff Selection */}
-      <div className="bg-slate-700 rounded-lg p-4 border border-slate-600">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-            <User className="w-5 h-5 text-purple-400" />
+      <div className="bg-gray-100 rounded-none p-4 border border-gray-200">
+        <div className="flex flex-wrap items-center justify-between mb-3 gap-2">
+          <h3 className="text-xs font-medium text-gray-800 flex items-center gap-2">
+            <User className="w-5 h-5 text-purple-600" />
             {t.aiStaffMembers}
           </h3>
           <button
             onClick={() => setShowStaffCreator(true)}
-            className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg transition-colors text-white flex items-center gap-2 text-sm"
+            className="bg-purple-50 border border-purple-200 hover:bg-purple-100 px-2 py-1 rounded-none transition-colors text-gray-800 flex items-center gap-2 text-xs"
           >
             <Plus className="w-4 h-4" />
             {t.addStaff}
@@ -1768,10 +1768,10 @@ Now provide your REVISED response to the customer's question above:`
           {aiStaffList.map((staff) => (
             <div
               key={staff.id}
-              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              className={`px-2 py-1 rounded-none transition-colors flex items-center gap-2 ${
                 selectedStaff?.id === staff.id
-                  ? 'bg-blue-600 text-white border-2 border-blue-400'
-                  : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
+                  ? 'bg-blue-50 border border-blue-200 text-gray-800 border-2 border-blue-400'
+                  : 'bg-gray-200 text-gray-600 hover:bg-gray-100'
               }`}
             >
               <span>{
@@ -1792,7 +1792,7 @@ Now provide your REVISED response to the customer's question above:`
                       setEditingStaffName('')
                     }}
                     autoFocus
-                    className="font-medium bg-slate-700 text-white px-2 py-1 rounded border border-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 w-32"
+                    className="font-medium bg-gray-100 text-gray-800 px-2 py-1 rounded-none border border-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 w-32"
                     placeholder="Enter name or blank to delete"
                   />
                 ) : (
@@ -1817,38 +1817,38 @@ Now provide your REVISED response to the customer's question above:`
       </div>
 
       {/* AI Coach Training Conversation */}
-      <div className="bg-slate-700 rounded-lg p-6 border border-slate-600 relative">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold text-white flex items-center gap-2">
-            <Bot className="w-5 h-5 text-green-400" />
+      <div className="bg-gray-100 rounded-none p-6 border border-gray-200 relative">
+        <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
+          <h3 className="text-xs font-medium text-gray-800 flex items-center gap-2">
+            <Bot className="w-5 h-5 text-green-600" />
             {t.aiCoachTrainingSession}
           </h3>
           <button
             onClick={handleCompleteTrainingSession}
             disabled={messages.length === 0}
-            className="bg-green-600 hover:bg-green-700 disabled:bg-slate-600 px-4 py-2 rounded-lg transition-colors text-white text-sm"
+            className="bg-green-50 border border-green-200 hover:bg-green-100 disabled:bg-gray-200 px-2 py-1 rounded-none transition-colors text-gray-800 text-xs"
           >
             {t.complete}
           </button>
         </div>
 
         {/* Chat Messages */}
-        <div className="bg-slate-800 rounded-lg p-3 sm:p-4 h-64 sm:h-80 md:h-96 overflow-y-auto">
+        <div className="bg-white rounded-none p-3 sm:p-4 h-64 sm:h-80 md:h-96 overflow-y-auto">
           <div className="space-y-2 sm:space-y-3">
             {messages.length === 0 && (
-              <div className="text-center py-6 sm:py-8 text-slate-400">
+              <div className="text-center py-6 sm:py-8 text-gray-500">
                 <MessageSquare className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-2 opacity-50" />
-                <p className="text-sm sm:text-base">{t.aiTrainingWillAppear}</p>
+                <p className="text-xs">{t.aiTrainingWillAppear}</p>
                 <p className="text-xs mt-1">{t.selectScenarioToBegin}</p>
               </div>
             )}
 
             {messages.map((msg, idx) => (
               <div key={idx} className={`flex ${msg.sender === 'customer' ? 'justify-start' : 'justify-end'}`}>
-                <div className={`max-w-[85%] sm:max-w-[80%] p-2 sm:p-3 rounded-lg text-sm sm:text-base ${
+                <div className={`max-w-[85%] sm:max-w-[80%] p-2 sm:p-2 rounded-none text-xs ${
                   msg.sender === 'customer'
-                    ? 'bg-orange-600 text-white mr-2 sm:mr-4'  // AI Customer - Orange
-                    : 'bg-blue-600 text-white ml-2 sm:ml-4'    // AI Coach - Blue
+                    ? 'bg-orange-50 text-gray-800 mr-2 sm:mr-4'  // AI Customer - Orange
+                    : 'bg-blue-50 border border-blue-200 text-gray-800 ml-2 sm:ml-4'    // AI Coach - Blue
                 }`}>
                   <div className="flex items-center gap-2 mb-1">
                     {msg.sender === 'customer' ? (
@@ -1879,7 +1879,7 @@ Now provide your REVISED response to the customer's question above:`
 
             {isGeneratingResponse && (
               <div className={`flex ${generatingWho === 'customer' ? 'justify-start' : 'justify-end'}`}>
-                <div className={`${generatingWho === 'customer' ? 'bg-orange-600 mr-4' : 'bg-blue-600 ml-4'} text-white px-3 py-2 rounded-lg`}>
+                <div className={`${generatingWho === 'customer' ? 'bg-orange-50 mr-4' : 'bg-blue-50 border border-blue-200 ml-4'} text-gray-800 px-2 py-1.5 rounded-none`}>
                   <div className="flex items-center space-x-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     <span className="text-sm">
@@ -1901,19 +1901,19 @@ Now provide your REVISED response to the customer's question above:`
             onChange={(e) => setCurrentMessage(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleDirectMessage()}
             disabled={isGeneratingResponse}
-            className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400 text-sm sm:text-base"
+            className="flex-1 bg-white border border-gray-200 rounded-none px-2 py-1.5 text-gray-800 placeholder-gray-400 text-xs"
           />
           <button
             onClick={handleDirectMessage}
             disabled={!currentMessage.trim() || isGeneratingResponse}
-            className="bg-green-600 hover:bg-green-700 disabled:bg-slate-600 px-3 sm:px-4 py-2 rounded-lg transition-colors text-white text-sm sm:text-base whitespace-nowrap"
+            className="bg-green-50 border border-green-200 hover:bg-green-100 disabled:bg-gray-200 px-3 sm:px-2 py-1 rounded-none transition-colors text-gray-800 text-xs whitespace-nowrap"
           >
             {t.send}
           </button>
           <button
             onClick={generateCustomerQuestion}
             disabled={isGeneratingResponse}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 px-3 sm:px-4 py-2 rounded-lg transition-colors text-white text-sm sm:text-base whitespace-nowrap"
+            className="bg-blue-50 border border-blue-200 hover:bg-blue-100 disabled:bg-gray-200 px-3 sm:px-2 py-1 rounded-none transition-colors text-gray-800 text-xs whitespace-nowrap"
           >
             {t.autoBtn}
           </button>
@@ -1928,12 +1928,12 @@ Now provide your REVISED response to the customer's question above:`
             onChange={(e) => setFeedbackMessage(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleFeedback()}
             disabled={isGeneratingResponse}
-            className="flex-1 min-w-[200px] bg-slate-800 border border-yellow-500 rounded-lg px-3 py-2 text-white placeholder-slate-400 text-sm sm:text-base"
+            className="flex-1 min-w-[200px] bg-white border border-yellow-500 rounded-none px-2 py-1.5 text-gray-800 placeholder-gray-400 text-xs"
           />
           <button
             onClick={handleFeedback}
             disabled={!feedbackMessage.trim() || isGeneratingResponse}
-            className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-slate-600 px-3 sm:px-4 py-2 rounded-lg transition-colors text-white text-sm sm:text-base whitespace-nowrap"
+            className="bg-yellow-50 hover:bg-yellow-700 disabled:bg-gray-200 px-3 sm:px-2 py-1 rounded-none transition-colors text-gray-800 text-xs whitespace-nowrap"
             title={t.provideCoachFeedback}
           >
             {t.feedbackBtn}
@@ -1941,14 +1941,14 @@ Now provide your REVISED response to the customer's question above:`
           <button
             onClick={handleSaveAsGuideline}
             disabled={!feedbackMessage.trim()}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 px-3 sm:px-4 py-2 rounded-lg transition-colors text-white whitespace-nowrap text-sm sm:text-base"
+            className="bg-blue-50 border border-blue-200 hover:bg-blue-100 disabled:bg-gray-200 px-3 sm:px-2 py-1 rounded-none transition-colors text-gray-800 whitespace-nowrap text-xs"
             title={t.saveAsGuideline}
           >
             💾 {t.saveAsGuideline}
           </button>
         </div>
 
-        <div className="text-xs text-slate-400 mt-4 text-center">
+        <div className="text-xs text-gray-500 mt-4 text-center">
           🎯 <strong>{t.trainingPurpose}:</strong> {t.aiCustomer} → {selectedStaff?.name || 'AI'} ({
             selectedRole === 'coach' ? t.roleCoach :
             selectedRole === 'sales' ? t.roleSales :
@@ -1959,8 +1959,8 @@ Now provide your REVISED response to the customer's question above:`
 
         {/* Training Memory Indicator */}
         {selectedScenario && trainingMemory[selectedScenario.customerType] && trainingMemory[selectedScenario.customerType].length > 0 && (
-          <div className="mt-3 p-2 bg-purple-900/30 rounded-lg border border-purple-600">
-            <div className="text-xs text-purple-300 text-center">
+          <div className="mt-3 p-2 bg-purple-50 rounded-none border border-purple-600">
+            <div className="text-xs text-purple-600 text-center">
               🧠 <strong>{t.activeTrainingMemory}:</strong> {trainingMemory[selectedScenario.customerType].length} {t.feedbackItems} - {selectedScenario.customerType} {t.forCustomers}
             </div>
           </div>
@@ -1968,10 +1968,10 @@ Now provide your REVISED response to the customer's question above:`
       </div>
 
       {/* Available Scenarios */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+            <h3 className="text-xs font-medium text-gray-800 mb-2 flex items-center gap-2">
               {t.trainingScenariosFor} {
                 selectedRole === 'coach' ? `🎓 ${t.roleCoach}` :
                 selectedRole === 'sales' ? `💰 ${t.roleSales}` :
@@ -1979,7 +1979,7 @@ Now provide your REVISED response to the customer's question above:`
                 `🔬 ${t.roleScientist}`
               }
             </h3>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-gray-500">
               {selectedRole === 'coach' && t.coachRoleDesc}
               {selectedRole === 'sales' && t.salesRoleDesc}
               {selectedRole === 'customer-service' && t.customerServiceRoleDesc}
@@ -1991,9 +1991,9 @@ Now provide your REVISED response to the customer's question above:`
             disabled={allTemplatesUsed()}
             className={`${
               allTemplatesUsed()
-                ? 'bg-slate-600 cursor-not-allowed text-slate-400'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
-            } px-4 py-2 rounded-lg flex items-center gap-2 transition-colors`}
+                ? 'bg-gray-200 cursor-not-allowed text-gray-500'
+                : 'bg-blue-50 border border-blue-200 hover:bg-blue-100 text-gray-800'
+            } px-2 py-1 rounded-none flex items-center gap-2 transition-colors`}
             title={allTemplatesUsed() ? t.allScenariosGenerated : t.generate3MoreScenarios}
           >
             <Plus className="w-5 h-5" />
@@ -2003,44 +2003,44 @@ Now provide your REVISED response to the customer's question above:`
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
           {scenarios && scenarios.length > 0 ? scenarios.map((scenario) => (
-            <div key={scenario.id} className={`bg-slate-700 rounded-lg p-3 sm:p-4 border border-slate-600 ${
+            <div key={scenario.id} className={`bg-gray-100 rounded-none p-3 sm:p-4 border border-gray-200 ${
               selectedScenario?.id === scenario.id ? 'border-blue-500' : ''
             }`}>
               <div className="flex items-center justify-between mb-3">
-                <h4 className="font-semibold text-white">{scenario.name}</h4>
+                <h4 className="font-semibold text-gray-800">{scenario.name}</h4>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleDeleteScenario(scenario.id)}
-                    className="text-red-400 hover:text-red-300 p-1 rounded hover:bg-slate-600 transition-colors"
+                    className="text-red-600 hover:text-red-600 p-1 rounded-none hover:bg-gray-200 transition-colors"
                     title={t.deleteScenario}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
-                  <span className={`px-2 py-1 rounded text-xs ${
+                  <span className={`px-2 py-1 rounded-none text-xs ${
                     customerPersonas.find(p => p.id === scenario.customerType)?.color || 'bg-gray-500'
-                  } text-white`}>
+                  } text-gray-800`}>
                     {scenario.customerType}
                   </span>
-                  <span className="px-2 py-1 bg-slate-600 text-slate-300 rounded text-xs flex items-center gap-1">
+                  <span className="px-2 py-1 bg-gray-200 text-gray-600 rounded-none text-xs flex items-center gap-1">
                     <Clock className="h-3 w-3" />
                     {scenario.timeframeMins}m
                   </span>
                 </div>
               </div>
 
-              <p className="text-slate-300 text-sm mb-3">{scenario.description}</p>
+              <p className="text-gray-600 text-xs mb-3">{scenario.description}</p>
 
               <div className="mb-3">
-                <p className="text-xs text-slate-400 mb-1">{t.scenario}:</p>
-                <p className="text-xs text-slate-300">{scenario.scenario}</p>
+                <p className="text-xs text-gray-500 mb-1">{t.scenario}:</p>
+                <p className="text-xs text-gray-600">{scenario.scenario}</p>
               </div>
 
               <div className="mb-4">
-                <p className="text-xs text-slate-400 mb-1">{t.successCriteria}:</p>
+                <p className="text-xs text-gray-500 mb-1">{t.successCriteria}:</p>
                 <ul className="text-xs space-y-1">
                   {scenario.successCriteria && scenario.successCriteria.map((obj, idx) => (
-                    <li key={idx} className="flex items-start gap-2 text-slate-300">
-                      <Target className="h-3 w-3 mt-0.5 text-slate-400" />
+                    <li key={idx} className="flex items-start gap-2 text-gray-600">
+                      <Target className="h-3 w-3 mt-0.5 text-gray-500" />
                       <span>{obj}</span>
                     </li>
                   ))}
@@ -2050,7 +2050,7 @@ Now provide your REVISED response to the customer's question above:`
               <button
                 onClick={() => handleStartSession(scenario)}
                 disabled={isSessionActive}
-                className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 disabled:from-slate-600 disabled:to-slate-600 text-white py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 disabled:from-slate-600 disabled:to-slate-600 text-gray-800 py-2 rounded-none font-semibold transition-colors flex items-center justify-center gap-2"
               >
                 <Play className="h-4 w-4" />
                 {t.startTrainingSession}
@@ -2058,10 +2058,10 @@ Now provide your REVISED response to the customer's question above:`
             </div>
           )) : (
             <div className="col-span-full text-center py-12">
-              <p className="text-slate-400 mb-4">{t.noScenariosYet}</p>
+              <p className="text-gray-500 mb-2">{t.noScenariosYet}</p>
               <button
                 onClick={() => setShowCreateScenario(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg inline-flex items-center gap-2 transition-colors"
+                className="bg-blue-50 border border-blue-200 hover:bg-blue-100 text-gray-800 px-2 py-1 rounded-none inline-flex items-center gap-1 text-xs transition-colors"
               >
                 <Plus className="w-5 h-5" />
                 {t.createFirstScenario}
@@ -2073,9 +2073,9 @@ Now provide your REVISED response to the customer's question above:`
 
       {/* Create Scenario Modal */}
       {showCreateScenario && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-slate-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-bold text-white mb-4">{t.createCustomScenario}</h3>
+        <div className="fixed inset-0 bg-black/10 flex items-center justify-center z-50">
+          <div className="bg-white rounded-none p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xs font-bold text-gray-800 mb-2">{t.createCustomScenario}</h3>
             <ScenarioCreationForm
               onSubmit={createCustomScenario}
               onCancel={() => setShowCreateScenario(false)}
@@ -2087,10 +2087,10 @@ Now provide your REVISED response to the customer's question above:`
 
       {/* AI Coach Prompt Editor Modal */}
       {showPromptEditor && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-slate-800 rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <Settings className="w-5 h-5 text-purple-400" />
+        <div className="fixed inset-0 bg-black/10 flex items-center justify-center z-50">
+          <div className="bg-white rounded-none p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xs font-bold text-gray-800 mb-2 flex items-center gap-2">
+              <Settings className="w-5 h-5 text-purple-600" />
               Configure AI Coach Training Instructions
             </h3>
             <AICoachPromptEditor
@@ -2108,10 +2108,10 @@ Now provide your REVISED response to the customer's question above:`
 
       {/* Staff Creator Modal */}
       {showStaffCreator && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <User className="w-5 h-5 text-purple-400" />
+        <div className="fixed inset-0 bg-black/10 flex items-center justify-center z-50">
+          <div className="bg-white rounded-none p-6 max-w-md w-full mx-4">
+            <h3 className="text-xs font-bold text-gray-800 mb-2 flex items-center gap-2">
+              <User className="w-5 h-5 text-purple-600" />
               Create New AI Staff Member
             </h3>
             <StaffCreatorForm
@@ -2143,30 +2143,30 @@ function StaffCreatorForm({ onSubmit, onCancel }: StaffCreatorFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-2">
       <div>
-        <label className="block text-sm font-medium text-white mb-2">Staff Member Name</label>
+        <label className="block text-xs font-medium text-gray-800 mb-2">Staff Member Name</label>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g., Sarah Johnson, Mike Chen, Dr. Smith"
-          className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400"
+          className="w-full bg-gray-100 border border-gray-200 rounded-none px-2 py-1.5 text-gray-800 placeholder-gray-400"
           required
           autoFocus
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-white mb-2">Role</label>
+        <label className="block text-xs font-medium text-gray-800 mb-2">Role</label>
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => setRole('coach')}
-            className={`p-3 rounded-lg text-left transition-colors ${
+            className={`p-3 rounded-none text-left transition-colors ${
               role === 'coach'
-                ? 'bg-blue-600 text-white border-2 border-blue-400'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600 border-2 border-slate-600'
+                ? 'bg-blue-50 border border-blue-200 text-gray-800 border-2 border-blue-400'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-gray-200'
             }`}
           >
             <div className="font-medium">🎓 Coach</div>
@@ -2175,10 +2175,10 @@ function StaffCreatorForm({ onSubmit, onCancel }: StaffCreatorFormProps) {
           <button
             type="button"
             onClick={() => setRole('sales')}
-            className={`p-3 rounded-lg text-left transition-colors ${
+            className={`p-3 rounded-none text-left transition-colors ${
               role === 'sales'
-                ? 'bg-green-600 text-white border-2 border-green-400'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600 border-2 border-slate-600'
+                ? 'bg-green-50 border border-green-200 text-gray-800 border-2 border-green-400'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-gray-200'
             }`}
           >
             <div className="font-medium">💰 Sales</div>
@@ -2187,10 +2187,10 @@ function StaffCreatorForm({ onSubmit, onCancel }: StaffCreatorFormProps) {
           <button
             type="button"
             onClick={() => setRole('customer-service')}
-            className={`p-3 rounded-lg text-left transition-colors ${
+            className={`p-3 rounded-none text-left transition-colors ${
               role === 'customer-service'
-                ? 'bg-purple-600 text-white border-2 border-purple-400'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600 border-2 border-slate-600'
+                ? 'bg-purple-50 border border-purple-200 text-gray-800 border-2 border-purple-400'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-gray-200'
             }`}
           >
             <div className="font-medium">🛡️ Support</div>
@@ -2199,10 +2199,10 @@ function StaffCreatorForm({ onSubmit, onCancel }: StaffCreatorFormProps) {
           <button
             type="button"
             onClick={() => setRole('scientist')}
-            className={`p-3 rounded-lg text-left transition-colors ${
+            className={`p-3 rounded-none text-left transition-colors ${
               role === 'scientist'
-                ? 'bg-orange-600 text-white border-2 border-orange-400'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600 border-2 border-slate-600'
+                ? 'bg-orange-50 text-gray-800 border-2 border-orange-400'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-2 border-gray-200'
             }`}
           >
             <div className="font-medium">🔬 Scientist</div>
@@ -2215,14 +2215,14 @@ function StaffCreatorForm({ onSubmit, onCancel }: StaffCreatorFormProps) {
         <button
           type="submit"
           disabled={!name.trim()}
-          className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-600 text-white py-2 rounded-lg font-semibold transition-colors"
+          className="flex-1 bg-purple-50 border border-purple-200 hover:bg-purple-100 disabled:bg-gray-100 text-gray-700 py-2 rounded-none font-semibold transition-colors"
         >
           Create Staff Member
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 bg-slate-600 hover:bg-slate-700 text-white py-2 rounded-lg font-semibold transition-colors"
+          className="flex-1 bg-gray-200 hover:bg-gray-100 text-gray-800 py-2 rounded-none font-semibold transition-colors"
         >
           Cancel
         </button>
@@ -2255,23 +2255,23 @@ function AICoachPromptEditor({ prompt, onSave, onCancel }: AICoachPromptEditorPr
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Template Selection */}
       <div>
-        <h4 className="text-lg font-semibold text-white mb-3">Quick Templates</h4>
+        <h4 className="text-xs font-medium text-gray-800 mb-3">Quick Templates</h4>
         <div className="grid md:grid-cols-3 gap-3">
           {promptTemplates.map((template) => (
             <button
               key={template.id}
               onClick={() => handleTemplateSelect(template)}
-              className={`p-3 rounded-lg border text-left transition-colors ${
+              className={`p-3 rounded-none border text-left transition-colors ${
                 selectedTemplate === template.id
-                  ? 'border-purple-500 bg-purple-500/10'
-                  : 'border-slate-600 bg-slate-700 hover:border-purple-400'
+                  ? 'border-purple-500 bg-purple-50/10'
+                  : 'border-gray-200 bg-gray-100 hover:border-purple-400'
               }`}
             >
-              <h5 className="font-medium text-white text-sm">{template.name}</h5>
-              <p className="text-xs text-slate-400 mt-1">{template.description}</p>
+              <h5 className="font-medium text-gray-800 text-xs">{template.name}</h5>
+              <p className="text-xs text-gray-500 mt-1">{template.description}</p>
             </button>
           ))}
         </div>
@@ -2279,23 +2279,23 @@ function AICoachPromptEditor({ prompt, onSave, onCancel }: AICoachPromptEditorPr
 
       {/* Prompt Editor */}
       <div>
-        <h4 className="text-lg font-semibold text-white mb-3">AI Coach Instructions</h4>
+        <h4 className="text-xs font-medium text-gray-800 mb-3">AI Coach Instructions</h4>
         <textarea
           value={editedPrompt}
           onChange={(e) => setEditedPrompt(e.target.value)}
           placeholder="Enter detailed instructions for how the AI coach should behave, respond, and interact with customers..."
           rows={20}
-          className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 font-mono text-sm"
+          className="w-full bg-gray-100 border border-gray-200 rounded-none px-2 py-1.5 text-gray-800 placeholder-gray-400 font-mono text-xs"
         />
-        <div className="text-xs text-slate-400 mt-2">
+        <div className="text-xs text-gray-500 mt-2">
           💡 Be specific about tone, expertise areas, response style, business knowledge, and conversation flow.
         </div>
       </div>
 
       {/* Preview */}
-      <div className="bg-slate-700 rounded-lg p-4 border border-slate-600">
-        <h5 className="text-sm font-medium text-white mb-2">Quick Preview</h5>
-        <div className="text-xs text-slate-300 space-y-1">
+      <div className="bg-gray-100 rounded-none p-4 border border-gray-200">
+        <h5 className="text-sm font-medium text-gray-800 mb-2">Quick Preview</h5>
+        <div className="text-xs text-gray-600 space-y-1">
           <div><strong>Length:</strong> {editedPrompt.length} characters</div>
           <div><strong>Style Keywords:</strong> {
             ['professional', 'friendly', 'scientific', 'warm', 'expert', 'personal'].filter(keyword =>
@@ -2309,13 +2309,13 @@ function AICoachPromptEditor({ prompt, onSave, onCancel }: AICoachPromptEditorPr
       <div className="flex gap-3 pt-4">
         <button
           onClick={handleSave}
-          className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg font-semibold"
+          className="flex-1 bg-purple-50 border border-purple-200 hover:bg-purple-100 text-gray-800 py-2 rounded-none font-semibold"
         >
           Save AI Coach Configuration
         </button>
         <button
           onClick={onCancel}
-          className="flex-1 bg-slate-600 hover:bg-slate-700 text-white py-2 rounded-lg font-semibold"
+          className="flex-1 bg-gray-200 hover:bg-gray-100 text-gray-800 py-2 rounded-none font-semibold"
         >
           Cancel
         </button>
@@ -2375,25 +2375,25 @@ function ScenarioCreationForm({ onSubmit, onCancel, customerPersonas }: Scenario
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-2">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-white mb-1">Scenario Name</label>
+          <label className="block text-xs font-medium text-gray-800 mb-1">Scenario Name</label>
           <input
             type="text"
             value={formData.name}
             onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
             placeholder="e.g., Frustrated Customer - Product Return"
-            className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white"
+            className="w-full bg-gray-100 border border-gray-200 rounded-none px-2 py-1.5 text-gray-800"
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-white mb-1">Customer Type</label>
+          <label className="block text-xs font-medium text-gray-800 mb-1">Customer Type</label>
           <select
             value={formData.customerType}
             onChange={(e) => setFormData(prev => ({ ...prev, customerType: e.target.value }))}
-            className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white"
+            className="w-full bg-gray-100 border border-gray-200 rounded-none px-2 py-1.5 text-gray-800"
             required
           >
             <option value="">Select customer personality</option>
@@ -2405,31 +2405,31 @@ function ScenarioCreationForm({ onSubmit, onCancel, customerPersonas }: Scenario
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-white mb-1">Description</label>
+        <label className="block text-xs font-medium text-gray-800 mb-1">Description</label>
         <input
           type="text"
           value={formData.description}
           onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
           placeholder="Brief description of the training scenario"
-          className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white"
+          className="w-full bg-gray-100 border border-gray-200 rounded-none px-2 py-1.5 text-gray-800"
           required
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-white mb-1">Scenario Details</label>
+        <label className="block text-xs font-medium text-gray-800 mb-1">Scenario Details</label>
         <textarea
           value={formData.scenario}
           onChange={(e) => setFormData(prev => ({ ...prev, scenario: e.target.value }))}
           placeholder="Detailed description of the customer's situation and context..."
           rows={3}
-          className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white"
+          className="w-full bg-gray-100 border border-gray-200 rounded-none px-2 py-1.5 text-gray-800"
           required
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-white mb-1">Learning Objectives</label>
+        <label className="block text-xs font-medium text-gray-800 mb-1">Learning Objectives</label>
         <div className="space-y-2">
           {formData.objectives.map((objective, index) => (
             <div key={index} className="flex gap-2">
@@ -2438,14 +2438,14 @@ function ScenarioCreationForm({ onSubmit, onCancel, customerPersonas }: Scenario
                 value={objective}
                 onChange={(e) => updateObjective(index, e.target.value)}
                 placeholder={`Objective ${index + 1}`}
-                className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white"
+                className="flex-1 bg-gray-100 border border-gray-200 rounded-none px-2 py-1.5 text-gray-800"
                 required
               />
               {formData.objectives.length > 1 && (
                 <button
                   type="button"
                   onClick={() => removeObjective(index)}
-                  className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded-lg text-white"
+                  className="bg-red-50 border border-red-200 hover:bg-red-700 px-2 py-1.5 rounded-none text-gray-800"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -2455,7 +2455,7 @@ function ScenarioCreationForm({ onSubmit, onCancel, customerPersonas }: Scenario
           <button
             type="button"
             onClick={addObjective}
-            className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white flex items-center gap-2"
+            className="bg-blue-50 border border-blue-200 hover:bg-blue-100 px-2 py-1 rounded-none text-gray-800 flex items-center gap-2"
           >
             <Plus className="h-4 w-4" />
             Add Objective
@@ -2464,11 +2464,11 @@ function ScenarioCreationForm({ onSubmit, onCancel, customerPersonas }: Scenario
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-white mb-1">Estimated Duration (minutes)</label>
+        <label className="block text-xs font-medium text-gray-800 mb-1">Estimated Duration (minutes)</label>
         <select
           value={formData.timeframeMins.toString()}
           onChange={(e) => setFormData(prev => ({ ...prev, timeframeMins: parseInt(e.target.value) }))}
-          className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white"
+          className="w-full bg-gray-100 border border-gray-200 rounded-none px-2 py-1.5 text-gray-800"
         >
           <option value="10">10 minutes</option>
           <option value="15">15 minutes</option>
@@ -2481,14 +2481,14 @@ function ScenarioCreationForm({ onSubmit, onCancel, customerPersonas }: Scenario
       <div className="flex gap-2 pt-4">
         <button
           type="submit"
-          className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-semibold"
+          className="flex-1 bg-green-50 border border-green-200 hover:bg-green-100 text-gray-800 py-2 rounded-none font-semibold"
         >
           Create Scenario
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 bg-slate-600 hover:bg-slate-700 text-white py-2 rounded-lg font-semibold"
+          className="flex-1 bg-gray-200 hover:bg-gray-100 text-gray-800 py-2 rounded-none font-semibold"
         >
           Cancel
         </button>

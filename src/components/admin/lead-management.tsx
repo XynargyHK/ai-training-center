@@ -186,13 +186,13 @@ const LeadManagement = () => {
 
   const getStatusColor = (status: string) => {
     const colors = {
-      new: 'bg-blue-500/20 text-blue-300',
-      contacted: 'bg-yellow-500/20 text-yellow-300',
-      engaged: 'bg-purple-500/20 text-purple-300',
-      qualified: 'bg-green-500/20 text-green-300',
-      scheduled: 'bg-cyan-500/20 text-cyan-300',
-      converted: 'bg-green-600/20 text-green-400',
-      lost: 'bg-red-500/20 text-red-300'
+      new: 'bg-blue-50 text-blue-600',
+      contacted: 'bg-yellow-500/20 text-yellow-600',
+      engaged: 'bg-purple-50 text-purple-600',
+      qualified: 'bg-green-50 text-green-600',
+      scheduled: 'bg-cyan-50 text-cyan-600',
+      converted: 'bg-green-50 text-green-600',
+      lost: 'bg-red-50/20 text-red-600'
     }
     return colors[status as keyof typeof colors] || 'bg-gray-500/20 text-gray-300'
   }
@@ -222,14 +222,14 @@ const LeadManagement = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-white">Lead Generation System</h2>
-          <p className="text-slate-400">Manage LinkedIn leads and automate follow-ups</p>
+          <h2 className="text-2xl font-bold text-gray-800">Lead Generation System</h2>
+          <p className="text-gray-500">Manage LinkedIn leads and automate follow-ups</p>
         </div>
 
         <div className="flex gap-2">
           <button
             onClick={() => setShowImportModal(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors text-white"
+            className="flex items-center gap-2 bg-blue-50 border border-blue-200 hover:bg-blue-100 px-4 py-2 rounded-none transition-colors text-gray-800"
           >
             <Upload className="w-4 h-4" />
             Import CSV
@@ -239,7 +239,7 @@ const LeadManagement = () => {
               setEditingLead(null)
               setShowLeadModal(true)
             }}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition-colors text-white"
+            className="flex items-center gap-2 bg-green-50 border border-green-200 hover:bg-green-100 px-4 py-2 rounded-none transition-colors text-gray-800"
           >
             <Plus className="w-4 h-4" />
             Add Lead
@@ -257,15 +257,15 @@ const LeadManagement = () => {
           { label: 'Scheduled', value: stats.scheduled, color: 'yellow' },
           { label: 'Converted', value: stats.converted, color: 'pink' }
         ].map((stat) => (
-          <div key={stat.label} className="bg-slate-800 rounded-lg p-4 border border-slate-700">
-            <p className="text-sm text-slate-400">{stat.label}</p>
+          <div key={stat.label} className="bg-white rounded-none p-4 border border-gray-200">
+            <p className="text-sm text-gray-500">{stat.label}</p>
             <p className={`text-2xl font-bold text-${stat.color}-400`}>{stat.value}</p>
           </div>
         ))}
       </div>
 
       {/* View Tabs */}
-      <div className="flex space-x-2 bg-slate-800 rounded-lg p-1">
+      <div className="flex space-x-2 bg-white rounded-none p-1">
         {[
           { id: 'leads', label: 'Leads', icon: Users },
           { id: 'sequences', label: 'Email Sequences', icon: Mail },
@@ -274,10 +274,10 @@ const LeadManagement = () => {
           <button
             key={id}
             onClick={() => setActiveView(id as any)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-none transition-all ${
               activeView === id
-                ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white'
-                : 'text-slate-300 hover:text-white hover:bg-slate-700'
+                ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-gray-800'
+                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
             }`}
           >
             <Icon className="w-4 h-4" />
@@ -292,20 +292,20 @@ const LeadManagement = () => {
           {/* Filters */}
           <div className="flex gap-4 items-center">
             <div className="flex-1 relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
               <input
                 type="text"
                 placeholder="Search leads..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-white placeholder-slate-400"
+                className="w-full bg-white border border-gray-200 rounded-none pl-10 pr-4 py-2 text-gray-800 placeholder-gray-400"
               />
             </div>
 
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white"
+              className="bg-white border border-gray-200 rounded-none px-4 py-2 text-gray-800"
             >
               <option value="all">All Statuses</option>
               <option value="new">New</option>
@@ -326,14 +326,14 @@ const LeadManagement = () => {
                       e.target.value = ''
                     }
                   }}
-                  className="bg-purple-600 hover:bg-purple-700 border-none rounded-lg px-4 py-2 text-white"
+                  className="bg-purple-50 border border-purple-200 hover:bg-purple-100 border-none rounded-none px-4 py-2 text-gray-800"
                 >
                   <option value="">Enroll in Sequence</option>
                   {sequences.map(seq => (
                     <option key={seq.id} value={seq.id}>{seq.name}</option>
                   ))}
                 </select>
-                <span className="bg-slate-700 px-3 py-2 rounded-lg text-white">
+                <span className="bg-gray-100 px-3 py-2 rounded-none text-gray-800">
                   {selectedLeads.length} selected
                 </span>
               </div>
@@ -341,9 +341,9 @@ const LeadManagement = () => {
           </div>
 
           {/* Leads Table */}
-          <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+          <div className="bg-white rounded-none border border-gray-200 overflow-hidden">
             <table className="w-full">
-              <thead className="bg-slate-900">
+              <thead className="bg-white">
                 <tr>
                   <th className="px-4 py-3 text-left">
                     <input
@@ -359,16 +359,16 @@ const LeadManagement = () => {
                       className="w-4 h-4"
                     />
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300">Name</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300">Company</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300">Title</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300">Status</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300">Score</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-300">Next Follow-up</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-slate-300">Actions</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Name</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Company</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Title</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Status</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Score</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Next Follow-up</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700">
+              <tbody className="divide-y divide-gray-200">
                 {filteredLeads.map((lead) => (
                   <tr key={lead.id} className="hover:bg-slate-750 transition-colors">
                     <td className="px-4 py-3">
@@ -387,29 +387,29 @@ const LeadManagement = () => {
                     </td>
                     <td className="px-4 py-3">
                       <div>
-                        <p className="font-medium text-white">{lead.first_name} {lead.last_name}</p>
-                        <p className="text-sm text-slate-400">{lead.email}</p>
+                        <p className="font-medium text-gray-800">{lead.first_name} {lead.last_name}</p>
+                        <p className="text-sm text-gray-500">{lead.email}</p>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-slate-300">{lead.company || '-'}</td>
-                    <td className="px-4 py-3 text-slate-300">{lead.title || '-'}</td>
+                    <td className="px-4 py-3 text-gray-600">{lead.company || '-'}</td>
+                    <td className="px-4 py-3 text-gray-600">{lead.title || '-'}</td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(lead.lead_status)}`}>
+                      <span className={`px-2 py-1 rounded-none text-xs font-medium ${getStatusColor(lead.lead_status)}`}>
                         {lead.lead_status}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-12 bg-slate-700 rounded-full h-2">
+                        <div className="w-12 bg-gray-100 rounded-full h-2">
                           <div
                             className="bg-gradient-to-r from-purple-500 to-cyan-500 h-2 rounded-full"
                             style={{ width: `${lead.lead_score}%` }}
                           />
                         </div>
-                        <span className="text-sm text-slate-300">{lead.lead_score}</span>
+                        <span className="text-sm text-gray-600">{lead.lead_score}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-300">
+                    <td className="px-4 py-3 text-sm text-gray-600">
                       {lead.next_follow_up_at ? new Date(lead.next_follow_up_at).toLocaleDateString() : '-'}
                     </td>
                     <td className="px-4 py-3">
@@ -419,7 +419,7 @@ const LeadManagement = () => {
                             setEditingLead(lead)
                             setShowLeadModal(true)
                           }}
-                          className="text-blue-400 hover:text-blue-300 p-1"
+                          className="text-blue-600 hover:text-blue-600 p-1"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
@@ -430,7 +430,7 @@ const LeadManagement = () => {
                               saveLeads()
                             }
                           }}
-                          className="text-red-400 hover:text-red-300 p-1"
+                          className="text-red-600 hover:text-red-600 p-1"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -442,7 +442,7 @@ const LeadManagement = () => {
             </table>
 
             {filteredLeads.length === 0 && (
-              <div className="text-center py-12 text-slate-400">
+              <div className="text-center py-12 text-gray-500">
                 No leads found. Import a CSV or add leads manually.
               </div>
             )}
@@ -455,29 +455,29 @@ const LeadManagement = () => {
         <div className="space-y-4">
           <div className="grid gap-4">
             {sequences.map((sequence) => (
-              <div key={sequence.id} className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+              <div key={sequence.id} className="bg-white rounded-none p-6 border border-gray-200">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-white">{sequence.name}</h3>
-                    <p className="text-slate-400">{sequence.description}</p>
+                    <h3 className="text-lg font-semibold text-gray-800">{sequence.name}</h3>
+                    <p className="text-gray-500">{sequence.description}</p>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-sm ${sequence.is_active ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
+                  <span className={`px-3 py-1 rounded-full text-sm ${sequence.is_active ? 'bg-green-50 text-green-600' : 'bg-red-50/20 text-red-600'}`}>
                     {sequence.is_active ? 'Active' : 'Inactive'}
                   </span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                   <div>
-                    <p className="text-slate-400">Delay Between Emails</p>
-                    <p className="text-white font-medium">{sequence.delay_days} days</p>
+                    <p className="text-gray-500">Delay Between Emails</p>
+                    <p className="text-gray-800 font-medium">{sequence.delay_days} days</p>
                   </div>
                   <div>
-                    <p className="text-slate-400">Max Emails</p>
-                    <p className="text-white font-medium">{sequence.max_emails}</p>
+                    <p className="text-gray-500">Max Emails</p>
+                    <p className="text-gray-800 font-medium">{sequence.max_emails}</p>
                   </div>
                   <div>
-                    <p className="text-slate-400">Enrolled Leads</p>
-                    <p className="text-white font-medium">0</p>
+                    <p className="text-gray-500">Enrolled Leads</p>
+                    <p className="text-gray-800 font-medium">0</p>
                   </div>
                 </div>
               </div>
@@ -488,31 +488,31 @@ const LeadManagement = () => {
 
       {/* CSV Import Modal */}
       {showImportModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-xl p-6 max-w-lg w-full">
-            <h3 className="text-xl font-bold text-white mb-4">Import Leads from CSV</h3>
+        <div className="fixed inset-0 bg-black/10 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-none p-6 max-w-lg w-full">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Import Leads from CSV</h3>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-gray-600 mb-2">
                   Upload CSV File
                 </label>
                 <input
                   type="file"
                   accept=".csv"
                   onChange={handleCSVImport}
-                  className="w-full text-slate-300"
+                  className="w-full text-gray-600"
                 />
               </div>
 
-              <div className="bg-slate-900 rounded p-4">
-                <p className="text-sm text-slate-300 mb-2">Expected CSV format:</p>
-                <code className="text-xs text-cyan-400">
+              <div className="bg-white rounded-none p-4">
+                <p className="text-sm text-gray-600 mb-2">Expected CSV format:</p>
+                <code className="text-xs text-cyan-600">
                   first_name,last_name,email,title,company,linkedin_url
                 </code>
               </div>
 
-              <div className="text-sm text-slate-400">
+              <div className="text-sm text-gray-500">
                 <p>• Download leads from LinkedIn Sales Navigator</p>
                 <p>• Export as CSV</p>
                 <p>• Upload here to start automated follow-ups</p>
@@ -522,7 +522,7 @@ const LeadManagement = () => {
             <div className="flex gap-2 mt-6">
               <button
                 onClick={() => setShowImportModal(false)}
-                className="flex-1 bg-slate-600 hover:bg-slate-700 px-4 py-2 rounded-lg text-white"
+                className="flex-1 bg-gray-200 hover:bg-gray-100 px-4 py-2 rounded-none text-gray-800"
               >
                 Cancel
               </button>

@@ -76,18 +76,18 @@ export default function UniversalTextEditor({
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-1">
-        <label className="text-xs text-slate-400">{label}</label>
+      <div className="flex flex-wrap items-center gap-2 mb-1">
+        <label className="text-xs text-gray-500">{label}</label>
 
         {/* Alignment buttons */}
         {onTextAlignChange && (
           <div className="flex items-center gap-1">
             <button
               onClick={() => onTextAlignChange('left')}
-              className={`p-1 rounded ${
+              className={`p-1 rounded-none ${
                 textAlign === 'left'
-                  ? 'bg-violet-600 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                  : 'text-gray-500 hover:text-gray-700'
               }`}
               title="Align Left"
             >
@@ -95,10 +95,10 @@ export default function UniversalTextEditor({
             </button>
             <button
               onClick={() => onTextAlignChange('center')}
-              className={`p-1 rounded ${
+              className={`p-1 rounded-none ${
                 textAlign === 'center'
-                  ? 'bg-violet-600 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                  : 'text-gray-500 hover:text-gray-700'
               }`}
               title="Align Center"
             >
@@ -106,10 +106,10 @@ export default function UniversalTextEditor({
             </button>
             <button
               onClick={() => onTextAlignChange('right')}
-              className={`p-1 rounded ${
+              className={`p-1 rounded-none ${
                 textAlign === 'right'
-                  ? 'bg-violet-600 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                  : 'text-gray-500 hover:text-gray-700'
               }`}
               title="Align Right"
             >
@@ -123,10 +123,10 @@ export default function UniversalTextEditor({
           {onBoldChange && (
             <button
               onClick={() => onBoldChange(!bold)}
-              className={`p-1 rounded ${
+              className={`p-1 rounded-none ${
                 bold
-                  ? 'bg-violet-600 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                  : 'text-gray-500 hover:text-gray-700'
               }`}
               title="Bold"
             >
@@ -136,10 +136,10 @@ export default function UniversalTextEditor({
           {onItalicChange && (
             <button
               onClick={() => onItalicChange(!italic)}
-              className={`p-1 rounded ${
+              className={`p-1 rounded-none ${
                 italic
-                  ? 'bg-violet-600 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                  : 'text-gray-500 hover:text-gray-700'
               }`}
               title="Italic"
             >
@@ -155,12 +155,12 @@ export default function UniversalTextEditor({
             <div className="relative">
               <button
                 onClick={() => setShowFontMenu(showFontMenu === 'size' ? null : 'size')}
-                className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+                className="px-2 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-none border border-gray-200"
               >
                 {Math.round(parseFloat(fontSize) * 16) || 16}
               </button>
               {showFontMenu === 'size' && (
-                <div className="fixed md:absolute left-4 md:left-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-1 w-20 bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-48 overflow-y-auto">
+                <div className="fixed md:absolute left-4 md:left-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-1 w-20 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-48 overflow-y-auto">
                   {[12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64, 72, 80, 96].map(size => (
                     <button
                       key={size}
@@ -168,8 +168,8 @@ export default function UniversalTextEditor({
                         onFontSizeChange(`${size / 16}rem`)
                         setShowFontMenu(null)
                       }}
-                      className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                        Math.round(parseFloat(fontSize) * 16) === size ? 'bg-violet-600 text-white' : 'text-slate-200'
+                      className={`w-full px-2 py-1 text-left text-xs hover:bg-gray-200 ${
+                        Math.round(parseFloat(fontSize) * 16) === size ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                       }`}
                     >
                       {size}
@@ -185,12 +185,12 @@ export default function UniversalTextEditor({
             <div className="relative">
               <button
                 onClick={() => setShowFontMenu(showFontMenu === 'font' ? null : 'font')}
-                className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded border border-slate-600"
+                className="px-2 py-0.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-none border border-gray-200"
               >
                 {fontFamily.split(' ')[0]}
               </button>
               {showFontMenu === 'font' && (
-                <div className="fixed md:absolute left-4 md:left-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-1 w-40 max-w-[calc(100vw-2rem)] bg-slate-700 border border-slate-600 rounded shadow-lg z-50 max-h-64 overflow-y-auto">
+                <div className="fixed md:absolute left-4 md:left-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-1 w-40 max-w-[calc(100vw-2rem)] bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-64 overflow-y-auto">
                   {['Josefin Sans', 'Cormorant Garamond', 'Playfair Display', 'Montserrat', 'Inter', 'Lora', 'Raleway', 'Open Sans'].map(font => (
                     <button
                       key={font}
@@ -198,8 +198,8 @@ export default function UniversalTextEditor({
                         onFontFamilyChange(font)
                         setShowFontMenu(null)
                       }}
-                      className={`w-full px-3 py-1.5 text-left text-xs hover:bg-slate-600 ${
-                        fontFamily === font ? 'bg-violet-600 text-white' : 'text-slate-200'
+                      className={`w-full px-2 py-1 text-left text-xs hover:bg-gray-200 ${
+                        fontFamily === font ? 'bg-violet-50 border border-violet-200 text-gray-800' : 'text-gray-700'
                       }`}
                     >
                       {font}
@@ -215,12 +215,12 @@ export default function UniversalTextEditor({
             <div className="relative">
               <button
                 onClick={() => setShowColorPicker(!showColorPicker)}
-                className="w-7 h-7 rounded border border-slate-600 cursor-pointer hover:scale-110 transition-transform"
+                className="w-7 h-7 rounded-none border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
                 style={{ backgroundColor: color }}
                 title="Text color"
               />
               {showColorPicker && (
-                <div className="fixed md:absolute left-4 right-4 md:left-auto md:right-0 top-1/2 -translate-y-1/2 md:top-full md:translate-y-0 mt-0 md:mt-2 p-3 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50 max-w-xs mx-auto">
+                <div className="fixed md:absolute left-4 right-4 md:left-auto md:right-0 top-1/2 -translate-y-1/2 md:top-full md:translate-y-0 mt-0 md:mt-2 p-3 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-w-xs mx-auto">
                   <div className="grid grid-cols-7 gap-2">
                     {COLOR_PALETTE.map((c) => (
                       <button
@@ -229,7 +229,7 @@ export default function UniversalTextEditor({
                           onColorChange(c.value)
                           setShowColorPicker(false)
                         }}
-                        className="w-7 h-7 rounded border-2 hover:scale-110 transition-transform"
+                        className="w-7 h-7 rounded-none border-2 hover:scale-110 transition-transform"
                         style={{
                           backgroundColor: c.value,
                           borderColor: color === c.value ? '#a855f7' : '#475569'
@@ -252,7 +252,7 @@ export default function UniversalTextEditor({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           rows={rows}
-          className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500 resize-y"
+          className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500 resize-y"
         />
       ) : (
         <input
@@ -260,7 +260,7 @@ export default function UniversalTextEditor({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+          className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500"
         />
       )}
     </div>

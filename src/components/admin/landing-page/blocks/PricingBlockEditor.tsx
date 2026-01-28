@@ -84,7 +84,7 @@ export default function PricingBlockEditor({ block, onUpdate }: PricingBlockEdit
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Headline */}
       <div>
         <UniversalTextEditor
@@ -133,7 +133,7 @@ export default function PricingBlockEditor({ block, onUpdate }: PricingBlockEdit
       <div>
         <div className="flex justify-between items-center mb-3">
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-slate-300">Features</label>
+            <label className="text-xs font-medium text-gray-600">Features</label>
             <TextEditorControls
               label=""
               value=""
@@ -155,7 +155,7 @@ export default function PricingBlockEditor({ block, onUpdate }: PricingBlockEdit
           </div>
           <button
             onClick={addFeature}
-            className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
+            className="flex items-center gap-1 text-sm text-violet-600 hover:text-violet-600"
           >
             <Plus className="w-4 h-4" />
             Add Feature
@@ -169,12 +169,12 @@ export default function PricingBlockEditor({ block, onUpdate }: PricingBlockEdit
                 type="text"
                 value={feature}
                 onChange={(e) => updateFeature(index, e.target.value)}
-                className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                className="flex-1 px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-xs"
                 placeholder="Feature description"
               />
               <button
                 onClick={() => removeFeature(index)}
-                className="text-red-400 hover:text-red-300"
+                className="text-red-600 hover:text-red-600"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -208,10 +208,10 @@ export default function PricingBlockEditor({ block, onUpdate }: PricingBlockEdit
       {/* Plans */}
       <div>
         <div className="flex justify-between items-center mb-3">
-          <label className="text-sm font-medium text-slate-300">Plan Options</label>
+          <label className="text-xs font-medium text-gray-600">Plan Options</label>
           <button
             onClick={addPlan}
-            className="flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300"
+            className="flex items-center gap-1 text-sm text-violet-600 hover:text-violet-600"
           >
             <Plus className="w-4 h-4" />
             Add Plan
@@ -286,13 +286,13 @@ export default function PricingBlockEditor({ block, onUpdate }: PricingBlockEdit
 
         <div className="space-y-3">
           {(block.data.plans || []).map((plan: any, index: number) => (
-            <div key={index} className="bg-slate-800/50 rounded-lg p-4 border border-slate-600">
+            <div key={index} className="bg-gray-50 rounded-none p-2 border border-gray-200">
               <div className="flex justify-between items-center mb-3">
-                <span className="text-sm font-medium text-slate-300">Plan {index + 1}</span>
+                <span className="text-xs font-medium text-gray-600">Plan {index + 1}</span>
                 {(block.data.plans || []).length > 1 && (
                   <button
                     onClick={() => removePlan(index)}
-                    className="text-red-400 hover:text-red-300"
+                    className="text-red-600 hover:text-red-600"
                     title="Delete plan"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -303,23 +303,23 @@ export default function PricingBlockEditor({ block, onUpdate }: PricingBlockEdit
               <div className="space-y-3">
                 {/* Title */}
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Plan Title</label>
+                  <label className="block text-xs text-gray-500 mb-1">Plan Title</label>
                   <input
                     type="text"
                     value={plan.title || ''}
                     onChange={(e) => updatePlan(index, 'title', e.target.value)}
                     placeholder="e.g., 1 Month (2 Treatments)"
-                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                    className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-xs"
                   />
                 </div>
 
                 {/* Plan Content */}
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <label className="text-xs text-slate-400">Plan Content (shows when plan is selected)</label>
+                    <label className="text-xs text-gray-500">Plan Content (shows when plan is selected)</label>
                     <button
                       onClick={() => addPlanContent(index)}
-                      className="flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300"
+                      className="flex items-center gap-1 text-xs text-violet-600 hover:text-violet-600"
                     >
                       <Plus className="w-3 h-3" />
                       Add Content
@@ -332,12 +332,12 @@ export default function PricingBlockEditor({ block, onUpdate }: PricingBlockEdit
                           type="text"
                           value={contentItem}
                           onChange={(e) => updatePlanContent(index, contentIndex, e.target.value)}
-                          className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-xs"
+                          className="flex-1 px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-xs"
                           placeholder="Content item"
                         />
                         <button
                           onClick={() => removePlanContent(index, contentIndex)}
-                          className="text-red-400 hover:text-red-300"
+                          className="text-red-600 hover:text-red-600"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
@@ -348,34 +348,34 @@ export default function PricingBlockEditor({ block, onUpdate }: PricingBlockEdit
 
                 {/* Product ID */}
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Product ID (optional)</label>
+                  <label className="block text-xs text-gray-500 mb-1">Product ID (optional)</label>
                   <input
                     type="text"
                     value={plan.product_id || ''}
                     onChange={(e) => updatePlan(index, 'product_id', e.target.value)}
                     placeholder="Product UUID from database"
-                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm font-mono text-xs"
+                    className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-xs font-mono text-xs"
                   />
                 </div>
 
                 {/* Prices */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Original Price</label>
+                    <label className="block text-xs text-gray-500 mb-1">Original Price</label>
                     <input
                       type="number"
                       value={plan.original_price || 0}
                       onChange={(e) => updatePlan(index, 'original_price', parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                      className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-xs"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Discounted Price</label>
+                    <label className="block text-xs text-gray-500 mb-1">Discounted Price</label>
                     <input
                       type="number"
                       value={plan.discounted_price || 0}
                       onChange={(e) => updatePlan(index, 'discounted_price', parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                      className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-xs"
                     />
                   </div>
                 </div>
@@ -387,9 +387,9 @@ export default function PricingBlockEditor({ block, onUpdate }: PricingBlockEdit
                       type="checkbox"
                       checked={plan.popular === true}
                       onChange={(e) => updatePlan(index, 'popular', e.target.checked)}
-                      className="w-4 h-4 rounded border-slate-600 text-violet-600 focus:ring-violet-500"
+                      className="w-4 h-4 rounded-none border-gray-200 text-violet-600 focus:ring-violet-500"
                     />
-                    <span className="text-xs text-slate-400">Mark as "Most Popular"</span>
+                    <span className="text-xs text-gray-500">Mark as "Most Popular"</span>
                   </label>
                 </div>
               </div>
@@ -418,7 +418,7 @@ export default function PricingBlockEditor({ block, onUpdate }: PricingBlockEdit
           onColorChange={(color) => updateData('cta_color', color)}
           placeholder="Subscribe & SAVE"
         />
-        <p className="text-xs text-slate-400 mt-1">The discount % will be auto-calculated and shown below the button</p>
+        <p className="text-xs text-gray-500 mt-1">The discount % will be auto-calculated and shown below the button</p>
       </div>
     </div>
   )

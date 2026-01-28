@@ -618,6 +618,98 @@ export interface Translations {
   booking: string
   appointmentBookedSuccess: string
   confirmationNotificationMessage: string
+
+  // Knowledge Base - Sub-tabs
+  industryKnowledge: string
+  landingPageTab: string
+  imageLibrary: string
+
+  // Industry Knowledge Section
+  uploadDocumentsDesc: string
+  uploadDocument: string
+  browseFiles: string
+  supportedFileTypes: string
+
+  // Landing Page Editor
+  landingPageEditor: string
+  saving: string
+  preview: string
+  viewLive: string
+  addBlock: string
+  publish: string
+  publishedStatus: string
+  liveStatus: string
+  loading: string
+  noLandingPageYet: string
+  createLandingPage: string
+
+  // Block Types
+  splitBlock: string
+  splitBlockDesc: string
+  cardBlock: string
+  cardBlockDesc: string
+  accordionBlock: string
+  accordionBlockDesc: string
+  pricingTableBlock: string
+  pricingTableBlockDesc: string
+  testimonialsBlock: string
+  testimonialsBlockDesc: string
+  textImageGridBlock: string
+  textImageGridBlockDesc: string
+
+  // Landing Page Sections
+  announcementBanner: string
+  rotatingAnnouncements: string
+  translateBtn: string
+  menuBar: string
+  menuBarDesc: string
+  heroBanner: string
+  carouselWithSlides: (count: number) => string
+  addSlide: string
+  carouselSlides: string
+  horizontalScroll: string
+
+  // Logo Settings
+  logoSettings: string
+  positionLabel: string
+  leftPosition: string
+  centerPosition: string
+  logoText: string
+  brandNamePlaceholder: string
+  logoImage: string
+
+  // Menu Items
+  menuItemsLeft: string
+  rightSideUtilities: string
+
+  // Publishing
+  saveLandingPageFirst: string
+  confirmUnpublish: string
+  confirmPublish: string
+  landingPageUnpublished: string
+  landingPageNowLive: string
+  failedToUpdatePublish: string
+
+  // Translation Mode
+  exitTranslationMode: string
+  enableTranslationMode: string
+
+  // Common Actions
+  copyUrl: string
+  remove: string
+  moveUp: string
+  moveDown: string
+  deleteSlide: string
+  afterAddClickSave: string
+  rememberClickSave: string
+  boldText: string
+  italicText: string
+  alignLeft: string
+  alignCenter: string
+  alignRight: string
+  textColor: string
+  bgColor: string
+  removeFeature: string
 }
 
 export const translations: Record<Language, Translations> = {
@@ -1250,6 +1342,98 @@ export const translations: Record<Language, Translations> = {
     booking: 'Booking...',
     appointmentBookedSuccess: 'Your appointment has been successfully booked.',
     confirmationNotificationMessage: 'You will receive a confirmation notification soon. A room will be assigned for your appointment.',
+
+    // Knowledge Base - Sub-tabs
+    industryKnowledge: 'Industry Knowledge',
+    landingPageTab: 'Landing Page',
+    imageLibrary: 'Image Library',
+
+    // Industry Knowledge Section
+    uploadDocumentsDesc: 'Upload documents or scrape websites for AI staff to learn from',
+    uploadDocument: 'Upload Document',
+    browseFiles: 'Browse Files',
+    supportedFileTypes: 'PDFs, Word docs, product manuals, training guides, FAQs, etc.',
+
+    // Landing Page Editor
+    landingPageEditor: 'Landing Page Editor',
+    saving: 'Saving...',
+    preview: 'Preview',
+    viewLive: 'View Live',
+    addBlock: 'Add Block',
+    publish: 'Publish',
+    publishedStatus: 'Published',
+    liveStatus: 'Live',
+    loading: 'Loading...',
+    noLandingPageYet: 'No landing page configured yet. Create one to customize what customers see.',
+    createLandingPage: 'Create Landing Page',
+
+    // Block Types
+    splitBlock: 'Split',
+    splitBlockDesc: 'Text alongside image',
+    cardBlock: 'Card',
+    cardBlockDesc: 'Testimonials & reviews grid',
+    accordionBlock: 'Accordion',
+    accordionBlockDesc: 'Expandable FAQ sections',
+    pricingTableBlock: 'Pricing Table',
+    pricingTableBlockDesc: 'Pricing comparison with discounts',
+    testimonialsBlock: 'Testimonials',
+    testimonialsBlockDesc: 'Customer reviews carousel',
+    textImageGridBlock: 'Text/Image Grid',
+    textImageGridBlockDesc: 'Flexible text & image layout',
+
+    // Landing Page Sections
+    announcementBanner: 'Announcement Banner',
+    rotatingAnnouncements: 'Rotating announcements (5s interval)',
+    translateBtn: 'Translate',
+    menuBar: 'Menu Bar',
+    menuBarDesc: 'Logo, navigation links & utilities',
+    heroBanner: 'Hero Banner',
+    carouselWithSlides: (count: number) => `Carousel with ${count} slides`,
+    addSlide: 'Add Slide',
+    carouselSlides: 'Carousel Slides',
+    horizontalScroll: 'Horizontal Scroll',
+
+    // Logo Settings
+    logoSettings: 'Logo Settings',
+    positionLabel: 'Position',
+    leftPosition: 'Left',
+    centerPosition: 'Center',
+    logoText: 'Logo Text',
+    brandNamePlaceholder: 'Brand Name',
+    logoImage: 'Logo Image',
+
+    // Menu Items
+    menuItemsLeft: 'Menu Items (Left Side)',
+    rightSideUtilities: 'Right Side Utilities',
+
+    // Publishing
+    saveLandingPageFirst: 'Please save the landing page first before publishing.',
+    confirmUnpublish: 'This will unpublish the landing page. Continue?',
+    confirmPublish: 'This will make the landing page live. Continue?',
+    landingPageUnpublished: 'Landing page unpublished!',
+    landingPageNowLive: 'Landing page is now live!',
+    failedToUpdatePublish: 'Failed to update publish status',
+
+    // Translation Mode
+    exitTranslationMode: 'Exit Translation Mode',
+    enableTranslationMode: 'Enable Translation Mode',
+
+    // Common Actions
+    copyUrl: 'Copy URL',
+    remove: 'Remove',
+    moveUp: 'Move up',
+    moveDown: 'Move down',
+    deleteSlide: 'Delete slide',
+    afterAddClickSave: 'After adding, click "Save" to save',
+    rememberClickSave: 'Remember to click "Save" to save your changes',
+    boldText: 'Bold',
+    italicText: 'Italic',
+    alignLeft: 'Align Left',
+    alignCenter: 'Align Center',
+    alignRight: 'Align Right',
+    textColor: 'Text color',
+    bgColor: 'Background color',
+    removeFeature: 'Remove feature',
   },
 
   'zh-CN': {
@@ -1825,6 +2009,79 @@ export const translations: Record<Language, Translations> = {
     booking: '预约中...',
     appointmentBookedSuccess: '您的预约已成功预订。',
     confirmationNotificationMessage: '您将很快收到确认通知。我们会为您的预约分配房间。',
+
+    industryKnowledge: '行业知识',
+    landingPageTab: '落地页',
+    imageLibrary: '图片库',
+    uploadDocumentsDesc: '上传文件或抓取网站内容供AI员工学习',
+    uploadDocument: '上传文件',
+    browseFiles: '浏览文件',
+    supportedFileTypes: 'PDF、Word文档、产品手册、培训指南、常见问题等',
+    landingPageEditor: '落地页编辑器',
+    saving: '保存中...',
+    preview: '预览',
+    viewLive: '查看线上版',
+    addBlock: '添加模块',
+    publish: '发布',
+    publishedStatus: '已发布',
+    liveStatus: '上线中',
+    loading: '加载中...',
+    noLandingPageYet: '尚未配置落地页。创建一个来自定义客户看到的内容。',
+    createLandingPage: '创建落地页',
+    splitBlock: '分栏',
+    splitBlockDesc: '文字配图片',
+    cardBlock: '卡片',
+    cardBlockDesc: '评价与评论网格',
+    accordionBlock: '手风琴',
+    accordionBlockDesc: '可展开的FAQ区域',
+    pricingTableBlock: '价格表',
+    pricingTableBlockDesc: '价格对比与折扣',
+    testimonialsBlock: '客户评价',
+    testimonialsBlockDesc: '客户评论轮播',
+    textImageGridBlock: '文图网格',
+    textImageGridBlockDesc: '灵活的文字与图片布局',
+    announcementBanner: '公告横幅',
+    rotatingAnnouncements: '轮播公告（5秒间隔）',
+    translateBtn: '翻译',
+    menuBar: '菜单栏',
+    menuBarDesc: 'Logo、导航链接和工具',
+    heroBanner: '首屏横幅',
+    carouselWithSlides: (count: number) => `轮播共 ${count} 页`,
+    addSlide: '添加幻灯片',
+    carouselSlides: '轮播幻灯片',
+    horizontalScroll: '横向滚动',
+    logoSettings: 'Logo 设置',
+    positionLabel: '位置',
+    leftPosition: '左',
+    centerPosition: '居中',
+    logoText: 'Logo 文字',
+    brandNamePlaceholder: '品牌名称',
+    logoImage: 'Logo 图片',
+    menuItemsLeft: '菜单项（左侧）',
+    rightSideUtilities: '右侧工具',
+    saveLandingPageFirst: '请先保存落地页再发布。',
+    confirmUnpublish: '这将取消发布落地页。确定继续？',
+    confirmPublish: '这将使落地页上线。确定继续？',
+    landingPageUnpublished: '落地页已取消发布！',
+    landingPageNowLive: '落地页已上线！',
+    failedToUpdatePublish: '更新发布状态失败',
+    exitTranslationMode: '退出翻译模式',
+    enableTranslationMode: '启用翻译模式',
+    copyUrl: '复制链接',
+    remove: '移除',
+    moveUp: '上移',
+    moveDown: '下移',
+    deleteSlide: '删除幻灯片',
+    afterAddClickSave: '添加后，点击"保存"来保存',
+    rememberClickSave: '记得点击"保存"来保存更改',
+    boldText: '粗体',
+    italicText: '斜体',
+    alignLeft: '左对齐',
+    alignCenter: '居中对齐',
+    alignRight: '右对齐',
+    textColor: '文字颜色',
+    bgColor: '背景颜色',
+    removeFeature: '移除特性',
   },
 
   'zh-TW': {
@@ -2398,6 +2655,79 @@ export const translations: Record<Language, Translations> = {
     booking: '預約中...',
     appointmentBookedSuccess: '您的預約已成功預訂。',
     confirmationNotificationMessage: '您將很快收到確認通知。我們會為您的預約分配房間。',
+
+    industryKnowledge: '行業知識',
+    landingPageTab: '著陸頁',
+    imageLibrary: '圖片庫',
+    uploadDocumentsDesc: '上傳文件或擷取網站內容供AI員工學習',
+    uploadDocument: '上傳文件',
+    browseFiles: '瀏覽文件',
+    supportedFileTypes: 'PDF、Word文件、產品手冊、培訓指南、常見問題等',
+    landingPageEditor: '著陸頁編輯器',
+    saving: '儲存中...',
+    preview: '預覽',
+    viewLive: '查看線上版',
+    addBlock: '新增模組',
+    publish: '發佈',
+    publishedStatus: '已發佈',
+    liveStatus: '上線中',
+    loading: '載入中...',
+    noLandingPageYet: '尚未設定著陸頁。建立一個來自訂客戶看到的內容。',
+    createLandingPage: '建立著陸頁',
+    splitBlock: '分欄',
+    splitBlockDesc: '文字配圖片',
+    cardBlock: '卡片',
+    cardBlockDesc: '評價與評論網格',
+    accordionBlock: '手風琴',
+    accordionBlockDesc: '可展開的FAQ區域',
+    pricingTableBlock: '價格表',
+    pricingTableBlockDesc: '價格對比與折扣',
+    testimonialsBlock: '客戶評價',
+    testimonialsBlockDesc: '客戶評論輪播',
+    textImageGridBlock: '文圖網格',
+    textImageGridBlockDesc: '靈活的文字與圖片佈局',
+    announcementBanner: '公告橫幅',
+    rotatingAnnouncements: '輪播公告（5秒間隔）',
+    translateBtn: '翻譯',
+    menuBar: '選單列',
+    menuBarDesc: 'Logo、導航連結和工具',
+    heroBanner: '首屏橫幅',
+    carouselWithSlides: (count: number) => `輪播共 ${count} 頁`,
+    addSlide: '新增幻燈片',
+    carouselSlides: '輪播幻燈片',
+    horizontalScroll: '橫向捲動',
+    logoSettings: 'Logo 設定',
+    positionLabel: '位置',
+    leftPosition: '左',
+    centerPosition: '居中',
+    logoText: 'Logo 文字',
+    brandNamePlaceholder: '品牌名稱',
+    logoImage: 'Logo 圖片',
+    menuItemsLeft: '選單項目（左側）',
+    rightSideUtilities: '右側工具',
+    saveLandingPageFirst: '請先儲存著陸頁再發佈。',
+    confirmUnpublish: '這將取消發佈著陸頁。確定繼續？',
+    confirmPublish: '這將使著陸頁上線。確定繼續？',
+    landingPageUnpublished: '著陸頁已取消發佈！',
+    landingPageNowLive: '著陸頁已上線！',
+    failedToUpdatePublish: '更新發佈狀態失敗',
+    exitTranslationMode: '退出翻譯模式',
+    enableTranslationMode: '啟用翻譯模式',
+    copyUrl: '複製連結',
+    remove: '移除',
+    moveUp: '上移',
+    moveDown: '下移',
+    deleteSlide: '刪除幻燈片',
+    afterAddClickSave: '新增後，點擊「儲存」來儲存',
+    rememberClickSave: '記得點擊「儲存」來儲存更改',
+    boldText: '粗體',
+    italicText: '斜體',
+    alignLeft: '靠左對齊',
+    alignCenter: '置中對齊',
+    alignRight: '靠右對齊',
+    textColor: '文字顏色',
+    bgColor: '背景顏色',
+    removeFeature: '移除特性',
   },
 
   'vi': {
@@ -2971,6 +3301,79 @@ export const translations: Record<Language, Translations> = {
     booking: 'Đang Đặt...',
     appointmentBookedSuccess: 'Lịch hẹn của bạn đã được đặt thành công.',
     confirmationNotificationMessage: 'Bạn sẽ sớm nhận được thông báo xác nhận. Phòng sẽ được phân bổ cho lịch hẹn của bạn.',
+
+    industryKnowledge: 'Kiến Thức Ngành',
+    landingPageTab: 'Trang Đích',
+    imageLibrary: 'Thư Viện Hình Ảnh',
+    uploadDocumentsDesc: 'Tải lên tài liệu hoặc thu thập nội dung web để AI nhân viên học hỏi',
+    uploadDocument: 'Tải Lên Tài Liệu',
+    browseFiles: 'Duyệt Tệp',
+    supportedFileTypes: 'PDF, Word, sổ tay sản phẩm, hướng dẫn đào tạo, FAQ, v.v.',
+    landingPageEditor: 'Trình Biên Tập Trang Đích',
+    saving: 'Đang lưu...',
+    preview: 'Xem Trước',
+    viewLive: 'Xem Trực Tuyến',
+    addBlock: 'Thêm Khối',
+    publish: 'Xuất Bản',
+    publishedStatus: 'Đã Xuất Bản',
+    liveStatus: 'Đang Hoạt Động',
+    loading: 'Đang tải...',
+    noLandingPageYet: 'Chưa có trang đích nào. Tạo một trang để tùy chỉnh nội dung khách hàng thấy.',
+    createLandingPage: 'Tạo Trang Đích',
+    splitBlock: 'Chia Đôi',
+    splitBlockDesc: 'Văn bản bên cạnh hình ảnh',
+    cardBlock: 'Thẻ',
+    cardBlockDesc: 'Lưới đánh giá & nhận xét',
+    accordionBlock: 'Accordion',
+    accordionBlockDesc: 'Mục FAQ có thể mở rộng',
+    pricingTableBlock: 'Bảng Giá',
+    pricingTableBlockDesc: 'So sánh giá với giảm giá',
+    testimonialsBlock: 'Nhận Xét',
+    testimonialsBlockDesc: 'Băng chuyền đánh giá khách hàng',
+    textImageGridBlock: 'Lưới Văn Bản/Hình Ảnh',
+    textImageGridBlockDesc: 'Bố cục văn bản & hình ảnh linh hoạt',
+    announcementBanner: 'Biểu Ngữ Thông Báo',
+    rotatingAnnouncements: 'Thông báo xoay vòng (5 giây)',
+    translateBtn: 'Dịch',
+    menuBar: 'Thanh Menu',
+    menuBarDesc: 'Logo, liên kết điều hướng & tiện ích',
+    heroBanner: 'Biểu Ngữ Chính',
+    carouselWithSlides: (count: number) => `Băng chuyền với ${count} trang`,
+    addSlide: 'Thêm Slide',
+    carouselSlides: 'Slide Băng Chuyền',
+    horizontalScroll: 'Cuộn Ngang',
+    logoSettings: 'Cài Đặt Logo',
+    positionLabel: 'Vị Trí',
+    leftPosition: 'Trái',
+    centerPosition: 'Giữa',
+    logoText: 'Văn Bản Logo',
+    brandNamePlaceholder: 'Tên Thương Hiệu',
+    logoImage: 'Hình Ảnh Logo',
+    menuItemsLeft: 'Mục Menu (Bên Trái)',
+    rightSideUtilities: 'Tiện Ích Bên Phải',
+    saveLandingPageFirst: 'Vui lòng lưu trang đích trước khi xuất bản.',
+    confirmUnpublish: 'Thao tác này sẽ hủy xuất bản trang đích. Tiếp tục?',
+    confirmPublish: 'Thao tác này sẽ đưa trang đích lên trực tuyến. Tiếp tục?',
+    landingPageUnpublished: 'Trang đích đã hủy xuất bản!',
+    landingPageNowLive: 'Trang đích đã lên trực tuyến!',
+    failedToUpdatePublish: 'Không thể cập nhật trạng thái xuất bản',
+    exitTranslationMode: 'Thoát Chế Độ Dịch',
+    enableTranslationMode: 'Bật Chế Độ Dịch',
+    copyUrl: 'Sao Chép Liên Kết',
+    remove: 'Xóa',
+    moveUp: 'Di chuyển lên',
+    moveDown: 'Di chuyển xuống',
+    deleteSlide: 'Xóa slide',
+    afterAddClickSave: 'Sau khi thêm, nhấn "Lưu" để lưu',
+    rememberClickSave: 'Nhớ nhấn "Lưu" để lưu thay đổi',
+    boldText: 'Đậm',
+    italicText: 'Nghiêng',
+    alignLeft: 'Căn Trái',
+    alignCenter: 'Căn Giữa',
+    alignRight: 'Căn Phải',
+    textColor: 'Màu chữ',
+    bgColor: 'Màu nền',
+    removeFeature: 'Xóa tính năng',
   }
 }
 

@@ -171,7 +171,7 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Block-level Subheadline (after headline) */}
       <div>
         <UniversalTextEditor
@@ -195,28 +195,28 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
       </div>
 
       {/* Steps */}
-      <div className="space-y-4">
+      <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <label className="block text-sm font-medium text-slate-300">Steps</label>
+          <label className="block text-xs font-medium text-gray-600">Steps</label>
           <button
             onClick={addStep}
-            className="px-3 py-1 bg-violet-600 hover:bg-violet-500 text-white rounded-lg text-sm font-medium flex items-center gap-1"
+            className="px-2 py-0.5 bg-violet-50 border border-violet-200 hover:bg-violet-50 text-gray-800 rounded-none text-xs font-medium flex items-center gap-1"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3 h-3" />
             Add Step
           </button>
         </div>
 
         {data.steps?.map((step, index) => (
-          <div key={index} className="p-4 bg-slate-800 rounded-lg border border-slate-600 space-y-3">
+          <div key={index} className="p-2.5 bg-white rounded-none border border-gray-200/50 space-y-2">
             {/* Step Header */}
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-white">Step {index + 1}</span>
-              <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-gray-800">Step {index + 1}</span>
+              <div className="flex items-center gap-1">
                 <button
                   onClick={() => moveStep(index, 'up')}
                   disabled={index === 0}
-                  className="p-1 text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="p-1 text-gray-500 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed"
                   title="Move up"
                 >
                   <ChevronUp className="w-4 h-4" />
@@ -224,14 +224,14 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
                 <button
                   onClick={() => moveStep(index, 'down')}
                   disabled={index === data.steps.length - 1}
-                  className="p-1 text-slate-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="p-1 text-gray-500 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed"
                   title="Move down"
                 >
                   <ChevronDown className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => removeStep(index)}
-                  className="p-1 text-red-400 hover:text-red-300"
+                  className="p-1 text-red-600 hover:text-red-600"
                   title="Delete step"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -240,29 +240,29 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
             </div>
 
             {/* Background Upload - EXACT copy from hero banner */}
-            <div className="mb-3">
-              <label className="block text-xs text-slate-400 mb-1">Background Image/Video</label>
+            <div className="mb-2">
+              <label className="block text-[10px] text-gray-500 mb-0.5">Background Image/Video</label>
               <div className="flex items-center gap-2 flex-wrap">
                 {step.background_url ? (
                   <div className="relative">
                     {step.background_type === 'video' ? (
-                      <video src={step.background_url} className="h-16 w-28 object-cover rounded" muted />
+                      <video src={step.background_url} className="h-16 w-28 object-cover rounded-none" muted />
                     ) : (
-                      <img src={step.background_url} alt="Background" className="h-16 w-28 object-cover rounded" />
+                      <img src={step.background_url} alt="Background" className="h-16 w-28 object-cover rounded-none" />
                     )}
                     <button
                       onClick={() => updateStep(index, { background_url: '', background_type: 'image' })}
-                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-50 text-gray-800 rounded-full flex items-center justify-center hover:bg-red-50 border border-red-200"
                     >
                       <X className="w-3 h-3" />
                     </button>
-                    <span className="absolute bottom-0.5 right-0.5 text-[10px] bg-black/60 text-white px-1 rounded">
+                    <span className="absolute bottom-0.5 right-0.5 text-[10px] bg-black/60 text-gray-800 px-1 rounded-none">
                       {step.background_type === 'video' ? 'VIDEO' : 'IMAGE'}
                     </span>
                   </div>
                 ) : (
-                  <div className="h-16 w-28 bg-slate-800 border border-dashed border-slate-600 rounded flex items-center justify-center">
-                    <Image className="w-6 h-6 text-slate-500" />
+                  <div className="h-16 w-28 bg-white border border-dashed border-gray-300 rounded-none flex items-center justify-center">
+                    <Image className="w-6 h-6 text-gray-400" />
                   </div>
                 )}
 
@@ -273,7 +273,7 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
                       // Use original_filename if set
                       if (step.original_filename) {
                         return (
-                          <span className="text-green-300" title={step.original_filename}>
+                          <span className="text-green-600" title={step.original_filename}>
                             📄 {step.original_filename}
                           </span>
                         )
@@ -287,7 +287,7 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
                           const filename = fullName.replace(/^\d+_/, '')
                           if (filename && filename !== fullName) {
                             return (
-                              <span className="text-green-300" title={filename}>
+                              <span className="text-green-600" title={filename}>
                                 📄 {filename}
                               </span>
                             )
@@ -299,7 +299,7 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
                         const urlPath = new URL(step.background_url).pathname
                         const shortName = urlPath.split('/').pop() || ''
                         return (
-                          <span className="text-slate-400 text-[10px]" title={shortName}>
+                          <span className="text-gray-500 text-[10px]" title={shortName}>
                             📎 {shortName.length > 20 ? shortName.substring(0, 17) + '...' : shortName}
                           </span>
                         )
@@ -313,7 +313,7 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
                 <button
                   onClick={() => stepInputRefs.current[index]?.click()}
                   disabled={uploadingIndex === index}
-                  className="px-3 py-1.5 bg-violet-600 text-white text-sm rounded hover:bg-violet-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                  className="px-3 py-1.5 bg-violet-50 border border-violet-200 text-gray-800 text-sm rounded-none hover:bg-violet-100 transition-colors disabled:opacity-50 flex items-center gap-1.5"
                 >
                   {uploadingIndex === index ? (
                     <>
@@ -343,12 +343,12 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
                         const newWidth = currentWidth - 20
                         updateStep(index, { image_width: `${newWidth}px` })
                       }}
-                      className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm"
+                      className="px-2 py-1 bg-gray-100 hover:bg-gray-100 text-gray-700 rounded-none text-sm"
                       title="Smaller"
                     >
                       -
                     </button>
-                    <span className="text-xs text-slate-300">
+                    <span className="text-xs text-gray-600">
                       {parseInt((step.image_width || '400px').replace('px', ''))}px
                     </span>
                     <button
@@ -357,7 +357,7 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
                         const newWidth = currentWidth + 20
                         updateStep(index, { image_width: `${newWidth}px` })
                       }}
-                      className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm"
+                      className="px-2 py-1 bg-gray-100 hover:bg-gray-100 text-gray-700 rounded-none text-sm"
                       title="Bigger"
                     >
                       +
@@ -369,16 +369,16 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
 
             {/* Text Position */}
             <div>
-              <label className="block text-xs text-slate-400 mb-2">Text Position</label>
-              <div className="grid grid-cols-4 gap-2">
+              <label className="block text-[10px] text-gray-500 mb-1">Text Position</label>
+              <div className="grid grid-cols-4 gap-1">
                 {(['left', 'right', 'above', 'below'] as const).map((pos) => (
                   <button
                     key={pos}
                     onClick={() => updateStep(index, { text_position: pos })}
-                    className={`px-3 py-2 rounded-lg text-xs font-medium capitalize transition-all ${
+                    className={`px-2 py-1 rounded-none text-[10px] font-medium capitalize transition-all ${
                       step.text_position === pos
-                        ? 'bg-violet-600 text-white'
-                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                        ? 'bg-violet-50 border border-violet-200 text-gray-800'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
                     {pos}
@@ -409,7 +409,7 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
 
             {/* Text Content - Using Rich Text Editor */}
             <div>
-              <label className="block text-xs text-slate-400 mb-2">Text Content</label>
+              <label className="block text-[10px] text-gray-500 mb-1">Text Content</label>
               <PolicyRichTextEditor
                 value={step.text_content || ''}
                 onChange={(value) => updateStep(index, { text_content: value })}
@@ -420,7 +420,7 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
         ))}
 
         {data.steps?.length === 0 && (
-          <div className="text-center py-8 text-slate-500 text-sm">
+          <div className="text-center py-4 text-gray-400 text-xs">
             No steps yet. Click "Add Step" to begin.
           </div>
         )}

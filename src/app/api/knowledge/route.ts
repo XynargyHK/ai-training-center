@@ -13,19 +13,21 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const action = searchParams.get('action')
   const businessUnitId = searchParams.get('businessUnitId')
+  const country = searchParams.get('country') || null
+  const language = searchParams.get('language') || null
 
   try {
     switch (action) {
       case 'load_knowledge':
-        const knowledge = await loadKnowledge(businessUnitId)
+        const knowledge = await loadKnowledge(businessUnitId, country, language)
         return NextResponse.json({ data: knowledge })
 
       case 'load_faqs':
-        const faqs = await loadFAQs(businessUnitId)
+        const faqs = await loadFAQs(businessUnitId, language || 'en')
         return NextResponse.json({ data: faqs })
 
       case 'load_canned_messages':
-        const messages = await loadCannedMessages(businessUnitId)
+        const messages = await loadCannedMessages(businessUnitId, language)
         return NextResponse.json({ data: messages })
 
       case 'load_faq_categories':
@@ -37,7 +39,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ data: cannedCategories })
 
       case 'load_guidelines':
-        const guidelines = await loadGuidelines(businessUnitId)
+        const guidelines = await loadGuidelines(businessUnitId, language)
         return NextResponse.json({ data: guidelines })
 
       case 'load_training_data':
