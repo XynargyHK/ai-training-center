@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import {
   Package, Wrench, FileText, Plus, Edit, Trash2,
-  Upload, Search, Grid, List,
+  Upload, Search, Grid, List, RefreshCw,
   Loader2, X, BookOpen, Globe, Layout, Save, Image, Video, Copy, Check,
   ChevronDown, ChevronUp, Zap, MessageSquare, Shield, ShoppingCart,
   AlignLeft, AlignCenter, AlignRight, Menu, Sparkles, Bold, Italic, Languages,
@@ -262,7 +262,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
     setLandingPageLoading(true)
     try {
       // Add cache-busting timestamp to prevent stale data when switching locales
-      const response = await fetch(`/api/landing-page?businessUnit=${businessUnitId}&country=${loadCountry}&language=${loadLang}&_t=${Date.now()}`, {
+      const response = await fetch(`/api/landing-page?businessUnit=${businessUnitId}&country=${loadCountry}&language=${loadLang}&preview=true&_t=${Date.now()}`, {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache',
@@ -531,6 +531,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
     show_cart: true,
     account_url: '/account',
     cart_url: '/cart',
+    enable_social_login: false,
 
     // ═══════════════════════════════════════════════════════════════════
     // SECTION 1: HERO SECTION - First impression
@@ -661,8 +662,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
     }
     setLandingPageSaving(true)
     try {
-      // Create payload without id, business_unit_id, created_at, updated_at to prevent conflicts
-      const { id, business_unit_id, created_at, updated_at, ...cleanData } = dataToSave
+      // Create payload without id, business_unit_id, created_at, updated_at, published_data to prevent conflicts
+      const { id, business_unit_id, created_at, updated_at, published_data, published_at, ...cleanData } = dataToSave
       const payload = {
         businessUnitId: businessUnitId,
         ...cleanData
@@ -671,6 +672,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
       console.log('[DEBUG v2] payload keys:', Object.keys(payload))
       console.log('[DEBUG v2] announcements:', payload.announcements)
       console.log('[DEBUG v2] blocks count:', payload.blocks?.length || 0)
+      console.log('[DEBUG v2] footer:', payload.footer ? 'YES - keys: ' + Object.keys(payload.footer).join(', ') : 'NULL/MISSING')
+      console.log('[DEBUG v2] footer policy_content:', payload.footer?.policy_content ? Object.keys(payload.footer.policy_content).join(', ') : 'none')
 
       console.log('[DEBUG v2] Sending POST to /api/landing-page')
       const response = await fetch('/api/landing-page', {
@@ -2071,17 +2074,15 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                         )}
                       </div>
 
+                      {/* Publish / Update Live button */}
                       <button
                         onClick={async () => {
                           if (!hasLandingPage) {
                             alert(t.saveLandingPageFirst)
                             return
                           }
-                          const confirmPublish = landingPageData.is_published
-                            ? confirm(t.confirmUnpublish)
-                            : confirm(t.confirmPublish)
-                          if (!confirmPublish) return
-
+                          const confirmMsg = landingPageData.is_published ? t.confirmUpdateLive : t.confirmPublish
+                          if (!confirm(confirmMsg)) return
                           try {
                             const response = await fetch('/api/landing-page/publish', {
                               method: 'POST',
@@ -2090,31 +2091,31 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                                 businessUnitId,
                                 country: landingPageData.country || 'US',
                                 language_code: landingPageData.language_code || 'en',
-                                is_published: !landingPageData.is_published
+                                is_published: true
                               })
                             })
                             const result = await response.json()
                             if (response.ok) {
-                              setLandingPageData({ ...landingPageData, is_published: !landingPageData.is_published })
-                              alert(landingPageData.is_published ? t.landingPageUnpublished : t.landingPageNowLive)
+                              await loadLandingPage(landingPageData.country || 'US', landingPageData.language_code || 'en')
+                              alert(landingPageData.is_published ? t.landingPageLiveUpdated : t.landingPageNowLive)
                             } else {
                               alert(t.failedToUpdatePublish + ': ' + (result.error || 'Unknown error'))
                             }
                           } catch (err) {
-                            alert('Error updating publish status')
+                            alert('Error publishing page')
                           }
                         }}
                         disabled={!hasLandingPage}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-none text-xs font-medium transition-all disabled:opacity-50 ${
                           landingPageData.is_published
-                            ? 'bg-green-50 border border-green-200 hover:bg-green-100 text-gray-800'
+                            ? 'bg-blue-50 border border-blue-200 hover:bg-blue-100 text-gray-800'
                             : 'bg-amber-500 hover:bg-amber-50 text-gray-800'
                         }`}
                       >
                         {landingPageData.is_published ? (
                           <>
-                            <Check className="w-4 h-4" />
-                            {t.publishedStatus}
+                            <RefreshCw className="w-4 h-4" />
+                            {t.updateLive}
                           </>
                         ) : (
                           <>
@@ -2123,8 +2124,44 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                           </>
                         )}
                       </button>
+
+                      {/* Published status + Unpublish (only when published) */}
                       {landingPageData.is_published && (
-                        <span className="text-green-600 text-xs">{t.liveStatus}</span>
+                        <>
+                          <span className="flex items-center gap-1 text-green-600 text-xs">
+                            <Check className="w-3.5 h-3.5" />
+                            {t.liveStatus}
+                          </span>
+                          <button
+                            onClick={async () => {
+                              if (!confirm(t.confirmUnpublish)) return
+                              try {
+                                const response = await fetch('/api/landing-page/publish', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    businessUnitId,
+                                    country: landingPageData.country || 'US',
+                                    language_code: landingPageData.language_code || 'en',
+                                    is_published: false
+                                  })
+                                })
+                                const result = await response.json()
+                                if (response.ok) {
+                                  await loadLandingPage(landingPageData.country || 'US', landingPageData.language_code || 'en')
+                                  alert(t.landingPageUnpublished)
+                                } else {
+                                  alert(t.failedToUpdatePublish + ': ' + (result.error || 'Unknown error'))
+                                }
+                              } catch (err) {
+                                alert('Error unpublishing page')
+                              }
+                            }}
+                            className="text-xs text-gray-400 hover:text-red-500 transition-colors underline"
+                          >
+                            {t.unpublish}
+                          </button>
+                        </>
                       )}
 
                       {/* Language Bar Dropdown */}
@@ -2692,6 +2729,20 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                                   className="w-full px-2 py-1 bg-white border border-gray-200 rounded-none text-gray-800 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                 />
                               )}
+                            </div>
+
+                            {/* Social Login */}
+                            <div className="bg-gray-50 p-3 rounded-none">
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={landingPageData.enable_social_login === true}
+                                  onChange={(e) => setLandingPageData({...landingPageData, enable_social_login: e.target.checked})}
+                                  className="w-4 h-4 rounded-none border-gray-200 bg-gray-100 text-indigo-500 focus:ring-indigo-500"
+                                />
+                                <span className="text-xs text-gray-600">🔐 Social Login (Google/Facebook)</span>
+                              </label>
+                              <p className="text-[10px] text-gray-400 mt-1 ml-6">Enables Google &amp; Facebook sign-in on chatbot, checkout, and account page</p>
                             </div>
                           </div>
                         </div>

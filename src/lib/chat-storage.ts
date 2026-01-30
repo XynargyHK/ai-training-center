@@ -116,6 +116,7 @@ export async function createChatSession(params: {
   businessUnitId: string
   aiStaffId?: string
   userIdentifier?: string
+  userId?: string
   userIp?: string
   userAgent?: string
   language?: string
@@ -123,16 +124,21 @@ export async function createChatSession(params: {
   try {
     const supabase = getSupabaseServiceClient()
 
+    const insertData: Record<string, any> = {
+      business_unit_id: params.businessUnitId,
+      ai_staff_id: params.aiStaffId,
+      user_identifier: params.userIdentifier,
+      user_ip: params.userIp,
+      user_agent: params.userAgent,
+      language: params.language || 'en'
+    }
+    if (params.userId) {
+      insertData.user_id = params.userId
+    }
+
     const { data, error } = await supabase
       .from('chat_sessions')
-      .insert({
-        business_unit_id: params.businessUnitId,
-        ai_staff_id: params.aiStaffId,
-        user_identifier: params.userIdentifier,
-        user_ip: params.userIp,
-        user_agent: params.userAgent,
-        language: params.language || 'en'
-      })
+      .insert(insertData)
       .select('id')
       .single()
 
@@ -229,6 +235,28 @@ export async function loadChatHistory(sessionId: string): Promise<ChatMessage[]>
 
   } catch (error) {
     console.error('Load chat history error:', error)
+    throw error
+  }
+}
+
+/**
+ * Link a chat session to an authenticated user
+ */
+export async function linkSessionToUser(sessionId: string, userId: string): Promise<void> {
+  try {
+    const supabase = getSupabaseServiceClient()
+    const { error } = await supabase
+      .from('chat_sessions')
+      .update({ user_id: userId })
+      .eq('id', sessionId)
+
+    if (error) {
+      console.error('Link session to user error:', error)
+      throw new Error(`Failed to link session: ${error.message}`)
+    }
+    console.log('✅ Chat session linked to user:', sessionId, userId)
+  } catch (error) {
+    console.error('Link session to user error:', error)
     throw error
   }
 }

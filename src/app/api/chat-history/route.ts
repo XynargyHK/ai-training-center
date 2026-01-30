@@ -5,7 +5,8 @@ import {
   loadChatHistory,
   endChatSession,
   flagMessage,
-  getFlaggedSessions
+  getFlaggedSessions,
+  linkSessionToUser
 } from '@/lib/chat-storage'
 
 export async function POST(request: NextRequest) {
@@ -30,6 +31,7 @@ export async function POST(request: NextRequest) {
           businessUnitId: params.businessUnitId,
           aiStaffId: params.aiStaffId,
           userIdentifier,
+          userId: params.userId,
           userIp,
           userAgent,
           language: params.language
@@ -74,6 +76,11 @@ export async function POST(request: NextRequest) {
           params.limit
         )
         return NextResponse.json({ success: true, sessions })
+      }
+
+      case 'link_session': {
+        await linkSessionToUser(params.sessionId, params.userId)
+        return NextResponse.json({ success: true })
       }
 
       default:

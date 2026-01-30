@@ -416,7 +416,7 @@ function LiveChatShopContent() {
         showSearch={landingPage?.show_search || false}
         showAccount={landingPage?.show_account || true}
         showCart={landingPage?.show_cart || true}
-        accountUrl={landingPage?.account_url || '#account'}
+        accountUrl={landingPage?.account_url || '/account'}
         cartUrl={landingPage?.cart_url || ''}
       />
 
@@ -651,6 +651,7 @@ function LiveChatShopContent() {
           businessUnit={businessUnitParam}
           aiStaffList={aiStaffList}
           initialOpen={false}
+          enableSocialLogin={landingPage?.enable_social_login === true}
         />
       )}
 
