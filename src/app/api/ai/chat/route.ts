@@ -141,100 +141,15 @@ async function generateAIResponse(
   console.log('User Message:', message)
   console.log('📷 Image provided:', image ? 'YES (length: ' + image.length + ')' : 'NO')
 
-  // Use vector search if knowledge base has embeddings
-  // Falls back to keyword search if vector search fails
+  // Include ALL knowledge base entries so the AI has complete context
   if (knowledgeBase.length > 0) {
-    let relevantKnowledge = []
+    console.log('✅ Including ALL knowledge base entries:', knowledgeBase.length)
 
-    // Only use vector search if service role key is available
-    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      try {
-        // Try vector search first (semantic search)
-        const { hybridSearchKnowledge } = await import('@/lib/supabase-storage')
-        const vectorResults = await hybridSearchKnowledge(message, 10)
-
-      if (vectorResults.length > 0) {
-        relevantKnowledge = vectorResults
-        console.log('✅ Vector search found:', relevantKnowledge.length, 'entries')
-        console.log('Topics:', relevantKnowledge.map(k => `${k.topic} (similarity: ${k.similarity?.toFixed(2) || 'N/A'})`))
-      } else {
-        // Fallback to keyword matching
-        console.log('⚠️ Vector search returned no results, falling back to keyword matching')
-        const messageLower = message.toLowerCase()
-        relevantKnowledge = knowledgeBase
-          .filter(entry => {
-            if (!entry.content) return false
-            const contentLower = entry.content.toLowerCase()
-            const categoryLower = entry.category?.toLowerCase() || ''
-            const topicLower = entry.topic?.toLowerCase() || ''
-            const messageWords = messageLower.split(' ').filter(w => w.length > 2)
-
-            return messageWords.some(word =>
-              topicLower.includes(word) ||
-              categoryLower.includes(word) ||
-              contentLower.includes(word)
-            ) ||
-            (entry.keywords && entry.keywords.some(keyword => messageLower.includes(keyword.toLowerCase())))
-          })
-      }
-      } catch (vectorError) {
-        // If vector search fails entirely, use keyword matching
-        console.log('⚠️ Vector search failed, using keyword matching:', vectorError)
-        const messageLower = message.toLowerCase()
-        relevantKnowledge = knowledgeBase
-          .filter(entry => {
-            if (!entry.content) return false
-            const contentLower = entry.content.toLowerCase()
-            const categoryLower = entry.category?.toLowerCase() || ''
-            const topicLower = entry.topic?.toLowerCase() || ''
-            const messageWords = messageLower.split(' ').filter(w => w.length > 2)
-
-            return messageWords.some(word =>
-              topicLower.includes(word) ||
-              categoryLower.includes(word) ||
-              contentLower.includes(word)
-            ) ||
-            (entry.keywords && entry.keywords.some(keyword => messageLower.includes(keyword.toLowerCase())))
-          })
-      }
-    } else {
-      // No service role key - use keyword matching only
-      console.log('ℹ️ SUPABASE_SERVICE_ROLE_KEY not set, using keyword matching for knowledge base')
-      const messageLower = message.toLowerCase()
-      relevantKnowledge = knowledgeBase
-        .filter(entry => {
-          if (!entry.content) return false
-          const contentLower = entry.content.toLowerCase()
-          const categoryLower = entry.category?.toLowerCase() || ''
-          const topicLower = entry.topic?.toLowerCase() || ''
-          const messageWords = messageLower.split(' ').filter(w => w.length > 2)
-
-          return messageWords.some(word =>
-            topicLower.includes(word) ||
-            categoryLower.includes(word) ||
-            contentLower.includes(word)
-          ) ||
-          (entry.keywords && entry.keywords.some(keyword => messageLower.includes(keyword.toLowerCase())))
-        })
-    }
-
-    if (relevantKnowledge.length > 0) {
-      console.log('✅ Final filtered knowledge:', relevantKnowledge.length, 'entries')
-
-      knowledgeContext = '\n\n📚 KNOWLEDGE BASE - CRITICAL: ONLY USE INFORMATION FROM THIS LIST:\n' + relevantKnowledge
-        .map(entry => `- ${entry.topic}: ${entry.content}`)
+    knowledgeContext = '\n\n📚 KNOWLEDGE BASE - CRITICAL: ONLY USE INFORMATION FROM THIS LIST:\n' +
+      knowledgeBase
+        .map(entry => `- ${entry.category ? `[${entry.category}] ` : ''}${entry.topic || ''}: ${entry.content}`)
         .join('\n') +
-        '\n\n⚠️ DO NOT mention any products, prices, or information that are NOT listed above.'
-    } else if (knowledgeBase.length > 0) {
-      console.log('⚠️ No matches found - using ALL knowledge base entries as fallback:', knowledgeBase.length)
-
-      // If no relevant match, include ALL general entries as fallback
-      knowledgeContext = '\n\n📚 KNOWLEDGE BASE - CRITICAL: ONLY USE INFORMATION FROM THIS LIST:\n' +
-        knowledgeBase
-          .map(entry => `- ${entry.category ? `[${entry.category}] ` : ''}${entry.topic || ''}: ${entry.content}`)
-          .join('\n') +
-        '\n\n⚠️ DO NOT mention any products, prices, or information that are NOT listed above.'
-    }
+      '\n\n⚠️ DO NOT mention any products, prices, or information that are NOT listed above.'
   } else {
     console.log('Knowledge base is EMPTY - AI should say "Let me check on that"')
   }
@@ -306,57 +221,14 @@ async function generateAIResponse(
     .map((msg: any) => `${msg.role === 'user' ? 'Customer' : 'AI'}: ${msg.content}`)
     .join('\n')
 
-  // Build guidelines context using vector search
+  // Include ALL guidelines so the AI follows every rule
   let guidelinesContext = ''
 
-  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    try {
-      const { vectorSearchGuidelines } = await import('@/lib/supabase-storage')
-      const relevantGuidelines = await vectorSearchGuidelines(message, 5)
-
-      if (relevantGuidelines.length > 0) {
-        guidelinesContext = '\n\n📋 TRAINING GUIDELINES - FOLLOW THESE RULES:\n' + relevantGuidelines
-          .map((g: any) => `**${g.title}**\n${g.content} (relevance: ${g.similarity?.toFixed(2)})`)
-          .join('\n\n')
-        console.log('✅ Vector search found', relevantGuidelines.length, 'relevant guidelines')
-      }
-    } catch (vectorError) {
-      console.log('⚠️ Guidelines vector search failed, using fallback:', vectorError)
-
-      // Fallback to category filtering if vector search fails
-      if (guidelines.length > 0) {
-        // Use ALL guidelines for chatbot (general applies to everything, others provide specific rules)
-        // FAQ guidelines = how to answer questions
-        // Canned guidelines = message quality standards
-        // Roleplay guidelines = learned from training sessions
-        // General guidelines = always apply
-        const relevantGuidelines = guidelines.filter((g: any) =>
-          g.category === 'general' || g.category === 'faq' || g.category === 'canned' || g.category === 'roleplay'
-        )
-
-        if (relevantGuidelines.length > 0) {
-          guidelinesContext = '\n\n📋 TRAINING GUIDELINES - FOLLOW THESE RULES:\n' + relevantGuidelines
-            .map((g: any) => `**${g.title}**\n${g.content}`)
-            .join('\n\n')
-          console.log('Guidelines applied:', relevantGuidelines.length)
-        }
-      }
-    }
-  } else {
-    // No service role key - use category filtering only
-    console.log('ℹ️ SUPABASE_SERVICE_ROLE_KEY not set, using category filtering for guidelines')
-    if (guidelines.length > 0) {
-      const relevantGuidelines = guidelines.filter((g: any) =>
-        g.category === 'general' || g.category === 'faq' || g.category === 'canned' || g.category === 'roleplay'
-      )
-
-      if (relevantGuidelines.length > 0) {
-        guidelinesContext = '\n\n📋 TRAINING GUIDELINES - FOLLOW THESE RULES:\n' + relevantGuidelines
-          .map((g: any) => `**${g.title}**\n${g.content}`)
-          .join('\n\n')
-        console.log('Guidelines applied:', relevantGuidelines.length)
-      }
-    }
+  if (guidelines.length > 0) {
+    console.log('✅ Including ALL guidelines:', guidelines.length)
+    guidelinesContext = '\n\n📋 TRAINING GUIDELINES - FOLLOW THESE RULES:\n' + guidelines
+      .map((g: any) => `**${g.title}**\n${g.content}`)
+      .join('\n\n')
   }
 
   // Build training memory context from trained AI staff
