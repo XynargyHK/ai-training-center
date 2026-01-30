@@ -209,10 +209,13 @@ Category: ${service.category || 'General'}`,
     updatedAt: new Date(service.updated_at)
   }))
 
-  // Transform landing page content into knowledge entry
-  const landingPageEntries = []
+  // Transform landing page content into knowledge entries
+  const landingPageEntries: any[] = []
   if (landingPageData) {
     const lp = landingPageData
+
+    // Helper to strip HTML tags from content
+    const stripHtml = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim()
 
     // Extract hero content
     const heroSlides = lp.hero_slides || []
@@ -229,6 +232,40 @@ Category: ${service.category || 'General'}`,
       return ''
     }).join(' ')
 
+    // Extract announcements (rotating announcements array)
+    const announcements = lp.announcements || []
+    const announcementsContent = announcements
+      .filter((a: any) => a.active !== false)
+      .map((a: any) => a.text || '')
+      .filter(Boolean)
+      .join('. ')
+
+    // Extract footer policy content (refund, shipping, privacy, terms, about-us)
+    const footer = lp.footer || {}
+    const policyContent = footer.policy_content || {}
+    let policiesText = ''
+    for (const [policyKey, policyHtml] of Object.entries(policyContent)) {
+      if (policyHtml && typeof policyHtml === 'string') {
+        const policyName = policyKey.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
+        policiesText += `\n${policyName}: ${stripHtml(policyHtml)}`
+      }
+    }
+
+    // Extract footer metadata (company info, refund days, contact info)
+    let footerMetaText = ''
+    if (footer.refund_days) footerMetaText += `\nRefund Period: ${footer.refund_days} days`
+    if (footer.company_name) footerMetaText += `\nCompany: ${footer.company_name}`
+    if (footer.contact_email) footerMetaText += `\nContact Email: ${footer.contact_email}`
+    if (footer.contact_phone) footerMetaText += `\nContact Phone: ${footer.contact_phone}`
+    if (footer.address) footerMetaText += `\nAddress: ${footer.address}`
+
+    // Extract menu bar items
+    const menuBar = lp.menu_bar || []
+    const menuBarContent = menuBar
+      .map((item: any) => item.label || item.name || '')
+      .filter(Boolean)
+      .join(', ')
+
     landingPageEntries.push({
       id: `landing-page-${lp.id}`,
       category: 'Landing Page',
@@ -237,8 +274,12 @@ Category: ${service.category || 'General'}`,
 ${heroContent}
 ${blocksContent}
 ${lp.announcement_text || ''}
-${lp.footer_disclaimer || ''}`,
-      keywords: ['landing page', 'website', 'homepage'],
+${announcementsContent ? `Announcements: ${announcementsContent}` : ''}
+${lp.footer_disclaimer || ''}
+${policiesText ? `\nPolicies:${policiesText}` : ''}
+${footerMetaText ? `\nCompany Info:${footerMetaText}` : ''}
+${menuBarContent ? `\nMenu: ${menuBarContent}` : ''}`,
+      keywords: ['landing page', 'website', 'homepage', 'refund', 'policy', 'shipping', 'contact'],
       confidence: 1.0,
       createdAt: new Date(lp.created_at),
       updatedAt: new Date(lp.updated_at)
@@ -462,6 +503,7 @@ export async function saveFAQ(faq: any, businessUnitSlugOrId?: string | null) {
   const faqEntry = {
     business_unit_id: businessUnitId,
     category_id: categoryId,
+    reference_id: faq.reference_id || faq.id || crypto.randomUUID(),
     question: faq.question,
     answer: faq.answer,
     short_answer: faq.shortAnswer,
