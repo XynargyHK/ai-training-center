@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "TURBOPACK=0 next build",
+    "build": "next build --no-turbopack",
     "start": "next start",
     "lint": "next lint"
   },
