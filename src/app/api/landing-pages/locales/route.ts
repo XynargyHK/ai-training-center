@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     // Get all landing pages for this business unit
     const { data: locales, error } = await supabase
       .from('landing_pages')
-      .select('id, country, language_code, is_active, updated_at')
+      .select('id, country, language_code, slug, is_active, updated_at')
       .eq('business_unit_id', businessUnitId)
       .order('country', { ascending: true })
       .order('language_code', { ascending: true })

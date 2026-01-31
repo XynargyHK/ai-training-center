@@ -76,7 +76,7 @@ const AITrainingCenter = () => {
   // Locale state: country + language code (e.g., "US" + "en", "HK" + "tw")
   const [selectedCountry, setSelectedCountry] = useState<string>('US')
   const [selectedLangCode, setSelectedLangCode] = useState<string>('en')
-  const [availableLocales, setAvailableLocales] = useState<{country: string, language_code: string}[]>([])
+  const [availableLocales, setAvailableLocales] = useState<{country: string, language_code: string, slug?: string}[]>([])
   const [showAddLocaleModal, setShowAddLocaleModal] = useState(false)
 
   // Map short lang code to Language type for UI translations
@@ -242,7 +242,7 @@ const AITrainingCenter = () => {
         .then(res => res.json())
         .then(data => {
           if (data.success && data.locales?.length > 0) {
-            setAvailableLocales(data.locales.map((l: any) => ({ country: l.country, language_code: l.language_code })))
+            setAvailableLocales(data.locales.map((l: any) => ({ country: l.country, language_code: l.language_code, slug: l.slug })))
           } else {
             // Default locale if none exist yet
             setAvailableLocales([{ country: 'US', language_code: 'en' }])
@@ -250,7 +250,7 @@ const AITrainingCenter = () => {
         })
         .catch(() => setAvailableLocales([{ country: 'US', language_code: 'en' }]))
     }
-  }, [selectedBusinessUnit])
+  }, [selectedBusinessUnit, selectedCountry, selectedLangCode])
 
   useEffect(() => {
     let interval: NodeJS.Timeout
@@ -525,7 +525,7 @@ const AITrainingCenter = () => {
       console.log(`📊 Loading data from Supabase for business unit: ${selectedBusinessUnit}`)
 
       // Load knowledge base
-      const knowledgeData = await loadKnowledge(selectedBusinessUnit)
+      const knowledgeData = await loadKnowledge(selectedBusinessUnit, selectedCountry, selectedLangCode)
       setKnowledgeEntries(knowledgeData || [])
       console.log(`✅ Loaded ${knowledgeData?.length || 0} knowledge entries`)
 
@@ -1752,7 +1752,11 @@ Format as JSON array:
 
             {/* View Live Chat Button */}
             <a
-              href={`/livechat?businessUnit=${selectedBusinessUnit}&country=${selectedCountry}&lang=${selectedLangCode}`}
+              href={(() => {
+                const currentLocale = availableLocales.find(l => l.country === selectedCountry && l.language_code === selectedLangCode)
+                const pageSlug = currentLocale?.slug
+                return `/livechat?businessUnit=${selectedBusinessUnit}&country=${selectedCountry}&lang=${selectedLangCode}${pageSlug ? `&page=${pageSlug}` : ''}`
+              })()}
               target="_blank"
               rel="noopener noreferrer"
               className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 hover:from-purple-600 hover:via-pink-600 hover:to-cyan-600 text-gray-900 px-2 py-1.5 rounded-none font-medium flex items-center gap-1 transition-all duration-200 hover:shadow-sm hover:scale-105 text-xs justify-center"

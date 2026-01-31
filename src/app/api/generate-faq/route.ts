@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { getLLMConfig } from '@/app/api/llm-config/route'
+import { randomUUID } from 'crypto'
 
 // Initialize Google Gemini client
 function getGoogleClient() {
@@ -222,7 +223,8 @@ Return ONLY the JSON array, no additional text or explanations.`
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 4096,
+        maxOutputTokens: 8192,
+        responseMimeType: 'application/json',
       }
     })
 
@@ -245,15 +247,32 @@ Return ONLY the JSON array, no additional text or explanations.`
 
       // Try to extract JSON array from the response
       const jsonMatch = cleanedText.match(/\[\s*\{[\s\S]*\}\s*\]/)
-      if (jsonMatch) {
-        // Clean up any potential issues with the JSON string
-        let jsonString = jsonMatch[0]
-        // Remove any trailing commas before closing brackets/braces
-        jsonString = jsonString.replace(/,(\s*[}\]])/g, '$1')
+      let jsonString = jsonMatch ? jsonMatch[0] : cleanedText
+
+      // Remove any trailing commas before closing brackets/braces
+      jsonString = jsonString.replace(/,(\s*[}\]])/g, '$1')
+
+      // Escape unescaped control characters inside JSON string values
+      // This fixes newlines, tabs etc. that the AI puts inside answers
+      jsonString = jsonString.replace(/"((?:[^"\\]|\\.)*)"/g, (match) => {
+        return match
+          .replace(/(?<!\\)\n/g, '\\n')
+          .replace(/(?<!\\)\r/g, '\\r')
+          .replace(/(?<!\\)\t/g, '\\t')
+      })
+
+      try {
         generatedFaqsData = JSON.parse(jsonString)
-      } else {
-        // Try parsing the whole response
-        generatedFaqsData = JSON.parse(cleanedText)
+      } catch {
+        // If still failing, try more aggressive cleanup
+        // Remove all control characters except those already escaped
+        jsonString = jsonString.replace(/[\x00-\x1F\x7F]/g, (ch) => {
+          if (ch === '\n') return '\\n'
+          if (ch === '\r') return '\\r'
+          if (ch === '\t') return '\\t'
+          return ''
+        })
+        generatedFaqsData = JSON.parse(jsonString)
       }
 
       // Validate that it's an array
@@ -262,16 +281,26 @@ Return ONLY the JSON array, no additional text or explanations.`
       }
     } catch (parseError) {
       console.error('Failed to parse AI response:', parseError)
-      console.error('Response text:', responseText)
+      console.error('Response text (first 500 chars):', responseText.substring(0, 500))
+
+      // Check if response was truncated
+      const trimmed = responseText.trim()
+      const isTruncated = !trimmed.endsWith(']') && !trimmed.endsWith('}')
+
       return NextResponse.json(
-        { error: 'Failed to parse AI response', details: responseText.substring(0, 500) },
+        {
+          error: isTruncated
+            ? 'AI response was too long and got cut off. Try generating fewer FAQs.'
+            : 'Failed to parse AI response',
+          details: responseText.substring(0, 500)
+        },
         { status: 500 }
       )
     }
 
     // Transform to FAQ format with proper IDs
     const faqs: FAQ[] = generatedFaqsData.map((faqData, index) => ({
-      id: `faq-gen-${Date.now()}-${index}`,
+      id: randomUUID(),
       question: faqData.question || 'Generated Question',
       answer: faqData.answer || 'Generated Answer',
       category: faqData.category || 'general',

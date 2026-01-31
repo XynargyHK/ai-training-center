@@ -1929,10 +1929,9 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                       </button>
                       <button
                         onClick={() => {
-                          const previewUrl = landingPageData.slug
-                            ? `/${landingPageData.slug}?preview=true`
-                            : `/livechat?businessUnit=${businessUnitId}&country=${landingPageData.country || 'US'}&lang=${landingPageData.language_code || 'en'}&preview=true`
-                          window.open(previewUrl, '_blank')
+                          const baseUrl = `/livechat?businessUnit=${businessUnitId}&country=${landingPageData.country || 'US'}&lang=${landingPageData.language_code || 'en'}`
+                          const pageParam = landingPageData.slug ? `&page=${landingPageData.slug}` : ''
+                          window.open(`${baseUrl}${pageParam}&preview=true`, '_blank')
                         }}
                         className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-100 text-gray-700 px-3 py-1.5 rounded-none text-xs font-medium transition-all"
                       >
@@ -2331,7 +2330,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                       </div>
                       {landingPageData.slug && (
                         <p className="text-xs text-gray-400 mt-1">
-                          Public URL: <span className="text-violet-600 font-medium">/{landingPageData.slug}</span>
+                          Public URL: <span className="text-violet-600 font-medium">/livechat?businessUnit={businessUnitId}&country={landingPageData.country || 'US'}&lang={landingPageData.language_code || 'en'}&page={landingPageData.slug}</span>
                         </p>
                       )}
                     </div>

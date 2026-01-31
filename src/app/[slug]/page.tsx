@@ -21,13 +21,14 @@ export default async function Page({ params }: PageProps) {
 
   const supabase = createClient(supabaseUrl, supabaseKey)
 
-  // Look up the landing page by slug
-  const { data: landingPage } = await supabase
+  // Look up the landing page by slug (may exist for multiple countries, pick first)
+  const { data: landingPages } = await supabase
     .from('landing_pages')
     .select('business_unit_id, country, language_code, slug')
     .eq('slug', slug)
     .limit(1)
-    .single()
+
+  const landingPage = landingPages?.[0] || null
 
   if (!landingPage) {
     notFound()

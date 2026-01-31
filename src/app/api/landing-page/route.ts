@@ -6,6 +6,8 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 
+export const dynamic = 'force-dynamic'
+
 // Helper to resolve business unit ID from slug or ID
 async function resolveBusinessUnitId(businessUnitParam: string): Promise<string | null> {
   // Check if it's a UUID
@@ -84,6 +86,8 @@ export async function GET(request: NextRequest) {
       resolvedPage = { ...metadata, ...published_data }
     }
 
+    console.log('[LandingPage API GET] isPreview:', isPreview, 'Has footer:', !!resolvedPage?.footer, 'Footer policy_content keys:', resolvedPage?.footer?.policy_content ? Object.keys(resolvedPage.footer.policy_content) : 'none')
+
     return NextResponse.json({
       landingPage: resolvedPage || null,
       businessUnit,
@@ -105,8 +109,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log('[LandingPage API] Received POST request')
 
-    // Remove id and business_unit_id from the data to prevent conflicts
-    const { businessUnitId, id, business_unit_id, created_at, updated_at, ...landingPageData } = body
+    // Remove id, business_unit_id, and publish fields from the data to prevent conflicts
+    const { businessUnitId, id, business_unit_id, created_at, updated_at, published_data, published_at, is_published, ...landingPageData } = body
+
+    // Convert empty string slug to null to avoid unique constraint violations
+    if (landingPageData.slug !== undefined && !landingPageData.slug) {
+      landingPageData.slug = null
+    }
 
     // Get country and language from the data (required for locale-specific pages)
     const country = landingPageData.country || 'US'
@@ -114,6 +123,7 @@ export async function POST(request: NextRequest) {
 
     console.log('[LandingPage API] businessUnitId:', businessUnitId)
     console.log('[LandingPage API] Locale:', country, languageCode)
+    console.log('[LandingPage API] slug:', landingPageData.slug)
 
     if (!businessUnitId) {
       return NextResponse.json({ error: 'businessUnitId required' }, { status: 400 })
@@ -126,13 +136,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if landing page exists for this business unit + country + language
+    // Use maybeSingle() to avoid error when no rows found
     const { data: existing, error: existingError } = await supabase
       .from('landing_pages')
       .select('id')
       .eq('business_unit_id', resolvedBusinessUnitId)
       .eq('country', country)
       .eq('language_code', languageCode)
-      .single()
+      .maybeSingle()
+
+    if (existingError) {
+      console.error('[LandingPage API] Error checking existing page:', existingError)
+    }
 
     console.log('[LandingPage API] Existing landing page for locale:', existing?.id || 'none')
 
