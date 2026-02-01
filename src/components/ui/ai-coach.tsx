@@ -110,6 +110,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
   const [showBookingModal, setShowBookingModal] = useState(false)
   const [businessUnitId, setBusinessUnitId] = useState<string | null>(null)
   const [socialLoading, setSocialLoading] = useState<'google' | 'facebook' | null>(null)
+  const [hasActiveServices, setHasActiveServices] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Check if already signed in — auto-fill name/email and skip pre-chat form
@@ -340,6 +341,22 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
     }
   }, [isOpen])
 
+  // Check if there are active booking services
+  useEffect(() => {
+    const checkActiveServices = async () => {
+      try {
+        const res = await fetch(`/api/booking/services?businessUnitId=${businessUnit}&activeOnly=true`)
+        if (res.ok) {
+          const { data } = await res.json()
+          setHasActiveServices(Array.isArray(data) && data.length > 0)
+        }
+      } catch {
+        setHasActiveServices(false)
+      }
+    }
+    checkActiveServices()
+  }, [businessUnit])
+
   // Load FAQ categories from Supabase
   useEffect(() => {
     if (!isOpen) return
@@ -427,18 +444,6 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
         }
       } catch (error) {
         console.error('❌ Error loading training data from Supabase:', error)
-      }
-
-      // Build training memory context from current staff
-      let trainingMemoryContext = ''
-      if (currentStaff && currentStaff.trainingMemory) {
-        const memoryEntries = Object.entries(currentStaff.trainingMemory)
-        if (memoryEntries.length > 0) {
-          trainingMemoryContext = '\n\n📝 TRAINING MEMORY (Learned from previous sessions):\n' +
-            memoryEntries.map(([scenario, lessons]) =>
-              `${scenario}:\n${lessons.map(lesson => `  - ${lesson}`).join('\n')}`
-            ).join('\n\n')
-        }
       }
 
       // Call the backend AI API with knowledge base context
@@ -692,17 +697,50 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
         {/* Header */}
         <div className="border-b border-gray-200/50 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-cyan-500/10">
           <div className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-2">
-              <div className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 p-2 rounded-full">
-                <MessageCircle className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-800">{t.aiStaff}</h3>
-                <p className="text-xs text-gray-600">{t.selectStaffMember}</p>
-              </div>
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              {aiStaffList.length > 1 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {aiStaffList.map((staff) => {
+                    const roleEmoji = staff.role === 'coach' ? '🎓' :
+                                      staff.role === 'sales' ? '💰' :
+                                      staff.role === 'customer-service' ? '🛡️' : '🔬'
+                    const isActive = currentStaff?.id === staff.id
+                    const roleLabel = staff.role === 'coach' ? t.coach :
+                                     staff.role === 'sales' ? t.sales :
+                                     staff.role === 'customer-service' ? t.customerService : t.scientist
+
+                    return (
+                      <button
+                        key={staff.id}
+                        onClick={() => handleStaffSwitch(staff)}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                          isActive
+                            ? 'bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 text-white shadow-md'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {roleEmoji} {staff.name} · {roleLabel}
+                      </button>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div>
+                  <h3 className="font-semibold text-gray-800 truncate">
+                    {currentStaff ? `${currentStaff.role === 'coach' ? '🎓' : currentStaff.role === 'sales' ? '💰' : currentStaff.role === 'customer-service' ? '🛡️' : '🔬'} ${currentStaff.name}` : t.aiStaff}
+                  </h3>
+                  {currentStaff?.role && (
+                    <p className="text-xs text-gray-600">
+                      {currentStaff.role === 'coach' ? t.coach :
+                       currentStaff.role === 'sales' ? t.sales :
+                       currentStaff.role === 'customer-service' ? t.customerService : t.scientist}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               {/* Language Selector */}
               <div className="relative">
                 <select
@@ -728,35 +766,6 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
               </button>
             </div>
           </div>
-
-          {/* Staff selector buttons */}
-          {aiStaffList.length > 0 && (
-            <div className="px-4 pb-3 flex flex-wrap gap-2">
-              {aiStaffList.map((staff) => {
-                const roleEmoji = staff.role === 'coach' ? '🎓' :
-                                  staff.role === 'sales' ? '💰' :
-                                  staff.role === 'customer-service' ? '🛡️' : '🔬'
-                const isActive = currentStaff?.id === staff.id
-                const roleLabel = staff.role === 'coach' ? t.coach :
-                                 staff.role === 'sales' ? t.sales :
-                                 staff.role === 'customer-service' ? t.customerService : t.scientist
-
-                return (
-                  <button
-                    key={staff.id}
-                    onClick={() => handleStaffSwitch(staff)}
-                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                      isActive
-                        ? 'bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 text-white shadow-md'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {roleEmoji} {staff.name} ({roleLabel})
-                  </button>
-                )
-              })}
-            </div>
-          )}
         </div>
 
         {/* Pre-Chat Form */}
@@ -978,15 +987,17 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
               <Image className="w-4 h-4" />
             </button>
 
-            {/* Booking Button */}
-            <button
-              onClick={() => setShowBookingModal(true)}
-              className="bg-blue-500 text-white p-2 rounded-xl hover:bg-blue-600 transition-all duration-200"
-              title="Book Appointment"
-              disabled={isTyping}
-            >
-              <Calendar className="w-4 h-4" />
-            </button>
+            {/* Booking Button - only shown when active services exist */}
+            {hasActiveServices && (
+              <button
+                onClick={() => setShowBookingModal(true)}
+                className="bg-blue-500 text-white p-2 rounded-xl hover:bg-blue-600 transition-all duration-200"
+                title="Book Appointment"
+                disabled={isTyping}
+              >
+                <Calendar className="w-4 h-4" />
+              </button>
+            )}
 
             <input
               ref={inputRef}

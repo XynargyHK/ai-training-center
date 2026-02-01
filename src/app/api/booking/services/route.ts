@@ -25,6 +25,8 @@ export async function GET(request: NextRequest) {
       businessUnitId = businessUnit.id
     }
 
+    const activeOnly = searchParams.get('activeOnly') === 'true'
+
     let query = supabase
       .from('appointment_services')
       .select('*')
@@ -32,6 +34,10 @@ export async function GET(request: NextRequest) {
 
     if (businessUnitId) {
       query = query.eq('business_unit_id', businessUnitId)
+    }
+
+    if (activeOnly) {
+      query = query.eq('is_active', true)
     }
 
     const { data, error } = await query
