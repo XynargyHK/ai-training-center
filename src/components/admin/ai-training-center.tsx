@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Brain, Database, Plus, Edit, Trash2, Save, BarChart3, Book, Sparkles, Users, User, HelpCircle, Mail, Upload, FileText, TestTube, Settings, Calendar, Globe, X } from 'lucide-react'
+import { Brain, Database, Plus, Edit, Trash2, Save, BarChart3, Book, Sparkles, Users, User, HelpCircle, Mail, Upload, FileText, TestTube, Settings, Calendar, Globe, X, Languages } from 'lucide-react'
 import ProfileModal from './profile-modal'
 import RoleplayTraining from './roleplay-training'
 import KnowledgeBase from './knowledge-base'
@@ -101,6 +101,9 @@ const AITrainingCenter = () => {
   const [newCategoryName, setNewCategoryName] = useState('')
   const [editingCategory, setEditingCategory] = useState<string | null>(null)
   const [editingCategoryValue, setEditingCategoryValue] = useState('')
+  const [translatingFaq, setTranslatingFaq] = useState<FAQ | null>(null)
+  const [selectedTranslationLanguages, setSelectedTranslationLanguages] = useState<string[]>([])
+  const [isTranslating, setIsTranslating] = useState(false)
 
   // Canned message categories state
   const [cannedCategories, setCannedCategories] = useState<string[]>(['beauty tips', 'product recommendations', 'skincare advice', 'general responses'])
@@ -1059,6 +1062,77 @@ const AITrainingCenter = () => {
       alert('Failed to regenerate answer. Please try again.')
     } finally {
       setRegeneratingAnswer(false)
+    }
+  }
+
+  const handleTranslateFaq = async () => {
+    if (!translatingFaq || selectedTranslationLanguages.length === 0) {
+      alert('Please select at least one target language')
+      return
+    }
+
+    setIsTranslating(true)
+    try {
+      // Convert URL language code to DB ISO code for current language
+      const urlToDb: Record<string, string> = {
+        'tw': 'zh-TW',
+        'cn': 'zh-CN',
+        'en': 'en',
+        'vi': 'vi'
+      }
+      const sourceLanguage = urlToDb[selectedLangCode] || 'en'
+
+      // Call translation API
+      const response = await fetch('/api/translate-faq', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          faq: {
+            ...translatingFaq,
+            language: sourceLanguage
+          },
+          targetLanguages: selectedTranslationLanguages
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        alert(t.error(result.error || 'Failed to translate FAQ'))
+        return
+      }
+
+      // Save each translation as a new FAQ
+      const translatedFaqs: FAQ[] = []
+      for (const translation of result.translations) {
+        const newFaq: any = {
+          id: `faq-gen-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+          question: translation.question,
+          answer: translation.answer,
+          category: translation.category,
+          keywords: translation.keywords,
+          language: translation.language,  // ISO language code (zh-TW, vi, etc.)
+          is_active: true
+        }
+
+        // Save to Supabase with the target language
+        await saveFAQ(newFaq)
+        translatedFaqs.push(newFaq)
+      }
+
+      // Add to local state
+      setFaqs([...faqs, ...translatedFaqs])
+
+      // Close modal and reset
+      setTranslatingFaq(null)
+      setSelectedTranslationLanguages([])
+
+      alert(`Successfully translated FAQ to ${result.count} language(s)!`)
+    } catch (error) {
+      console.error('Error translating FAQ:', error)
+      alert('Failed to translate FAQ. Please try again.')
+    } finally {
+      setIsTranslating(false)
     }
   }
 
@@ -2413,6 +2487,13 @@ Format as JSON array:
                       </div>
                       <div className="flex gap-2 flex-shrink-0">
                         <button
+                          onClick={() => setTranslatingFaq(faq)}
+                          className="text-purple-600 hover:text-purple-700 p-1"
+                          title="Translate FAQ"
+                        >
+                          <Languages className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => setEditingEntry(faq)}
                           className="text-blue-600 hover:text-blue-600 p-1"
                         >
@@ -2586,6 +2667,98 @@ Format as JSON array:
                       <button
                         onClick={() => setEditingEntry(null)}
                         className="flex-1 bg-gray-200 hover:bg-gray-100 px-3 py-1.5 rounded-none text-xs"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Translation Modal */}
+              {translatingFaq && (
+                <div className="fixed inset-0 bg-black/10 flex items-center justify-center z-50 p-4">
+                  <div className="bg-white rounded-none p-4 max-w-md w-full">
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="text-sm font-bold">Translate FAQ</h3>
+                      <button
+                        onClick={() => {
+                          setTranslatingFaq(null)
+                          setSelectedTranslationLanguages([])
+                        }}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-3 mb-4">
+                      <div>
+                        <p className="text-xs text-gray-600 mb-2">Question:</p>
+                        <p className="text-xs font-medium bg-gray-50 p-2 rounded-none border border-gray-200">
+                          {translatingFaq.question}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-gray-600 mb-2">Select target language(s):</p>
+                        <div className="space-y-2">
+                          {[
+                            { code: 'en', name: 'English' },
+                            { code: 'zh-TW', name: 'Traditional Chinese (繁體中文)' },
+                            { code: 'zh-CN', name: 'Simplified Chinese (简体中文)' },
+                            { code: 'vi', name: 'Vietnamese (Tiếng Việt)' }
+                          ]
+                            .filter(lang => {
+                              const urlToDb: Record<string, string> = { 'tw': 'zh-TW', 'cn': 'zh-CN', 'en': 'en', 'vi': 'vi' }
+                              const currentDbLang = urlToDb[selectedLangCode] || 'en'
+                              return lang.code !== currentDbLang
+                            })
+                            .map(lang => (
+                              <label key={lang.code} className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedTranslationLanguages.includes(lang.code)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedTranslationLanguages([...selectedTranslationLanguages, lang.code])
+                                    } else {
+                                      setSelectedTranslationLanguages(selectedTranslationLanguages.filter(l => l !== lang.code))
+                                    }
+                                  }}
+                                  className="w-4 h-4"
+                                />
+                                <span className="text-xs">{lang.name}</span>
+                              </label>
+                            ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleTranslateFaq}
+                        disabled={isTranslating || selectedTranslationLanguages.length === 0}
+                        className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white px-3 py-2 rounded-none text-xs flex items-center justify-center gap-2"
+                      >
+                        {isTranslating ? (
+                          <>
+                            <Sparkles className="w-4 h-4 animate-spin" />
+                            Translating...
+                          </>
+                        ) : (
+                          <>
+                            <Languages className="w-4 h-4" />
+                            Translate ({selectedTranslationLanguages.length})
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setTranslatingFaq(null)
+                          setSelectedTranslationLanguages([])
+                        }}
+                        className="bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded-none text-xs"
                       >
                         Cancel
                       </button>

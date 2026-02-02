@@ -508,6 +508,7 @@ export async function saveFAQ(faq: any, businessUnitSlugOrId?: string | null) {
     answer: faq.answer,
     short_answer: faq.shortAnswer,
     keywords: faq.keywords || [],
+    language: faq.language || 'en',
     is_published: faq.is_active !== false,
     embedding: embedding,
     embedding_model: 'text-embedding-3-small',
