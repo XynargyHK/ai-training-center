@@ -5,6 +5,13 @@ import { Check } from 'lucide-react'
 import { getFontClass } from '@/lib/fonts'
 import { useSearchParams } from 'next/navigation'
 
+const pricingTranslations: Record<string, { mostPopular: string; saveVsSingle: (pct: number) => string }> = {
+  en: { mostPopular: 'MOST POPULAR', saveVsSingle: (pct) => `Save ${pct}% vs single treatment` },
+  tw: { mostPopular: '最受歡迎', saveVsSingle: (pct) => `比單次療程節省 ${pct}%` },
+  cn: { mostPopular: '最受欢迎', saveVsSingle: (pct) => `比单次疗程节省 ${pct}%` },
+  vi: { mostPopular: 'PHỔ BIẾN NHẤT', saveVsSingle: (pct) => `Tiết kiệm ${pct}% so với liệu trình đơn lẻ` },
+}
+
 interface PricingPlan {
   title: string
   original_price: number
@@ -100,6 +107,7 @@ export default function PricingBlock({ data, anchorId, onAddToCart }: PricingBlo
   const businessUnitParam = searchParams.get('businessUnit') || ''
   const countryParam = searchParams.get('country') || 'US'
   const langParam = searchParams.get('lang') || searchParams.get('language') || 'en'
+  const pt = pricingTranslations[langParam] || pricingTranslations.en
   const [selectedPlanIndex, setSelectedPlanIndex] = useState(0)
 
   const plans = data.plans || []
@@ -302,7 +310,7 @@ export default function PricingBlock({ data, anchorId, onAddToCart }: PricingBlo
                   {/* Most Popular Badge */}
                   {plan.popular && (
                     <div className={`absolute -top-2.5 right-4 bg-black text-white text-xs px-3 py-1 rounded-full font-semibold tracking-wider ${getFontClass(data.plan_heading_font_family)}`}>
-                      MOST POPULAR
+                      {pt.mostPopular}
                     </div>
                   )}
 
@@ -393,7 +401,7 @@ export default function PricingBlock({ data, anchorId, onAddToCart }: PricingBlo
                   color: data.content_color || '#6b7280'
                 }}
               >
-                Save {discountPercentage}% vs single treatment
+                {pt.saveVsSingle(discountPercentage)}
               </p>
             )}
           </div>
