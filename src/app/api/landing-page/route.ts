@@ -31,7 +31,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const businessUnitParam = searchParams.get('businessUnit')
     const country = searchParams.get('country') || 'US'
-    const languageCode = searchParams.get('language') || 'en'
+    // Accept both 'lang' and 'language' parameters
+    const languageCode = searchParams.get('lang') || searchParams.get('language') || 'en'
     const isPreview = searchParams.get('preview') === 'true'
 
     if (!businessUnitParam) {
@@ -83,7 +84,13 @@ export async function GET(request: NextRequest) {
     let resolvedPage = landingPage
     if (!isPreview && landingPage?.published_data) {
       const { published_data, ...metadata } = landingPage
-      resolvedPage = { ...metadata, ...published_data }
+      // Merge published data but preserve important metadata fields like enable_social_login
+      resolvedPage = {
+        ...metadata,
+        ...published_data,
+        // Always preserve these fields from metadata (not from published_data)
+        enable_social_login: metadata.enable_social_login
+      }
     }
 
     console.log('[LandingPage API GET] isPreview:', isPreview, 'Has footer:', !!resolvedPage?.footer, 'Footer policy_content keys:', resolvedPage?.footer?.policy_content ? Object.keys(resolvedPage.footer.policy_content) : 'none')
