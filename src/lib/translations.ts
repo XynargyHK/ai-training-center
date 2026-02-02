@@ -48,6 +48,18 @@ export interface Translations {
   noAiStaff: string
   availableStaff: string
 
+  // Pre-Chat Form
+  welcome: string
+  helpUsServeYou: string
+  yourName: string
+  yourNamePlaceholder: string
+  yourEmail: string
+  yourEmailPlaceholder: string
+  startChat: string
+  continueAsGuest: string
+  chatSavedNotice: string
+  orSignInWith: string
+
   // Admin Panel - Main Navigation
   adminTitle: string
   adminSubtitle: string
@@ -748,6 +760,18 @@ export const translations: Record<Language, Translations> = {
     clickToChat: 'Click on any sparkle button to chat with our trained AI staff',
     noAiStaff: 'No AI staff available. Please train some AI staff first in the admin panel.',
     availableStaff: 'Available staff:',
+
+    // Pre-Chat Form
+    welcome: 'Welcome! 👋',
+    helpUsServeYou: 'Help us serve you better by sharing your information (optional)',
+    yourName: 'Your Name',
+    yourNamePlaceholder: 'Enter your name (optional)',
+    yourEmail: 'Your Email',
+    yourEmailPlaceholder: 'Enter your email (optional)',
+    startChat: 'Start Chat',
+    continueAsGuest: 'Continue as Guest',
+    chatSavedNotice: 'By continuing, your chat will be saved for quality and compliance purposes',
+    orSignInWith: 'or sign in with',
 
     adminTitle: 'AI Business Center',
     adminSubtitle: 'Train and manage your AI customer support agent',
@@ -1475,6 +1499,19 @@ export const translations: Record<Language, Translations> = {
     clickToChat: '点击任意按钮与我们训练有素的AI客服对话',
     noAiStaff: '暂无可用的AI客服。请先在管理面板中训练AI客服。',
     availableStaff: '可用客服：',
+
+    // Pre-Chat Form
+    welcome: '欢迎！👋',
+    helpUsServeYou: '请分享您的信息，帮助我们更好地为您服务（选填）',
+    yourName: '您的姓名',
+    yourNamePlaceholder: '请输入您的姓名（选填）',
+    yourEmail: '您的电子邮箱',
+    yourEmailPlaceholder: '请输入您的电子邮箱（选填）',
+    startChat: '开始聊天',
+    continueAsGuest: '以访客身份继续',
+    chatSavedNotice: '继续即表示您同意我们为质量和合规目的保存您的聊天记录',
+    orSignInWith: '或使用以下方式登录',
+
     close: '关闭',
 
     adminTitle: 'BNI AI 中心',
@@ -2128,6 +2165,18 @@ export const translations: Record<Language, Translations> = {
     noAiStaff: '暫無可用的AI客服。請先在管理面板中訓練AI客服。',
     availableStaff: '可用客服：',
 
+    // Pre-Chat Form
+    welcome: '歡迎！👋',
+    helpUsServeYou: '請分享您的資訊，幫助我們更好地為您服務（選填）',
+    yourName: '您的姓名',
+    yourNamePlaceholder: '請輸入您的姓名（選填）',
+    yourEmail: '您的電子郵件',
+    yourEmailPlaceholder: '請輸入您的電子郵件（選填）',
+    startChat: '開始聊天',
+    continueAsGuest: '以訪客身份繼續',
+    chatSavedNotice: '繼續即表示您同意我們為品質和合規目的保存您的聊天記錄',
+    orSignInWith: '或使用以下方式登入',
+
     adminTitle: 'BNI AI 中心',
     adminSubtitle: '訓練和管理您的AI客戶支援助手',
     viewLiveChat: '查看即時聊天',
@@ -2777,6 +2826,18 @@ export const translations: Record<Language, Translations> = {
     clickToChat: 'Nhấp vào bất kỳ nút nào để trò chuyện với nhân viên AI được đào tạo của chúng tôi',
     noAiStaff: 'Không có nhân viên AI nào. Vui lòng đào tạo nhân viên AI trong bảng quản trị.',
     availableStaff: 'Nhân viên có sẵn:',
+
+    // Pre-Chat Form
+    welcome: 'Chào mừng! 👋',
+    helpUsServeYou: 'Giúp chúng tôi phục vụ bạn tốt hơn bằng cách chia sẻ thông tin của bạn (tùy chọn)',
+    yourName: 'Tên của bạn',
+    yourNamePlaceholder: 'Nhập tên của bạn (tùy chọn)',
+    yourEmail: 'Email của bạn',
+    yourEmailPlaceholder: 'Nhập email của bạn (tùy chọn)',
+    startChat: 'Bắt đầu trò chuyện',
+    continueAsGuest: 'Tiếp tục với tư cách khách',
+    chatSavedNotice: 'Bằng cách tiếp tục, cuộc trò chuyện của bạn sẽ được lưu vì mục đích chất lượng và tuân thủ',
+    orSignInWith: 'hoặc đăng nhập với',
 
     adminTitle: 'AI Business Center',
     adminSubtitle: 'Đào tạo và quản lý trợ lý hỗ trợ khách hàng AI của bạn',

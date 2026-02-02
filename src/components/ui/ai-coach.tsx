@@ -773,37 +773,37 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
           <div className="flex-1 overflow-y-auto p-6 flex items-center justify-center">
             <div className="w-full max-w-sm space-y-4">
               <div className="text-center mb-6">
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Welcome! 👋</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{t.welcome}</h3>
                 <p className="text-sm text-gray-600">
-                  Help us serve you better by sharing your information (optional)
+                  {t.helpUsServeYou}
                 </p>
               </div>
 
               <div className="space-y-3">
                 <div>
                   <label htmlFor="userName" className="block text-sm font-medium text-gray-700 mb-1">
-                    Your Name
+                    {t.yourName}
                   </label>
                   <input
                     id="userName"
                     type="text"
                     value={userName}
                     onChange={(e) => setUserName(e.target.value)}
-                    placeholder="Enter your name (optional)"
+                    placeholder={t.yourNamePlaceholder}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
 
                 <div>
                   <label htmlFor="userEmail" className="block text-sm font-medium text-gray-700 mb-1">
-                    Your Email
+                    {t.yourEmail}
                   </label>
                   <input
                     id="userEmail"
                     type="email"
                     value={userEmail}
                     onChange={(e) => setUserEmail(e.target.value)}
-                    placeholder="Enter your email (optional)"
+                    placeholder={t.yourEmailPlaceholder}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
@@ -814,7 +814,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
               <div className="pt-2">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="flex-1 border-t border-gray-200" />
-                  <span className="text-xs text-gray-400">or sign in with</span>
+                  <span className="text-xs text-gray-400">{t.orSignInWith}</span>
                   <div className="flex-1 border-t border-gray-200" />
                 </div>
                 <div className="flex gap-2">
@@ -860,11 +860,11 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
                   onClick={() => setShowPreChatForm(false)}
                   className="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all"
                 >
-                  {userName || userEmail ? 'Start Chat' : 'Continue as Guest'}
+                  {userName || userEmail ? t.startChat : t.continueAsGuest}
                 </button>
 
                 <p className="text-xs text-gray-500 text-center">
-                  By continuing, your chat will be saved for quality and compliance purposes
+                  {t.chatSavedNotice}
                 </p>
               </div>
             </div>
