@@ -956,6 +956,16 @@ const AITrainingCenter = () => {
       // Get FAQ-specific guidelines from the training guidelines
       const faqGuidelines = guidelines.filter(g => g.category === 'faq')
 
+      // Currency mapping based on country
+      const currencyMap: {[key: string]: {currency: string, symbol: string}} = {
+        'US': { currency: 'USD', symbol: '$' },
+        'HK': { currency: 'HKD', symbol: 'HK$' },
+        'TW': { currency: 'TWD', symbol: 'NT$' },
+        'CN': { currency: 'CNY', symbol: '¥' },
+        'VN': { currency: 'VND', symbol: '₫' },
+      }
+      const currencyInfo = currencyMap[selectedCountry] || { currency: 'USD', symbol: '$' }
+
       // Use ALL knowledge base entries
       const response = await fetch('/api/generate-faq', {
         method: 'POST',
@@ -964,7 +974,10 @@ const AITrainingCenter = () => {
           knowledgeEntries: knowledgeEntries,
           targetCount: 10,
           category: selectedFaqCategory,
-          guidelines: faqGuidelines
+          guidelines: faqGuidelines,
+          country: selectedCountry,
+          currency: currencyInfo.currency,
+          currency_symbol: currencyInfo.symbol
         })
       })
 
@@ -1001,6 +1014,16 @@ const AITrainingCenter = () => {
       // Get FAQ-specific guidelines
       const faqGuidelines = guidelines.filter(g => g.category === 'faq')
 
+      // Currency mapping based on country
+      const currencyMap: {[key: string]: {currency: string, symbol: string}} = {
+        'US': { currency: 'USD', symbol: '$' },
+        'HK': { currency: 'HKD', symbol: 'HK$' },
+        'TW': { currency: 'TWD', symbol: 'NT$' },
+        'CN': { currency: 'CNY', symbol: '¥' },
+        'VN': { currency: 'VND', symbol: '₫' },
+      }
+      const currencyInfo = currencyMap[selectedCountry] || { currency: 'USD', symbol: '$' }
+
       // Call API to regenerate answer
       const response = await fetch('/api/generate-faq', {
         method: 'POST',
@@ -1011,7 +1034,10 @@ const AITrainingCenter = () => {
           category: faq.category,
           guidelines: faqGuidelines,
           existingQuestion: faq.question, // Pass the existing question
-          comments: faq.comments || '' // Pass improvement comments
+          comments: faq.comments || '', // Pass improvement comments
+          country: selectedCountry,
+          currency: currencyInfo.currency,
+          currency_symbol: currencyInfo.symbol
         })
       })
 

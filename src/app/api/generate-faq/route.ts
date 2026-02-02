@@ -29,7 +29,7 @@ interface FAQ {
 
 export async function POST(request: NextRequest) {
   try {
-    const { knowledgeEntries, targetCount = 20, category = 'general', guidelines = [], existingQuestion = null, comments = '' } = await request.json()
+    const { knowledgeEntries, targetCount = 20, category = 'general', guidelines = [], existingQuestion = null, comments = '', country = 'US', currency = 'USD', currency_symbol = '$' } = await request.json()
 
     if (!knowledgeEntries || !Array.isArray(knowledgeEntries) || knowledgeEntries.length === 0) {
       return NextResponse.json(
@@ -91,6 +91,12 @@ YOU MUST READ ALL KNOWLEDGE BASE ENTRIES CAREFULLY BEFORE ANSWERING.
 - WRONG: "According to the website..." or "The company offers..."
 - RIGHT: "We offer..." or "Our products..."
 - Respond as a professional company representative speaking directly to the customer
+
+🚨 CURRENCY AND PRICING:
+- This customer is in ${country}
+- ALL prices MUST be in ${currency} (${currency_symbol})
+- NEVER use any other currency (no USD, no $, unless ${currency} is USD)
+- Example: "${currency_symbol}99" NOT "$99" (unless ${currency} is USD)
 
 Category: "${category}"
 Question: "${existingQuestion}"
@@ -159,6 +165,12 @@ Generate approximately ${targetCount} questions for the "${category}" category (
 - WRONG: "According to the website..." or "The company offers..."
 - RIGHT: "We offer..." or "Our products..."
 - Respond as a professional company representative speaking directly to the customer
+
+🚨 CURRENCY AND PRICING:
+- This customer is in ${country}
+- ALL prices MUST be in ${currency} (${currency_symbol})
+- NEVER use any other currency (no USD, no $, unless ${currency} is USD)
+- Example: "${currency_symbol}99" NOT "$99" (unless ${currency} is USD)
 
 If category is "pricing" - only generate questions about cost, price, payment
 If category is "products" - only generate questions about product features, what products are available
