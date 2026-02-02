@@ -918,56 +918,17 @@ The customer should naturally bring up their issue or question based on the scen
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          prompt: `You are a ${selectedRole} representative helping a customer.
-
-TRAINING SCENARIO: ${scenario.name}
-DESCRIPTION: ${scenario.scenario}
-CUSTOMER TYPE: ${scenario.customerType}
-
-SUCCESS CRITERIA TO ACHIEVE:
-${scenario.successCriteria && scenario.successCriteria.length > 0 ? scenario.successCriteria.map(obj => `- ${obj}`).join('\n') : '- Complete the training scenario successfully'}
-
-${allRelevantMemory.length > 0 ? `
-🚨🚨🚨 CRITICAL TRAINING FEEDBACK - YOU MADE THESE MISTAKES BEFORE - DO NOT REPEAT THEM! 🚨🚨🚨
-
-The trainer has provided the following corrections to your PREVIOUS RESPONSES. You MUST fix these issues NOW:
-
-${allRelevantMemory.map((feedback, index) => `${index + 1}. CORRECTION REQUIRED: ${feedback}`).join('\n')}
-
-⚠️ MANDATORY: You will be RE-EVALUATED on whether you fixed these issues. If you repeat the same mistakes, you FAIL.
-⚠️ READ each correction above carefully and APPLY IT to your response.
-⚠️ If feedback says "don't mention XR5000", then NEVER mention XR5000 or similar made-up products EVER AGAIN.
-⚠️ If feedback says you're hallucinating, STOP making things up and use ONLY the knowledge base.
-
-These corrections OVERRIDE everything else. Fix them NOW!
-` : ''}
-
-🚨 CRITICAL ANTI-HALLUCINATION RULES - MUST FOLLOW:
-1. ONLY use information EXPLICITLY provided in the knowledge base below
-2. NEVER invent or make up ANY product names, model numbers, prices, ingredients, or specific details
-3. If you don't know something from the knowledge base, say "I don't have that specific information" or "Let me check with my team"
-4. DO NOT mention specific products unless they are EXPLICITLY named in the knowledge base
-5. DO NOT make up technical specifications, measurements, percentages, or numbers
-6. DO NOT invent product features or benefits not stated in the knowledge base
-7. Speak in GENERAL terms about benefits and solutions if specific details aren't in the knowledge base
-
-CONVERSATION MANAGEMENT:
-- READ THE ENTIRE CONVERSATION HISTORY to understand the context and emotional state
-- PAY ATTENTION to how the customer's emotions are evolving (frustration, escalation, etc.)
-- ADAPT your response based on the conversation flow - DO NOT repeat previous responses
-- If the customer is getting more frustrated, acknowledge their escalating concerns and adjust your approach
-- Focus on achieving the scenario success criteria listed above
-- Adapt your approach to the customer's personality (${scenario.customerType})
-- Be helpful, professional, and solution-oriented
-- NEVER give the same or similar response twice - each response must progress the conversation
-
-RESPONSE GUIDELINES:
-- Use ONLY information from the knowledge base below
-- If asked about specific products not in the knowledge base, offer to connect them with a specialist or check availability
-- Focus on understanding customer needs and providing helpful guidance within your knowledge
-- Be honest about limitations - it's better to admit you don't know than to make up information
-
-Respond to the customer's CURRENT message while considering the FULL conversation history and emotional trajectory.`,
+          staffName: selectedStaff?.name || 'AI Coach',
+          staffRole: selectedRole,
+          scenario: {
+            name: scenario.name,
+            description: scenario.scenario || scenario.description,
+            customerType: scenario.customerType,
+            successCriteria: scenario.successCriteria,
+          },
+          feedbackMemory: allRelevantMemory,
+          trainingMemory,
+          language,
           customerMessage,
           conversationHistory: messages.map(m => ({
             sender: m.sender,
@@ -975,7 +936,6 @@ Respond to the customer's CURRENT message while considering the FULL conversatio
             timestamp: m.timestamp.toISOString()
           })),
           customerPersona: scenario.customerType,
-          scenario: scenario.description,
           knowledgeBase: knowledgeEntries,
           guidelines: guidelines.filter(g => g.category === 'roleplay' || g.category === 'general')
         })
@@ -1404,57 +1364,32 @@ Apply this feedback when handling similar situations in the future.`
       const needsShorter = feedbackLower.includes('less word') || feedbackLower.includes('shorter') || feedbackLower.includes('brief') || feedbackLower.includes('concise')
       const needsLonger = feedbackLower.includes('more detail') || feedbackLower.includes('longer') || feedbackLower.includes('elaborate')
 
-      // Create revision prompt for AI Coach
-      const revisionPrompt = `You are Dr. Sakura receiving training feedback. You must REVISE your previous response based on the trainer's specific feedback.
-
-TRAINING CONTEXT:
-Scenario: ${selectedScenario.name}
-Customer Type: ${selectedScenario.customerType}
-
-CUSTOMER'S QUESTION:
-"${lastCustomerMessage.message}"
-
-YOUR PREVIOUS RESPONSE (THAT NEEDS REVISION):
-"${lastCoachMessage.message}"
-
-🚨 TRAINER'S FEEDBACK ON YOUR RESPONSE:
-"${feedbackMessage}"
-
-${needsShorter ? `
-⚠️ CRITICAL: The trainer wants a SHORTER response! Your previous response was ${lastCoachMessage.message.split(' ').length} words.
-Make your revised response SIGNIFICANTLY shorter (aim for 30-50 words MAX). Be concise and direct!` : ''}
-
-${needsLonger ? `
-⚠️ CRITICAL: The trainer wants MORE DETAIL! Your previous response was too brief.
-Expand your revised response with more explanation, examples, and helpful details.` : ''}
-
-REVISION INSTRUCTIONS:
-1. Read the trainer's feedback carefully
-2. Identify what was wrong or missing in your previous response
-3. Write a COMPLETELY NEW response that:
-   - Directly addresses the trainer's feedback
-   ${needsShorter ? '   - Is MUCH SHORTER than your previous response (cut it by at least 50%)' : ''}
-   ${needsLonger ? '   - Is MORE DETAILED than your previous response (at least 2x longer)' : ''}
-   - Fixes the specific issues mentioned
-   - Maintains your professional, warm tone
-   - Provides better, more helpful guidance to the customer
-4. DO NOT just repeat your previous response
-5. DO NOT ignore the trainer's feedback
-6. SHOW that you learned from the feedback by making substantial improvements
-
-Now provide your REVISED response to the customer's question above:`
-
       const response = await fetch('/api/ai/coach-training', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          prompt: revisionPrompt,
+          staffName: selectedStaff?.name || 'AI Coach',
+          staffRole: selectedRole,
+          scenario: {
+            name: selectedScenario.name,
+            description: selectedScenario.scenario || selectedScenario.description,
+            customerType: selectedScenario.customerType,
+            successCriteria: selectedScenario.successCriteria,
+          },
+          trainingMemory,
+          language,
+          revision: {
+            previousResponse: lastCoachMessage.message,
+            feedbackMessage,
+            customerQuestion: lastCustomerMessage.message,
+            needsShorter,
+            needsLonger,
+          },
           customerMessage: lastCustomerMessage.message,
           conversationHistory,
           customerPersona: selectedScenario.customerType,
-          scenario: selectedScenario.description,
           knowledgeBase: knowledgeEntries,
           guidelines: guidelines.filter(g => g.category === 'roleplay' || g.category === 'general')
         })

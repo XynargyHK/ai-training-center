@@ -239,81 +239,102 @@ export default function PolicyRichTextEditor({
     setShowFontSizeMenu(false)
   }
 
-  const handleFontFamily = (fontName: string) => {
-    if (editorRef.current) {
-      editorRef.current.focus()
-      // Restore selection
-      if (savedSelectionRef.current) {
-        const selection = window.getSelection()
-        if (selection) {
-          selection.removeAllRanges()
-          try {
-            selection.addRange(savedSelectionRef.current.cloneRange())
-          } catch (e) {
-            // Selection might be invalid
-          }
-        }
-      }
-      // Wrap selection in span with inline font style (contained to editor only)
+  // Apply inline style to all text nodes within a selection range
+  const applyStyleToSelection = useCallback((styleProp: string, styleValue: string) => {
+    if (!editorRef.current) return
+
+    editorRef.current.focus()
+
+    // Restore selection
+    if (savedSelectionRef.current) {
       const selection = window.getSelection()
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0)
-        if (!range.collapsed) {
-          const span = document.createElement('span')
-          // Use inline style - does NOT affect other components
-          span.style.fontFamily = FONT_STYLE_MAP[fontName] || fontName
-          try {
-            range.surroundContents(span)
-          } catch (e) {
-            // If surroundContents fails (partial selection), extract and wrap
-            const content = range.extractContents()
-            span.appendChild(content)
-            range.insertNode(span)
-          }
+      if (selection) {
+        selection.removeAllRanges()
+        try {
+          selection.addRange(savedSelectionRef.current.cloneRange())
+        } catch (e) {
+          // Selection might be invalid
         }
       }
-      handleInput()
-      saveSelection()
     }
+
+    const selection = window.getSelection()
+    if (!selection || selection.rangeCount === 0) return
+    const range = selection.getRangeAt(0)
+    if (range.collapsed) return
+
+    // Collect all text nodes within the range
+    const getTextNodesInRange = (r: Range): Text[] => {
+      const nodes: Text[] = []
+      const walker = document.createTreeWalker(
+        r.commonAncestorContainer.nodeType === Node.TEXT_NODE
+          ? r.commonAncestorContainer.parentNode!
+          : r.commonAncestorContainer,
+        NodeFilter.SHOW_TEXT,
+        null
+      )
+      let node: Node | null
+      while ((node = walker.nextNode())) {
+        if (r.intersectsNode(node)) {
+          nodes.push(node as Text)
+        }
+      }
+      return nodes
+    }
+
+    const textNodes = getTextNodesInRange(range)
+    if (textNodes.length === 0) return
+
+    for (const textNode of textNodes) {
+      // Determine which portion of this text node is selected
+      let startOffset = 0
+      let endOffset = textNode.length
+
+      if (textNode === range.startContainer) {
+        startOffset = range.startOffset
+      }
+      if (textNode === range.endContainer) {
+        endOffset = range.endOffset
+      }
+
+      // Skip empty selections within a node
+      if (startOffset === endOffset) continue
+
+      // Check if the parent span already has this exact style — update it instead of nesting
+      const parent = textNode.parentElement
+      if (parent && parent.tagName === 'SPAN' && parent.childNodes.length === 1 && startOffset === 0 && endOffset === textNode.length) {
+        ;(parent.style as any)[styleProp] = styleValue
+        continue
+      }
+
+      // Split the text node if only part of it is selected
+      let targetNode: Text = textNode
+      if (endOffset < textNode.length) {
+        textNode.splitText(endOffset)
+      }
+      if (startOffset > 0) {
+        targetNode = textNode.splitText(startOffset)
+      }
+
+      // Wrap the target text node in a styled span
+      const span = document.createElement('span')
+      ;(span.style as any)[styleProp] = styleValue
+      targetNode.parentNode!.insertBefore(span, targetNode)
+      span.appendChild(targetNode)
+    }
+
+    handleInput()
+    saveSelection()
+  }, [handleInput, saveSelection])
+
+  const handleFontFamily = (fontName: string) => {
+    applyStyleToSelection('fontFamily', FONT_STYLE_MAP[fontName] || fontName)
     setCurrentFontFamily(fontName)
     setShowFontFamilyMenu(false)
   }
 
   const handleFontWeight = (weight: string) => {
-    if (editorRef.current) {
-      editorRef.current.focus()
-      // Restore selection
-      if (savedSelectionRef.current) {
-        const selection = window.getSelection()
-        if (selection) {
-          selection.removeAllRanges()
-          try {
-            selection.addRange(savedSelectionRef.current.cloneRange())
-          } catch (e) {
-            // Selection might be invalid
-          }
-        }
-      }
-      // Wrap selection in span with font weight
-      const selection = window.getSelection()
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0)
-        if (!range.collapsed) {
-          const span = document.createElement('span')
-          span.style.fontWeight = weight
-          try {
-            range.surroundContents(span)
-          } catch (e) {
-            // If surroundContents fails (partial selection), extract and wrap
-            const content = range.extractContents()
-            span.appendChild(content)
-            range.insertNode(span)
-          }
-        }
-      }
-      handleInput()
-      saveSelection()
-    }
+    applyStyleToSelection('fontWeight', weight)
     setCurrentFontWeight(weight)
     setShowFontWeightMenu(false)
   }
@@ -399,8 +420,8 @@ export default function PolicyRichTextEditor({
               {FONT_FAMILIES.map(font => (
                 <button
                   key={font}
-                  onClick={(e) => {
-                    e.preventDefault()
+                  onMouseDown={(e) => {
+                    e.preventDefault() // Prevent focus loss from editor
                     handleFontFamily(font)
                   }}
                   className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-200 ${
@@ -437,8 +458,8 @@ export default function PolicyRichTextEditor({
               {FONT_SIZES.map(size => (
                 <button
                   key={size.value}
-                  onClick={(e) => {
-                    e.preventDefault()
+                  onMouseDown={(e) => {
+                    e.preventDefault() // Prevent focus loss from editor
                     handleFontSize(size.value)
                   }}
                   className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-200 ${
@@ -474,8 +495,8 @@ export default function PolicyRichTextEditor({
               {FONT_WEIGHTS.map(weight => (
                 <button
                   key={weight.value}
-                  onClick={(e) => {
-                    e.preventDefault()
+                  onMouseDown={(e) => {
+                    e.preventDefault() // Prevent focus loss from editor
                     handleFontWeight(weight.value)
                   }}
                   className={`w-full px-3 py-1.5 text-left text-xs hover:bg-gray-200 ${
@@ -517,8 +538,8 @@ export default function PolicyRichTextEditor({
                 {COLOR_PALETTE.map((color) => (
                   <button
                     key={color.value}
-                    onClick={(e) => {
-                      e.preventDefault()
+                    onMouseDown={(e) => {
+                      e.preventDefault() // Prevent focus loss from editor
                       handleColor(color.value)
                     }}
                     className="w-6 h-6 rounded-none border-2 hover:scale-110 transition-transform"

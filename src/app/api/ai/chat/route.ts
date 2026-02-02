@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { getLLMConfig } from '@/app/api/llm-config/route'
+import { buildAIPrompt, buildUserReminder } from '@/lib/ai-prompt-builder'
 
 // Initialize Google Gemini client - ONLY Gemini, no fallbacks
 function getGoogleClient() {
@@ -9,15 +10,6 @@ function getGoogleClient() {
     throw new Error('GOOGLE_GEMINI_API_KEY is not configured')
   }
   return new GoogleGenerativeAI(apiKey)
-}
-
-interface KnowledgeEntry {
-  id: string
-  category: string
-  topic: string
-  content: string
-  keywords: string[]
-  confidence: number
 }
 
 interface TrainingData {
@@ -120,7 +112,7 @@ async function generateAIResponse(
   message: string,
   context: string,
   conversationHistory: any[],
-  knowledgeBase: KnowledgeEntry[],
+  knowledgeBase: any[],
   trainingData: TrainingData[],
   guidelines: any[] = [],
   staffName: string = 'AI Coach',
@@ -131,9 +123,6 @@ async function generateAIResponse(
   userName: string | null = null
 ): Promise<string> {
 
-  // Build knowledge context from knowledge base
-  let knowledgeContext = ''
-
   // Debug logging
   console.log('=== AI CHAT DEBUG ===')
   console.log('Knowledge Base Entries:', knowledgeBase.length)
@@ -141,15 +130,8 @@ async function generateAIResponse(
   console.log('User Message:', message)
   console.log('📷 Image provided:', image ? 'YES (length: ' + image.length + ')' : 'NO')
 
-  // Include ALL knowledge base entries so the AI has complete context
   if (knowledgeBase.length > 0) {
     console.log('✅ Including ALL knowledge base entries:', knowledgeBase.length)
-
-    knowledgeContext = '\n\n📚 KNOWLEDGE BASE - CRITICAL: ONLY USE INFORMATION FROM THIS LIST:\n' +
-      knowledgeBase
-        .map(entry => `- ${entry.category ? `[${entry.category}] ` : ''}${entry.topic || ''}: ${entry.content}`)
-        .join('\n') +
-      '\n\n⚠️ DO NOT mention any products, prices, or information that are NOT listed above.'
   } else {
     console.log('Knowledge base is EMPTY - AI should say "Let me check on that"')
   }
@@ -212,94 +194,31 @@ async function generateAIResponse(
     }
   }
 
-  // Build conversation history for context
-  // Use full conversation history (no limit) for complete context
+  // Build conversation history text for the shared prompt builder
   const recentHistory = conversationHistory
-
-  // Also create text version for system prompt (legacy)
   const conversationContext = recentHistory
     .map((msg: any) => `${msg.role === 'user' ? 'Customer' : 'AI'}: ${msg.content}`)
     .join('\n')
 
-  // Include ALL guidelines so the AI follows every rule
-  let guidelinesContext = ''
-
   if (guidelines.length > 0) {
     console.log('✅ Including ALL guidelines:', guidelines.length)
-    guidelinesContext = '\n\n📋 TRAINING GUIDELINES - FOLLOW THESE RULES:\n' + guidelines
-      .map((g: any) => `**${g.title}**\n${g.content}`)
-      .join('\n\n')
   }
-
-  // Build training memory context from trained AI staff
-  let trainingMemoryContext = ''
   if (trainingMemory && Object.keys(trainingMemory).length > 0) {
-    const memoryEntries = Object.entries(trainingMemory)
-    trainingMemoryContext = '\n\n📝 TRAINING MEMORY - IMPORTANT LESSONS LEARNED:\n' +
-      'You are ' + staffName + ' (' + staffRole + '). Apply these lessons from your training:\n\n' +
-      memoryEntries.map(([scenario, lessons]) =>
-        `Scenario: ${scenario}\nLessons:\n${lessons.map(lesson => `  • ${lesson}`).join('\n')}`
-      ).join('\n\n')
-    console.log('Training memory applied for:', staffName, '- Scenarios:', memoryEntries.length)
+    console.log('Training memory applied for:', staffName, '- Scenarios:', Object.keys(trainingMemory).length)
   }
 
-  // Map language codes to language names for instruction
-  // Supports both ISO codes (zh-TW) and short URL codes (tw)
-  const languageNames: {[key: string]: string} = {
-    'en': 'English',
-    'zh-CN': 'Simplified Chinese',
-    'zh-TW': 'Traditional Chinese',
-    'cn': 'Simplified Chinese',
-    'tw': 'Traditional Chinese',
-    'vi': 'Vietnamese'
-  }
-  const languageInstruction = language !== 'en'
-    ? `\n\n🌍 LANGUAGE REQUIREMENT: You MUST respond ONLY in ${languageNames[language] || language}. The user may write in any language, but your responses must be in ${languageNames[language] || language}.\n`
-    : ''
-
-  // Add vision instruction if image is provided
-  const visionInstruction = image
-    ? `\n\n📷 IMAGE ANALYSIS: The user has provided an image. Carefully analyze the image content and incorporate your observations into your response. Describe what you see, read any text in the image, and provide relevant insights based on the visual information.\n`
-    : ''
-
-  // Add personalized greeting instruction if user name is provided
-  const greetingInstruction = userName
-    ? `\n\n👋 PERSONALIZED GREETING: The user's name is ${userName}. If this is the first message in the conversation (no conversation history), start your response with a warm, personalized greeting using their name (e.g., "Hi ${userName}!" or "Hello ${userName}, nice to meet you!"). For subsequent messages, you can occasionally use their name naturally in conversation.\n`
-    : ''
-
-  // Create system prompt with EXTREMELY STRICT anti-hallucination rules
-  const systemPrompt = `You are ${staffName}, a ${staffRole} for THIS company ONLY.${knowledgeContext}${trainingContext}${guidelinesContext}${trainingMemoryContext}${languageInstruction}${visionInstruction}${greetingInstruction}
-
-${conversationContext ? `RECENT CONVERSATION:\n${conversationContext}\n` : ''}
-
-🚨🚨🚨 ABSOLUTE RULES - VIOLATION WILL CAUSE SEVERE HARM 🚨🚨🚨
-
-${knowledgeContext ? `
-YOU MUST FOLLOW THESE RULES OR YOU WILL SEND CUSTOMERS TO COMPETITOR BRANDS:
-
-1. ⛔ BANNED: NEVER mention competitor brands like "The Ordinary", "Paula's Choice", "Neutrogena", "CeraVe", "La Roche-Posay" or ANY brand not in the knowledge base
-2. ⛔ BANNED: NEVER recommend products from other companies
-3. ⛔ BANNED: NEVER make up product names
-4. ⛔ BANNED: NEVER invent prices, features, ingredients, or details
-5. ✅ REQUIRED: ONLY mention products/information EXPLICITLY listed in the KNOWLEDGE BASE above
-6. ✅ REQUIRED: When customers ask "what products do you have?", "any more products?", "show me products", etc. → LIST products from the knowledge base!
-7. ✅ REQUIRED: If asked about a SPECIFIC product NOT in knowledge base, say: "We don't have that specific product yet, but I'll pass your interest along to our team!"
-8. ⛔ BANNED: NEVER say "knowledge base", "database", "system" to customers
-9. ✅ REQUIRED: Speak as "we", "our", "us" - you ARE this company
-
-IMPORTANT CLARIFICATION:
-- General questions like "what products?", "any more?", "show me what you have" = LIST our products from knowledge base
-- Specific questions like "do you have Product X?" where X is NOT in knowledge base = "We don't currently offer that"
-- DO NOT say "we don't offer that" when customer asks to see what products exist!
-
-IF ASKED ABOUT SOMETHING SPECIFIC NOT IN KNOWLEDGE BASE:
-- Say: "We don't currently offer that, but I appreciate your feedback and will share your interest with our team!"
-- DO NOT recommend competitor products
-- DO NOT make up product names from your training data` : `1. Provide helpful, accurate information
-2. Be professional and friendly
-3. If you're unsure, say "Let me check on that for you"`}
-
-Keep responses clear and professional (2-4 sentences).`
+  // Use shared prompt builder for system prompt
+  const systemPrompt = buildAIPrompt({
+    staffName,
+    staffRole,
+    knowledgeBase,
+    guidelines,
+    trainingMemory,
+    conversationHistory: conversationContext,
+    language,
+    image,
+    userName,
+  }) + (trainingContext ? `\n${trainingContext}` : '')
 
   try {
     // Get dynamic LLM configuration
@@ -337,10 +256,8 @@ Keep responses clear and professional (2-4 sentences).`
     }
 
     // Add current user message with reminder and optional image
-    const currentMessageParts: any[] = [{ text: `${message}
-
-${knowledgeContext ? `
-🚨 REMINDER: ONLY mention products/information EXPLICITLY LISTED in the knowledge base above. DO NOT mention competitor brands or make up information.` : ''}` }]
+    const hasKnowledge = knowledgeBase.length > 0
+    const currentMessageParts: any[] = [{ text: `${message}${buildUserReminder(hasKnowledge)}` }]
 
     // Add image to current message if provided
     if (image) {

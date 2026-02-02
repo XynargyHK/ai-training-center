@@ -61,6 +61,7 @@ interface LandingPageFooterProps {
   businessUnitParam?: string
   country?: string
   language?: string
+  preview?: boolean
 }
 
 // Default footer data
@@ -77,7 +78,8 @@ export default function LandingPageFooter({
   businessUnitName = 'Shop',
   businessUnitParam = '',
   country = 'US',
-  language = 'en'
+  language = 'en',
+  preview = false
 }: LandingPageFooterProps) {
   const footerData = data || {}
   const links = footerData.links || defaultLinks
@@ -104,13 +106,14 @@ export default function LandingPageFooter({
     }
     // Build locale params
     const localeParams = `&country=${country}&lang=${language}`
+    const previewParam = preview ? '&preview=true' : ''
     if (url.startsWith('?policy=')) {
       const policyName = url.replace('?policy=', '')
       return businessUnitParam
-        ? `/livechat?businessUnit=${businessUnitParam}&policy=${policyName}${localeParams}`
-        : `/livechat?policy=${policyName}${localeParams}`
+        ? `/livechat?businessUnit=${businessUnitParam}&policy=${policyName}${localeParams}${previewParam}`
+        : `/livechat?policy=${policyName}${localeParams}${previewParam}`
     }
-    return businessUnitParam ? `${url}?businessUnit=${businessUnitParam}${localeParams}` : url
+    return businessUnitParam ? `${url}?businessUnit=${businessUnitParam}${localeParams}${previewParam}` : url
   }
 
   const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>, url: string) => {

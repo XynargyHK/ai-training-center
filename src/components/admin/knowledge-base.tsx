@@ -2096,9 +2096,9 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                             const result = await response.json()
                             if (response.ok) {
                               await loadLandingPage(landingPageData.country || 'US', landingPageData.language_code || 'en')
-                              alert(landingPageData.is_published ? t.landingPageLiveUpdated : t.landingPageNowLive)
+                              alert(landingPageData.is_published ? (t.landingPageLiveUpdated || 'Live page updated successfully!') : (t.landingPageNowLive || 'Landing page is now live!'))
                             } else {
-                              alert(t.failedToUpdatePublish + ': ' + (result.error || 'Unknown error'))
+                              alert((t.failedToUpdatePublish || 'Failed to update publish status') + ': ' + (result.error || 'Unknown error'))
                             }
                           } catch (err) {
                             alert('Error publishing page')
@@ -2148,9 +2148,9 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                                 const result = await response.json()
                                 if (response.ok) {
                                   await loadLandingPage(landingPageData.country || 'US', landingPageData.language_code || 'en')
-                                  alert(t.landingPageUnpublished)
+                                  alert(t.landingPageUnpublished || 'Landing page unpublished!')
                                 } else {
-                                  alert(t.failedToUpdatePublish + ': ' + (result.error || 'Unknown error'))
+                                  alert((t.failedToUpdatePublish || 'Failed to update publish status') + ': ' + (result.error || 'Unknown error'))
                                 }
                               } catch (err) {
                                 alert('Error unpublishing page')

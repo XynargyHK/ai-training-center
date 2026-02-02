@@ -684,10 +684,14 @@ export interface Translations {
 
   // Publishing
   saveLandingPageFirst: string
+  unpublish: string
   confirmUnpublish: string
   confirmPublish: string
+  confirmUpdateLive: string
+  updateLive: string
   landingPageUnpublished: string
   landingPageNowLive: string
+  landingPageLiveUpdated: string
   failedToUpdatePublish: string
 
   // Translation Mode
@@ -1408,10 +1412,14 @@ export const translations: Record<Language, Translations> = {
 
     // Publishing
     saveLandingPageFirst: 'Please save the landing page first before publishing.',
+    unpublish: 'Unpublish',
     confirmUnpublish: 'This will unpublish the landing page. Continue?',
     confirmPublish: 'This will make the landing page live. Continue?',
+    confirmUpdateLive: 'This will update the live page with your latest changes. Continue?',
+    updateLive: 'Update Live',
     landingPageUnpublished: 'Landing page unpublished!',
     landingPageNowLive: 'Landing page is now live!',
+    landingPageLiveUpdated: 'Live page updated with latest changes!',
     failedToUpdatePublish: 'Failed to update publish status',
 
     // Translation Mode
@@ -2060,10 +2068,14 @@ export const translations: Record<Language, Translations> = {
     menuItemsLeft: '菜单项（左侧）',
     rightSideUtilities: '右侧工具',
     saveLandingPageFirst: '请先保存落地页再发布。',
+    unpublish: '取消发布',
     confirmUnpublish: '这将取消发布落地页。确定继续？',
     confirmPublish: '这将使落地页上线。确定继续？',
+    confirmUpdateLive: '这将用最新更改更新上线页面。确定继续？',
+    updateLive: '更新上线',
     landingPageUnpublished: '落地页已取消发布！',
     landingPageNowLive: '落地页已上线！',
+    landingPageLiveUpdated: '上线页面已更新为最新更改！',
     failedToUpdatePublish: '更新发布状态失败',
     exitTranslationMode: '退出翻译模式',
     enableTranslationMode: '启用翻译模式',
@@ -2706,10 +2718,14 @@ export const translations: Record<Language, Translations> = {
     menuItemsLeft: '選單項目（左側）',
     rightSideUtilities: '右側工具',
     saveLandingPageFirst: '請先儲存著陸頁再發佈。',
+    unpublish: '取消發佈',
     confirmUnpublish: '這將取消發佈著陸頁。確定繼續？',
     confirmPublish: '這將使著陸頁上線。確定繼續？',
+    confirmUpdateLive: '這將用最新更改更新上線頁面。確定繼續？',
+    updateLive: '更新上線',
     landingPageUnpublished: '著陸頁已取消發佈！',
     landingPageNowLive: '著陸頁已上線！',
+    landingPageLiveUpdated: '上線頁面已更新為最新更改！',
     failedToUpdatePublish: '更新發佈狀態失敗',
     exitTranslationMode: '退出翻譯模式',
     enableTranslationMode: '啟用翻譯模式',
@@ -3352,10 +3368,14 @@ export const translations: Record<Language, Translations> = {
     menuItemsLeft: 'Mục Menu (Bên Trái)',
     rightSideUtilities: 'Tiện Ích Bên Phải',
     saveLandingPageFirst: 'Vui lòng lưu trang đích trước khi xuất bản.',
+    unpublish: 'Hủy Xuất Bản',
     confirmUnpublish: 'Thao tác này sẽ hủy xuất bản trang đích. Tiếp tục?',
     confirmPublish: 'Thao tác này sẽ đưa trang đích lên trực tuyến. Tiếp tục?',
+    confirmUpdateLive: 'Thao tác này sẽ cập nhật trang trực tuyến với các thay đổi mới nhất. Tiếp tục?',
+    updateLive: 'Cập Nhật Trực Tuyến',
     landingPageUnpublished: 'Trang đích đã hủy xuất bản!',
     landingPageNowLive: 'Trang đích đã lên trực tuyến!',
+    landingPageLiveUpdated: 'Trang trực tuyến đã được cập nhật!',
     failedToUpdatePublish: 'Không thể cập nhật trạng thái xuất bản',
     exitTranslationMode: 'Thoát Chế Độ Dịch',
     enableTranslationMode: 'Bật Chế Độ Dịch',

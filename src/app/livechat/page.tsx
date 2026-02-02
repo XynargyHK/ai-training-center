@@ -39,6 +39,7 @@ interface HeroSlide {
   background_url: string
   background_type: 'image' | 'video'
   background_color?: string // Fallback background color when no image/video
+  poster_url?: string // Optimized poster image for videos (< 50KB)
   cta_text: string
   cta_url: string
   text_align?: 'left' | 'center' | 'right'
@@ -823,6 +824,7 @@ export function LandingPageContent({
   const headingFont = heroSlide?.headline_font_family || 'Josefin Sans'
   const bodyFont = heroSlide?.subheadline_font_family || 'Cormorant Garamond'
 
+  // Show loading only until page data is ready
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -1134,6 +1136,11 @@ export function LandingPageContent({
                   }`}
                   aria-hidden={index !== currentHeroSlide}
                 >
+                  {/* Background - with loading fallback */}
+                  <div
+                    className="absolute inset-0"
+                    style={{ backgroundColor: slide.background_color || '#1e293b' }}
+                  />
                   {/* Background */}
                   {slide.background_url ? (
                     slide.background_type === 'video' ? (
@@ -1143,23 +1150,22 @@ export function LandingPageContent({
                         loop
                         muted
                         playsInline
-                        preload="auto"
-                        poster={`${slide.background_url}#t=0.1`}
+                        autoPlay={index === 0}
+                        preload={index === 0 ? "auto" : index === 1 ? "auto" : "metadata"}
+                        poster={slide.poster_url || `${slide.background_url}#t=0.1`}
                         className="absolute inset-0 w-full h-full object-cover"
+                        style={index === 0 ? { isolation: 'isolate' } : undefined}
                       />
                     ) : (
                       <img
                         src={slide.background_url}
                         alt=""
+                        loading="lazy"
+                        decoding="async"
                         className="absolute inset-0 w-full h-full object-cover"
                       />
                     )
-                  ) : (
-                    <div
-                      className="absolute inset-0"
-                      style={{ backgroundColor: slide.background_color || '#1e293b' }}
-                    />
-                  )}
+                  ) : null}
 
                   {/* Overlay for text readability */}
                   {slide.background_url && (
@@ -1298,12 +1304,15 @@ export function LandingPageContent({
                         muted
                         playsInline
                         preload="auto"
+                        poster={slide.poster_url}
                         className="absolute inset-0 w-full h-full object-cover"
                       />
                     ) : (
                       <img
                         src={slide.background_url}
                         alt=""
+                        loading="lazy"
+                        decoding="async"
                         className="absolute inset-0 w-full h-full object-cover"
                       />
                     )
