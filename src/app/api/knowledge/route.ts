@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ data: messages })
 
       case 'load_faq_categories':
-        const faqCategories = await loadFAQCategories(businessUnitId)
+        const faqCategories = await loadFAQCategories(businessUnitId, language || 'en')
         return NextResponse.json({ data: faqCategories })
 
       case 'load_canned_categories':
