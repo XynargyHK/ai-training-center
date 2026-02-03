@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: '*',
       allow: '/',
     },
-    sitemap: 'https://skincoach.ai/sitemap.xml',
+    sitemap: 'https://www.skincoach.ai/sitemap.xml',
   }
 }
