@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 
 export async function GET() {
+  // Micro-Infusion System sitemap
   const baseUrl = 'https://skincoach.ai'
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
