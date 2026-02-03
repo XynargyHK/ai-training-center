@@ -108,7 +108,7 @@ export async function generateMetadata({
       locale: 'en_HK',
       images: [
         {
-          url: '/og-image.png', // You'll need to add this image
+          url: 'https://skincoach.ai/og-image.png',
           width: 1200,
           height: 630,
           alt: title,
@@ -133,11 +133,11 @@ export async function generateMetadata({
       },
     },
     alternates: {
-      canonical: domain.includes('skincoach.ai') ? 'https://skincoach.ai/livechat' : undefined,
+      canonical: domain.includes('skincoach.ai') ? 'https://skincoach.ai' : undefined,
       languages: {
-        'en-HK': '/livechat?lang=en',
-        'zh-TW': '/livechat?lang=tw',
-        'zh-CN': '/livechat?lang=cn',
+        'en-HK': 'https://skincoach.ai/livechat?businessUnit=skincoach&lang=en',
+        'zh-TW': 'https://skincoach.ai/livechat?businessUnit=skincoach&lang=tw',
+        'zh-CN': 'https://skincoach.ai/livechat?businessUnit=skincoach&lang=cn',
       },
     },
   }
