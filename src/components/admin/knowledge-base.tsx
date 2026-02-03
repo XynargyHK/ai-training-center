@@ -395,6 +395,34 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
 
         setLandingPageData(landingPage)
         setHasLandingPage(true)
+
+        // Auto-load EN data for anchor fallback when viewing non-EN languages
+        if (loadLang !== 'en') {
+          try {
+            console.log(`[LoadLandingPage] Loading EN data for anchor fallback...`)
+            const enResponse = await fetch(`/api/landing-page?businessUnit=${businessUnitId}&country=US&language=en&preview=true&_t=${Date.now()}`, {
+              cache: 'no-store',
+              headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+              }
+            })
+            const enData = await enResponse.json()
+            if (enData.landingPage) {
+              console.log(`[LoadLandingPage] EN data loaded with ${enData.landingPage.blocks?.length || 0} blocks`)
+              setTranslationSourceData(enData.landingPage)
+            } else {
+              console.log(`[LoadLandingPage] No EN data available for fallback`)
+              setTranslationSourceData(null)
+            }
+          } catch (err) {
+            console.error('[LoadLandingPage] Failed to load EN data for fallback:', err)
+            setTranslationSourceData(null)
+          }
+        } else {
+          // Clear translation source data when viewing EN
+          setTranslationSourceData(null)
+        }
       } else {
         // Check again for stale request before setting default
         if (thisRequestId !== loadRequestIdRef.current) {
@@ -2300,7 +2328,11 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                         <button
                           onClick={() => {
                             setTranslationMode(false)
-                            setTranslationSourceData(null)
+                            // Keep translationSourceData for non-EN languages (needed for anchor fallback)
+                            // Only clear it if we're viewing EN
+                            if (selectedLangCode === 'en') {
+                              setTranslationSourceData(null)
+                            }
                           }}
                           className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-100 text-gray-700 rounded-none"
                         >

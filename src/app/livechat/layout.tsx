@@ -83,20 +83,65 @@ export async function generateMetadata({
   const businessUnitSlug = params?.businessUnit
   const { title, description } = await getBusinessUnitMetadata(businessUnitSlug, domain)
 
-  return {
+  const metadata: Metadata = {
     title,
     description,
+    keywords: [
+      'skincare',
+      'AI skincare',
+      'personalized skincare',
+      'skin analysis',
+      'beauty consultation',
+      'micro-infusion',
+      'skin treatment',
+      'skincare recommendation',
+      'professional skincare',
+      'Hong Kong skincare'
+    ],
     openGraph: {
       title,
       description,
       type: 'website',
+      siteName: 'SkinCoach',
+      url: domain.includes('skincoach.ai') ? 'https://skincoach.ai' : undefined,
+      locale: 'en_HK',
+      images: [
+        {
+          url: '/og-image.png', // You'll need to add this image
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
+      site: '@skincoach', // Update with your actual Twitter handle
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
+    },
+    alternates: {
+      canonical: domain.includes('skincoach.ai') ? 'https://skincoach.ai/livechat' : undefined,
+      languages: {
+        'en-HK': '/livechat?lang=en',
+        'zh-TW': '/livechat?lang=tw',
+        'zh-CN': '/livechat?lang=cn',
+      },
     },
   }
+
+  return metadata
 }
 
 export default function LivechatLayout({
