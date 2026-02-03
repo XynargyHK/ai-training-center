@@ -87,6 +87,7 @@ export async function generateMetadata({
     title,
     description,
     verification: {
+      google: 'uk6LcLQTI6W1KKBgePLm46-M155maP8UbomgiylpoNs',
       other: {
         'msvalidate.01': '49785425477910BA8333B7070A3DF5AD',
       },
