@@ -1,5 +1,89 @@
 # Deployment Guide - AI Training Center
 
+## 🚨 CRITICAL: BEFORE ANY DEPLOYMENT
+
+### Step 0: Create `.dockerignore` (MANDATORY - DO THIS FIRST!)
+
+**WHY THIS MATTERS:**
+- Without `.dockerignore`, Railway copies EVERYTHING into Docker container
+- This includes docs, backups, logs, scripts → 1GB+ image size
+- Result: Deployment hangs forever on "Creating container..."
+- **THIS IS NOT OPTIONAL**
+
+**Create `.dockerignore` file in root:**
+
+```dockerignore
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# Next.js
+.next
+out
+build
+
+# Environment files
+.env
+.env.local
+.env*.local
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# Documentation and logs (DO NOT DEPLOY THESE)
+*.md
+log/
+*.txt
+
+# Database backups (NEVER DEPLOY THESE)
+*.json
+!package.json
+!tsconfig.json
+!next.config.js
+
+# Scripts (not needed in production)
+scripts/
+
+# SQL migrations (run separately, not in container)
+sql-migrations/
+
+# Large files
+*.pdf
+*.docx
+*.doc
+
+# Test files
+*.test.ts
+*.test.tsx
+*.spec.ts
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Claude
+.claude/
+
+# Temporary files
+tmp/
+temp/
+nul
+```
+
+**✅ Checklist before pushing:**
+- [ ] `.dockerignore` file exists in root directory
+- [ ] File includes all exclusions above
+- [ ] Test: `git add .dockerignore` and commit it
+
+---
+
 ## 🚀 Quick Deploy to Railway (5 minutes)
 
 ### Step 1: Prepare Repository
