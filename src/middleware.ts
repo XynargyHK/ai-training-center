@@ -72,14 +72,15 @@ async function detectCountryFromIP(request: NextRequest): Promise<string> {
 }
 
 // Build internal livechat URL for rewrite
-function buildLivechatUrl(request: NextRequest, countryPath: string): URL {
+function buildLivechatUrl(request: NextRequest, countryPath: string): string {
   const params = COUNTRY_MAP[countryPath]
-  const url = new URL('/livechat', request.url)
-  url.searchParams.set('businessUnit', 'skincoach')
-  url.searchParams.set('country', params.country)
-  url.searchParams.set('lang', params.lang)
-  url.searchParams.set('page', LANDING_PAGE)
-  return url
+  const baseUrl = new URL(request.url)
+  baseUrl.pathname = '/livechat'
+  baseUrl.searchParams.set('businessUnit', 'skincoach')
+  baseUrl.searchParams.set('country', params.country)
+  baseUrl.searchParams.set('lang', params.lang)
+  baseUrl.searchParams.set('page', LANDING_PAGE)
+  return baseUrl.toString()
 }
 
 export async function middleware(request: NextRequest) {
