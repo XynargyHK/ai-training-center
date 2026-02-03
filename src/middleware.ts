@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 const SKINCOACH_HOSTS = ['skincoach.ai', 'www.skincoach.ai']
 const PASS_THROUGH_PREFIXES = ['/livechat', '/api', '/_next', '/favicon.ico']
 const LANDING_PAGE = 'micro-infusion-system-face'
+// Force deployment trigger
 
 const COUNTRY_MAP: Record<string, { country: string; lang: string }> = {
   us: { country: 'US', lang: 'en' },
