@@ -76,15 +76,26 @@ export default function BlockContainer({
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
-              <h3 className="text-gray-800 text-xs font-medium truncate">{block.name}</h3>
-              <button
-                onClick={() => setIsEditingName(true)}
-                className="text-gray-500 hover:text-violet-600 p-1 transition-colors flex-shrink-0"
-                title="Edit block name"
-              >
-                <Edit2 className="w-4 h-4" />
-              </button>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-gray-800 text-xs font-medium truncate">{block.name}</h3>
+                <button
+                  onClick={() => setIsEditingName(true)}
+                  className="text-gray-500 hover:text-violet-600 p-1 transition-colors flex-shrink-0"
+                  title="Edit block name"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+              </div>
+              {/* Show anchor ID for linking */}
+              {(() => {
+                const anchorId = block.data?.anchor_id || block.name?.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()
+                return anchorId ? (
+                  <div className="text-[10px] text-gray-500 mt-0.5 font-mono">
+                    #{anchorId}
+                  </div>
+                ) : null
+              })()}
             </div>
           )}
         </div>
