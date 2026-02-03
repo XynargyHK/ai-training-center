@@ -1024,9 +1024,14 @@ export function LandingPageContent({
                             key={locale.language_code}
                             onClick={() => {
                               setShowLanguageDropdown(false)
-                              router.push(pageSlug
-                                ? `/${pageSlug}?lang=${locale.language_code}`
-                                : `/livechat?businessUnit=${businessUnitParam}&country=${countryParam}&lang=${locale.language_code}`)
+                              // Check if we're on a country route (/us, /hk, /sg)
+                              const currentPath = window.location.pathname
+                              const isCountryRoute = /^\/(us|hk|sg)$/i.test(currentPath)
+                              router.push(isCountryRoute
+                                ? `${currentPath}?lang=${locale.language_code}`
+                                : pageSlug
+                                  ? `/${pageSlug}?lang=${locale.language_code}`
+                                  : `/livechat?businessUnit=${businessUnitParam}&country=${countryParam}&lang=${locale.language_code}`)
                             }}
                             className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2 ${isActive ? 'bg-gray-50 font-medium' : ''}`}
                           >
@@ -1089,9 +1094,14 @@ export function LandingPageContent({
                         key={`mobile-${locale.language_code}`}
                         onClick={() => {
                           setMobileMenuOpen(false)
-                          router.push(pageSlug
-                            ? `/${pageSlug}?lang=${locale.language_code}`
-                            : `/livechat?businessUnit=${businessUnitParam}&country=${countryParam}&lang=${locale.language_code}`)
+                          // Check if we're on a country route (/us, /hk, /sg)
+                          const currentPath = window.location.pathname
+                          const isCountryRoute = /^\/(us|hk|sg)$/i.test(currentPath)
+                          router.push(isCountryRoute
+                            ? `${currentPath}?lang=${locale.language_code}`
+                            : pageSlug
+                              ? `/${pageSlug}?lang=${locale.language_code}`
+                              : `/livechat?businessUnit=${businessUnitParam}&country=${countryParam}&lang=${locale.language_code}`)
                         }}
                         className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-50 flex items-center gap-2 ${isActive ? 'bg-gray-50 font-medium' : ''}`}
                       >
