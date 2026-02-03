@@ -111,7 +111,8 @@ export async function middleware(request: NextRequest) {
   if (pathMatch) {
     const countryPath = pathMatch[1].toLowerCase()
     if (COUNTRY_MAP[countryPath]) {
-      const response = NextResponse.rewrite(buildLivechatUrl(request, countryPath))
+      // Redirect to livechat with full params (visible in URL)
+      const response = NextResponse.redirect(buildLivechatUrl(request, countryPath), 302)
 
       // Set cookie to remember user's country preference
       response.cookies.set('skincoach_country', countryPath, {
