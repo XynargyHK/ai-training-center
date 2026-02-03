@@ -75,14 +75,14 @@ export async function proxy(request: NextRequest) {
   if (pathMatch) {
     const countryPath = pathMatch[1].toLowerCase()
     if (COUNTRY_MAP[countryPath]) {
-      return NextResponse.redirect(buildLandingUrl(request, countryPath), 308)
+      return NextResponse.rewrite(buildLandingUrl(request, countryPath))
     }
   }
 
-  // Bare domain — geo-detect and redirect
+  // Bare domain — geo-detect and rewrite
   if (pathname === '/' || pathname === '') {
     const countryPath = await detectCountryPath(request)
-    return NextResponse.redirect(buildLandingUrl(request, countryPath), 302)
+    return NextResponse.rewrite(buildLandingUrl(request, countryPath))
   }
 
   return NextResponse.next()
