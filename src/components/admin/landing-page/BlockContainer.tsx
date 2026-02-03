@@ -89,12 +89,23 @@ export default function BlockContainer({
               </div>
               {/* Show anchor ID for linking */}
               {(() => {
-                const anchorId = block.data?.anchor_id || block.name?.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()
-                return anchorId ? (
-                  <div className="text-[10px] text-gray-500 mt-0.5 font-mono">
-                    #{anchorId}
-                  </div>
-                ) : null
+                const customAnchorId = block.data?.anchor_id
+                const autoAnchorId = block.name?.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()
+                const anchorId = customAnchorId || autoAnchorId
+
+                if (anchorId) {
+                  return (
+                    <div className="text-[10px] text-gray-500 mt-0.5 font-mono">
+                      #{anchorId}
+                    </div>
+                  )
+                } else {
+                  return (
+                    <div className="text-[10px] text-amber-600 mt-0.5">
+                      ⚠️ Add anchor_id field for links
+                    </div>
+                  )
+                }
               })()}
             </div>
           )}
