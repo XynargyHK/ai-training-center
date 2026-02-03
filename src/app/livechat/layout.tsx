@@ -141,9 +141,9 @@ export async function generateMetadata({
     alternates: {
       canonical: domain.includes('skincoach.ai') ? 'https://skincoach.ai' : undefined,
       languages: {
-        'en-HK': 'https://skincoach.ai/livechat?businessUnit=skincoach&lang=en',
-        'zh-TW': 'https://skincoach.ai/livechat?businessUnit=skincoach&lang=tw',
-        'zh-CN': 'https://skincoach.ai/livechat?businessUnit=skincoach&lang=cn',
+        'en-US': 'https://skincoach.ai/us',
+        'en-HK': 'https://skincoach.ai/hk',
+        'en-SG': 'https://skincoach.ai/sg',
       },
     },
   }

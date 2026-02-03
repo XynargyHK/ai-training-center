@@ -1,0 +1,3077 @@
+{
+  "errors": [],
+  "patterns": {
+    "-6amn63": {
+      "error": "handling for failed requests",
+      "occurrences": 1,
+      "firstSeen": "2025-11-19T14:30:27.810Z",
+      "lastSeen": "2025-11-19T14:30:27.810Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.810Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-04-url-feature.md",
+          "line": "- Error handling for failed requests"
+        }
+      ],
+      "solutions": []
+    },
+    "caydkm": {
+      "error": "handling and user feedback",
+      "occurrences": 1,
+      "firstSeen": "2025-11-19T14:30:27.811Z",
+      "lastSeen": "2025-11-19T14:30:27.811Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.811Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-04-url-feature.md",
+          "line": "7. ⏳ Add error handling and user feedback"
+        }
+      ],
+      "solutions": []
+    },
+    "xqomqc": {
+      "error": "- the Supabase key is missing. Let me check your environment configuration.",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.814Z",
+      "lastSeen": "2025-11-19T14:30:28.078Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.814Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● I see there's a runtime error - the Supabase key is missing. Let me check your environment configuration."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.902Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "● I see there's a runtime error - the Supabase key is missing. Let me check your environment configuration."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.078Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● I see there's a runtime error - the Supabase key is missing. Let me check your environment configuration."
+        }
+      ],
+      "solutions": []
+    },
+    "4bws5y": {
+      "error": "output from the dev server to see what's specifically failing.",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.814Z",
+      "lastSeen": "2025-11-19T14:30:28.079Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.814Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● You're right, let me check the actual error output from the dev server to see what's specifically failing."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.903Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "● You're right, let me check the actual error output from the dev server to see what's specifically failing."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.079Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● You're right, let me check the actual error output from the dev server to see what's specifically failing."
+        }
+      ],
+      "solutions": []
+    },
+    "ax3z48": {
+      "error": "you're seeing must be a client-side runtime error in the browser. ",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.815Z",
+      "lastSeen": "2025-11-19T14:30:28.080Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.815Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● The server output shows it's running successfully (GET / 200 in 867ms). The \"supabaseKey is required\" error you're seeing must be a client-side runtime error in the browser."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.904Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "● The server output shows it's running successfully (GET / 200 in 867ms). The \"supabaseKey is required\" error you're seeing must be a client-side runtime error in the browser."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.080Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● The server output shows it's running successfully (GET / 200 in 867ms). The \"supabaseKey is required\" error you're seeing must be a client-side runtime error in the browser."
+        }
+      ],
+      "solutions": []
+    },
+    "-qh1rsy": {
+      "error": "persists after a hard refresh, can you share which page or component is showing this error? That will help me identify where the Supabase client is being initialized incorrectly.",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.816Z",
+      "lastSeen": "2025-11-19T14:30:28.082Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.816Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● If the error persists after a hard refresh, can you share which page or component is showing this error? That will help me identify where the Supabase client is being initialized incorrectly."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.905Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "● If the error persists after a hard refresh, can you share which page or component is showing this error? That will help me identify where the Supabase client is being initialized incorrectly."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.082Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● If the error persists after a hard refresh, can you share which page or component is showing this error? That will help me identify where the Supabase client is being initialized incorrectly."
+        }
+      ],
+      "solutions": []
+    },
+    "1j7vq8": {
+      "error": "again",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.816Z",
+      "lastSeen": "2025-11-19T14:30:28.083Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.816Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "> error again"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.906Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "> error again"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.083Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "> error again"
+        }
+      ],
+      "solutions": []
+    },
+    "-bfh4sv": {
+      "error": "output from the server:",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.816Z",
+      "lastSeen": "2025-11-19T14:30:28.084Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.816Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● Let me check the latest error output from the server:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.907Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "● Let me check the latest error output from the server:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.084Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● Let me check the latest error output from the server:"
+        }
+      ],
+      "solutions": []
+    },
+    "dsfxid": {
+      "error": "must be client-side. Let me check where Supabase is being initialized in your code:",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.817Z",
+      "lastSeen": "2025-11-19T14:30:28.085Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.817Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● The server logs show successful requests (200 status), so the error must be client-side. Let me check where Supabase is being initialized in your code:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.908Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "● The server logs show successful requests (200 status), so the error must be client-side. Let me check where Supabase is being initialized in your code:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.085Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● The server logs show successful requests (200 status), so the error must be client-side. Let me check where Supabase is being initialized in your code:"
+        }
+      ],
+      "solutions": []
+    },
+    "-x8yg7u": {
+      "error": "message will be more helpful. But the real issue is that the environment variables aren't being loaded. Let me check if there's a problem with how Next.js is reading them. Let me restart the dev server to ensure the env vars are loaded:",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.817Z",
+      "lastSeen": "2025-11-19T14:30:28.086Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.817Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● Now the error message will be more helpful. But the real issue is that the environment variables aren't being loaded. Let me check if there's a problem with how Next.js is reading them. Let me restart the dev server to ensure the env vars are loaded:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.909Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "● Now the error message will be more helpful. But the real issue is that the environment variables aren't being loaded. Let me check if there's a problem with how Next.js is reading them. Let me restart the dev server to ensure the env vars are loaded:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.086Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● Now the error message will be more helpful. But the real issue is that the environment variables aren't being loaded. Let me check if there's a problem with how Next.js is reading them. Let me restart the dev server to ensure the env vars are loaded:"
+        }
+      ],
+      "solutions": []
+    },
+    "dfrmqw": {
+      "error": "message that will help us identify which environment variable is actually missing.",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.818Z",
+      "lastSeen": "2025-11-19T14:30:28.087Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.818Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● Perfect! The dev server has restarted successfully on port 3000. Now try refreshing your browser at http://localhost:3000 - it should either work now or show a more detailed error message that will help us identify which environment variable is actually missing."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.910Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "● Perfect! The dev server has restarted successfully on port 3000. Now try refreshing your browser at http://localhost:3000 - it should either work now or show a more detailed error message that will help us identify which environment variable is actually missing."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.087Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● Perfect! The dev server has restarted successfully on port 3000. Now try refreshing your browser at http://localhost:3000 - it should either work now or show a more detailed error message that will help us identify which environment variable is actually missing."
+        }
+      ],
+      "solutions": []
+    },
+    "2ncdoo": {
+      "error": "is coming from a different file or if the environment variables aren't being passed to the client-side properly.",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.818Z",
+      "lastSeen": "2025-11-19T14:30:28.088Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.818Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● The server is compiling successfully with no errors. The issue must be happening in the browser. Let me check if maybe the error is coming from a different file or if the environment variables aren't being passed to the client-side properly."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.912Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "● The server is compiling successfully with no errors. The issue must be happening in the browser. Let me check if maybe the error is coming from a different file or if the environment variables aren't being passed to the client-side properly."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.088Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● The server is compiling successfully with no errors. The issue must be happening in the browser. Let me check if maybe the error is coming from a different file or if the environment variables aren't being passed to the client-side properly."
+        }
+      ],
+      "solutions": []
+    },
+    "-47knk2": {
+      "error": "is coming from `supabase-storage.ts`, not the main `supabase.ts` file. Let me check and fix that file:",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.819Z",
+      "lastSeen": "2025-11-19T14:30:28.089Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.819Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● Now I see the real issue! The error is coming from `supabase-storage.ts`, not the main `supabase.ts` file. Let me check and fix that file:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.913Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "● Now I see the real issue! The error is coming from `supabase-storage.ts`, not the main `supabase.ts` file. Let me check and fix that file:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.089Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● Now I see the real issue! The error is coming from `supabase-storage.ts`, not the main `supabase.ts` file. Let me check and fix that file:"
+        }
+      ],
+      "solutions": []
+    },
+    "-fb09kv": {
+      "error": "stack trace: `roleplay-training.tsx` → `ai-training-center.tsx` → `page.tsx`), but `SUPABASE_SERVICE_ROLE_KEY` is only available on the server-side (it doesn't have the `NEXT_PUBLIC_` prefix).",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.819Z",
+      "lastSeen": "2025-11-19T14:30:28.090Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.819Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● This file is being imported by client-side code (as shown in the error stack trace: `roleplay-training.tsx` → `ai-training-center.tsx` → `page.tsx`), but `SUPABASE_SERVICE_ROLE_KEY` is only available on the server-side (it doesn't have the `NEXT_PUBLIC_` prefix)."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.914Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "● This file is being imported by client-side code (as shown in the error stack trace: `roleplay-training.tsx` → `ai-training-center.tsx` → `page.tsx`), but `SUPABASE_SERVICE_ROLE_KEY` is only available on the server-side (it doesn't have the `NEXT_PUBLIC_` prefix)."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.090Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● This file is being imported by client-side code (as shown in the error stack trace: `roleplay-training.tsx` → `ai-training-center.tsx` → `page.tsx`), but `SUPABASE_SERVICE_ROLE_KEY` is only available on the server-side (it doesn't have the `NEXT_PUBLIC_` prefix)."
+        }
+      ],
+      "solutions": []
+    },
+    "jvgr4j": {
+      "error": "message will be more helpful and show exactly where the problem is. Let me check the server output to see the new error:",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.819Z",
+      "lastSeen": "2025-11-19T14:30:28.093Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.819Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● Now the error message will be more helpful and show exactly where the problem is. Let me check the server output to see the new error:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.915Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "● Now the error message will be more helpful and show exactly where the problem is. Let me check the server output to see the new error:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.093Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● Now the error message will be more helpful and show exactly where the problem is. Let me check the server output to see the new error:"
+        }
+      ],
+      "solutions": []
+    },
+    "-6stdpq": {
+      "error": "message that says:",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.820Z",
+      "lastSeen": "2025-11-19T14:30:28.095Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.820Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● The page compiled successfully but there was a Fast Refresh reload. Now refresh your browser and you should see a clearer error message that says:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.916Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "● The page compiled successfully but there was a Fast Refresh reload. Now refresh your browser and you should see a clearer error message that says:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.095Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● The page compiled successfully but there was a Fast Refresh reload. Now refresh your browser and you should see a clearer error message that says:"
+        }
+      ],
+      "solutions": []
+    },
+    "-trl7d4": {
+      "error": "any, context: string): void {",
+      "occurrences": 6,
+      "firstSeen": "2025-11-19T14:30:27.821Z",
+      "lastSeen": "2025-11-19T14:30:28.099Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.821Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "39 | function handleSupabaseError(error: any, context: string): void {"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.821Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "39 | function handleSupabaseError(error: any, context: string): void {"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.917Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "39 | function handleSupabaseError(error: any, context: string): void {"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.918Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "39 | function handleSupabaseError(error: any, context: string): void {"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.097Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "39 | function handleSupabaseError(error: any, context: string): void {"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.099Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "39 | function handleSupabaseError(error: any, context: string): void {"
+        }
+      ],
+      "solutions": []
+    },
+    "27883n": {
+      "error": "in my API route code",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.822Z",
+      "lastSeen": "2025-11-19T14:30:28.102Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.822Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- If they don't, there's an error in my API route code"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.920Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "- If they don't, there's an error in my API route code"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.102Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- If they don't, there's an error in my API route code"
+        }
+      ],
+      "solutions": []
+    },
+    "mmm9mc": {
+      "error": "} = await supabase",
+      "occurrences": 21,
+      "firstSeen": "2025-11-19T14:30:27.822Z",
+      "lastSeen": "2025-11-19T14:30:28.198Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.823Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "const { data, error } = await supabase"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.825Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "const { error } = await supabase"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.833Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "const { error } = await supabase"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.850Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "const { error } = await supabase"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.853Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● Edit(file_path: C:\\Users\\Denny\\ai-training-center\\src\\lib\\supabase-storage.t..., old_string:   const { error } = await supabase"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.855Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": ".from('training_scena..., new_string:   const { data, error } = await supabase"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.858Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "const { data, error } = await supabase"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.921Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "const { data, error } = await supabase"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.926Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "const { error } = await supabase"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.946Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "const { error } = await supabase"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.986Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "const { error } = await supabase"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.997Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "● Edit(file_path: C:\\Users\\Denny\\ai-training-center\\src\\lib\\supabase-storage.t..., old_string:   const { error } = await supabase"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.999Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": ".from('training_scena..., new_string:   const { data, error } = await supabase"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.003Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "const { data, error } = await supabase"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.103Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "const { data, error } = await supabase"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.112Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "const { error } = await supabase"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.132Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "const { error } = await supabase"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.177Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "const { error } = await supabase"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.189Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● Edit(file_path: C:\\Users\\Denny\\ai-training-center\\src\\lib\\supabase-storage.t..., old_string:   const { error } = await supabase"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.191Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": ".from('training_scena..., new_string:   const { data, error } = await supabase"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.198Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "const { data, error } = await supabase"
+        }
+      ],
+      "solutions": []
+    },
+    "2l4up2": {
+      "error": "error.message }, { status: 500 })",
+      "occurrences": 6,
+      "firstSeen": "2025-11-19T14:30:27.823Z",
+      "lastSeen": "2025-11-19T14:30:28.113Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.823Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "if (error) return NextResponse.json({ error: error.message }, { status: 500 })"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.825Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "if (error) return NextResponse.json({ error: error.message }, { status: 500 })"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.922Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "if (error) return NextResponse.json({ error: error.message }, { status: 500 })"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.928Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "if (error) return NextResponse.json({ error: error.message }, { status: 500 })"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.105Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "if (error) return NextResponse.json({ error: error.message }, { status: 500 })"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.113Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "if (error) return NextResponse.json({ error: error.message }, { status: 500 })"
+        }
+      ],
+      "solutions": []
+    },
+    "-t3phra": {
+      "error": "'Unknown action' }, { status: 400 })",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.824Z",
+      "lastSeen": "2025-11-19T14:30:28.107Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.824Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "return NextResponse.json({ error: 'Unknown action' }, { status: 400 })"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.923Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "return NextResponse.json({ error: 'Unknown action' }, { status: 400 })"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.107Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "return NextResponse.json({ error: 'Unknown action' }, { status: 400 })"
+        }
+      ],
+      "solutions": []
+    },
+    "-lpzuuv": {
+      "error": "coachErr } = await supabase",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.824Z",
+      "lastSeen": "2025-11-19T14:30:28.109Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.824Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "const { data: coach, error: coachErr } = await supabase"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.924Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "const { data: coach, error: coachErr } = await supabase"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.109Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "const { data: coach, error: coachErr } = await supabase"
+        }
+      ],
+      "solutions": []
+    },
+    "qkwbcx": {
+      "error": "'Coach not found' }, { status: 404 })",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.825Z",
+      "lastSeen": "2025-11-19T14:30:28.111Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.825Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "return NextResponse.json({ error: 'Coach not found' }, { status: 404 })"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.925Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "return NextResponse.json({ error: 'Coach not found' }, { status: 404 })"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.111Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "return NextResponse.json({ error: 'Coach not found' }, { status: 404 })"
+        }
+      ],
+      "solutions": []
+    },
+    "-qs2hnd": {
+      "error": "msg }, { status: 400 })",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.826Z",
+      "lastSeen": "2025-11-19T14:30:28.115Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.826Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "return NextResponse.json({ error: msg }, { status: 400 })"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.931Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "return NextResponse.json({ error: msg }, { status: 400 })"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.115Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "return NextResponse.json({ error: msg }, { status: 400 })"
+        }
+      ],
+      "solutions": []
+    },
+    "-s0psof": {
+      "error": "|| 'Failed to load staff')",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.826Z",
+      "lastSeen": "2025-11-19T14:30:28.117Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.826Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "if (!res.ok) throw new Error(json.error || 'Failed to load staff')"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.932Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "if (!res.ok) throw new Error(json.error || 'Failed to load staff')"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.117Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "if (!res.ok) throw new Error(json.error || 'Failed to load staff')"
+        }
+      ],
+      "solutions": []
+    },
+    "1p47vs": {
+      "error": "|| 'Failed to save')",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.827Z",
+      "lastSeen": "2025-11-19T14:30:28.118Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.827Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "if (!res.ok) throw new Error(json.error || 'Failed to save')"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.934Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "if (!res.ok) throw new Error(json.error || 'Failed to save')"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.118Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "if (!res.ok) throw new Error(json.error || 'Failed to save')"
+        }
+      ],
+      "solutions": []
+    },
+    "-clglqb": {
+      "error": "initializing roleplay data: \"invalid input syntax for type uuid: \"coach-1\"\"",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.828Z",
+      "lastSeen": "2025-11-19T14:30:28.119Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.828Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "❌ Error initializing roleplay data: \"invalid input syntax for type uuid: \"coach-1\"\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.935Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "❌ Error initializing roleplay data: \"invalid input syntax for type uuid: \"coach-1\"\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.119Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "❌ Error initializing roleplay data: \"invalid input syntax for type uuid: \"coach-1\"\""
+        }
+      ],
+      "solutions": []
+    },
+    "-k50eqa": {
+      "error": "with a message",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.828Z",
+      "lastSeen": "2025-11-19T14:30:28.120Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.828Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "text585 |       // Only log if it's an actual error with a message"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.936Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "text585 |       // Only log if it's an actual error with a message"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.120Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "text585 |       // Only log if it's an actual error with a message"
+        }
+      ],
+      "solutions": []
+    },
+    "bu6940": {
+      "error": "&& (error as any).message) {",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.829Z",
+      "lastSeen": "2025-11-19T14:30:28.121Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.829Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "586 | if (error && (error as any).message) {"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.937Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "586 | if (error && (error as any).message) {"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.121Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "586 | if (error && (error as any).message) {"
+        }
+      ],
+      "solutions": []
+    },
+    "txpt2v": {
+      "error": "initializing roleplay data:', (error as any).message)",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.829Z",
+      "lastSeen": "2025-11-19T14:30:28.122Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.829Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "587 | console.error('❌ Error initializing roleplay data:', (error as any).message)"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.938Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "587 | console.error('❌ Error initializing roleplay data:', (error as any).message)"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.122Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "587 | console.error('❌ Error initializing roleplay data:', (error as any).message)"
+        }
+      ],
+      "solutions": []
+    },
+    "-tu5f85": {
+      "error": "&& typeof error === 'string') {",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.830Z",
+      "lastSeen": "2025-11-19T14:30:28.123Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.830Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "588 | } else if (error && typeof error === 'string') {"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.939Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "588 | } else if (error && typeof error === 'string') {"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.123Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "588 | } else if (error && typeof error === 'string') {"
+        }
+      ],
+      "solutions": []
+    },
+    "-jv1uwh": {
+      "error": "initializing roleplay data:', error)",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.830Z",
+      "lastSeen": "2025-11-19T14:30:28.124Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.830Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "589 | console.error('❌ Error initializing roleplay data:', error)"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.940Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "589 | console.error('❌ Error initializing roleplay data:', error)"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.124Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "589 | console.error('❌ Error initializing roleplay data:', error)"
+        }
+      ],
+      "solutions": []
+    },
+    "k1o3xw": {
+      "error": "you're seeing is NOT an RLS or architecture issue — it's a data type mismatch in your client → server flow.",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.830Z",
+      "lastSeen": "2025-11-19T14:30:28.125Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.830Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "The error you're seeing is NOT an RLS or architecture issue — it's a data type mismatch in your client → server flow."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.941Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "The error you're seeing is NOT an RLS or architecture issue — it's a data type mismatch in your client → server flow."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.125Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "The error you're seeing is NOT an RLS or architecture issue — it's a data type mismatch in your client → server flow."
+        }
+      ],
+      "solutions": []
+    },
+    "-gfkl7j": {
+      "error": "'coachSlug is required' }, { status: 400 });",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.831Z",
+      "lastSeen": "2025-11-19T14:30:28.126Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.831Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "return NextResponse.json({ error: 'coachSlug is required' }, { status: 400 });"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.942Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "return NextResponse.json({ error: 'coachSlug is required' }, { status: 400 });"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.126Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "return NextResponse.json({ error: 'coachSlug is required' }, { status: 400 });"
+        }
+      ],
+      "solutions": []
+    },
+    "2a0r9i": {
+      "error": "coachError } = await supabase",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.832Z",
+      "lastSeen": "2025-11-19T14:30:28.128Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.832Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "const { data: coach, error: coachError } = await supabase"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.943Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "const { data: coach, error: coachError } = await supabase"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.128Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "const { data: coach, error: coachError } = await supabase"
+        }
+      ],
+      "solutions": []
+    },
+    "je4l4b": {
+      "error": "|| !coach) {",
+      "occurrences": 6,
+      "firstSeen": "2025-11-19T14:30:27.832Z",
+      "lastSeen": "2025-11-19T14:30:28.174Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.832Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "if (coachError || !coach) {"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.848Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "if (coachError || !coach) {"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.944Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "if (coachError || !coach) {"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.983Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "if (coachError || !coach) {"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.129Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "if (coachError || !coach) {"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.174Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "if (coachError || !coach) {"
+        }
+      ],
+      "solutions": []
+    },
+    "-sdivja": {
+      "error": "'Coach not found' }, { status: 404 });",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.833Z",
+      "lastSeen": "2025-11-19T14:30:28.130Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.833Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "return NextResponse.json({ error: 'Coach not found' }, { status: 404 });"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.945Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "return NextResponse.json({ error: 'Coach not found' }, { status: 404 });"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.130Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "return NextResponse.json({ error: 'Coach not found' }, { status: 404 });"
+        }
+      ],
+      "solutions": []
+    },
+    "w2cjx4": {
+      "error": "', error.message);",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.833Z",
+      "lastSeen": "2025-11-19T14:30:28.134Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.833Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "console.error('DB Insert Error:', error.message);"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.948Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "console.error('DB Insert Error:', error.message);"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.134Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "console.error('DB Insert Error:', error.message);"
+        }
+      ],
+      "solutions": []
+    },
+    "962dn9": {
+      "error": "error.message }, { status: 500 });",
+      "occurrences": 6,
+      "firstSeen": "2025-11-19T14:30:27.834Z",
+      "lastSeen": "2025-11-19T14:30:28.181Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.834Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "return NextResponse.json({ error: error.message }, { status: 500 });"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.851Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "return NextResponse.json({ error: error.message }, { status: 500 });"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.949Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "return NextResponse.json({ error: error.message }, { status: 500 });"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.990Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "return NextResponse.json({ error: error.message }, { status: 500 });"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.135Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "return NextResponse.json({ error: error.message }, { status: 500 });"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.181Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "return NextResponse.json({ error: error.message }, { status: 500 });"
+        }
+      ],
+      "solutions": []
+    },
+    "-847v5h": {
+      "error": "err.message || 'Invalid request' }, { status: 400 });",
+      "occurrences": 6,
+      "firstSeen": "2025-11-19T14:30:27.834Z",
+      "lastSeen": "2025-11-19T14:30:28.183Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.834Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "return NextResponse.json({ error: err.message || 'Invalid request' }, { status: 400 });"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.852Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "return NextResponse.json({ error: err.message || 'Invalid request' }, { status: 400 });"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.950Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "return NextResponse.json({ error: err.message || 'Invalid request' }, { status: 400 });"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.992Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "return NextResponse.json({ error: err.message || 'Invalid request' }, { status: 400 });"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.137Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "return NextResponse.json({ error: err.message || 'Invalid request' }, { status: 400 });"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.183Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "return NextResponse.json({ error: err.message || 'Invalid request' }, { status: 400 });"
+        }
+      ],
+      "solutions": []
+    },
+    "1mo0of": {
+      "error": "gone.",
+      "occurrences": 6,
+      "firstSeen": "2025-11-19T14:30:27.835Z",
+      "lastSeen": "2025-11-19T14:30:28.187Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.835Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "Fix the API route to resolve coachSlug → coach.id → error gone."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.853Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "Run the SQL seed + update the API route → refresh → error gone."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.951Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "Fix the API route to resolve coachSlug → coach.id → error gone."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.995Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "Run the SQL seed + update the API route → refresh → error gone."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.140Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "Fix the API route to resolve coachSlug → coach.id → error gone."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.187Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "Run the SQL seed + update the API route → refresh → error gone."
+        }
+      ],
+      "solutions": []
+    },
+    "-f8s0f3": {
+      "error": "should be gone. ",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.835Z",
+      "lastSeen": "2025-11-19T14:30:28.141Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.835Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● Perfect! Now **refresh your browser** and the UUID error should be gone."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.952Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "● Perfect! Now **refresh your browser** and the UUID error should be gone."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.141Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● Perfect! Now **refresh your browser** and the UUID error should be gone."
+        }
+      ],
+      "solutions": []
+    },
+    "-kz88j4": {
+      "error": "- Supabase Key Error**: \"supabaseKey is required\"",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.836Z",
+      "lastSeen": "2025-11-19T14:30:28.142Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.836Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "2. **First Error - Supabase Key Error**: \"supabaseKey is required\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.953Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "2. **First Error - Supabase Key Error**: \"supabaseKey is required\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.142Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "2. **First Error - Supabase Key Error**: \"supabaseKey is required\""
+        }
+      ],
+      "solutions": []
+    },
+    "-vbsrym": {
+      "error": "by implementing proper RLS architecture",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.836Z",
+      "lastSeen": "2025-11-19T14:30:28.144Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.836Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- Main task: Fix \"supabaseKey is required\" error by implementing proper RLS architecture"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.954Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "- Main task: Fix \"supabaseKey is required\" error by implementing proper RLS architecture"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.144Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- Main task: Fix \"supabaseKey is required\" error by implementing proper RLS architecture"
+        }
+      ],
+      "solutions": []
+    },
+    "1lyfv": {
+      "error": "|| 'Failed to load AI staff')",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.837Z",
+      "lastSeen": "2025-11-19T14:30:28.145Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.837Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "if (!res.ok) throw new Error(json.error || 'Failed to load AI staff')"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.955Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "if (!res.ok) throw new Error(json.error || 'Failed to load AI staff')"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.145Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "if (!res.ok) throw new Error(json.error || 'Failed to load AI staff')"
+        }
+      ],
+      "solutions": []
+    },
+    "qdvgot": {
+      "error": "1: \"supabaseKey is required\"**",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.837Z",
+      "lastSeen": "2025-11-19T14:30:28.146Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.837Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- **Error 1: \"supabaseKey is required\"**"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.956Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "- **Error 1: \"supabaseKey is required\"**"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.146Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- **Error 1: \"supabaseKey is required\"**"
+        }
+      ],
+      "solutions": []
+    },
+    "-qeyjuy": {
+      "error": "2: \"infinite recursion detected in policy for relation users\"**",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.838Z",
+      "lastSeen": "2025-11-19T14:30:28.147Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.838Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- **Error 2: \"infinite recursion detected in policy for relation users\"**"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.958Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "- **Error 2: \"infinite recursion detected in policy for relation users\"**"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.147Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- **Error 2: \"infinite recursion detected in policy for relation users\"**"
+        }
+      ],
+      "solutions": []
+    },
+    "q89tal": {
+      "error": "3: \"invalid input syntax for type uuid: 'coach-1'\"**",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.838Z",
+      "lastSeen": "2025-11-19T14:30:28.148Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.838Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- **Error 3: \"invalid input syntax for type uuid: 'coach-1'\"**"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.959Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "- **Error 3: \"invalid input syntax for type uuid: 'coach-1'\"**"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.148Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- **Error 3: \"invalid input syntax for type uuid: 'coach-1'\"**"
+        }
+      ],
+      "solutions": []
+    },
+    "11a2us": {
+      "error": "4: AI customer using template greetings**",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.839Z",
+      "lastSeen": "2025-11-19T14:30:28.149Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.839Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- **Error 4: AI customer using template greetings**"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.960Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "- **Error 4: AI customer using template greetings**"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.149Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- **Error 4: AI customer using template greetings**"
+        }
+      ],
+      "solutions": []
+    },
+    "-5lpo5x": {
+      "error": "again\" (about supabaseKey)",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.839Z",
+      "lastSeen": "2025-11-19T14:30:28.151Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.839Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- \"error again\" (about supabaseKey)"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.961Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "- \"error again\" (about supabaseKey)"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.151Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- \"error again\" (about supabaseKey)"
+        }
+      ],
+      "solutions": []
+    },
+    "-fxaw45": {
+      "error": "about UUID: \"coach-1\"]",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.840Z",
+      "lastSeen": "2025-11-19T14:30:28.152Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.840Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- [Error about UUID: \"coach-1\"]"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.961Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "- [Error about UUID: \"coach-1\"]"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.152Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- [Error about UUID: \"coach-1\"]"
+        }
+      ],
+      "solutions": []
+    },
+    "-nz4o91": {
+      "error": "context** - You said the AI customer was acting like an AI rep with the greeting template",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.840Z",
+      "lastSeen": "2025-11-19T14:30:28.154Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.840Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● 1. **I saw \"AI Customer\" in the error context** - You said the AI customer was acting like an AI rep with the greeting template"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.963Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "● 1. **I saw \"AI Customer\" in the error context** - You said the AI customer was acting like an AI rep with the greeting template"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.154Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● 1. **I saw \"AI Customer\" in the error context** - You said the AI customer was acting like an AI rep with the greeting template"
+        }
+      ],
+      "solutions": []
+    },
+    "9vnr6z": {
+      "error": "instanceo..., new_string:     // Handle specific AI errors",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.841Z",
+      "lastSeen": "2025-11-19T14:30:28.155Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.841Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "if (error instanceo..., new_string:     // Handle specific AI errors"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.964Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "if (error instanceo..., new_string:     // Handle specific AI errors"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.155Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "if (error instanceo..., new_string:     // Handle specific AI errors"
+        }
+      ],
+      "solutions": []
+    },
+    "9gf6m4": {
+      "error": "instanceof Er...)",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.842Z",
+      "lastSeen": "2025-11-19T14:30:28.157Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.842Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "if (error instanceof Er...)"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.965Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "if (error instanceof Er...)"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.157Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "if (error instanceof Er...)"
+        }
+      ],
+      "solutions": []
+    },
+    "-ma5vsx": {
+      "error": "Console Error",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.842Z",
+      "lastSeen": "2025-11-19T14:30:28.158Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.842Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "> it looks good, i was doing training, and want to save the dialog, then console error: Console Error"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.967Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "> it looks good, i was doing training, and want to save the dialog, then console error: Console Error"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.158Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "> it looks good, i was doing training, and want to save the dialog, then console error: Console Error"
+        }
+      ],
+      "solutions": []
+    },
+    "-1qq97m": {
+      "error": "|| 'Failed to save session')",
+      "occurrences": 9,
+      "firstSeen": "2025-11-19T14:30:27.843Z",
+      "lastSeen": "2025-11-19T14:30:28.163Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.843Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "> 72 |   if (!res.ok) throw new Error(json.error || 'Failed to save session')"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.843Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "> 72 |   if (!res.ok) throw new Error(json.error || 'Failed to save session')"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.843Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "> 72 |   if (!res.ok) throw new Error(json.error || 'Failed to save session')"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.968Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "> 72 |   if (!res.ok) throw new Error(json.error || 'Failed to save session')"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.970Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "> 72 |   if (!res.ok) throw new Error(json.error || 'Failed to save session')"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.972Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "> 72 |   if (!res.ok) throw new Error(json.error || 'Failed to save session')"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.159Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "> 72 |   if (!res.ok) throw new Error(json.error || 'Failed to save session')"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.161Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "> 72 |   if (!res.ok) throw new Error(json.error || 'Failed to save session')"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.163Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "> 72 |   if (!res.ok) throw new Error(json.error || 'Failed to save session')"
+        }
+      ],
+      "solutions": []
+    },
+    "-2rj5r7": {
+      "error": "instead of trying to look it up by slug. The real issue is that the user needs to use scenarios that are actually in the database (with proper UUIDs).",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.844Z",
+      "lastSeen": "2025-11-19T14:30:28.165Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.844Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● The fix is simple: if the ID is not a valid UUID, we should throw a clear error instead of trying to look it up by slug. The real issue is that the user needs to use scenarios that are actually in the database (with proper UUIDs)."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.974Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "● The fix is simple: if the ID is not a valid UUID, we should throw a clear error instead of trying to look it up by slug. The real issue is that the user needs to use scenarios that are actually in the database (with proper UUIDs)."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.165Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● The fix is simple: if the ID is not a valid UUID, we should throw a clear error instead of trying to look it up by slug. The real issue is that the user needs to use scenarios that are actually in the database (with proper UUIDs)."
+        }
+      ],
+      "solutions": []
+    },
+    "mnzzsk": {
+      "error": "message is clearer. The root issue is that the scenario being used (`\"sales-1\"`) doesn't exist in the database. The user needs to select from scenarios that are actually loaded from the database.",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.844Z",
+      "lastSeen": "2025-11-19T14:30:28.166Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.844Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● Good! Now the error message is clearer. The root issue is that the scenario being used (`\"sales-1\"`) doesn't exist in the database. The user needs to select from scenarios that are actually loaded from the database."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.975Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "● Good! Now the error message is clearer. The root issue is that the scenario being used (`\"sales-1\"`) doesn't exist in the database. The user needs to select from scenarios that are actually loaded from the database."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.166Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● Good! Now the error message is clearer. The root issue is that the scenario being used (`\"sales-1\"`) doesn't exist in the database. The user needs to select from scenarios that are actually loaded from the database."
+        }
+      ],
+      "solutions": []
+    },
+    "-lbdawj": {
+      "error": "Scenario not found for slug: sales-1",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.845Z",
+      "lastSeen": "2025-11-19T14:30:28.168Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.845Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "Error: Scenario not found for slug: sales-1"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.976Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "Error: Scenario not found for slug: sales-1"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.168Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "Error: Scenario not found for slug: sales-1"
+        }
+      ],
+      "solutions": []
+    },
+    "-u10psb": {
+      "error": "'scenarioSlug and coachSlug are required' },",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.846Z",
+      "lastSeen": "2025-11-19T14:30:28.169Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.846Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "{ error: 'scenarioSlug and coachSlug are required' },"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.978Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "{ error: 'scenarioSlug and coachSlug are required' },"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.169Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "{ error: 'scenarioSlug and coachSlug are required' },"
+        }
+      ],
+      "solutions": []
+    },
+    "-jx9eqx": {
+      "error": "scenarioError },",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.846Z",
+      "lastSeen": "2025-11-19T14:30:28.170Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.846Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "{ data: scenario, error: scenarioError },"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.979Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "{ data: scenario, error: scenarioError },"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.170Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "{ data: scenario, error: scenarioError },"
+        }
+      ],
+      "solutions": []
+    },
+    "-mu3j4l": {
+      "error": "coachError }",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.847Z",
+      "lastSeen": "2025-11-19T14:30:28.171Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.847Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "{ data: coach, error: coachError }"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.980Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "{ data: coach, error: coachError }"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.171Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "{ data: coach, error: coachError }"
+        }
+      ],
+      "solutions": []
+    },
+    "3i3vyr": {
+      "error": "|| !scenario) {",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.847Z",
+      "lastSeen": "2025-11-19T14:30:28.172Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.847Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "if (scenarioError || !scenario) {"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.981Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "if (scenarioError || !scenario) {"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.172Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "if (scenarioError || !scenario) {"
+        }
+      ],
+      "solutions": []
+    },
+    "lxp1lj": {
+      "error": "`Scenario not found for slug: ${scenarioSlug}` },",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.848Z",
+      "lastSeen": "2025-11-19T14:30:28.173Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.848Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "{ error: `Scenario not found for slug: ${scenarioSlug}` },"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.982Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "{ error: `Scenario not found for slug: ${scenarioSlug}` },"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.173Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "{ error: `Scenario not found for slug: ${scenarioSlug}` },"
+        }
+      ],
+      "solutions": []
+    },
+    "-67x2x5": {
+      "error": "`Coach not found for slug: ${coachSlug}` },",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.849Z",
+      "lastSeen": "2025-11-19T14:30:28.176Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.849Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "{ error: `Coach not found for slug: ${coachSlug}` },"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.985Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "{ error: `Coach not found for slug: ${coachSlug}` },"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.176Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "{ error: `Coach not found for slug: ${coachSlug}` },"
+        }
+      ],
+      "solutions": []
+    },
+    "o4g4xr": {
+      "error": "', error);",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.851Z",
+      "lastSeen": "2025-11-19T14:30:28.180Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.851Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "console.error('Insert error:', error);"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.989Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "console.error('Insert error:', error);"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.180Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "console.error('Insert error:', error);"
+        }
+      ],
+      "solutions": []
+    },
+    "h0i4gt": {
+      "error": "|| 'Failed to save session');",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.852Z",
+      "lastSeen": "2025-11-19T14:30:28.186Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.852Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "throw new Error(json.error || 'Failed to save session');"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.994Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "throw new Error(json.error || 'Failed to save session');"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.186Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "throw new Error(json.error || 'Failed to save session');"
+        }
+      ],
+      "solutions": []
+    },
+    "-2a5dmw": {
+      "error": "\"invalid input syntax for type uuid: 'sales-1'\"",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.857Z",
+      "lastSeen": "2025-11-19T14:30:28.195Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.857Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- Error: \"invalid input syntax for type uuid: 'sales-1'\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.001Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "- Error: \"invalid input syntax for type uuid: 'sales-1'\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.195Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- Error: \"invalid input syntax for type uuid: 'sales-1'\""
+        }
+      ],
+      "solutions": []
+    },
+    "xjis9g": {
+      "error": "flow**: ",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.857Z",
+      "lastSeen": "2025-11-19T14:30:28.196Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.857Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "**Error flow**:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.002Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "**Error flow**:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.196Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "**Error flow**:"
+        }
+      ],
+      "solutions": []
+    },
+    "mbx4y4": {
+      "error": "|| 'Failed to save scenario')",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.859Z",
+      "lastSeen": "2025-11-19T14:30:28.201Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.859Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "if (!res.ok) throw new Error(json.error || 'Failed to save scenario')"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.005Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "if (!res.ok) throw new Error(json.error || 'Failed to save scenario')"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.201Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "if (!res.ok) throw new Error(json.error || 'Failed to save scenario')"
+        }
+      ],
+      "solutions": []
+    },
+    "-1pu4hd": {
+      "error": "1: AI Customer Using Greeting Templates",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.860Z",
+      "lastSeen": "2025-11-19T14:30:28.202Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.860Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 1: AI Customer Using Greeting Templates"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.007Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "### Error 1: AI Customer Using Greeting Templates"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.202Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 1: AI Customer Using Greeting Templates"
+        }
+      ],
+      "solutions": []
+    },
+    "kdbhsw": {
+      "error": "2: \"invalid input syntax for type uuid: 'sales-1'\"",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.861Z",
+      "lastSeen": "2025-11-19T14:30:28.203Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.861Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 2: \"invalid input syntax for type uuid: 'sales-1'\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.008Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "### Error 2: \"invalid input syntax for type uuid: 'sales-1'\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.203Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 2: \"invalid input syntax for type uuid: 'sales-1'\""
+        }
+      ],
+      "solutions": []
+    },
+    "odtffk": {
+      "error": "3: \"isValidUUID is not defined\"",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.862Z",
+      "lastSeen": "2025-11-19T14:30:28.205Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.862Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 3: \"isValidUUID is not defined\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.009Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "### Error 3: \"isValidUUID is not defined\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.205Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 3: \"isValidUUID is not defined\""
+        }
+      ],
+      "solutions": []
+    },
+    "vwx8ah": {
+      "error": "4: \"Cannot read properties of undefined (reading 'id')\"",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.862Z",
+      "lastSeen": "2025-11-19T14:30:28.206Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.862Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 4: \"Cannot read properties of undefined (reading 'id')\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.010Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "### Error 4: \"Cannot read properties of undefined (reading 'id')\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.206Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 4: \"Cannot read properties of undefined (reading 'id')\""
+        }
+      ],
+      "solutions": []
+    },
+    "-9o060k": {
+      "error": "5: Git add failed with \"error: nul: failed to insert into database\"",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.863Z",
+      "lastSeen": "2025-11-19T14:30:28.208Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.863Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 5: Git add failed with \"error: nul: failed to insert into database\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.011Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "### Error 5: Git add failed with \"error: nul: failed to insert into database\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.208Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 5: Git add failed with \"error: nul: failed to insert into database\""
+        }
+      ],
+      "solutions": []
+    },
+    "-2cjci7": {
+      "error": "6: Git commit failed with \"Author identity unknown\"",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.863Z",
+      "lastSeen": "2025-11-19T14:30:28.209Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.863Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 6: Git commit failed with \"Author identity unknown\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.013Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "### Error 6: Git commit failed with \"Author identity unknown\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.209Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 6: Git commit failed with \"Author identity unknown\""
+        }
+      ],
+      "solutions": []
+    },
+    "bwtm5u": {
+      "error": "7: GitHub push blocked by secret scanning",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.864Z",
+      "lastSeen": "2025-11-19T14:30:28.210Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.864Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 7: GitHub push blocked by secret scanning"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.014Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "### Error 7: GitHub push blocked by secret scanning"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.210Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 7: GitHub push blocked by secret scanning"
+        }
+      ],
+      "solutions": []
+    },
+    "-i5jg80": {
+      "error": "[UUID error about sales-1]\"",
+      "occurrences": 6,
+      "firstSeen": "2025-11-19T14:30:27.865Z",
+      "lastSeen": "2025-11-19T14:30:28.249Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.865Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "4. \"it looks good, i was doing training, and want to save the dialog, then console error: [UUID error about sales-1]\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.878Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "4. \"it looks good, i was doing training, and want to save the dialog, then console error: [UUID error about sales-1]\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.015Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "4. \"it looks good, i was doing training, and want to save the dialog, then console error: [UUID error about sales-1]\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.041Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "4. \"it looks good, i was doing training, and want to save the dialog, then console error: [UUID error about sales-1]\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.212Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "4. \"it looks good, i was doing training, and want to save the dialog, then console error: [UUID error about sales-1]\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.249Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "4. \"it looks good, i was doing training, and want to save the dialog, then console error: [UUID error about sales-1]\""
+        }
+      ],
+      "solutions": []
+    },
+    "s6fs5d": {
+      "error": "Cannot read properties of undefined (reading 'id')\"",
+      "occurrences": 6,
+      "firstSeen": "2025-11-19T14:30:27.865Z",
+      "lastSeen": "2025-11-19T14:30:28.251Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.865Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "5. \"Console Error: Cannot read properties of undefined (reading 'id')\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.878Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "5. \"Console Error: Cannot read properties of undefined (reading 'id')\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.016Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "5. \"Console Error: Cannot read properties of undefined (reading 'id')\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.043Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "5. \"Console Error: Cannot read properties of undefined (reading 'id')\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.215Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "5. \"Console Error: Cannot read properties of undefined (reading 'id')\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.251Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "5. \"Console Error: Cannot read properties of undefined (reading 'id')\""
+        }
+      ],
+      "solutions": []
+    },
+    "l303am": {
+      "error": "Missing Supabase environment variables. Please check:",
+      "occurrences": 9,
+      "firstSeen": "2025-11-19T14:30:27.866Z",
+      "lastSeen": "2025-11-19T14:30:28.231Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.866Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "Error: Missing Supabase environment variables. Please check:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.866Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "Error: Missing Supabase environment variables. Please check:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.870Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "Error: Missing Supabase environment variables. Please check:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.017Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "Error: Missing Supabase environment variables. Please check:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.019Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "Error: Missing Supabase environment variables. Please check:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.027Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "Error: Missing Supabase environment variables. Please check:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.218Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "Error: Missing Supabase environment variables. Please check:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.222Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "Error: Missing Supabase environment variables. Please check:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.231Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "Error: Missing Supabase environment variables. Please check:"
+        }
+      ],
+      "solutions": []
+    },
+    "d40tgl": {
+      "error": "occurred",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.867Z",
+      "lastSeen": "2025-11-19T14:30:28.224Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.867Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "> Build error occurred"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.022Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "> Build error occurred"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.224Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "> Build error occurred"
+        }
+      ],
+      "solutions": []
+    },
+    "-wwg2de": {
+      "error": "Failed to collect page data for /api/auto-migrate-data] {",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.867Z",
+      "lastSeen": "2025-11-19T14:30:28.225Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.867Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "[Error: Failed to collect page data for /api/auto-migrate-data] {"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.023Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "[Error: Failed to collect page data for /api/auto-migrate-data] {"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.225Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "[Error: Failed to collect page data for /api/auto-migrate-data] {"
+        }
+      ],
+      "solutions": []
+    },
+    "-flskn3": {
+      "error": "failed to build: failed to solve: process \"/bin/bash -ol pipefail -c npm run build\" did not complete successfully: exit code: 1",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.868Z",
+      "lastSeen": "2025-11-19T14:30:28.226Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.868Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "ERROR: failed to build: failed to solve: process \"/bin/bash -ol pipefail -c npm run build\" did not complete successfully: exit code: 1"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.024Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "ERROR: failed to build: failed to solve: process \"/bin/bash -ol pipefail -c npm run build\" did not complete successfully: exit code: 1"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.226Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "ERROR: failed to build: failed to solve: process \"/bin/bash -ol pipefail -c npm run build\" did not complete successfully: exit code: 1"
+        }
+      ],
+      "solutions": []
+    },
+    "-d47fu9": {
+      "error": "Docker build failed",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.868Z",
+      "lastSeen": "2025-11-19T14:30:28.228Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.868Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "Error: Docker build failed"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.025Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "Error: Docker build failed"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.228Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "Error: Docker build failed"
+        }
+      ],
+      "solutions": []
+    },
+    "sej7e2": {
+      "error": "at module import time if the environment variables are missing. During Next.js build, it tries to evaluate all routes, and these routes import `supabaseAdmin`, which triggers the error.",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.869Z",
+      "lastSeen": "2025-11-19T14:30:28.230Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.869Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● The problem is on lines 6-13 of `src/lib/supabase.ts`. The code throws an error at module import time if the environment variables are missing. During Next.js build, it tries to evaluate all routes, and these routes import `supabaseAdmin`, which triggers the error."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.026Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "● The problem is on lines 6-13 of `src/lib/supabase.ts`. The code throws an error at module import time if the environment variables are missing. During Next.js build, it tries to evaluate all routes, and these routes import `supabaseAdmin`, which triggers the error."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.230Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● The problem is on lines 6-13 of `src/lib/supabase.ts`. The code throws an error at module import time if the environment variables are missing. During Next.js build, it tries to evaluate all routes, and these routes import `supabaseAdmin`, which triggers the error."
+        }
+      ],
+      "solutions": []
+    },
+    "-84460k": {
+      "error": "1: Initial Misunderstanding About Model Configuration",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.871Z",
+      "lastSeen": "2025-11-19T14:30:28.235Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.871Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 1: Initial Misunderstanding About Model Configuration"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.029Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "### Error 1: Initial Misunderstanding About Model Configuration"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.235Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 1: Initial Misunderstanding About Model Configuration"
+        }
+      ],
+      "solutions": []
+    },
+    "-hcom4y": {
+      "error": "** I initially thought there was an issue with the AI model configuration and claimed \"gpt-5-mini doesn't exist\"",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.871Z",
+      "lastSeen": "2025-11-19T14:30:28.236Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.871Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "**Error:** I initially thought there was an issue with the AI model configuration and claimed \"gpt-5-mini doesn't exist\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.030Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "**Error:** I initially thought there was an issue with the AI model configuration and claimed \"gpt-5-mini doesn't exist\""
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.236Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "**Error:** I initially thought there was an issue with the AI model configuration and claimed \"gpt-5-mini doesn't exist\""
+        }
+      ],
+      "solutions": []
+    },
+    "bm9qgv": {
+      "error": "2: Unnecessary Railway Deployment Fix",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.872Z",
+      "lastSeen": "2025-11-19T14:30:28.238Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.872Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 2: Unnecessary Railway Deployment Fix"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.032Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "### Error 2: Unnecessary Railway Deployment Fix"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.238Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 2: Unnecessary Railway Deployment Fix"
+        }
+      ],
+      "solutions": []
+    },
+    "-y7ocwp": {
+      "error": "** When user said \"i deploy again, now completed and active\" then immediately said \"i just abort it\", I made unnecessary lazy initialization changes",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.873Z",
+      "lastSeen": "2025-11-19T14:30:28.239Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.873Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "**Error:** When user said \"i deploy again, now completed and active\" then immediately said \"i just abort it\", I made unnecessary lazy initialization changes"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.033Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "**Error:** When user said \"i deploy again, now completed and active\" then immediately said \"i just abort it\", I made unnecessary lazy initialization changes"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.239Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "**Error:** When user said \"i deploy again, now completed and active\" then immediately said \"i just abort it\", I made unnecessary lazy initialization changes"
+        }
+      ],
+      "solutions": []
+    },
+    "ktoyel": {
+      "error": "3: Text and Button Overflow",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.873Z",
+      "lastSeen": "2025-11-19T14:30:28.240Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.874Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 3: Text and Button Overflow"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.034Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "### Error 3: Text and Button Overflow"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.240Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 3: Text and Button Overflow"
+        }
+      ],
+      "solutions": []
+    },
+    "uo4on7": {
+      "error": "** Content (text and buttons) was overflowing outside card boundaries when window was resized narrow",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.874Z",
+      "lastSeen": "2025-11-19T14:30:28.242Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.874Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "**Error:** Content (text and buttons) was overflowing outside card boundaries when window was resized narrow"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.036Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "**Error:** Content (text and buttons) was overflowing outside card boundaries when window was resized narrow"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.242Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "**Error:** Content (text and buttons) was overflowing outside card boundaries when window was resized narrow"
+        }
+      ],
+      "solutions": []
+    },
+    "l00aa7": {
+      "error": "4: Button Group Overflow (Canned, Roleplay)",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.875Z",
+      "lastSeen": "2025-11-19T14:30:28.243Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.875Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 4: Button Group Overflow (Canned, Roleplay)"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.037Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "### Error 4: Button Group Overflow (Canned, Roleplay)"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.243Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 4: Button Group Overflow (Canned, Roleplay)"
+        }
+      ],
+      "solutions": []
+    },
+    "-d7orjj": {
+      "error": "** Button groups (Deep AI Research, AI Role buttons, Feedback buttons) were overflowing frames when window was resized",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.876Z",
+      "lastSeen": "2025-11-19T14:30:28.245Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.876Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "**Error:** Button groups (Deep AI Research, AI Role buttons, Feedback buttons) were overflowing frames when window was resized"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.038Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "**Error:** Button groups (Deep AI Research, AI Role buttons, Feedback buttons) were overflowing frames when window was resized"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.245Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "**Error:** Button groups (Deep AI Research, AI Role buttons, Feedback buttons) were overflowing frames when window was resized"
+        }
+      ],
+      "solutions": []
+    },
+    "yztv2k": {
+      "error": "5: Git Push Appearing Stuck",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.876Z",
+      "lastSeen": "2025-11-19T14:30:28.246Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.876Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 5: Git Push Appearing Stuck"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.039Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "### Error 5: Git Push Appearing Stuck"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.246Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 5: Git Push Appearing Stuck"
+        }
+      ],
+      "solutions": []
+    },
+    "9f3502": {
+      "error": "** Git push command was running in background and appearing to be stuck with same output repeatedly",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.877Z",
+      "lastSeen": "2025-11-19T14:30:28.247Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.877Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "**Error:** Git push command was running in background and appearing to be stuck with same output repeatedly"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.040Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "**Error:** Git push command was running in background and appearing to be stuck with same output repeatedly"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.247Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "**Error:** Git push command was running in background and appearing to be stuck with same output repeatedly"
+        }
+      ],
+      "solutions": []
+    },
+    "-7n4a20": {
+      "error": "message?",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.879Z",
+      "lastSeen": "2025-11-19T14:30:28.253Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.879Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "2. Show an error message?"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.044Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "2. Show an error message?"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.253Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "2. Show an error message?"
+        }
+      ],
+      "solutions": []
+    },
+    "-mgteec": {
+      "error": "message (if any) appears in the mobile browser?",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.880Z",
+      "lastSeen": "2025-11-19T14:30:28.254Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.880Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- What error message (if any) appears in the mobile browser?"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.045Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "- What error message (if any) appears in the mobile browser?"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.254Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- What error message (if any) appears in the mobile browser?"
+        }
+      ],
+      "solutions": []
+    },
+    "tm2t9x": {
+      "error": "messages when you try to send a message from mobile",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.881Z",
+      "lastSeen": "2025-11-19T14:30:28.255Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.881Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● 1. **Check Railway logs** - Go to Railway dashboard → Your project → Click \"View logs\" and look for any error messages when you try to send a message from mobile"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.047Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "● 1. **Check Railway logs** - Go to Railway dashboard → Your project → Click \"View logs\" and look for any error messages when you try to send a message from mobile"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.255Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● 1. **Check Railway logs** - Go to Railway dashboard → Your project → Click \"View logs\" and look for any error messages when you try to send a message from mobile"
+        }
+      ],
+      "solutions": []
+    },
+    "h0ae9k": {
+      "error": "code (like 500, 404, etc.)",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.881Z",
+      "lastSeen": "2025-11-19T14:30:28.257Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.881Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- Returning an error code (like 500, 404, etc.)"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.048Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "- Returning an error code (like 500, 404, etc.)"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.257Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- Returning an error code (like 500, 404, etc.)"
+        }
+      ],
+      "solutions": []
+    },
+    "-a6yafo": {
+      "error": "with the service role key, these functions fail silently (wrapped in try-catch), but on Railway the deployment might be failing to load the module at all.",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.882Z",
+      "lastSeen": "2025-11-19T14:30:28.259Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.882Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● The issue is that when there's an error with the service role key, these functions fail silently (wrapped in try-catch), but on Railway the deployment might be failing to load the module at all."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.050Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "● The issue is that when there's an error with the service role key, these functions fail silently (wrapped in try-catch), but on Railway the deployment might be failing to load the module at all."
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.259Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● The issue is that when there's an error with the service role key, these functions fail silently (wrapped in try-catch), but on Railway the deployment might be failing to load the module at all."
+        }
+      ],
+      "solutions": []
+    },
+    "-bvl1d9": {
+      "error": "handling and fallback logic that doesn't require the service role key for basic chat functionality:",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.883Z",
+      "lastSeen": "2025-11-19T14:30:28.260Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.883Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● Let me add better error handling and fallback logic that doesn't require the service role key for basic chat functionality:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.051Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "● Let me add better error handling and fallback logic that doesn't require the service role key for basic chat functionality:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.260Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● Let me add better error handling and fallback logic that doesn't require the service role key for basic chat functionality:"
+        }
+      ],
+      "solutions": []
+    },
+    "-aswlq9": {
+      "error": "messages showing which variables are missing",
+      "occurrences": 6,
+      "firstSeen": "2025-11-19T14:30:27.883Z",
+      "lastSeen": "2025-11-19T14:30:28.283Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.883Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- The error messages showing which variables are missing"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.898Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- The error messages showing which variables are missing"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.052Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "- The error messages showing which variables are missing"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.066Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "- The error messages showing which variables are missing"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.261Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- The error messages showing which variables are missing"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.283Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- The error messages showing which variables are missing"
+        }
+      ],
+      "solutions": []
+    },
+    "5lw6s7": {
+      "error": "messages I just added",
+      "occurrences": 6,
+      "firstSeen": "2025-11-19T14:30:27.884Z",
+      "lastSeen": "2025-11-19T14:30:28.285Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.884Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "3. Check the Railway deployment logs for the error messages I just added"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:27.899Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "3. Check the Railway deployment logs for the error messages I just added"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.053Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "3. Check the Railway deployment logs for the error messages I just added"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.068Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "3. Check the Railway deployment logs for the error messages I just added"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.263Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "3. Check the Railway deployment logs for the error messages I just added"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.285Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "3. Check the Railway deployment logs for the error messages I just added"
+        }
+      ],
+      "solutions": []
+    },
+    "-rcqucc": {
+      "error": "if they're not set",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.885Z",
+      "lastSeen": "2025-11-19T14:30:28.265Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.885Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- Throw a clear error if they're not set"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.054Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "- Throw a clear error if they're not set"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.265Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- Throw a clear error if they're not set"
+        }
+      ],
+      "solutions": []
+    },
+    "fsjcw7": {
+      "error": "message",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.886Z",
+      "lastSeen": "2025-11-19T14:30:28.267Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.886Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- Force Railway to either have the variables correctly configured or fail with a clear error message"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.055Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "- Force Railway to either have the variables correctly configured or fail with a clear error message"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.267Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "- Force Railway to either have the variables correctly configured or fail with a clear error message"
+        }
+      ],
+      "solutions": []
+    },
+    "kpixwz": {
+      "error": "I added is crashing the build. Let me check if there's a build-time issue:",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.886Z",
+      "lastSeen": "2025-11-19T14:30:28.269Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.886Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● Let me check what's happening with the deployment. The issue might be that the error I added is crashing the build. Let me check if there's a build-time issue:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.056Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "● Let me check what's happening with the deployment. The issue might be that the error I added is crashing the build. Let me check if there's a build-time issue:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.269Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● Let me check what's happening with the deployment. The issue might be that the error I added is crashing the build. Let me check if there's a build-time issue:"
+        }
+      ],
+      "solutions": []
+    },
+    "-fuy18e": {
+      "error": "but don't throw during build:",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.887Z",
+      "lastSeen": "2025-11-19T14:30:28.270Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.887Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● The problem is that this function is being called during build time (Next.js pre-rendering), and the environment variables might not be available yet. The throw statement is crashing the build. Let me fix this properly - log the error but don't throw during build:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.057Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "● The problem is that this function is being called during build time (Next.js pre-rendering), and the environment variables might not be available yet. The throw statement is crashing the build. Let me fix this properly - log the error but don't throw during build:"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.270Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "● The problem is that this function is being called during build time (Next.js pre-rendering), and the environment variables might not be available yet. The throw statement is crashing the build. Let me fix this properly - log the error but don't throw during build:"
+        }
+      ],
+      "solutions": []
+    },
+    "pwdl70": {
+      "error": "when OpenAI is configured",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.889Z",
+      "lastSeen": "2025-11-19T14:30:28.272Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.889Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "11. Fix Railway showing \"check Anthropic API\" error when OpenAI is configured"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.059Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "11. Fix Railway showing \"check Anthropic API\" error when OpenAI is configured"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.272Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "11. Fix Railway showing \"check Anthropic API\" error when OpenAI is configured"
+        }
+      ],
+      "solutions": []
+    },
+    "r8n5pc": {
+      "error": "1: Assumed Environment Variables Were the Issue",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.890Z",
+      "lastSeen": "2025-11-19T14:30:28.273Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.890Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 1: Assumed Environment Variables Were the Issue"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.060Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "### Error 1: Assumed Environment Variables Were the Issue"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.273Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 1: Assumed Environment Variables Were the Issue"
+        }
+      ],
+      "solutions": []
+    },
+    "-o7fdmo": {
+      "error": "(CRASHED RAILWAY BUILD)",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.892Z",
+      "lastSeen": "2025-11-19T14:30:28.275Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.892Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "3. Commit f530d4b: Removed ALL fallbacks, threw error (CRASHED RAILWAY BUILD)"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.061Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "3. Commit f530d4b: Removed ALL fallbacks, threw error (CRASHED RAILWAY BUILD)"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.275Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "3. Commit f530d4b: Removed ALL fallbacks, threw error (CRASHED RAILWAY BUILD)"
+        }
+      ],
+      "solutions": []
+    },
+    "ftl7pj": {
+      "error": "2: Build-Time Errors",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.893Z",
+      "lastSeen": "2025-11-19T14:30:28.276Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.893Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 2: Build-Time Errors"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.062Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "### Error 2: Build-Time Errors"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.276Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 2: Build-Time Errors"
+        }
+      ],
+      "solutions": []
+    },
+    "niygku": {
+      "error": "3: Wrong Model Name",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.894Z",
+      "lastSeen": "2025-11-19T14:30:28.277Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.894Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 3: Wrong Model Name"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.063Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "### Error 3: Wrong Model Name"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.278Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 3: Wrong Model Name"
+        }
+      ],
+      "solutions": []
+    },
+    "-n2oeha": {
+      "error": "4: Explaining Things User Already Knew",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.895Z",
+      "lastSeen": "2025-11-19T14:30:28.279Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.895Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 4: Explaining Things User Already Knew"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.064Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "### Error 4: Explaining Things User Already Knew"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.279Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "### Error 4: Explaining Things User Already Knew"
+        }
+      ],
+      "solutions": []
+    },
+    "-nxc642": {
+      "error": "about missing SUPABASE_SERVICE_ROLE_KEY",
+      "occurrences": 3,
+      "firstSeen": "2025-11-19T14:30:27.896Z",
+      "lastSeen": "2025-11-19T14:30:28.281Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:27.896Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11-1830-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "14. \"now the problem with live chat, it is totally failed\" + Console error about missing SUPABASE_SERVICE_ROLE_KEY"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.065Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-11.txt",
+          "line": "14. \"now the problem with live chat, it is totally failed\" + Console error about missing SUPABASE_SERVICE_ROLE_KEY"
+        },
+        {
+          "timestamp": "2025-11-19T14:30:28.281Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-70d966d2-a5e9-4f34-96d4-f2d55802f021-transcript.txt",
+          "line": "14. \"now the problem with live chat, it is totally failed\" + Console error about missing SUPABASE_SERVICE_ROLE_KEY"
+        }
+      ],
+      "solutions": []
+    },
+    "wb67g7": {
+      "error": "(Commit: 383a4b8)",
+      "occurrences": 1,
+      "firstSeen": "2025-11-19T14:30:28.072Z",
+      "lastSeen": "2025-11-19T14:30:28.072Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:28.072Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-12-mobile-fixes-railway-debug.md",
+          "line": "### 4. Live Chat Supabase Import Error (Commit: 383a4b8)"
+        }
+      ],
+      "solutions": []
+    },
+    "-jow4ig": {
+      "error": "despite OpenAI configured",
+      "occurrences": 1,
+      "firstSeen": "2025-11-19T14:30:28.073Z",
+      "lastSeen": "2025-11-19T14:30:28.073Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:28.073Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-12-mobile-fixes-railway-debug.md",
+          "line": "**Problem:** Railway showing \"check Anthropic API\" error despite OpenAI configured"
+        }
+      ],
+      "solutions": []
+    },
+    "-902vfc": {
+      "error": "if env vars missing",
+      "occurrences": 1,
+      "firstSeen": "2025-11-19T14:30:28.074Z",
+      "lastSeen": "2025-11-19T14:30:28.074Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:28.074Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-12-mobile-fixes-railway-debug.md",
+          "line": "**Attempt 3 (f530d4b):** Removed ALL fallbacks, threw error if env vars missing"
+        }
+      ],
+      "solutions": []
+    },
+    "bab2zp": {
+      "error": "** Crashed Railway build (error thrown during build-time)",
+      "occurrences": 1,
+      "firstSeen": "2025-11-19T14:30:28.075Z",
+      "lastSeen": "2025-11-19T14:30:28.075Z",
+      "contexts": [
+        {
+          "timestamp": "2025-11-19T14:30:28.075Z",
+          "file": "C:\\Users\\Denny\\ai-training-center\\log\\session-2025-11-12-mobile-fixes-railway-debug.md",
+          "line": "- **ERROR:** Crashed Railway build (error thrown during build-time)"
+        }
+      ],
+      "solutions": []
+    }
+  }
+}

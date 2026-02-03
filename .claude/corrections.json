@@ -1,0 +1,47 @@
+{
+  "corrections": [],
+  "facts": {
+    "-2bq898": {
+      "wrong": "suggesting gemini-1.5-flash instead of gemini-2.5-flash",
+      "correct": "ALWAYS use gemini-2.5-flash as configured in .env.local",
+      "userQuote": "NO!!! it is gemini-2.5-flash? why you always fall back to your old memory",
+      "timestamp": "2025-11-19T14:23:48.757Z",
+      "violations": 1
+    },
+    "g4yd8k": {
+      "wrong": "claiming gpt-5-mini doesn't exist",
+      "correct": "gpt-5-mini is a valid model that has been established for a long time",
+      "userQuote": "what do you mean it does not exist? what is wrong with you? we have long time established the api",
+      "timestamp": "2025-11-19T14:33:07.102Z",
+      "violations": 1
+    },
+    "nwerku": {
+      "wrong": "hardcoding wrong model names like gpt-4o instead of checking .env.local",
+      "correct": "ALWAYS read .env.local first before suggesting model changes",
+      "userQuote": "why you keep on hardcoding things, and make it wrong, to gpt-4o, but it should be gpt-5-mini",
+      "timestamp": "2025-11-19T14:33:15.616Z",
+      "violations": 1
+    },
+    "-5m88c5": {
+      "wrong": "keep using Anthropic API when LLM_PROVIDER is set to openai",
+      "correct": "CHECK .env.local LLM_PROVIDER before suggesting API fixes",
+      "userQuote": "why you keep on using anthropic? what the fuck is wrong with you? where do you get this info?",
+      "timestamp": "2025-11-19T14:33:22.789Z",
+      "violations": 1
+    },
+    "krexp3": {
+      "wrong": "not explaining what went wrong before making more fixes",
+      "correct": "EXPLAIN mistakes first, then ask if user wants fixes",
+      "userQuote": "dont fix anything stupid!!!! tell me what is wrong with you, you keep on making stupid mistake",
+      "timestamp": "2025-11-19T14:36:26.872Z",
+      "violations": 1
+    },
+    "-y25774": {
+      "wrong": "questioning if gemini-2.5-flash exists after already learning it's correct",
+      "correct": "gemini-2.5-flash IS VALID - already confirmed, stop questioning it",
+      "userQuote": "you said you are constantly learning the mistake, and now you say gemini-2.5-flash might not be released what the fuck is wrong with you?",
+      "timestamp": "2025-11-19T14:46:41.386Z",
+      "violations": 1
+    }
+  }
+}

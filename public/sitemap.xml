@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://skincoach.ai</loc>
+    <loc>https://skincoach.ai/us</loc>
     <lastmod>2026-02-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://skincoach.ai/livechat?businessUnit=skincoach&amp;country=US&amp;lang=en&amp;page=micro-infusion-system-face</loc>
+    <loc>https://skincoach.ai/hk</loc>
     <lastmod>2026-02-03</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://skincoach.ai/livechat?businessUnit=skincoach&amp;country=HK&amp;lang=en&amp;page=micro-infusion-system-face</loc>
+    <loc>https://skincoach.ai/sg</loc>
     <lastmod>2026-02-03</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <priority>1.0</priority>
   </url>
 </urlset>

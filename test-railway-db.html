@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Railway Database Connection</title>
+</head>
+<body>
+    <h1>Testing Database Connection</h1>
+    <button onclick="testAPI()">Test Landing Page API</button>
+    <pre id="result"></pre>
+
+    <script>
+        async function testAPI() {
+            const result = document.getElementById('result');
+            result.textContent = 'Loading...';
+
+            try {
+                const response = await fetch('/api/landing-page?businessUnit=skincoach');
+                const data = await response.json();
+
+                result.textContent = JSON.stringify(data, null, 2);
+
+                if (data.landingPage?.blocks) {
+                    console.log('✅ Blocks found:', data.landingPage.blocks.length);
+                } else {
+                    console.log('❌ No blocks found');
+                }
+            } catch (error) {
+                result.textContent = 'ERROR: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

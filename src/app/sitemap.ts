@@ -3,22 +3,22 @@ import { MetadataRoute } from 'next'
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
-      url: 'https://skincoach.ai',
+      url: 'https://skincoach.ai/us',
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 1,
     },
     {
-      url: 'https://skincoach.ai/livechat?businessUnit=skincoach&country=US&lang=en&page=micro-infusion-system-face',
+      url: 'https://skincoach.ai/hk',
       lastModified: new Date(),
       changeFrequency: 'weekly',
-      priority: 0.9,
+      priority: 1,
     },
     {
-      url: 'https://skincoach.ai/livechat?businessUnit=skincoach&country=HK&lang=en&page=micro-infusion-system-face',
+      url: 'https://skincoach.ai/sg',
       lastModified: new Date(),
       changeFrequency: 'weekly',
-      priority: 0.9,
+      priority: 1,
     },
   ]
 }

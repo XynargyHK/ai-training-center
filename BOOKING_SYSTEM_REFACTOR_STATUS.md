@@ -84,31 +84,29 @@ Complete refactor of the appointment booking system based on new requirements:
 
 ## 🚧 Remaining Tasks
 
-### 1. Execute Database Migrations
-**Priority**: HIGH
+### 1. Execute Database Migrations ✅ COMPLETED
+**Priority**: HIGH - **STATUS: DONE**
 
-The SQL migrations need to be executed manually in Supabase SQL Editor:
+~~The SQL migrations need to be executed manually in Supabase SQL Editor~~ ✅
 
-#### Steps:
-1. Go to Supabase Dashboard → SQL Editor
-2. Create new query and paste contents of `sql-migrations/019_service_staff_assignments.sql`
-3. Execute (F5 or Run button)
-4. Create new query and paste contents of `sql-migrations/020_appointment_workflow.sql`
-5. Execute
+**Completed Migrations**:
+- ✅ `015_create_chat_history_tables.sql` - Executed successfully
+- ✅ `019_service_staff_assignments.sql` - Executed successfully
+- ✅ `020_appointment_workflow.sql` - Executed successfully
 
-**Why manual?**: Complex PL/pgSQL functions with dollar-quoted strings don't parse correctly when split into statements.
+All tables, functions, and triggers are now live in the database.
 
-### 2. API Endpoints for Approval Workflow
-**Files to create**:
+### 2. API Endpoints for Approval Workflow ✅ COMPLETED
+**Files created**: ✅
 
-- [ ] `src/app/api/appointments/change-request/route.ts`
+- ✅ `src/app/api/appointments/change-request/route.ts`
   - **POST**: Create edit/cancel request (staff)
-  - **GET**: List change requests
+  - **GET**: List change requests with filters
 
-- [ ] `src/app/api/appointments/change-request/[id]/manager-review/route.ts`
+- ✅ `src/app/api/appointments/change-request/[id]/manager-review/route.ts`
   - **POST**: Manager approves or rejects request
 
-- [ ] `src/app/api/appointments/change-request/[id]/client-confirm/route.ts`
+- ✅ `src/app/api/appointments/change-request/[id]/client-confirm/route.ts`
   - **POST**: Client confirms or rejects change
 
 ### 3. Service Management UI (Admin)
@@ -150,17 +148,22 @@ The SQL migrations need to be executed manually in Supabase SQL Editor:
 
 - [ ] Connect to existing availability API (already supports blocking)
 
-### 6. Connect UI Actions in /booking Page
+### 6. Connect UI Actions in /booking Page ✅ COMPLETED
 **File**: `src/app/booking/page.tsx`
 
-- [ ] Wire up **Confirm/Decline** buttons to `/api/appointments/confirm`
-- [ ] Wire up **Edit** button to create change request
+- ✅ Wire up **Confirm/Decline** buttons to `/api/appointments/confirm`
+- ✅ Wire up **Edit** button to create change request
   - Open modal with edit form
   - Call change request API
-- [ ] Wire up **Cancel** button to create cancel request
+- ✅ Wire up **Cancel** button to create cancel request
   - Open modal for cancellation reason
   - Call change request API
-- [ ] Wire up **Block Time** button to open block time modal
+- ✅ Wire up **Block Time** button to open block time modal
+
+**Created Modals**:
+- ✅ `src/components/booking/edit-appointment-modal.tsx`
+- ✅ `src/components/booking/cancel-appointment-modal.tsx`
+- ✅ `src/components/booking/block-time-modal.tsx`
 
 ### 7. Clean Up
 - [ ] Delete `/provider` page (`src/app/provider/page.tsx`)
@@ -250,25 +253,27 @@ confirmed → pending_cancellation → (approved) → cancelled
 
 ## 📊 Progress Summary
 
-**Database**: 100% (ready for execution)
-**TypeScript Types**: 100%
-**UI Foundation**: 60% (dashboard created, actions need wiring)
-**API Endpoints**: 20% (existing confirm API, need workflow APIs)
-**Service Management**: 0% (not started)
-**Overall**: ~45% Complete
+**Database**: 100% ✅ (executed in Supabase)
+**TypeScript Types**: 100% ✅
+**UI Foundation**: 100% ✅ (dashboard complete, all actions wired)
+**API Endpoints**: 100% ✅ (complete workflow implemented)
+**Block Time**: 100% ✅ (modal and functionality complete)
+**Service Management**: 0% 🔴 (not started)
+**Staff Assignment**: 0% 🔴 (not started)
+**Overall**: ~75% Complete ✅
 
 ---
 
 ## 🚀 Next Steps (Recommended Order)
 
-1. **Execute database migrations** in Supabase SQL Editor
-2. **Create approval workflow API endpoints** (change-request routes)
-3. **Wire up UI actions** in /booking page to APIs
-4. **Implement block time modal** and functionality
-5. **Create service management UI** for admin
-6. **Create staff assignment interface**
-7. **Delete /provider page**
-8. **Test end-to-end workflow**
+1. ~~**Execute database migrations** in Supabase SQL Editor~~ ✅ DONE
+2. ~~**Create approval workflow API endpoints** (change-request routes)~~ ✅ DONE
+3. ~~**Wire up UI actions** in /booking page to APIs~~ ✅ DONE
+4. ~~**Implement block time modal** and functionality~~ ✅ DONE
+5. **Create service management UI** for admin 🔴 NEXT
+6. **Create staff assignment interface** 🔴
+7. **Delete /provider page** 🟢
+8. **Test end-to-end workflow** 🟡
 
 ---
 
