@@ -71,10 +71,9 @@ async function detectCountryFromIP(request: NextRequest): Promise<string> {
   return DEFAULT_COUNTRY
 }
 
-// Build internal livechat URL
+// Build internal livechat URL for rewrite
 function buildLivechatUrl(request: NextRequest, countryPath: string): URL {
   const params = COUNTRY_MAP[countryPath]
-  // Create absolute URL for rewrite to work properly
   const url = new URL('/livechat', request.url)
   url.searchParams.set('businessUnit', 'skincoach')
   url.searchParams.set('country', params.country)
