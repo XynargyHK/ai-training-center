@@ -55,7 +55,13 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
+  // Allow pass-through for specific prefixes
   if (PASS_THROUGH_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+    return NextResponse.next()
+  }
+
+  // Allow verification files (Bing XML, Google HTML, sitemap, robots)
+  if (pathname.match(/\.(xml|html|txt)$/)) {
     return NextResponse.next()
   }
 
