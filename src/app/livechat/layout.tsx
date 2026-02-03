@@ -86,6 +86,11 @@ export async function generateMetadata({
   const metadata: Metadata = {
     title,
     description,
+    verification: {
+      other: {
+        'msvalidate.01': '49785425477910BA8333B7070A3DF5AD',
+      },
+    },
     keywords: [
       'micro-infusion system',
       'micro-needling at home',
