@@ -18,7 +18,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
 
 export async function POST(request: NextRequest) {
   try {
-    const { faq, targetLanguages } = await request.json()
+    const { faq, targetLanguages, businessUnitId, country } = await request.json()
 
     if (!faq || !faq.question || !faq.answer) {
       return NextResponse.json(
@@ -50,17 +50,34 @@ export async function POST(request: NextRequest) {
     for (const targetLang of targetLanguages) {
       const targetLanguageName = LANGUAGE_NAMES[targetLang] || targetLang
 
+      // Load target language landing page content for context
+      const { loadKnowledge } = await import('@/lib/supabase-storage')
+      const urlToDb: Record<string, string> = { 'tw': 'zh-TW', 'cn': 'zh-CN', 'en': 'en', 'vi': 'vi' }
+      const dbToUrl: Record<string, string> = { 'zh-TW': 'tw', 'zh-CN': 'cn', 'en': 'en', 'vi': 'vi' }
+      const targetUrlLang = dbToUrl[targetLang] || targetLang
+
+      const landingPageContent = await loadKnowledge(businessUnitId, country, targetUrlLang)
+      const landingPageText = landingPageContent?.slice(0, 5).map((entry: any) =>
+        `${entry.topic || entry.fileName}: ${entry.content?.substring(0, 500) || ''}`
+      ).join('\n\n') || 'No landing page content available'
+
       const prompt = `You are a professional translator specializing in FAQ translation.
 
 Translate the following FAQ from ${sourceLanguageName} to ${targetLanguageName}.
 
+REFERENCE MATERIAL - Target Language Landing Page Content:
+Use the terminology, keywords, and phrasing from this existing ${targetLanguageName} content to ensure consistency:
+
+${landingPageText}
+
 CRITICAL REQUIREMENTS:
 1. Maintain the EXACT meaning and tone of the original
-2. Keep all product names, brand names, and technical terms in their original form
-3. Preserve any pricing information and currency symbols
-4. Keep the same level of formality and professionalism
-5. Use culturally appropriate phrasing for the target language
-6. Maintain the same length and structure as much as possible
+2. Use terminology and keywords from the reference material above when available
+3. Keep all product names, brand names, and technical terms consistent with the reference material
+4. Preserve any pricing information and currency symbols
+5. Keep the same level of formality and professionalism
+6. Use culturally appropriate phrasing for the target language
+7. Maintain the same length and structure as much as possible
 
 Original FAQ:
 Category: ${faq.category}

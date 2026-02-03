@@ -258,6 +258,63 @@ const AITrainingCenter = () => {
     }
   }, [selectedBusinessUnit, selectedCountry, selectedLangCode])
 
+  // Reload FAQs when category changes (bidirectional fallback)
+  useEffect(() => {
+    const reloadFAQs = async () => {
+      if (!selectedBusinessUnit) return
+
+      setIsLoading(true)
+      console.log(`🔄 Reloading FAQs for category: ${selectedFaqCategory}, locale: ${selectedCountry}/${selectedLangCode}`)
+
+      try {
+        // Load FAQs for target language
+        let faqData = await loadFAQs(selectedBusinessUnit, selectedLangCode, selectedCountry)
+        console.log(`📊 Loaded ${faqData?.length || 0} total FAQs for ${selectedCountry}/${selectedLangCode}`)
+
+        // Check if current category has any FAQs in the target language
+        const categoryFaqs = faqData?.filter(f => f.category === selectedFaqCategory) || []
+        console.log(`📊 Found ${categoryFaqs.length} FAQs for category "${selectedFaqCategory}" in ${selectedLangCode}`)
+
+        // BIDIRECTIONAL FALLBACK: If no FAQs for this category, try other languages
+        if (categoryFaqs.length === 0) {
+          console.log(`⚠️ No ${selectedLangCode} FAQs for category "${selectedFaqCategory}", trying fallback languages...`)
+
+          // Try English first as fallback
+          const fallbackLang = selectedLangCode === 'en' ? 'tw' : 'en'
+          console.log(`   Trying ${fallbackLang} as fallback...`)
+          const fallbackFaqs = await loadFAQs(selectedBusinessUnit, fallbackLang, selectedCountry)
+          const fallbackCategoryFaqs = fallbackFaqs?.filter(f => f.category === selectedFaqCategory) || []
+          console.log(`   Found ${fallbackCategoryFaqs.length} FAQs in ${fallbackLang}`)
+
+          if (fallbackCategoryFaqs.length > 0) {
+            // Merge: keep target language FAQs from other categories + add fallback FAQs
+            faqData = [...(faqData || []), ...(fallbackFaqs || [])]
+            console.log(`✅ Using ${fallbackLang} FAQs as fallback for category "${selectedFaqCategory}"`)
+          } else {
+            // Try other languages (cn, vi) as last resort
+            const otherLangs = ['tw', 'cn', 'vi'].filter(l => l !== selectedLangCode && l !== fallbackLang)
+            for (const lang of otherLangs) {
+              console.log(`   Trying ${lang} as fallback...`)
+              const otherFaqs = await loadFAQs(selectedBusinessUnit, lang, selectedCountry)
+              const otherCategoryFaqs = otherFaqs?.filter(f => f.category === selectedFaqCategory) || []
+              if (otherCategoryFaqs.length > 0) {
+                faqData = [...(faqData || []), ...(otherFaqs || [])]
+                console.log(`✅ Using ${lang} FAQs as fallback for category "${selectedFaqCategory}"`)
+                break
+              }
+            }
+          }
+        }
+
+        setFaqs(faqData || [])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    reloadFAQs()
+  }, [selectedFaqCategory, selectedCountry, selectedLangCode, selectedBusinessUnit])
+
   useEffect(() => {
     let interval: NodeJS.Timeout
     if (trainingSession && trainingSession.status !== 'completed' && trainingSession.status !== 'failed') {
@@ -516,6 +573,8 @@ const AITrainingCenter = () => {
   }
 
   const loadData = async () => {
+    console.log(`🔄 loadData called with country=${selectedCountry}, language=${selectedLangCode}`)
+
     // Prevent duplicate loads
     if (isLoadingDataRef.current) {
       console.log('⚠️ loadData already running, skipping duplicate call')
@@ -524,11 +583,12 @@ const AITrainingCenter = () => {
 
     isLoadingDataRef.current = true // Set ref BEFORE any state changes
     setIsLoading(true)
+    console.log(`✅ loadData starting for ${selectedCountry}/${selectedLangCode}`)
 
     // Clear all state immediately to prevent stale data
     setKnowledgeEntries([])
     setTrainingData([])
-    // Don't clear FAQs - let them show until new ones are loaded
+    setFaqs([]) // Clear FAQs to prevent showing wrong language during transition
     setCannedMsgs([])
     setGuidelines([])
 
@@ -1152,7 +1212,9 @@ const AITrainingCenter = () => {
               ...faq,
               language: 'en'
             },
-            targetLanguages: [targetLanguage]
+            targetLanguages: [targetLanguage],
+            businessUnitId: selectedBusinessUnit,
+            country: selectedCountry
           })
         })
 
@@ -1170,6 +1232,7 @@ const AITrainingCenter = () => {
           console.log(`[Translate] Translated question:`, translation.question)
 
           const translatedFaq: any = {
+            reference_id: faq.reference_id || faq.id, // Link to original FAQ
             question: translation.question,
             answer: translation.answer,
             category: translation.category,
@@ -2576,12 +2639,17 @@ Format as JSON array:
                 )}
               </div>
 
-              {/* Show notice when displaying English FAQs as source */}
-              {selectedLangCode !== 'en' && faqs.length > 0 && faqs.some(f => f.language === 'en') && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-none p-2 text-xs text-yellow-800 mb-2">
-                  ℹ️ Showing English FAQs from {selectedCountry}/en (no {selectedLangCode} translation exists yet). Press "Translate All FAQs" to create translations.
-                </div>
-              )}
+              {/* Show notice when displaying English FAQs as source (only after loading completes) */}
+              {(() => {
+                const categoryFaqs = faqs.filter(f => f.category === selectedFaqCategory)
+                const shouldShow = selectedLangCode !== 'en' && !isLoading && categoryFaqs.length > 0 && categoryFaqs.some(f => f.language === 'en')
+                console.log(`Yellow bar check: category=${selectedFaqCategory}, langCode=${selectedLangCode}, isLoading=${isLoading}, categoryFaqsLength=${categoryFaqs.length}, hasEnglish=${categoryFaqs.some(f => f.language === 'en')}, shouldShow=${shouldShow}`)
+                return shouldShow ? (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-none p-2 text-xs text-yellow-800 mb-2">
+                    ℹ️ Showing English FAQs from {selectedCountry}/en (no {selectedLangCode} translation exists yet). Press "Translate All FAQs" to create translations.
+                  </div>
+                ) : null
+              })()}
 
               <div className="grid gap-2">
                 {faqs.filter(faq => faq.category === selectedFaqCategory).map((faq) => (
