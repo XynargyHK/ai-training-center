@@ -503,24 +503,49 @@ export async function saveFAQ(faq: any, businessUnitSlugOrId?: string | null) {
     categoryId = categoryData?.id
   }
 
+  const referenceId = faq.reference_id || faq.id || crypto.randomUUID()
+  const language = faq.language || 'en'
+  const country = faq.country || 'HK'
+
   const faqEntry = {
     business_unit_id: businessUnitId,
     category_id: categoryId,
-    reference_id: faq.reference_id || faq.id || crypto.randomUUID(),
+    reference_id: referenceId,
     question: faq.question,
     answer: faq.answer,
     short_answer: faq.shortAnswer,
     keywords: faq.keywords || [],
-    language: faq.language || 'en',
-    country: faq.country || 'HK',
+    language: language,
+    country: country,
     is_published: faq.is_active !== false,
     embedding: embedding,
     embedding_model: 'text-embedding-3-small',
     embedded_at: new Date().toISOString()
   }
 
-  if (faq.id && !faq.id.startsWith('faq-gen-')) {
-    // Update existing
+  // Check if a translation already exists (same reference_id + language + country)
+  const { data: existing } = await supabase
+    .from('faq_library')
+    .select('id')
+    .eq('reference_id', referenceId)
+    .eq('language', language)
+    .eq('country', country)
+    .eq('business_unit_id', businessUnitId)
+    .single()
+
+  if (existing) {
+    // Update existing translation
+    console.log(`🔄 Updating existing FAQ translation: ${existing.id}`)
+    const { data, error } = await supabase
+      .from('faq_library')
+      .update(faqEntry)
+      .eq('id', existing.id)
+      .select()
+
+    if (error) throw error
+    return data[0]
+  } else if (faq.id && !faq.id.startsWith('faq-gen-')) {
+    // Update existing by ID
     const { data, error } = await supabase
       .from('faq_library')
       .update(faqEntry)
@@ -531,6 +556,7 @@ export async function saveFAQ(faq: any, businessUnitSlugOrId?: string | null) {
     return data[0]
   } else {
     // Insert new
+    console.log(`✨ Creating new FAQ translation: ${referenceId} (${language}/${country})`)
     const { data, error } = await supabase
       .from('faq_library')
       .insert(faqEntry)
@@ -667,15 +693,16 @@ export async function deleteCannedMessage(id: string) {
 // CATEGORIES
 // ============================================
 
-export async function loadFAQCategories(businessUnitSlugOrId?: string | null) {
+export async function loadFAQCategories(businessUnitSlugOrId?: string | null, language: string = 'en') {
   const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+  const dbLang = urlLangToDbLang(language)
 
   // FAQ categories: pricing, products, shipping, returns, product results, ingredients, general
   const faqCategoryNames = ['pricing', 'products', 'shipping', 'returns', 'product results', 'ingredients', 'general']
 
   const { data, error } = await supabase
     .from('categories')
-    .select('name')
+    .select('name, name_tw, name_cn, name_vi')
     .eq('business_unit_id', businessUnitId)
     .in('name', faqCategoryNames)
     .order('sort_order')
@@ -685,7 +712,13 @@ export async function loadFAQCategories(businessUnitSlugOrId?: string | null) {
     return []
   }
 
-  return data.map(c => c.name)
+  // Return translated category names based on language
+  return data.map(c => {
+    if (dbLang === 'zh-TW' && c.name_tw) return c.name_tw
+    if (dbLang === 'zh-CN' && c.name_cn) return c.name_cn
+    if (dbLang === 'vi' && c.name_vi) return c.name_vi
+    return c.name // Default to English
+  })
 }
 
 export async function loadCannedCategories(businessUnitSlugOrId?: string | null) {

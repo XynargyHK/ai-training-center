@@ -394,10 +394,13 @@ export async function deleteCannedMessage(id: string) {
   if (!res.ok) throw new Error(json.error || 'Failed to delete canned message')
 }
 
-export async function loadFAQCategories(businessUnitId?: string) {
-  const url = businessUnitId
+export async function loadFAQCategories(businessUnitId?: string, language?: string) {
+  let url = businessUnitId
     ? `/api/knowledge?action=load_faq_categories&businessUnitId=${encodeURIComponent(businessUnitId)}`
     : '/api/knowledge?action=load_faq_categories'
+  if (language) {
+    url += `&language=${encodeURIComponent(language)}`
+  }
   const res = await fetch(url)
   const json = await res.json()
   if (!res.ok) throw new Error(json.error || 'Failed to load FAQ categories')

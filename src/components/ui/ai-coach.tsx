@@ -363,7 +363,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
 
     const loadCategories = async () => {
       try {
-        const categories = await loadFAQCategories()
+        const categories = await loadFAQCategories(businessUnit, language)
         if (categories && categories.length > 0) {
           setFaqCategories(categories)
         }
@@ -373,62 +373,16 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
     }
 
     loadCategories()
-  }, [businessUnit, isOpen])
+  }, [businessUnit, language, isOpen])
 
-  // Translate FAQ categories instantly using pre-defined translations (no API call)
+  // Categories loaded from DB already include translations, just use them directly
   useEffect(() => {
     if (faqCategories.length === 0) return
 
-    // Pre-defined category translations for instant display (no API delay)
-    const categoryTranslations: Record<string, Record<string, string>> = {
-      'pricing': {
-        'en': 'Pricing',
-        'zh-TW': '價格',
-        'zh-CN': '价格',
-        'vi': 'Giá cả'
-      },
-      'products': {
-        'en': 'Products',
-        'zh-TW': '產品',
-        'zh-CN': '产品',
-        'vi': 'Sản phẩm'
-      },
-      'shipping': {
-        'en': 'Shipping',
-        'zh-TW': '運送',
-        'zh-CN': '运送',
-        'vi': 'Vận chuyển'
-      },
-      'returns': {
-        'en': 'Returns',
-        'zh-TW': '退貨',
-        'zh-CN': '退货',
-        'vi': 'Trả hàng'
-      },
-      'product results': {
-        'en': 'Product Results',
-        'zh-TW': '產品效果',
-        'zh-CN': '产品效果',
-        'vi': 'Kết quả sản phẩm'
-      },
-      'ingredients': {
-        'en': 'Ingredients',
-        'zh-TW': '成分',
-        'zh-CN': '成分',
-        'vi': 'Thành phần'
-      },
-      'general': {
-        'en': 'General',
-        'zh-TW': '一般問題',
-        'zh-CN': '一般问题',
-        'vi': 'Câu hỏi chung'
-      }
-    }
-
+    // No translation needed - categories from DB include language-specific names
     const translations: {[key: string]: string} = {}
     faqCategories.forEach(cat => {
-      const categoryKey = cat.toLowerCase()
-      translations[cat] = categoryTranslations[categoryKey]?.[selectedLanguage] || cat
+      translations[cat] = cat // Use as-is from database
     })
 
     setTranslatedCategories(translations)
