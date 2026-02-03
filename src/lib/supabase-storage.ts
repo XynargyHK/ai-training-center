@@ -441,10 +441,10 @@ export async function hybridSearchKnowledge(query: string, limit: number = 10) {
 // FAQs
 // ============================================
 
-export async function loadFAQs(businessUnitSlugOrId?: string | null, language: string = 'en') {
+export async function loadFAQs(businessUnitSlugOrId?: string | null, language: string = 'en', country: string = 'HK') {
   const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
   const dbLang = urlLangToDbLang(language)
-  console.log(`🔍 loadFAQs called with language: ${language} (db: ${dbLang}), businessUnitId: ${businessUnitId}`)
+  console.log(`🔍 loadFAQs called with country: ${country}, language: ${language} (db: ${dbLang}), businessUnitId: ${businessUnitId}`)
 
   const { data, error } = await supabase
     .from('faq_library')
@@ -458,6 +458,7 @@ export async function loadFAQs(businessUnitSlugOrId?: string | null, language: s
       )
     `)
     .eq('business_unit_id', businessUnitId)
+    .eq('country', country)
     .eq('language', dbLang)
     .order('created_at', { ascending: false })
 
@@ -476,6 +477,8 @@ export async function loadFAQs(businessUnitSlugOrId?: string | null, language: s
     shortAnswer: item.short_answer,
     category: item.categories?.name || 'general',
     keywords: item.keywords || [],
+    language: item.language,
+    country: item.country,
     is_active: true
   }))
 }
@@ -509,6 +512,7 @@ export async function saveFAQ(faq: any, businessUnitSlugOrId?: string | null) {
     short_answer: faq.shortAnswer,
     keywords: faq.keywords || [],
     language: faq.language || 'en',
+    country: faq.country || 'HK',
     is_published: faq.is_active !== false,
     embedding: embedding,
     embedding_model: 'text-embedding-3-small',

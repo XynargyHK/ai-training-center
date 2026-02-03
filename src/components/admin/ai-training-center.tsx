@@ -6,6 +6,7 @@ import ProfileModal from './profile-modal'
 import RoleplayTraining from './roleplay-training'
 import KnowledgeBase from './knowledge-base'
 import AddLocaleModal from './landing-page/AddLocaleModal'
+import LanguageBar from './landing-page/LanguageBar'
 import { FAQ, CannedMessage } from '@/lib/faq-library'
 import { type Language, languageNames, getTranslation } from '@/lib/translations'
 import {
@@ -104,6 +105,8 @@ const AITrainingCenter = () => {
   const [translatingFaq, setTranslatingFaq] = useState<FAQ | null>(null)
   const [selectedTranslationLanguages, setSelectedTranslationLanguages] = useState<string[]>([])
   const [isTranslating, setIsTranslating] = useState(false)
+  const [translationMode, setTranslationMode] = useState(false)
+  const [translationSourceData, setTranslationSourceData] = useState<FAQ[] | null>(null)
 
   // Canned message categories state
   const [cannedCategories, setCannedCategories] = useState<string[]>(['beauty tips', 'product recommendations', 'skincare advice', 'general responses'])
@@ -513,13 +516,19 @@ const AITrainingCenter = () => {
   }
 
   const loadData = async () => {
+    // Prevent duplicate loads
+    if (isLoadingDataRef.current) {
+      console.log('⚠️ loadData already running, skipping duplicate call')
+      return
+    }
+
     isLoadingDataRef.current = true // Set ref BEFORE any state changes
     setIsLoading(true)
 
     // Clear all state immediately to prevent stale data
     setKnowledgeEntries([])
     setTrainingData([])
-    setFaqs([])
+    // Don't clear FAQs - let them show until new ones are loaded
     setCannedMsgs([])
     setGuidelines([])
 
@@ -532,10 +541,21 @@ const AITrainingCenter = () => {
       setKnowledgeEntries(knowledgeData || [])
       console.log(`✅ Loaded ${knowledgeData?.length || 0} knowledge entries`)
 
-      // Load FAQs — filtered by selected locale
-      const faqData = await loadFAQs(selectedBusinessUnit, selectedLangCode)
+      // Load FAQs — filtered by selected locale (country + language)
+      console.log(`[FAQ Load] Requesting FAQs for ${selectedCountry}/${selectedLangCode}`)
+      let faqData = await loadFAQs(selectedBusinessUnit, selectedLangCode, selectedCountry)
+      console.log(`[FAQ Load] Got ${faqData?.length || 0} FAQs for ${selectedCountry}/${selectedLangCode}`)
+
+      // If no FAQs exist for this locale and it's not English, show English FAQs as source
+      if ((!faqData || faqData.length === 0) && selectedLangCode !== 'en') {
+        console.log(`⚠️ No FAQs for ${selectedCountry}/${selectedLangCode}, loading English FAQs as source`)
+        faqData = await loadFAQs(selectedBusinessUnit, 'en', selectedCountry)
+        console.log(`[FAQ Load] Got ${faqData?.length || 0} English FAQs for ${selectedCountry}/en`)
+        console.log(`[FAQ Load] English FAQs:`, faqData)
+      }
+
       setFaqs(faqData || [])
-      console.log(`✅ Loaded ${faqData?.length || 0} FAQs for locale: ${selectedCountry}/${selectedLangCode}`)
+      console.log(`✅ Final: Set ${faqData?.length || 0} FAQs in state for locale: ${selectedCountry}/${selectedLangCode}`)
 
       // Load canned messages — filtered by selected locale
       const cannedData = await loadCannedMessages(selectedBusinessUnit, selectedLangCode)
@@ -975,7 +995,7 @@ const AITrainingCenter = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           knowledgeEntries: knowledgeEntries,
-          targetCount: 10,
+          targetCount: 5,
           category: selectedFaqCategory,
           guidelines: faqGuidelines,
           country: selectedCountry,
@@ -991,14 +1011,43 @@ const AITrainingCenter = () => {
         return
       }
 
-      // Add generated FAQs directly to the FAQ list
-      // Save each FAQ to Supabase
-      for (const faq of result.faqs) {
-        await saveFAQ(faq)
+      // Save FAQs via API (server-side with service role key)
+      const urlToDb: Record<string, string> = {
+        'tw': 'zh-TW',
+        'cn': 'zh-CN',
+        'en': 'en',
+        'vi': 'vi'
       }
-      setFaqs(prev => [...prev, ...result.faqs])
+      const dbLanguage = urlToDb[selectedLangCode] || 'en'
 
-      alert(`Successfully generated ${result.faqs.length} FAQs for ${selectedFaqCategory}!`)
+      const saveResponse = await fetch('/api/faq/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          faqs: result.faqs,
+          language: dbLanguage,
+          country: selectedCountry,
+          businessUnitId: selectedBusinessUnit
+        })
+      })
+
+      const saveResult = await saveResponse.json()
+
+      if (!saveResponse.ok) {
+        alert(`Failed to save FAQs: ${saveResult.error}`)
+        return
+      }
+
+      console.log('✅ Saved FAQs:', saveResult.faqs)
+      console.log('📊 Saved FAQ categories:', saveResult.faqs.map((f: any) => f.category_id))
+
+      // Reload FAQs from database to get proper structure with category names
+      const reloadedFaqs = await loadFAQs(selectedBusinessUnit, selectedLangCode, selectedCountry)
+      console.log('📊 Reloaded FAQs:', reloadedFaqs.length)
+      console.log('📊 Reloaded FAQ categories:', reloadedFaqs.map(f => f.category))
+      setFaqs(reloadedFaqs)
+
+      alert(`Successfully generated and saved ${saveResult.faqs.length} FAQs for ${selectedFaqCategory}!`)
     } catch (error) {
       console.error('Error generating FAQs:', error)
       alert(t.failedToGenerateFaqs)
@@ -1065,72 +1114,93 @@ const AITrainingCenter = () => {
     }
   }
 
-  const handleTranslateFaq = async () => {
-    if (!translatingFaq || selectedTranslationLanguages.length === 0) {
-      alert('Please select at least one target language')
+  const handleTranslateAllFaqs = async () => {
+    const categoryFaqs = faqs.filter(faq => faq.category === selectedFaqCategory)
+
+    if (categoryFaqs.length === 0) {
+      alert('No FAQs to translate in this category')
+      return
+    }
+
+    if (!confirm(`Translate all ${categoryFaqs.length} FAQs in "${selectedFaqCategory}" category to ${selectedCountry}/${selectedLangCode}?`)) {
       return
     }
 
     setIsTranslating(true)
     try {
-      // Convert URL language code to DB ISO code for current language
+      // Convert URL language code to DB ISO code
       const urlToDb: Record<string, string> = {
         'tw': 'zh-TW',
         'cn': 'zh-CN',
         'en': 'en',
         'vi': 'vi'
       }
-      const sourceLanguage = urlToDb[selectedLangCode] || 'en'
+      const targetLanguage = urlToDb[selectedLangCode] || 'en'
 
-      // Call translation API
-      const response = await fetch('/api/translate-faq', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          faq: {
-            ...translatingFaq,
-            language: sourceLanguage
-          },
-          targetLanguages: selectedTranslationLanguages
+      const translatedFaqs = []
+
+      for (let i = 0; i < categoryFaqs.length; i++) {
+        const faq = categoryFaqs[i]
+        console.log(`[Translate] Translating FAQ ${i + 1}/${categoryFaqs.length}:`, faq.question)
+
+        // Call translation API
+        const response = await fetch('/api/translate-faq', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            faq: {
+              ...faq,
+              language: 'en'
+            },
+            targetLanguages: [targetLanguage]
+          })
         })
-      })
 
-      const result = await response.json()
+        const result = await response.json()
+        console.log(`[Translate] API response for FAQ ${i + 1}:`, result)
 
-      if (!response.ok || !result.success) {
-        alert(t.error(result.error || 'Failed to translate FAQ'))
-        return
-      }
-
-      // Save each translation as a new FAQ
-      const translatedFaqs: FAQ[] = []
-      for (const translation of result.translations) {
-        const newFaq: any = {
-          id: `faq-gen-${Date.now()}-${Math.random().toString(36).substring(7)}`,
-          question: translation.question,
-          answer: translation.answer,
-          category: translation.category,
-          keywords: translation.keywords,
-          language: translation.language,  // ISO language code (zh-TW, vi, etc.)
-          is_active: true
+        if (!response.ok || !result.success) {
+          console.error(`Failed to translate FAQ ${i + 1}:`, result.error)
+          continue
         }
 
-        // Save to Supabase with the target language
-        await saveFAQ(newFaq)
-        translatedFaqs.push(newFaq)
+        // Save translated FAQ
+        if (result.translations && result.translations.length > 0) {
+          const translation = result.translations[0]
+          console.log(`[Translate] Translated question:`, translation.question)
+
+          const translatedFaq: any = {
+            question: translation.question,
+            answer: translation.answer,
+            category: translation.category,
+            keywords: translation.keywords,
+            language: targetLanguage,
+            country: selectedCountry,
+            is_active: true
+          }
+
+          console.log(`[Translate] Saving FAQ to database...`)
+          await saveFAQ(translatedFaq, selectedBusinessUnit)
+          console.log(`[Translate] FAQ saved successfully`)
+          translatedFaqs.push(translatedFaq)
+        }
       }
 
-      // Add to local state
-      setFaqs([...faqs, ...translatedFaqs])
+      // Reload FAQs for current locale
+      let newFaqs = await loadFAQs(selectedBusinessUnit, selectedLangCode, selectedCountry)
 
-      // Close modal and reset
-      setTranslatingFaq(null)
-      setSelectedTranslationLanguages([])
+      // If no FAQs exist for this locale and it's not English, show English FAQs as source
+      if ((!newFaqs || newFaqs.length === 0) && selectedLangCode !== 'en') {
+        console.log(`⚠️ No FAQs after translation, loading English FAQs as source`)
+        newFaqs = await loadFAQs(selectedBusinessUnit, 'en', selectedCountry)
+      }
 
-      alert(`Successfully translated FAQ to ${result.count} language(s)!`)
-    } catch (error) {
-      console.error('Error translating FAQ:', error)
-      alert('Failed to translate FAQ. Please try again.')
+      setFaqs(newFaqs)
+
+      alert(`Successfully translated ${translatedFaqs.length} out of ${categoryFaqs.length} FAQs!`)
+    } catch (error: any) {
+      console.error('Error translating FAQs:', error)
+      alert(`Failed to translate FAQs: ${error.message || error}`)
     } finally {
       setIsTranslating(false)
     }
@@ -2391,16 +2461,47 @@ Format as JSON array:
                   <HelpCircle className="w-4 h-4 text-cyan-600" />
                   {t.faqLibrary}
                 </h2>
-                <button
-                  onClick={handleGenerateFaqs}
-                  disabled={knowledgeEntries.length === 0 || generatingFaqs}
-                  className="flex items-center gap-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-slate-600 disabled:to-slate-600 px-2 py-1 rounded-none text-xs transition-colors"
-                  title={t.generateFaqTitle}
-                >
-                  <Sparkles className="w-4 h-4" />
-                  {generatingFaqs ? t.generating : t.generateFaq}
-                </button>
+                <div className="flex items-center gap-2">
+                  {/* Locale Selector */}
+                  <LanguageBar
+                    businessUnitId={selectedBusinessUnit}
+                    currentCountry={selectedCountry}
+                    currentLanguage={selectedLangCode}
+                    filterCountry={selectedCountry}
+                    onLocaleChange={(country, language) => {
+                      setSelectedCountry(country)
+                      setSelectedLangCode(language)
+                      // useEffect will handle loading FAQs with fallback logic
+                    }}
+                    onAddLocale={() => setShowAddLocaleModal(true)}
+                  />
+
+                  {/* Translate All Button */}
+                  {selectedLangCode !== 'en' && faqs.length > 0 && (
+                    <button
+                      onClick={async () => {
+                        await handleTranslateAllFaqs()
+                      }}
+                      disabled={isTranslating}
+                      className="flex items-center gap-1 px-2 py-1 text-xs bg-green-50 border border-green-200 hover:bg-green-100 disabled:bg-gray-300 text-gray-800 rounded-none transition-colors"
+                    >
+                      <Languages className="w-3 h-3" />
+                      {isTranslating ? 'Translating...' : 'Translate All FAQs'}
+                    </button>
+                  )}
+
+                  <button
+                    onClick={handleGenerateFaqs}
+                    disabled={knowledgeEntries.length === 0 || generatingFaqs}
+                    className="flex items-center gap-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-slate-600 disabled:to-slate-600 px-2 py-1 rounded-none text-xs transition-colors"
+                    title={t.generateFaqTitle}
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    {generatingFaqs ? t.generating : t.generateFaq}
+                  </button>
+                </div>
               </div>
+
 
               {/* Category Tabs Row */}
               <div className="mb-3 flex flex-wrap gap-2 items-center">
@@ -2475,6 +2576,13 @@ Format as JSON array:
                 )}
               </div>
 
+              {/* Show notice when displaying English FAQs as source */}
+              {selectedLangCode !== 'en' && faqs.length > 0 && faqs.some(f => f.language === 'en') && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-none p-2 text-xs text-yellow-800 mb-2">
+                  ℹ️ Showing English FAQs from {selectedCountry}/en (no {selectedLangCode} translation exists yet). Press "Translate All FAQs" to create translations.
+                </div>
+              )}
+
               <div className="grid gap-2">
                 {faqs.filter(faq => faq.category === selectedFaqCategory).map((faq) => (
                   <div key={faq.id} className="bg-gray-100 rounded-none p-2.5 border border-gray-200">
@@ -2486,13 +2594,6 @@ Format as JSON array:
                         <h3 className="text-xs font-medium mt-1 break-words">{faq.question}</h3>
                       </div>
                       <div className="flex gap-2 flex-shrink-0">
-                        <button
-                          onClick={() => setTranslatingFaq(faq)}
-                          className="text-purple-600 hover:text-purple-700 p-1"
-                          title="Translate FAQ"
-                        >
-                          <Languages className="w-4 h-4" />
-                        </button>
                         <button
                           onClick={() => setEditingEntry(faq)}
                           className="text-blue-600 hover:text-blue-600 p-1"
@@ -2631,7 +2732,7 @@ Format as JSON array:
                           const faq = editingEntry as FAQ
 
                           // Save the FAQ to Supabase and state
-                          await saveFAQ(faq)  // Save to Supabase
+                          await saveFAQ(faq, selectedBusinessUnit)  // Save to Supabase
                           const updatedFaqs = faqs.map(f => f.id === faq.id ? faq : f)
                           setFaqs(updatedFaqs)
 
@@ -2675,97 +2776,6 @@ Format as JSON array:
                 </div>
               )}
 
-              {/* Translation Modal */}
-              {translatingFaq && (
-                <div className="fixed inset-0 bg-black/10 flex items-center justify-center z-50 p-4">
-                  <div className="bg-white rounded-none p-4 max-w-md w-full">
-                    <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-sm font-bold">Translate FAQ</h3>
-                      <button
-                        onClick={() => {
-                          setTranslatingFaq(null)
-                          setSelectedTranslationLanguages([])
-                        }}
-                        className="text-gray-500 hover:text-gray-700"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    <div className="space-y-3 mb-4">
-                      <div>
-                        <p className="text-xs text-gray-600 mb-2">Question:</p>
-                        <p className="text-xs font-medium bg-gray-50 p-2 rounded-none border border-gray-200">
-                          {translatingFaq.question}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-gray-600 mb-2">Select target language(s):</p>
-                        <div className="space-y-2">
-                          {[
-                            { code: 'en', name: 'English' },
-                            { code: 'zh-TW', name: 'Traditional Chinese (繁體中文)' },
-                            { code: 'zh-CN', name: 'Simplified Chinese (简体中文)' },
-                            { code: 'vi', name: 'Vietnamese (Tiếng Việt)' }
-                          ]
-                            .filter(lang => {
-                              const urlToDb: Record<string, string> = { 'tw': 'zh-TW', 'cn': 'zh-CN', 'en': 'en', 'vi': 'vi' }
-                              const currentDbLang = urlToDb[selectedLangCode] || 'en'
-                              return lang.code !== currentDbLang
-                            })
-                            .map(lang => (
-                              <label key={lang.code} className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedTranslationLanguages.includes(lang.code)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setSelectedTranslationLanguages([...selectedTranslationLanguages, lang.code])
-                                    } else {
-                                      setSelectedTranslationLanguages(selectedTranslationLanguages.filter(l => l !== lang.code))
-                                    }
-                                  }}
-                                  className="w-4 h-4"
-                                />
-                                <span className="text-xs">{lang.name}</span>
-                              </label>
-                            ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleTranslateFaq}
-                        disabled={isTranslating || selectedTranslationLanguages.length === 0}
-                        className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white px-3 py-2 rounded-none text-xs flex items-center justify-center gap-2"
-                      >
-                        {isTranslating ? (
-                          <>
-                            <Sparkles className="w-4 h-4 animate-spin" />
-                            Translating...
-                          </>
-                        ) : (
-                          <>
-                            <Languages className="w-4 h-4" />
-                            Translate ({selectedTranslationLanguages.length})
-                          </>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setTranslatingFaq(null)
-                          setSelectedTranslationLanguages([])
-                        }}
-                        className="bg-gray-200 hover:bg-gray-300 px-3 py-2 rounded-none text-xs"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
 
             </div>
           )}

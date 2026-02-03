@@ -79,9 +79,10 @@ YOU MUST FOLLOW THESE RULES FROM THE BEGINNING:
 2. SEARCH through ALL entries in the knowledge base for relevant information
 3. ONLY use information EXPLICITLY stated in the knowledge base content below
 4. NEVER make up or invent ANY information - no prices, discounts, percentages, dates, features, or details
-5. If you THOROUGHLY search ALL knowledge base entries and truly cannot find specific information, respond professionally without exposing internal gaps: "Let me check on that for you" or "I'll verify that information and get back to you"
-6. 🚨 NEVER reveal internal issues like "we don't have this in our knowledge base" or "the knowledge base doesn't contain" - these are internal system issues
-7. 🚨 DO NOT be lazy - if the information exists in the knowledge base, you MUST find it and use it
+5. 🚨 NEVER use placeholders like {{CONTACT_EMAIL}}, {{PHONE}}, {{COMPANY_NAME}} - always use the ACTUAL values from the knowledge base
+6. If you THOROUGHLY search ALL knowledge base entries and truly cannot find specific information, respond professionally without exposing internal gaps: "Let me check on that for you" or "I'll verify that information and get back to you"
+7. 🚨 NEVER reveal internal issues like "we don't have this in our knowledge base" or "the knowledge base doesn't contain" - these are internal system issues
+8. 🚨 DO NOT be lazy - if the information exists in the knowledge base, you MUST find it and use it
 
 For the following customer question, generate a clear, helpful answer based ONLY on the knowledge base content provided.
 YOU MUST READ ALL KNOWLEDGE BASE ENTRIES CAREFULLY BEFORE ANSWERING.
@@ -97,6 +98,12 @@ YOU MUST READ ALL KNOWLEDGE BASE ENTRIES CAREFULLY BEFORE ANSWERING.
 - ALL prices MUST be in ${currency} (${currency_symbol})
 - NEVER use any other currency (no USD, no $, unless ${currency} is USD)
 - Example: "${currency_symbol}99" NOT "$99" (unless ${currency} is USD)
+
+🚨 CONTACT INFORMATION:
+- Look for contact information in the "Landing Page" or "Company Info" sections of the knowledge base
+- Use actual email addresses (e.g., support@company.com), phone numbers, and company names
+- If you find "Contact Email:", "contact_email:", or similar fields, use those actual values
+- NEVER write {{CONTACT_EMAIL}} - write the actual email address
 
 Category: "${category}"
 Question: "${existingQuestion}"
@@ -153,10 +160,11 @@ YOU MUST FOLLOW THESE RULES FROM THE BEGINNING:
 2. SEARCH through ALL entries in the knowledge base to find all available information
 3. ONLY use information EXPLICITLY stated in the knowledge base content below
 4. NEVER make up or invent ANY information - no prices, discounts, percentages, dates, features, or details
-5. ONLY generate questions about topics that are covered in the knowledge base
-6. If the knowledge base has limited information, generate ONLY what you can - quality over quantity
-7. NEVER invent questions or answers just to meet the target count
-8. 🚨 DO NOT be lazy - thoroughly search ALL knowledge base entries for relevant information
+5. 🚨 NEVER use placeholders like {{CONTACT_EMAIL}}, {{PHONE}}, {{COMPANY_NAME}} - always use the ACTUAL values from the knowledge base
+6. ONLY generate questions about topics that are covered in the knowledge base
+7. If the knowledge base has limited information, generate ONLY what you can - quality over quantity
+8. NEVER invent questions or answers just to meet the target count
+9. 🚨 DO NOT be lazy - thoroughly search ALL knowledge base entries for relevant information
 
 Generate approximately ${targetCount} questions for the "${category}" category (or fewer if knowledge base has limited content).
 
@@ -171,6 +179,12 @@ Generate approximately ${targetCount} questions for the "${category}" category (
 - ALL prices MUST be in ${currency} (${currency_symbol})
 - NEVER use any other currency (no USD, no $, unless ${currency} is USD)
 - Example: "${currency_symbol}99" NOT "$99" (unless ${currency} is USD)
+
+🚨 CONTACT INFORMATION:
+- Look for contact information in the "Landing Page" or "Company Info" sections of the knowledge base
+- Use actual email addresses (e.g., support@company.com), phone numbers, and company names
+- If you find "Contact Email:", "contact_email:", or similar fields, use those actual values
+- NEVER write {{CONTACT_EMAIL}} - write the actual email address
 
 If category is "pricing" - only generate questions about cost, price, payment
 If category is "products" - only generate questions about product features, what products are available

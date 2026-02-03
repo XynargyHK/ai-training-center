@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ data: knowledge })
 
       case 'load_faqs':
-        const faqs = await loadFAQs(businessUnitId, language || 'en')
+        const faqs = await loadFAQs(businessUnitId, language || 'en', country || 'HK')
         return NextResponse.json({ data: faqs })
 
       case 'load_canned_messages':

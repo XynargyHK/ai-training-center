@@ -337,10 +337,11 @@ export async function deleteKnowledge(id: string) {
   if (!res.ok) throw new Error(json.error || 'Failed to delete knowledge')
 }
 
-export async function loadFAQs(businessUnitId?: string, language?: string) {
+export async function loadFAQs(businessUnitId?: string, language?: string, country?: string) {
   let url = `/api/knowledge?action=load_faqs`
   if (businessUnitId) url += `&businessUnitId=${encodeURIComponent(businessUnitId)}`
   if (language) url += `&language=${encodeURIComponent(language)}`
+  if (country) url += `&country=${encodeURIComponent(country)}`
   const res = await fetch(url)
   const json = await res.json()
   if (!res.ok) throw new Error(json.error || 'Failed to load FAQs')
