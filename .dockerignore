@@ -27,9 +27,10 @@ build
 log/
 *.txt
 
-# Database backups
+# Database backups and JSON files
 *.json
 !package.json
+!package-lock.json
 !tsconfig.json
 !next.config.js
 
