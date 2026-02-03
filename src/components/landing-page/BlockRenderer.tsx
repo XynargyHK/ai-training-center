@@ -42,8 +42,9 @@ export default function BlockRenderer({ blocks, onAddToCart }: BlockRendererProp
       {blocks.map((block, idx) => {
         console.log(`[BlockRenderer] Rendering block ${idx}: ${block.type}`)
 
-        // Generate anchor slug from block name/headline
-        const anchorId = toAnchorSlug(block.name)
+        // Use custom anchor_id if set, otherwise generate from block name
+        // anchor_id should be language-independent (English) for consistent links across languages
+        const anchorId = block.data?.anchor_id || toAnchorSlug(block.name)
 
         switch (block.type) {
           case 'split':
