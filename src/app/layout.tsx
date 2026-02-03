@@ -5,6 +5,12 @@ import { serifFont, headlineFont, playfairFont, montserratFont, interFont, loraF
 export const metadata: Metadata = {
   title: "AI Business Center",
   description: "Train and manage AI agents with roleplay scenarios, knowledge management, and real-time testing",
+  verification: {
+    google: 'uk6LcLQTI6W1KKBgePLm46-M155maP8UbomgiylpoNs',
+    other: {
+      'msvalidate.01': '49785425477910BA8333B7070A3DF5AD',
+    },
+  },
 };
 
 export default function RootLayout({
