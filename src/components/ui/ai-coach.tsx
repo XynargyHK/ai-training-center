@@ -614,24 +614,13 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
       const categoryFaqs = allFaqs.filter((faq: any) => faq.category === category && faq.is_active)
 
       if (categoryFaqs.length > 0) {
-        // Translate FAQs if language is not English
-        const faqData: FAQ[] = await Promise.all(
-          categoryFaqs.map(async (faq: any) => {
-            const translatedQuestion = selectedLanguage !== 'en'
-              ? await translateText(faq.question, selectedLanguage, 'faq')
-              : faq.question
-            const translatedAnswer = selectedLanguage !== 'en'
-              ? await translateText(faq.answer, selectedLanguage, 'faq')
-              : faq.answer
-
-            return {
-              id: faq.id,
-              question: translatedQuestion,
-              answer: translatedAnswer,
-              isExpanded: false
-            }
-          })
-        )
+        // FAQs loaded from DB are already in the correct language, so just use them directly
+        const faqData: FAQ[] = categoryFaqs.map((faq: any) => ({
+          id: faq.id,
+          question: faq.question,
+          answer: faq.answer,
+          isExpanded: false
+        }))
 
         const faqMessage: Message = {
           id: `faq-${Date.now()}`,
