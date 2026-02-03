@@ -61,7 +61,12 @@ export async function proxy(request: NextRequest) {
   }
 
   // Allow verification files (Bing XML, Google HTML, sitemap, robots)
-  if (pathname.match(/\.(xml|html|txt)$/)) {
+  if (pathname.match(/\.(xml|html|txt)\/?$/)) {
+    return NextResponse.next()
+  }
+
+  // Also allow specific verification file paths explicitly
+  if (pathname === '/BingSiteAuth.xml' || pathname === '/google8fd8bdc3ca926a97.html' || pathname.startsWith('/google') && pathname.includes('.html')) {
     return NextResponse.next()
   }
 
