@@ -1926,7 +1926,14 @@ export function LandingPageContent({
 export default function LandingPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center">Loading...</div>}>
-      <LandingPageContent />
+      <LandingPageContentWrapper />
     </Suspense>
   )
+}
+
+function LandingPageContentWrapper() {
+  const searchParams = useSearchParams()
+  const pageSlug = searchParams.get('page') || undefined
+
+  return <LandingPageContent pageSlug={pageSlug} />
 }
