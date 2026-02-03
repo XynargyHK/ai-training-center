@@ -1727,6 +1727,7 @@ export default function BlockManager({
                           onUpdate={(updatedBlock) => handleUpdateBlock(index, updatedBlock)}
                           onDelete={() => handleDeleteBlock(index)}
                           dragHandleProps={provided.dragHandleProps}
+                          fallbackAnchorId={translationSourceBlocks?.[index]?.data?.anchor_id}
                           headerActions={
                             <div className="flex items-center gap-2">
                               {/* Translation button */}

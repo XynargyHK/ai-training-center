@@ -13,6 +13,7 @@ interface BlockContainerProps {
   dragHandleProps?: any  // From react-beautiful-dnd
   children: React.ReactNode
   headerActions?: React.ReactNode  // Custom actions to show in header
+  fallbackAnchorId?: string  // Anchor ID from EN version to show when TW doesn't have one
 }
 
 export default function BlockContainer({
@@ -22,7 +23,8 @@ export default function BlockContainer({
   onDelete,
   dragHandleProps,
   children,
-  headerActions
+  headerActions,
+  fallbackAnchorId
 }: BlockContainerProps) {
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [isEditingName, setIsEditingName] = useState(false)
@@ -91,12 +93,13 @@ export default function BlockContainer({
               {(() => {
                 const customAnchorId = block.data?.anchor_id
                 const autoAnchorId = block.name?.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()
-                const anchorId = customAnchorId || autoAnchorId
+                const anchorId = customAnchorId || autoAnchorId || fallbackAnchorId
 
                 if (anchorId) {
+                  const isFromEN = !customAnchorId && !autoAnchorId && fallbackAnchorId
                   return (
-                    <div className="text-[10px] text-gray-500 mt-0.5 font-mono">
-                      #{anchorId}
+                    <div className={`text-[10px] mt-0.5 font-mono ${isFromEN ? 'text-blue-600' : 'text-gray-500'}`}>
+                      #{anchorId} {isFromEN && '(from EN)'}
                     </div>
                   )
                 } else {
