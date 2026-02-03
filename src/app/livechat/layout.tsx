@@ -67,7 +67,7 @@ async function getBusinessUnitMetadata(businessUnitSlug?: string, domain?: strin
 export async function generateMetadata({
   searchParams,
 }: {
-  searchParams: { businessUnit?: string }
+  searchParams: Promise<{ businessUnit?: string }>
 }): Promise<Metadata> {
   // Get domain from headers (this will be available server-side)
   let domain = ''
@@ -79,7 +79,8 @@ export async function generateMetadata({
     console.error('Error getting headers:', error)
   }
 
-  const businessUnitSlug = searchParams.businessUnit
+  const params = await searchParams
+  const businessUnitSlug = params?.businessUnit
   const { title, description } = await getBusinessUnitMetadata(businessUnitSlug, domain)
 
   return {
