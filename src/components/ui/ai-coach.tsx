@@ -100,8 +100,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
   ])
   const [inputValue, setInputValue] = useState('')
   const [isTyping, setIsTyping] = useState(false)
-  const [faqCategories, setFaqCategories] = useState<string[]>([])  // Will load from Supabase
-  const [translatedCategories, setTranslatedCategories] = useState<{[key: string]: string}>({})
+  const [faqCategories, setFaqCategories] = useState<Array<{key: string, display: string}>>([])  // Will load from Supabase
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [chatSessionId, setChatSessionId] = useState<string | null>(null)
   const [showPreChatForm, setShowPreChatForm] = useState(true)
@@ -375,18 +374,8 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
     loadCategories()
   }, [businessUnit, language, isOpen])
 
-  // Categories loaded from DB already include translations, just use them directly
-  useEffect(() => {
-    if (faqCategories.length === 0) return
-
-    // No translation needed - categories from DB include language-specific names
-    const translations: {[key: string]: string} = {}
-    faqCategories.forEach(cat => {
-      translations[cat] = cat // Use as-is from database
-    })
-
-    setTranslatedCategories(translations)
-  }, [faqCategories, selectedLanguage])
+  // Categories now come from DB with both key (English) and display (translated) names
+  // No need for separate translation logic
 
   const generateAIResponse = async (userMessage: string, imageData?: string): Promise<string> => {
     try {
@@ -611,13 +600,14 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
           isExpanded: false
         }))
 
-        // Use translated category name if available
-        const translatedCategory = translatedCategories[category] || category
+        // Find display name for this category
+        const categoryObj = faqCategories.find(c => c.key === category)
+        const displayName = categoryObj?.display || category
 
         const faqMessage: Message = {
           id: `faq-${Date.now()}`,
           type: 'ai',
-          content: t.faqAbout(translatedCategory),
+          content: t.faqAbout(displayName),
           timestamp: new Date(),
           faqs: faqData
         }
@@ -1016,12 +1006,12 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
             <div className="flex flex-wrap gap-2 mt-2">
               {faqCategories.map((category) => (
                 <button
-                  key={category}
-                  onClick={() => handleCategoryClick(category)}
+                  key={category.key}
+                  onClick={() => handleCategoryClick(category.key)}
                   className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded-full transition-colors capitalize"
                   disabled={isTyping}
                 >
-                  {translatedCategories[category] || category}
+                  {category.display}
                 </button>
               ))}
             </div>

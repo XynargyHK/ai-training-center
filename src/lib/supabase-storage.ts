@@ -712,13 +712,14 @@ export async function loadFAQCategories(businessUnitSlugOrId?: string | null, la
     return []
   }
 
-  // Return translated category names based on language
-  return data.map(c => {
-    if (dbLang === 'zh-TW' && c.name_tw) return c.name_tw
-    if (dbLang === 'zh-CN' && c.name_cn) return c.name_cn
-    if (dbLang === 'vi' && c.name_vi) return c.name_vi
-    return c.name // Default to English
-  })
+  // Return both English name (key) and translated name (display)
+  return data.map(c => ({
+    key: c.name, // English name for database lookup
+    display: dbLang === 'zh-TW' && c.name_tw ? c.name_tw :
+             dbLang === 'zh-CN' && c.name_cn ? c.name_cn :
+             dbLang === 'vi' && c.name_vi ? c.name_vi :
+             c.name // Default to English
+  }))
 }
 
 export async function loadCannedCategories(businessUnitSlugOrId?: string | null) {
