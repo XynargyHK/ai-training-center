@@ -667,7 +667,7 @@ export function LandingPageContent({
       }
 
       try {
-        const apiUrl = `/api/landing-page?businessUnit=${businessUnitParam}&country=${countryParam}&language=${langParam}${previewParam ? '&preview=true' : ''}&_t=${Date.now()}`
+        const apiUrl = `/api/landing-page?businessUnit=${businessUnitParam}&country=${countryParam}&language=${langParam}${pageSlug ? `&page=${pageSlug}` : ''}${previewParam ? '&preview=true' : ''}&_t=${Date.now()}`
         console.log('[LiveChat Preview] Fetching from:', apiUrl)
         const response = await fetch(apiUrl, {
           cache: 'no-store',
@@ -699,7 +699,7 @@ export function LandingPageContent({
       }
     }
     loadLandingPage()
-  }, [businessUnitParam, countryParam, langParam, previewParam])
+  }, [businessUnitParam, countryParam, langParam, pageSlug, previewParam])
 
   // Load AI Staff
   useEffect(() => {
