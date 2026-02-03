@@ -5,13 +5,13 @@ import { supabase } from '@/lib/supabase'
 const DOMAIN_TO_BUSINESS_UNIT: Record<string, { slug: string; defaultTitle: string; defaultDescription: string }> = {
   'skincoach.ai': {
     slug: 'skincoach',
-    defaultTitle: 'SkinCoach - AI-Powered Skincare Solutions',
-    defaultDescription: 'Discover personalized skincare recommendations powered by AI. Expert guidance for your unique skin concerns and goals.'
+    defaultTitle: 'Micro-Infusion System - Professional At-Home Skin Treatment | SkinCoach',
+    defaultDescription: 'Transform your skin with our Micro-Infusion System. Professional-grade micro-needling treatment for face at home. Improve skin texture, reduce fine lines, boost collagen. Free consultation available.'
   },
   'www.skincoach.ai': {
     slug: 'skincoach',
-    defaultTitle: 'SkinCoach - AI-Powered Skincare Solutions',
-    defaultDescription: 'Discover personalized skincare recommendations powered by AI. Expert guidance for your unique skin concerns and goals.'
+    defaultTitle: 'Micro-Infusion System - Professional At-Home Skin Treatment | SkinCoach',
+    defaultDescription: 'Transform your skin with our Micro-Infusion System. Professional-grade micro-needling treatment for face at home. Improve skin texture, reduce fine lines, boost collagen. Free consultation available.'
   },
   // Add more domains as needed
 }
@@ -87,15 +87,16 @@ export async function generateMetadata({
     title,
     description,
     keywords: [
-      'skincare',
-      'AI skincare',
-      'personalized skincare',
-      'skin analysis',
-      'beauty consultation',
-      'micro-infusion',
-      'skin treatment',
-      'skincare recommendation',
-      'professional skincare',
+      'micro-infusion system',
+      'micro-needling at home',
+      'microneedling device',
+      'skin rejuvenation',
+      'collagen boost',
+      'anti-aging treatment',
+      'face treatment',
+      'fine lines reduction',
+      'skin texture improvement',
+      'professional skincare device',
       'Hong Kong skincare'
     ],
     openGraph: {
