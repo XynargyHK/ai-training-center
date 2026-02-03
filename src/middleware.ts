@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const SKINCOACH_HOSTS = ['skincoach.ai', 'www.skincoach.ai']
 const PASS_THROUGH_PREFIXES = ['/livechat', '/api', '/_next', '/favicon.ico']
-const LANDING_PAGE = 'micro-infusion-system-face'
-// Force deployment trigger
 
 const COUNTRY_MAP: Record<string, { country: string; lang: string }> = {
   us: { country: 'US', lang: 'en' },
@@ -72,18 +70,6 @@ async function detectCountryFromIP(request: NextRequest): Promise<string> {
   return DEFAULT_COUNTRY
 }
 
-// Build internal livechat URL for rewrite
-function buildLivechatUrl(request: NextRequest, countryPath: string): string {
-  const params = COUNTRY_MAP[countryPath]
-  const baseUrl = new URL(request.url)
-  baseUrl.pathname = '/livechat'
-  baseUrl.searchParams.set('businessUnit', 'skincoach')
-  baseUrl.searchParams.set('country', params.country)
-  baseUrl.searchParams.set('lang', params.lang)
-  baseUrl.searchParams.set('page', LANDING_PAGE)
-  return baseUrl.toString()
-}
-
 export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host')?.split(':')[0] ?? ''
 
@@ -111,12 +97,12 @@ export async function middleware(request: NextRequest) {
   }
 
   // Handle country-specific paths: /us, /hk, /sg
+  // Just set cookie and let the routes handle themselves
   const pathMatch = pathname.match(/^\/(us|hk|sg)(\/.*)?$/i)
   if (pathMatch) {
     const countryPath = pathMatch[1].toLowerCase()
     if (COUNTRY_MAP[countryPath]) {
-      // Rewrite to livechat (URL stays as /us, /hk, /sg)
-      const response = NextResponse.rewrite(buildLivechatUrl(request, countryPath))
+      const response = NextResponse.next()
 
       // Set cookie to remember user's country preference
       response.cookies.set('skincoach_country', countryPath, {
@@ -131,11 +117,6 @@ export async function middleware(request: NextRequest) {
 
   // Handle root path: /
   if (pathname === '/' || pathname === '') {
-    // Check if it's a bot - serve default country (no redirect)
-    if (isBot(userAgent)) {
-      return NextResponse.rewrite(buildLivechatUrl(request, DEFAULT_COUNTRY))
-    }
-
     // Check for saved country preference in cookie
     const savedCountry = request.cookies.get('skincoach_country')?.value
     if (savedCountry && COUNTRY_MAP[savedCountry]) {
@@ -145,7 +126,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url, 302)
     }
 
-    // First visit - detect country from IP and redirect
+    // First visit - detect country from IP and redirect (bots also get redirected)
     const detectedCountry = await detectCountryFromIP(request)
     const url = request.nextUrl.clone()
     url.pathname = `/${detectedCountry}`
