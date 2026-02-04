@@ -1,17 +1,25 @@
-'use client'
+import { fetchLandingPageData } from '@/lib/landing-page-service'
+import LandingPageSSR from '@/components/landing-page/LandingPageSSR'
 
-import { Suspense } from 'react'
-import { LandingPageContent } from '../livechat/page'
+export const revalidate = 3600
 
-export default function SGPage() {
+export default async function SGPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ lang?: string }>
+}) {
+  const params = await searchParams
+  const lang = params.lang || 'en'
+  const { landingPage, businessUnit, availableLocales } = await fetchLandingPageData('skincoach', 'SG', lang)
+
   return (
-    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center">Loading...</div>}>
-      <LandingPageContent
-        businessUnitOverride="skincoach"
-        countryOverride="SG"
-        languageOverride="en"
-        pageSlug="micro-infusion-system-face"
-      />
-    </Suspense>
+    <LandingPageSSR
+      landingPage={landingPage}
+      businessUnit={businessUnit}
+      country="SG"
+      lang={lang}
+      availableLocales={availableLocales}
+      pageSlug="micro-infusion-system-face"
+    />
   )
 }

@@ -110,11 +110,11 @@ export async function generateMetadata({
       description,
       type: 'website',
       siteName: 'SkinCoach',
-      url: domain.includes('skincoach.ai') ? 'https://skincoach.ai' : undefined,
+      url: domain.includes('skincoach.ai') ? 'https://www.skincoach.ai' : undefined,
       locale: 'en_HK',
       images: [
         {
-          url: 'https://skincoach.ai/og-image.png',
+          url: 'https://www.skincoach.ai/og-image.png',
           width: 1200,
           height: 630,
           alt: title,
@@ -128,22 +128,14 @@ export async function generateMetadata({
       site: '@skincoach', // Update with your actual Twitter handle
     },
     robots: {
-      index: true,
-      follow: true,
-      googleBot: {
-        index: true,
-        follow: true,
-        'max-video-preview': -1,
-        'max-image-preview': 'large',
-        'max-snippet': -1,
-      },
+      index: false,
+      follow: false,
     },
     alternates: {
-      canonical: domain.includes('skincoach.ai') ? 'https://skincoach.ai' : undefined,
       languages: {
-        'en-US': 'https://skincoach.ai/us',
-        'en-HK': 'https://skincoach.ai/hk',
-        'en-SG': 'https://skincoach.ai/sg',
+        'en-US': 'https://www.skincoach.ai/us',
+        'en-HK': 'https://www.skincoach.ai/hk',
+        'en-SG': 'https://www.skincoach.ai/sg',
       },
     },
   }

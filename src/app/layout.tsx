@@ -3,8 +3,8 @@ import "./globals.css";
 import { serifFont, headlineFont, playfairFont, montserratFont, interFont, loraFont, ralewayFont, openSansFont, notoSansTC, notoSansSC } from '@/lib/fonts'
 
 export const metadata: Metadata = {
-  title: "AI Business Center",
-  description: "Train and manage AI agents with roleplay scenarios, knowledge management, and real-time testing",
+  title: "SkinCoach - Professional At-Home Skin Treatment",
+  description: "Transform your skin with our Micro-Infusion System. Professional-grade micro-needling treatment for face at home.",
   verification: {
     google: 'uk6LcLQTI6W1KKBgePLm46-M155maP8UbomgiylpoNs',
     other: {
