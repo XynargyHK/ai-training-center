@@ -4,8 +4,7 @@ import HeroCarousel from './HeroCarousel'
 import BlockRendererSSR from './BlockRendererSSR'
 import LandingPageFooterSSR from './LandingPageFooterSSR'
 import ChatFloatingButton from './ChatFloatingButton'
-import LanguageSwitcherSSR from './LanguageSwitcherSSR'
-import MobileMenuSSR from './MobileMenuSSR'
+import HeaderSSR from './HeaderSSR'
 
 interface LandingPageSSRProps {
   landingPage: any
@@ -231,11 +230,13 @@ export default function LandingPageSSR({
   }
 
   const secondaryColor = landingPage.secondary_color || '#0D1B2A'
+  const primaryColor = landingPage.primary_color || '#4A90D9'
   const logoUrl = landingPage.logo_url || ''
   const logoText = landingPage.logo_text || businessUnit?.name || 'Shop'
   const logoPosition = landingPage.logo_position || 'center'
   const menuItems = (landingPage.menu_items || []).filter((item: any) => item.enabled)
   const showSearch = landingPage.show_search !== false
+  const showAccount = landingPage.show_account !== false
   const showCart = landingPage.show_cart !== false
 
   // Announcements
@@ -283,71 +284,21 @@ export default function LandingPageSSR({
         </div>
       )}
 
-      {/* Header Navigation */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm relative">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
-            {/* Left side */}
-            <div className="flex items-center gap-6">
-              {/* Mobile hamburger menu */}
-              <MobileMenuSSR
-                navItems={navItems}
-                languages={languagesForCountry}
-                currentLang={lang}
-                countryPath={countryPath}
-              />
-
-              {logoPosition === 'left' && (
-                <a href={countryPath} className="flex items-center gap-2">
-                  {logoUrl ? (
-                    <img src={logoUrl} alt={logoText} className="h-5 w-auto" />
-                  ) : (
-                    <span className={`text-sm font-light tracking-[0.2em] uppercase ${serifFont.className}`} style={{ color: '#000000' }}>{logoText}</span>
-                  )}
-                </a>
-              )}
-
-              {/* Desktop menu */}
-              <nav className="hidden md:flex items-center gap-6">
-                {navItems.map((item: any) => (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    className={`text-black hover:opacity-80 transition-colors text-sm font-bold tracking-[0.15em] uppercase ${headlineFont.className}`}
-                  >
-                    {item.label}
-                  </a>
-                ))}
-              </nav>
-            </div>
-
-            {/* Center logo */}
-            {logoPosition === 'center' && (
-              <a href={countryPath} className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
-                {logoUrl ? (
-                  <img src={logoUrl} alt={logoText} className="h-5 w-auto" />
-                ) : (
-                  <span className={`text-sm font-light tracking-[0.2em] uppercase ${serifFont.className}`} style={{ color: '#000000' }}>{logoText}</span>
-                )}
-              </a>
-            )}
-
-            {/* Right side */}
-            <div className="flex items-center gap-3">
-              {/* Language Switcher — desktop only (mobile has it in hamburger menu) */}
-              {languagesForCountry.length > 1 && (
-                <div className="hidden md:block">
-                  <LanguageSwitcherSSR
-                    languages={languagesForCountry}
-                    currentLang={lang}
-                    countryPath={countryPath}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Header Navigation — full client component matching livechat header */}
+      <HeaderSSR
+        logoUrl={logoUrl}
+        logoText={logoText}
+        logoPosition={logoPosition}
+        navItems={navItems}
+        showSearch={showSearch}
+        showAccount={showAccount}
+        showCart={showCart}
+        primaryColor={primaryColor}
+        countryPath={countryPath}
+        currentLang={lang}
+        languages={languagesForCountry}
+        bodyFont={landingPage.body_font}
+      />
 
       {/* Hero Carousel */}
       {carouselSlides.length > 0 && (
