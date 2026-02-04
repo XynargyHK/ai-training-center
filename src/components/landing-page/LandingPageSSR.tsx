@@ -5,6 +5,7 @@ import BlockRendererSSR from './BlockRendererSSR'
 import LandingPageFooterSSR from './LandingPageFooterSSR'
 import ChatFloatingButton from './ChatFloatingButton'
 import LanguageSwitcherSSR from './LanguageSwitcherSSR'
+import MobileMenuSSR from './MobileMenuSSR'
 
 interface LandingPageSSRProps {
   landingPage: any
@@ -283,11 +284,19 @@ export default function LandingPageSSR({
       )}
 
       {/* Header Navigation */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm relative">
         <div className="max-w-6xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Left side */}
             <div className="flex items-center gap-6">
+              {/* Mobile hamburger menu */}
+              <MobileMenuSSR
+                navItems={navItems}
+                languages={languagesForCountry}
+                currentLang={lang}
+                countryPath={countryPath}
+              />
+
               {logoPosition === 'left' && (
                 <a href={countryPath} className="flex items-center gap-2">
                   {logoUrl ? (
@@ -325,13 +334,15 @@ export default function LandingPageSSR({
 
             {/* Right side */}
             <div className="flex items-center gap-3">
-              {/* Language Switcher */}
+              {/* Language Switcher — desktop only (mobile has it in hamburger menu) */}
               {languagesForCountry.length > 1 && (
-                <LanguageSwitcherSSR
-                  languages={languagesForCountry}
-                  currentLang={lang}
-                  countryPath={countryPath}
-                />
+                <div className="hidden md:block">
+                  <LanguageSwitcherSSR
+                    languages={languagesForCountry}
+                    currentLang={lang}
+                    countryPath={countryPath}
+                  />
+                </div>
               )}
             </div>
           </div>
