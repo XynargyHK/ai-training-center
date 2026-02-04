@@ -12,6 +12,7 @@ interface LandingPageSSRProps {
   country: string
   lang: string
   availableLocales: { country: string; language_code: string }[]
+  aiStaffList: { id: string; name: string; role: string }[]
   pageSlug?: string
 }
 
@@ -217,6 +218,7 @@ export default function LandingPageSSR({
   country,
   lang,
   availableLocales,
+  aiStaffList,
   pageSlug
 }: LandingPageSSRProps) {
   if (!landingPage) {
@@ -368,12 +370,13 @@ export default function LandingPageSSR({
         countryPath={countryPath}
       />
 
-      {/* Floating Chat Button */}
+      {/* Floating Chat Button — client-only, ssr:false so no HTML emitted for crawlers */}
       <ChatFloatingButton
         businessUnit={businessUnit?.slug || 'skincoach'}
         country={country}
         lang={lang}
-        pageSlug={pageSlug}
+        aiStaffList={aiStaffList}
+        enableSocialLogin={landingPage.enable_social_login}
       />
     </div>
   )

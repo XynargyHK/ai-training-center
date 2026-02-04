@@ -10,7 +10,7 @@ export default async function HKPage({
 }) {
   const params = await searchParams
   const lang = params.lang || 'en'
-  const { landingPage, businessUnit, availableLocales } = await fetchLandingPageData('skincoach', 'HK', lang)
+  const { landingPage, businessUnit, availableLocales, aiStaffList } = await fetchLandingPageData('skincoach', 'HK', lang)
 
   return (
     <LandingPageSSR
@@ -19,6 +19,7 @@ export default async function HKPage({
       country="HK"
       lang={lang}
       availableLocales={availableLocales}
+      aiStaffList={aiStaffList}
       pageSlug="micro-infusion-system-face"
     />
   )

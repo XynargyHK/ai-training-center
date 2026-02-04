@@ -27,6 +27,7 @@ export interface LandingPageResult {
   hasLandingPage: boolean
   availableLocales: { country: string; language_code: string }[]
   currentLocale: { country: string; language: string }
+  aiStaffList: { id: string; name: string; role: string }[]
 }
 
 export const fetchLandingPageData = cache(async (
@@ -42,11 +43,12 @@ export const fetchLandingPageData = cache(async (
       businessUnit: null,
       hasLandingPage: false,
       availableLocales: [],
-      currentLocale: { country, language: languageCode }
+      currentLocale: { country, language: languageCode },
+      aiStaffList: []
     }
   }
 
-  const [landingPageResult, businessUnitResult, availableLocalesResult] = await Promise.all([
+  const [landingPageResult, businessUnitResult, availableLocalesResult, aiStaffResult] = await Promise.all([
     supabase
       .from('landing_pages')
       .select('*')
@@ -64,12 +66,19 @@ export const fetchLandingPageData = cache(async (
       .from('landing_pages')
       .select('country, language_code')
       .eq('business_unit_id', businessUnitId)
+      .eq('is_active', true),
+    supabase
+      .from('ai_staff')
+      .select('id, name, role')
+      .eq('business_unit_id', businessUnitId)
       .eq('is_active', true)
+      .order('created_at', { ascending: true })
   ])
 
   const { data: landingPage, error } = landingPageResult
   const { data: businessUnit } = businessUnitResult
   const { data: availableLocales } = availableLocalesResult
+  const { data: aiStaff } = aiStaffResult
 
   if (error && error.code !== 'PGRST116') {
     console.error('Error fetching landing page:', error)
@@ -91,6 +100,11 @@ export const fetchLandingPageData = cache(async (
     businessUnit: businessUnit || null,
     hasLandingPage: !!resolvedPage,
     availableLocales: availableLocales || [],
-    currentLocale: { country, language: languageCode }
+    currentLocale: { country, language: languageCode },
+    aiStaffList: (aiStaff || []).map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      role: s.role,
+    }))
   }
 })
