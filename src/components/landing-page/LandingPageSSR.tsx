@@ -279,6 +279,7 @@ export default function LandingPageSSR({
   return (
     <CartProviderSSR
       businessUnit={businessUnit?.slug || 'skincoach'}
+      country={country}
       headingFont={headingFontFamily}
       bodyFont={bodyFontFamily}
       language={lang}

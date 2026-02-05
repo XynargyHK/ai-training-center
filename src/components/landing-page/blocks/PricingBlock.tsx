@@ -100,13 +100,16 @@ interface PricingBlockProps {
   data: PricingBlockData
   anchorId?: string
   onAddToCart?: (product: any) => void
+  language?: string
+  country?: string
+  businessUnit?: string
 }
 
-export default function PricingBlock({ data, anchorId, onAddToCart }: PricingBlockProps) {
+export default function PricingBlock({ data, anchorId, onAddToCart, language, country, businessUnit }: PricingBlockProps) {
   const searchParams = useSearchParams()
-  const businessUnitParam = searchParams.get('businessUnit') || ''
-  const countryParam = searchParams.get('country') || 'US'
-  const langParam = searchParams.get('lang') || searchParams.get('language') || 'en'
+  const businessUnitParam = searchParams.get('businessUnit') || businessUnit || ''
+  const countryParam = searchParams.get('country') || country || 'US'
+  const langParam = searchParams.get('lang') || searchParams.get('language') || language || 'en'
   const pt = pricingTranslations[langParam] || pricingTranslations.en
   const [selectedPlanIndex, setSelectedPlanIndex] = useState(0)
 

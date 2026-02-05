@@ -20,9 +20,12 @@ function toAnchorSlug(name: string | undefined): string | undefined {
 interface BlockRendererSSRProps {
   blocks: LandingPageBlock[]
   onAddToCart?: (product: any) => void
+  language?: string
+  country?: string
+  businessUnit?: string
 }
 
-export default function BlockRendererSSR({ blocks, onAddToCart }: BlockRendererSSRProps) {
+export default function BlockRendererSSR({ blocks, onAddToCart, language, country, businessUnit }: BlockRendererSSRProps) {
   if (!blocks || blocks.length === 0) {
     return null
   }
@@ -38,7 +41,7 @@ export default function BlockRendererSSR({ blocks, onAddToCart }: BlockRendererS
 
           case 'pricing':
             // PricingBlock stays as client component (needs useState for plan selection + cart)
-            return <PricingBlock key={block.id} anchorId={anchorId} data={block.data as any} onAddToCart={onAddToCart} />
+            return <PricingBlock key={block.id} anchorId={anchorId} data={block.data as any} onAddToCart={onAddToCart} language={language} country={country} businessUnit={businessUnit} />
 
           case 'testimonials':
             // TestimonialsBlock stays as client component (needs useState for carousel)

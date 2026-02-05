@@ -9,7 +9,7 @@ interface BlocksWithCartProps {
 }
 
 export default function BlocksWithCart({ blocks }: BlocksWithCartProps) {
-  const { addToCart } = useCart()
+  const { addToCart, language, country, businessUnit } = useCart()
 
-  return <BlockRendererSSR blocks={blocks} onAddToCart={addToCart} />
+  return <BlockRendererSSR blocks={blocks} onAddToCart={addToCart} language={language} country={country} businessUnit={businessUnit} />
 }

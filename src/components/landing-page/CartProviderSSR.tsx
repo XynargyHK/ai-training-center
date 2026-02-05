@@ -24,6 +24,9 @@ interface CartContextType {
   cartItemCount: number
   addToCart: (product: any) => void
   openCart: () => void
+  language: string
+  country: string
+  businessUnit: string
 }
 
 const CartContext = createContext<CartContextType>({
@@ -31,6 +34,9 @@ const CartContext = createContext<CartContextType>({
   cartItemCount: 0,
   addToCart: () => {},
   openCart: () => {},
+  language: 'en',
+  country: 'US',
+  businessUnit: '',
 })
 
 export function useCart() {
@@ -40,6 +46,7 @@ export function useCart() {
 interface CartProviderSSRProps {
   children: ReactNode
   businessUnit: string
+  country?: string
   headingFont?: string
   bodyFont?: string
   language?: string
@@ -49,6 +56,7 @@ interface CartProviderSSRProps {
 export default function CartProviderSSR({
   children,
   businessUnit,
+  country = 'US',
   headingFont = 'Josefin Sans',
   bodyFont = 'Cormorant Garamond',
   language = 'en',
@@ -128,7 +136,7 @@ export default function CartProviderSSR({
   }
 
   return (
-    <CartContext.Provider value={{ cart, cartItemCount, addToCart, openCart: () => setShowCartSidebar(true) }}>
+    <CartContext.Provider value={{ cart, cartItemCount, addToCart, openCart: () => setShowCartSidebar(true), language, country, businessUnit }}>
       {children}
 
       {/* Cart Sidebar */}
