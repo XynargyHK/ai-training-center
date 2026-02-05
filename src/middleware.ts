@@ -5,7 +5,7 @@ const PASS_THROUGH_PREFIXES = ['/livechat', '/api', '/_next', '/favicon.ico']
 
 const COUNTRY_MAP: Record<string, { country: string; lang: string }> = {
   us: { country: 'US', lang: 'en' },
-  hk: { country: 'HK', lang: 'zh-Hant' },
+  hk: { country: 'HK', lang: 'tw' },
   sg: { country: 'SG', lang: 'en' },
 }
 

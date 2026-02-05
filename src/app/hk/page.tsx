@@ -9,7 +9,7 @@ export default async function HKPage({
   searchParams: Promise<{ lang?: string }>
 }) {
   const params = await searchParams
-  const lang = params.lang || 'zh-Hant'
+  const lang = params.lang || 'tw'
   const { landingPage, businessUnit, availableLocales, aiStaffList } = await fetchLandingPageData('skincoach', 'HK', lang)
 
   return (
