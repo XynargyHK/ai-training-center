@@ -14,6 +14,7 @@ interface PolicySettings {
   refund_policy: { enabled: boolean }
   shipping_policy: { enabled: boolean }
   guarantee: { enabled: boolean }
+  contact_us: { enabled: boolean }
 }
 
 interface FooterData {
@@ -68,6 +69,7 @@ const defaultLinks: FooterLink[] = [
   { label: 'FAQ', url: '#faq' },
   { label: 'Terms', url: '?policy=terms-of-service' },
   { label: 'Privacy', url: '?policy=privacy-policy' },
+  { label: 'Contact Us', url: '?policy=contact-us' },
 ]
 
 export default function FooterEditor({ data, onChange, onEditPolicy }: FooterEditorProps) {
@@ -106,6 +108,7 @@ export default function FooterEditor({ data, onChange, onEditPolicy }: FooterEdi
       refund_policy: { enabled: true },
       shipping_policy: { enabled: true },
       guarantee: { enabled: true },
+      contact_us: { enabled: true },
     }
     updateField('policies', {
       ...policies,
@@ -142,7 +145,7 @@ export default function FooterEditor({ data, onChange, onEditPolicy }: FooterEdi
           </div>
         </div>
 
-        <p className="text-xs text-gray-400 mb-3">Links appear as: About Us · Shipping · FAQ · Terms · Privacy</p>
+        <p className="text-xs text-gray-400 mb-3">Links appear as: About Us · Shipping · FAQ · Terms · Privacy · Contact Us</p>
 
         <div className="space-y-2">
           {(data.links || []).map((link, index) => (
@@ -340,6 +343,28 @@ export default function FooterEditor({ data, onChange, onEditPolicy }: FooterEdi
                 onClick={() => onEditPolicy('guarantee')}
                 className="p-1 text-gray-400 hover:text-violet-600 transition-colors"
                 title="Edit Guarantee"
+              >
+                <Edit className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Contact Us */}
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isPolicyEnabled('contact_us')}
+                onChange={(e) => updatePolicyEnabled('contact_us', e.target.checked)}
+                className="w-4 h-4 rounded-none border-gray-200 text-violet-600 focus:ring-violet-500"
+              />
+              <span className="text-xs text-gray-500">Contact Us</span>
+            </label>
+            {onEditPolicy && (
+              <button
+                onClick={() => onEditPolicy('contact-us')}
+                className="p-1 text-gray-400 hover:text-violet-600 transition-colors"
+                title="Edit Contact Us"
               >
                 <Edit className="w-3.5 h-3.5" />
               </button>
