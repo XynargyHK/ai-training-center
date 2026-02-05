@@ -33,6 +33,34 @@ const policyTitles: Record<string, string> = {
   'shipping-policy': 'Shipping Policy',
   'shipping_policy': 'Shipping Policy',
   'guarantee': 'Guarantee',
+  'contact-us': 'Contact Us',
+  'contact_us': 'Contact Us',
+}
+
+function buildContactUsHtml(policyData?: PolicyData): string | null {
+  const brandName = policyData?.brand_name
+  const companyName = policyData?.company_name
+  const contactEmail = policyData?.contact_email
+  const websiteUrl = policyData?.website_url
+  const address = policyData?.contact_address
+  const governingState = policyData?.governing_state
+
+  if (!brandName && !companyName && !contactEmail) return null
+
+  const lines: string[] = []
+  lines.push(`<h2 class="text-2xl font-semibold mb-4 mt-8 text-gray-800">Get in Touch</h2>`)
+  lines.push(`<p class="mb-4 text-gray-700 leading-relaxed">We'd love to hear from you. Reach out to us using the information below.</p>`)
+
+  lines.push(`<div class="bg-gray-50 rounded-lg p-6 mt-6 space-y-4">`)
+  if (brandName) lines.push(`<div><strong>Brand:</strong> ${brandName}</div>`)
+  if (companyName) lines.push(`<div><strong>Operated by:</strong> ${companyName}</div>`)
+  if (contactEmail) lines.push(`<div><strong>Email:</strong> <a href="mailto:${contactEmail}" class="text-blue-600 hover:underline">${contactEmail}</a></div>`)
+  if (websiteUrl) lines.push(`<div><strong>Website:</strong> <a href="${websiteUrl}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">${websiteUrl}</a></div>`)
+  if (address) lines.push(`<div><strong>Address:</strong> ${address}</div>`)
+  if (governingState) lines.push(`<div><strong>Jurisdiction:</strong> ${governingState}</div>`)
+  lines.push(`</div>`)
+
+  return lines.join('\n')
 }
 
 interface PolicyData {
@@ -136,8 +164,12 @@ export default function PolicyContentView({ policyType, policyData, backUrl }: P
   // Check for custom content first
   const customContent = policyData?.policy_content?.[policyType]
 
-  // If no template AND no custom content, show not found
-  if (!template && !customContent) {
+  // Handle contact-us: auto-generate from legal bar fields
+  const isContactUs = policyType === 'contact-us' || policyType === 'contact_us'
+  const contactUsHtml = isContactUs ? buildContactUsHtml(policyData) : null
+
+  // If no template AND no custom content AND not contact-us, show not found
+  if (!template && !customContent && !contactUsHtml) {
     return (
       <div className="py-16 px-4 bg-white">
         <div className="max-w-4xl mx-auto text-center">
@@ -193,6 +225,10 @@ export default function PolicyContentView({ policyType, policyData, backUrl }: P
     // Custom content from WYSIWYG editor is already HTML
     policyContent = replacePlaceholders(customContent, policyData)
     isHtml = isHtmlContent(customContent)
+  } else if (contactUsHtml) {
+    // Auto-generated contact us page from legal bar fields
+    policyContent = contactUsHtml
+    isHtml = true
   } else if (template) {
     // Template content is markdown
     policyContent = renderPolicyContent(template, getFieldValues())

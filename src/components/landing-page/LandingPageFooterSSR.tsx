@@ -33,6 +33,7 @@ const defaultLinks: FooterLink[] = [
   { label: 'FAQ', url: '#faq' },
   { label: 'Terms', url: '?policy=terms-of-service' },
   { label: 'Privacy', url: '?policy=privacy-policy' },
+  { label: 'Contact Us', url: '?policy=contact-us' },
 ]
 
 export default function LandingPageFooterSSR({
