@@ -4,8 +4,8 @@ export const revalidate = 3600
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Micro-Infusion System - Professional At-Home Skin Treatment | SkinCoach Singapore',
-    description: 'Transform your skin with our Micro-Infusion System. Professional-grade micro-needling treatment for face at home. Improve skin texture, reduce fine lines, boost collagen. Free consultation available.',
+    title: 'At-Home Micro-Infusion System for Skin Renewal | SkinCoach',
+    description: 'Transform your skin with our at-home Micro-Infusion System. Designed to support smoother texture, fine lines, and skin renewal—no clinic visit required.',
     verification: {
       google: 'uk6LcLQTI6W1KKBgePLm46-M155maP8UbomgiylpoNs',
       other: {
@@ -24,8 +24,8 @@ export async function generateMetadata(): Promise<Metadata> {
       'professional skincare device',
     ],
     openGraph: {
-      title: 'Micro-Infusion System - Professional At-Home Skin Treatment | SkinCoach Singapore',
-      description: 'Transform your skin with our Micro-Infusion System. Professional-grade micro-needling treatment for face at home.',
+      title: 'At-Home Micro-Infusion System for Skin Renewal | SkinCoach',
+      description: 'Transform your skin with our at-home Micro-Infusion System. Designed to support smoother texture, fine lines, and skin renewal—no clinic visit required.',
       type: 'website',
       siteName: 'SkinCoach',
       url: 'https://www.skincoach.ai/sg',
@@ -41,8 +41,8 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'Micro-Infusion System | SkinCoach Singapore',
-      description: 'Transform your skin with our Micro-Infusion System. Professional-grade micro-needling treatment for face at home.',
+      title: 'At-Home Micro-Infusion System for Skin Renewal | SkinCoach',
+      description: 'Transform your skin with our at-home Micro-Infusion System. Designed to support smoother texture, fine lines, and skin renewal—no clinic visit required.',
     },
     robots: {
       index: true,

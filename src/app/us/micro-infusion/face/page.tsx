@@ -6,11 +6,11 @@ export const revalidate = 3600
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Micro-Infusion System for Face - At-Home Professional Treatment | SkinCoach',
-    description: 'Professional micro-infusion system for face. At-home micro-needling device that improves skin texture, reduces fine lines, and boosts collagen production.',
+    title: 'At-Home Micro-Infusion System for Skin Renewal | SkinCoach',
+    description: 'Transform your skin with our at-home Micro-Infusion System. Designed to support smoother texture, fine lines, and skin renewal—no clinic visit required.',
     openGraph: {
-      title: 'Micro-Infusion System for Face | SkinCoach',
-      description: 'Professional micro-infusion system for face. At-home micro-needling device.',
+      title: 'At-Home Micro-Infusion System for Skin Renewal | SkinCoach',
+      description: 'Transform your skin with our at-home Micro-Infusion System. Designed to support smoother texture, fine lines, and skin renewal—no clinic visit required.',
       type: 'website',
       siteName: 'SkinCoach',
       url: 'https://www.skincoach.ai/us/micro-infusion/face',
