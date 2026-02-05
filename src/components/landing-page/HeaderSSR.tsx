@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Menu, X, Search, User, ShoppingCart, Globe, Check } from 'lucide-react'
 import { getFontClass, headlineFont, serifFont } from '@/lib/fonts'
+import { useCart } from './CartProviderSSR'
 
 interface HeaderSSRProps {
   logoUrl: string
@@ -45,6 +46,7 @@ export default function HeaderSSR({
   bodyFont,
 }: HeaderSSRProps) {
   const router = useRouter()
+  const { cartItemCount, openCart } = useCart()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false)
 
@@ -139,8 +141,16 @@ export default function HeaderSSR({
 
             {/* Cart */}
             {showCart && (
-              <button className="relative p-2 text-black hover:opacity-80 transition-colors">
+              <button
+                onClick={openCart}
+                className="relative p-2 text-black hover:opacity-80 transition-colors"
+              >
                 <ShoppingCart className="w-5 h-5" />
+                {cartItemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: primaryColor }}>
+                    {cartItemCount}
+                  </span>
+                )}
               </button>
             )}
 

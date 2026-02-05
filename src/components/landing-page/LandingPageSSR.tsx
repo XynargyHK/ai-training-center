@@ -1,10 +1,11 @@
 import { getFontClass } from '@/lib/fonts'
 import { headlineFont, serifFont } from '@/lib/fonts'
 import HeroCarousel from './HeroCarousel'
-import BlockRendererSSR from './BlockRendererSSR'
 import LandingPageFooterSSR from './LandingPageFooterSSR'
 import ChatFloatingButton from './ChatFloatingButton'
 import HeaderSSR from './HeaderSSR'
+import CartProviderSSR from './CartProviderSSR'
+import BlocksWithCart from './BlocksWithCart'
 
 interface LandingPageSSRProps {
   landingPage: any
@@ -270,76 +271,89 @@ export default function LandingPageSSR({
     return { label: item.label, href }
   })
 
+  // Font settings (from hero slide, matching livechat/page.tsx)
+  const heroSlide = landingPage.hero_slides?.[0]
+  const headingFontFamily = heroSlide?.headline_font_family || 'Josefin Sans'
+  const bodyFontFamily = heroSlide?.subheadline_font_family || 'Cormorant Garamond'
+
   return (
-    <div className="min-h-screen bg-white">
-      {/* Announcement Bar */}
-      {announcements.length > 0 && (
-        <div
-          className="text-white text-center py-2.5 px-4 text-sm overflow-hidden"
-          style={{ backgroundColor: secondaryColor }}
-        >
-          <span className={`font-light tracking-[0.15em] uppercase ${headlineFont.className}`}>
-            {announcements[0]}
-          </span>
-        </div>
-      )}
+    <CartProviderSSR
+      businessUnit={businessUnit?.slug || 'skincoach'}
+      headingFont={headingFontFamily}
+      bodyFont={bodyFontFamily}
+      language={lang}
+      enableSocialLogin={landingPage.enable_social_login === true}
+    >
+      <div className="min-h-screen bg-white">
+        {/* Announcement Bar */}
+        {announcements.length > 0 && (
+          <div
+            className="text-white text-center py-2.5 px-4 text-sm overflow-hidden"
+            style={{ backgroundColor: secondaryColor }}
+          >
+            <span className={`font-light tracking-[0.15em] uppercase ${headlineFont.className}`}>
+              {announcements[0]}
+            </span>
+          </div>
+        )}
 
-      {/* Header Navigation — full client component matching livechat header */}
-      <HeaderSSR
-        logoUrl={logoUrl}
-        logoText={logoText}
-        logoPosition={logoPosition}
-        navItems={navItems}
-        showSearch={showSearch}
-        showAccount={showAccount}
-        showCart={showCart}
-        primaryColor={primaryColor}
-        countryPath={countryPath}
-        currentLang={lang}
-        languages={languagesForCountry}
-        bodyFont={landingPage.body_font}
-      />
+        {/* Header Navigation — full client component matching livechat header */}
+        <HeaderSSR
+          logoUrl={logoUrl}
+          logoText={logoText}
+          logoPosition={logoPosition}
+          navItems={navItems}
+          showSearch={showSearch}
+          showAccount={showAccount}
+          showCart={showCart}
+          primaryColor={primaryColor}
+          countryPath={countryPath}
+          currentLang={lang}
+          languages={languagesForCountry}
+          bodyFont={landingPage.body_font}
+        />
 
-      {/* Hero Carousel */}
-      {carouselSlides.length > 0 && (
-        carouselSlides.length === 1 ? (
-          <HeroSlideContent slide={carouselSlides[0]} isFirst={true} />
-        ) : (
-          <HeroCarousel autoplay autoplayInterval={5000}>
-            {carouselSlides.map((slide: any, i: number) => (
-              <HeroSlideContent key={i} slide={slide} isFirst={i === 0} />
-            ))}
-          </HeroCarousel>
-        )
-      )}
+        {/* Hero Carousel */}
+        {carouselSlides.length > 0 && (
+          carouselSlides.length === 1 ? (
+            <HeroSlideContent slide={carouselSlides[0]} isFirst={true} />
+          ) : (
+            <HeroCarousel autoplay autoplayInterval={5000}>
+              {carouselSlides.map((slide: any, i: number) => (
+                <HeroSlideContent key={i} slide={slide} isFirst={i === 0} />
+              ))}
+            </HeroCarousel>
+          )
+        )}
 
-      {/* Static Hero Banners */}
-      {staticSlides.length > 0 && staticSlides.map((slide: any, i: number) => (
-        <StaticBannerSlide key={i} slide={slide} />
-      ))}
+        {/* Static Hero Banners */}
+        {staticSlides.length > 0 && staticSlides.map((slide: any, i: number) => (
+          <StaticBannerSlide key={i} slide={slide} />
+        ))}
 
-      {/* Dynamic Blocks */}
-      {landingPage.blocks && landingPage.blocks.length > 0 && (
-        <BlockRendererSSR blocks={landingPage.blocks} />
-      )}
+        {/* Dynamic Blocks (with cart integration) */}
+        {landingPage.blocks && landingPage.blocks.length > 0 && (
+          <BlocksWithCart blocks={landingPage.blocks} />
+        )}
 
-      {/* Footer */}
-      <LandingPageFooterSSR
-        data={landingPage.footer}
-        businessUnitName={businessUnit?.name}
-        country={country}
-        language={lang}
-        countryPath={countryPath}
-      />
+        {/* Footer */}
+        <LandingPageFooterSSR
+          data={landingPage.footer}
+          businessUnitName={businessUnit?.name}
+          country={country}
+          language={lang}
+          countryPath={countryPath}
+        />
 
-      {/* Floating Chat Button — client-only, ssr:false so no HTML emitted for crawlers */}
-      <ChatFloatingButton
-        businessUnit={businessUnit?.slug || 'skincoach'}
-        country={country}
-        lang={lang}
-        aiStaffList={aiStaffList}
-        enableSocialLogin={landingPage.enable_social_login}
-      />
-    </div>
+        {/* Floating Chat Button — client-only, ssr:false so no HTML emitted for crawlers */}
+        <ChatFloatingButton
+          businessUnit={businessUnit?.slug || 'skincoach'}
+          country={country}
+          lang={lang}
+          aiStaffList={aiStaffList}
+          enableSocialLogin={landingPage.enable_social_login}
+        />
+      </div>
+    </CartProviderSSR>
   )
 }
