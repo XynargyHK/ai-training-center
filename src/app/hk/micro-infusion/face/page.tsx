@@ -32,7 +32,7 @@ export default async function HKMicroInfusionFacePage({
   searchParams: Promise<{ lang?: string }>
 }) {
   const params = await searchParams
-  const lang = params.lang || 'en'
+  const lang = params.lang || 'zh-Hant'
   const { landingPage, businessUnit, availableLocales, aiStaffList } = await fetchLandingPageData('skincoach', 'HK', lang)
 
   return (
