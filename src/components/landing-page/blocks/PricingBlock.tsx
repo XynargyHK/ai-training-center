@@ -135,33 +135,20 @@ export default function PricingBlock({ data, anchorId, onAddToCart, language, co
     // If plan has product_id, fetch actual product data
     if (selectedPlan.product_id) {
       try {
-        // Step 1: Fetch all products for this business unit + country (no language filter)
-        // to find the source product by ID and get its SKU
-        const allProductsResponse = await fetch(`/api/shop/products?businessUnit=${businessUnitParam}&country=${countryParam}`)
-        const allProductsData = await allProductsResponse.json()
-        const sourceProduct = allProductsData.products?.find((p: any) => p.id === selectedPlan.product_id)
+        // Fetch products filtered by locale - same product_id exists across all locales
+        // The API returns the translated version based on language parameter
+        const response = await fetch(`/api/shop/products?businessUnit=${businessUnitParam}&country=${countryParam}&language=${langParam}`)
+        const responseData = await response.json()
+        const product = responseData.products?.find((p: any) => p.id === selectedPlan.product_id)
 
-        if (sourceProduct) {
-          // Step 2: If we have a SKU, find the translated product by SKU + language
-          // This handles the case where each locale has different product IDs but same SKU
-          let translatedProduct = sourceProduct
-
-          if (sourceProduct.sku && langParam !== sourceProduct.language_code) {
-            const translatedResponse = await fetch(`/api/shop/products?businessUnit=${businessUnitParam}&country=${countryParam}&language=${langParam}`)
-            const translatedData = await translatedResponse.json()
-            const matchedBySku = translatedData.products?.find((p: any) => p.sku === sourceProduct.sku)
-            if (matchedBySku) {
-              translatedProduct = matchedBySku
-            }
-          }
-
+        if (product) {
           planProduct = {
-            id: translatedProduct.id,
-            title: translatedProduct.title,
-            description: translatedProduct.description || '',
+            id: product.id,
+            title: product.title,
+            description: product.description || '',
             cost_price: selectedPlan.discounted_price,
             compare_at_price: selectedPlan.original_price,
-            thumbnail: translatedProduct.thumbnail || '',
+            thumbnail: product.thumbnail || '',
           }
         }
       } catch (error) {

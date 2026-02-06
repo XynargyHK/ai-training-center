@@ -186,22 +186,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No products found in source locale' }, { status: 404 })
     }
 
-    // Fetch addon matches separately (table has two FKs to products, so we query directly)
-    const sourceProductIds = sourceProducts.map((p: any) => p.id)
-    const { data: allAddonMatches } = await supabase
-      .from('product_addon_matches')
-      .select('product_id, addon_product_id, display_order')
-      .in('product_id', sourceProductIds)
-
-    // Group addon matches by product_id
-    const addonMatchesByProduct: Record<string, any[]> = {}
-    for (const m of (allAddonMatches || [])) {
-      if (!addonMatchesByProduct[m.product_id]) addonMatchesByProduct[m.product_id] = []
-      addonMatchesByProduct[m.product_id].push(m)
-    }
+    // NOTE: With shared product IDs across locales, we no longer need to copy
+    // images, variants, category mappings, or addon matches. They reference
+    // the product by ID only and are shared across all locale versions.
 
     const shouldTranslate = mode === 'translate'
-    const sourceToNewIdMap: Record<string, string> = {} // old product ID -> new product ID
     let copiedCount = 0
 
     // Copy each product
@@ -213,6 +202,11 @@ export async function POST(request: NextRequest) {
         product_images, product_variants, product_category_mapping,
         ...productData
       } = source
+
+      // IMPORTANT: Keep the same product ID across all locales
+      // This allows pricing blocks to reference one product_id and the system
+      // finds the correct translated version based on user's language
+      productData.id = sourceId
 
       // Update locale fields
       productData.country = country
@@ -229,7 +223,7 @@ export async function POST(request: NextRequest) {
         // Keep ingredients, trade_name as-is (scientific/brand names)
       }
 
-      // Insert new product
+      // Insert new product with SAME ID but different locale
       const { data: newProduct, error: insertError } = await supabase
         .from('products')
         .insert(productData)
@@ -241,80 +235,11 @@ export async function POST(request: NextRequest) {
         continue
       }
 
-      sourceToNewIdMap[sourceId] = newProduct.id
       copiedCount++
 
-      // Copy images
-      if (product_images && product_images.length > 0) {
-        const imageInserts = product_images.map((img: any) => ({
-          product_id: newProduct.id,
-          url: img.url,
-          alt_text: img.alt_text,
-          display_order: img.display_order
-        }))
-        await supabase.from('product_images').insert(imageInserts)
-      }
-
-      // Copy variants with prices
-      if (product_variants && product_variants.length > 0) {
-        for (const variant of product_variants) {
-          const { data: newVariant, error: variantError } = await supabase
-            .from('product_variants')
-            .insert({
-              product_id: newProduct.id,
-              title: shouldTranslate ? await translateText(variant.title, language) : variant.title,
-              sku: variant.sku,
-              barcode: variant.barcode,
-              inventory_quantity: variant.inventory_quantity,
-              allow_backorder: variant.allow_backorder,
-              manage_inventory: variant.manage_inventory
-            })
-            .select()
-            .single()
-
-          if (variantError) continue
-
-          // Copy variant prices
-          if (variant.product_variant_prices && variant.product_variant_prices.length > 0) {
-            const priceInserts = variant.product_variant_prices.map((p: any) => ({
-              variant_id: newVariant.id,
-              amount: p.amount,
-              currency_code: p.currency_code
-            }))
-            await supabase.from('product_variant_prices').insert(priceInserts)
-          }
-        }
-      }
-
-      // Copy category mappings (categories are shared across locales)
-      if (product_category_mapping && product_category_mapping.length > 0) {
-        const catInserts = product_category_mapping.map((m: any) => ({
-          product_id: newProduct.id,
-          category_id: m.category_id
-        }))
-        await supabase.from('product_category_mapping').insert(catInserts)
-      }
-    }
-
-    // Copy addon matches with remapped IDs (second pass after all products are created)
-    for (const source of sourceProducts) {
-      const newProductId = sourceToNewIdMap[source.id]
-      if (!newProductId) continue
-
-      const addonMatches = addonMatchesByProduct[source.id]
-      if (addonMatches && addonMatches.length > 0) {
-        const addonInserts = addonMatches
-          .filter((m: any) => sourceToNewIdMap[m.addon_product_id])
-          .map((m: any) => ({
-            product_id: newProductId,
-            addon_product_id: sourceToNewIdMap[m.addon_product_id],
-            display_order: m.display_order
-          }))
-
-        if (addonInserts.length > 0) {
-          await supabase.from('product_addon_matches').insert(addonInserts)
-        }
-      }
+      // NOTE: Images, variants, category mappings, and addon matches are SHARED across locales
+      // They reference the product by ID only, and since the ID is the same across locales,
+      // we don't need to copy them. The same images/variants/etc apply to all locale versions.
     }
 
     return NextResponse.json({
