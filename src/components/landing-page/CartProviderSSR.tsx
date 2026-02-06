@@ -239,6 +239,7 @@ export default function CartProviderSSR({
           cart={cart}
           onSuccess={handleCheckoutSuccess}
           businessUnitParam={businessUnit}
+          country={country}
           headingFont={headingFont}
           bodyFont={bodyFont}
           language={language}

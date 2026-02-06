@@ -89,12 +89,37 @@ interface CartItem {
   quantity: number
 }
 
+// Currency mapping by country
+const countryCurrencyMap: Record<string, string> = {
+  US: 'usd',
+  HK: 'hkd',
+  SG: 'sgd',
+  GB: 'gbp',
+  EU: 'eur',
+  JP: 'jpy',
+  CN: 'cny',
+  TW: 'twd',
+}
+
+// Currency symbol mapping
+const currencySymbolMap: Record<string, string> = {
+  usd: '$',
+  hkd: 'HK$',
+  sgd: 'S$',
+  gbp: '£',
+  eur: '€',
+  jpy: '¥',
+  cny: '¥',
+  twd: 'NT$',
+}
+
 interface CheckoutModalProps {
   isOpen: boolean
   onClose: () => void
   cart: CartItem[]
   onSuccess: (orderId: string) => void
   businessUnitParam?: string
+  country?: string
   headingFont?: string
   bodyFont?: string
   language?: string
@@ -110,7 +135,8 @@ function CheckoutForm({
   total,
   headingFont = 'Josefin Sans',
   bodyFont = 'Cormorant Garamond',
-  language = 'en'
+  language = 'en',
+  currencySymbol = '$'
 }: {
   cart: CartItem[]
   onSuccess: (orderId: string) => void
@@ -121,6 +147,7 @@ function CheckoutForm({
   headingFont?: string
   bodyFont?: string
   language?: string
+  currencySymbol?: string
 }) {
   const t = translations[language] || translations.en
   const stripe = useStripe()
@@ -258,7 +285,7 @@ function CheckoutForm({
           ) : (
             <>
               <CreditCard className="w-5 h-5" />
-              {t.pay} ${total.toFixed(2)}
+              {t.pay} {currencySymbol}{total.toFixed(2)}
             </>
           )}
         </button>
@@ -273,12 +300,15 @@ export default function CheckoutModal({
   cart,
   onSuccess,
   businessUnitParam = '',
+  country = 'US',
   headingFont = 'Josefin Sans',
   bodyFont = 'Cormorant Garamond',
   language = 'en',
   enableSocialLogin = false
 }: CheckoutModalProps) {
   const t = translations[language] || translations.en
+  const currency = countryCurrencyMap[country] || 'usd'
+  const currencySymbol = currencySymbolMap[currency] || '$'
   const [step, setStep] = useState<'info' | 'payment' | 'success'>('info')
   const [clientSecret, setClientSecret] = useState('')
   const [customerInfo, setCustomerInfo] = useState({
@@ -399,7 +429,7 @@ export default function CheckoutModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amount: total,
-          currency: 'usd',
+          currency: currency,
           metadata: {
             customer_email: customerInfo.email,
             customer_name: customerInfo.name
@@ -471,13 +501,13 @@ export default function CheckoutModal({
                         {item.product.title} x {item.quantity}
                       </span>
                       <span className={`font-bold text-gray-900 ${getFontClass(headingFont)}`}>
-                        ${((item.product.cost_price || 0) * item.quantity).toFixed(2)}
+                        {currencySymbol}{((item.product.cost_price || 0) * item.quantity).toFixed(2)}
                       </span>
                     </div>
                   ))}
                   <div className={`border-t border-gray-200 pt-2 mt-2 flex justify-between font-bold ${getFontClass(headingFont)}`}>
                     <span>{t.total}</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>{currencySymbol}{total.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -677,6 +707,7 @@ export default function CheckoutModal({
                 headingFont={headingFont}
                 bodyFont={bodyFont}
                 language={language}
+                currencySymbol={currencySymbol}
               />
             </Elements>
           )}
