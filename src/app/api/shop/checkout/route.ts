@@ -35,14 +35,16 @@ interface CheckoutData {
   items: CartItem[]
   subtotal: number
   total: number
+  currency?: string
   notes?: string
+  user_id?: string
 }
 
 // POST - Create order
 export async function POST(request: NextRequest) {
   try {
     const body: CheckoutData = await request.json()
-    const { customer, shipping_address, items, subtotal, total, notes } = body
+    const { customer, shipping_address, items, subtotal, total, currency, notes, user_id } = body
 
     if (!customer?.email || !customer?.name) {
       return NextResponse.json(
@@ -58,14 +60,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create the order
+    // Create the order - status is 'processing' since payment is done
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
+        user_id: user_id || null,
         email: customer.email,
-        status: 'pending',
+        status: 'processing',
         fulfillment_status: 'not_fulfilled',
         payment_status: 'not_paid',
+        currency_code: currency?.toUpperCase() || 'USD',
         subtotal: subtotal,
         total: total,
         shipping_address: shipping_address || null,
