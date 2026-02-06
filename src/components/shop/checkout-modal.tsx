@@ -309,6 +309,8 @@ export default function CheckoutModal({
   const t = translations[language] || translations.en
   const currency = countryCurrencyMap[country] || 'usd'
   const currencySymbol = currencySymbolMap[currency] || '$'
+
+  console.log('[CheckoutModal] country:', country, 'currency:', currency)
   const [step, setStep] = useState<'info' | 'payment' | 'success'>('info')
   const [clientSecret, setClientSecret] = useState('')
   const [customerInfo, setCustomerInfo] = useState({
