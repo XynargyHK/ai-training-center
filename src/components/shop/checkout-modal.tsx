@@ -184,6 +184,8 @@ function CheckoutForm({
       }
 
       // Confirm payment with backend
+      console.log('Payment intent status:', paymentIntent?.status)
+
       if (paymentIntent?.status === 'succeeded') {
         await fetch('/api/shop/confirm-payment', {
           method: 'POST',
@@ -195,6 +197,17 @@ function CheckoutForm({
         })
 
         onSuccess(orderData.order.id)
+      } else if (paymentIntent?.status === 'processing') {
+        // Payment is still processing, show success anyway (will be confirmed via webhook)
+        onSuccess(orderData.order.id)
+      } else if (paymentIntent?.status === 'requires_action') {
+        // 3D Secure or other action required - Stripe handles this automatically
+        // If we reach here without redirect, something went wrong
+        throw new Error('Additional authentication required. Please try again.')
+      } else {
+        // Unknown status
+        console.error('Unexpected payment status:', paymentIntent?.status)
+        throw new Error(`Payment status: ${paymentIntent?.status || 'unknown'}. Please try again.`)
       }
     } catch (error: any) {
       console.error('Payment error:', error)
