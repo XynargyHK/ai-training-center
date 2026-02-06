@@ -7,6 +7,18 @@ import dynamic from 'next/dynamic'
 
 const CheckoutModal = dynamic(() => import('@/components/shop/checkout-modal'), { ssr: false })
 
+// Currency symbol mapping by country
+const countryCurrencySymbol: Record<string, string> = {
+  US: '$',
+  HK: 'HK$',
+  SG: 'S$',
+  GB: '£',
+  EU: '€',
+  JP: '¥',
+  CN: '¥',
+  TW: 'NT$',
+}
+
 interface CartItem {
   product: {
     id: string
@@ -119,6 +131,7 @@ export default function CartProviderSSR({
 
   const cartTotal = cart.reduce((sum, item) => sum + ((item.product.cost_price || 0) * item.quantity), 0)
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0)
+  const currencySymbol = countryCurrencySymbol[country] || '$'
 
   // Cart translations — matching livechat/page.tsx
   const cartText = language === 'tw' ? {
@@ -204,7 +217,7 @@ export default function CartProviderSSR({
                         >
                           <Trash2 className="w-5 h-5" />
                         </button>
-                        <span className={`font-bold ${getFontClass(headingFont)}`}>${((item.product.cost_price || 0) * item.quantity).toFixed(2)}</span>
+                        <span className={`font-bold ${getFontClass(headingFont)}`}>{currencySymbol}{((item.product.cost_price || 0) * item.quantity).toFixed(2)}</span>
                       </div>
                     </div>
                   ))}
@@ -217,7 +230,7 @@ export default function CartProviderSSR({
               <div className="p-4 border-t border-gray-200 bg-white">
                 <div className="flex justify-between mb-4">
                   <span className={`font-light tracking-[0.15em] uppercase ${getFontClass(headingFont)}`}>{cartText.total}:</span>
-                  <span className={`font-bold ${getFontClass(headingFont)}`}>${cartTotal.toFixed(2)}</span>
+                  <span className={`font-bold ${getFontClass(headingFont)}`}>{currencySymbol}{cartTotal.toFixed(2)}</span>
                 </div>
                 <button
                   onClick={() => setShowCheckoutModal(true)}
