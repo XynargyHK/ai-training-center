@@ -625,7 +625,9 @@ const AITrainingCenter = () => {
       // Load FAQ categories
       const faqCategoriesData = await loadFAQCategories(selectedBusinessUnit)
       if (faqCategoriesData && faqCategoriesData.length > 0) {
-        setFaqCategories(faqCategoriesData)
+        // Extract category keys (strings) from the returned objects
+        const categoryNames = faqCategoriesData.map((c: { key: string }) => c.key)
+        setFaqCategories(categoryNames)
       } else {
         // Initialize with default categories
         const defaultCategories = ['pricing', 'products', 'shipping', 'returns', 'product results', 'ingredients', 'general']
