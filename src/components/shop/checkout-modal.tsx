@@ -443,15 +443,20 @@ export default function CheckoutModal({
           `width=${width},height=${height},left=${left},top=${top},popup=true`
         )
 
-        // Poll for popup close and check auth state
-        const pollTimer = setInterval(async () => {
-          if (popup?.closed) {
-            clearInterval(pollTimer)
-            // Small delay to let Supabase process the session
-            await new Promise(resolve => setTimeout(resolve, 500))
-            // Check if user is now logged in
-            const { data: { session } } = await supabase.auth.getSession()
+        // Listen for message from popup
+        const handleMessage = async (event: MessageEvent) => {
+          if (event.origin !== window.location.origin) return
+          if (event.data?.type === 'OAUTH_SUCCESS') {
+            window.removeEventListener('message', handleMessage)
+
+            const { session } = event.data
             if (session?.user) {
+              // Set the session in main window's Supabase client
+              await supabase.auth.setSession({
+                access_token: session.access_token,
+                refresh_token: session.refresh_token
+              })
+
               const meta = session.user.user_metadata || {}
               setCurrentUser(session.user)
               setCustomerInfo({
@@ -460,6 +465,7 @@ export default function CheckoutModal({
                 phone: meta.phone || ''
               })
               setStep('info')
+
               // Save profile
               try {
                 await fetch('/api/customer/account', {
@@ -477,11 +483,22 @@ export default function CheckoutModal({
             }
             setSocialLoading(null)
           }
-        }, 500)
+        }
+        window.addEventListener('message', handleMessage)
+
+        // Also poll for popup close (in case message fails)
+        const pollTimer = setInterval(async () => {
+          if (popup?.closed) {
+            clearInterval(pollTimer)
+            window.removeEventListener('message', handleMessage)
+            setSocialLoading(null)
+          }
+        }, 1000)
 
         // Timeout after 5 minutes
         setTimeout(() => {
           clearInterval(pollTimer)
+          window.removeEventListener('message', handleMessage)
           setSocialLoading(null)
         }, 5 * 60 * 1000)
       }
