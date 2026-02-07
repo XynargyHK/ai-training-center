@@ -411,29 +411,82 @@ export default function CheckoutModal({
   const handleSocialLogin = async (provider: 'google' | 'facebook') => {
     setSocialLoading(provider)
     try {
-      // Store checkout state in localStorage before OAuth redirect
-      localStorage.setItem('checkout_in_progress', JSON.stringify({
-        cart: cart,
-        businessUnit: businessUnitParam,
-        country: country,
-        timestamp: Date.now()
-      }))
+      // Build callback URL for popup
+      const callbackUrl = `${window.location.origin}/auth/callback`
 
-      const { error } = await supabase.auth.signInWithOAuth({
+      // Get the OAuth URL with our callback
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: window.location.href,
+          skipBrowserRedirect: true,  // Don't redirect main window
+          redirectTo: callbackUrl,
           queryParams: provider === 'google' ? { prompt: 'select_account' } : undefined
         }
       })
+
       if (error) {
         console.error('Social login error:', error)
-        localStorage.removeItem('checkout_in_progress')
         setSocialLoading(null)
+        return
+      }
+
+      if (data?.url) {
+        // Open OAuth in a popup window
+        const width = 500
+        const height = 600
+        const left = window.screenX + (window.outerWidth - width) / 2
+        const top = window.screenY + (window.outerHeight - height) / 2
+
+        const popup = window.open(
+          data.url,
+          'oauth-popup',
+          `width=${width},height=${height},left=${left},top=${top},popup=true`
+        )
+
+        // Poll for popup close and check auth state
+        const pollTimer = setInterval(async () => {
+          if (popup?.closed) {
+            clearInterval(pollTimer)
+            // Small delay to let Supabase process the session
+            await new Promise(resolve => setTimeout(resolve, 500))
+            // Check if user is now logged in
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session?.user) {
+              const meta = session.user.user_metadata || {}
+              setCurrentUser(session.user)
+              setCustomerInfo({
+                name: meta.full_name || meta.name || '',
+                email: session.user.email || '',
+                phone: meta.phone || ''
+              })
+              setStep('info')
+              // Save profile
+              try {
+                await fetch('/api/customer/account', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    userId: session.user.id,
+                    name: meta.full_name || meta.name || null,
+                    email: session.user.email || null
+                  })
+                })
+              } catch (err) {
+                console.error('Failed to save profile:', err)
+              }
+            }
+            setSocialLoading(null)
+          }
+        }, 500)
+
+        // Timeout after 5 minutes
+        setTimeout(() => {
+          clearInterval(pollTimer)
+          setSocialLoading(null)
+        }, 5 * 60 * 1000)
       }
     } catch (err) {
       console.error('Social login failed:', err)
-      localStorage.removeItem('checkout_in_progress')
       setSocialLoading(null)
     }
   }

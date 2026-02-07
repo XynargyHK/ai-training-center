@@ -91,35 +91,6 @@ export default function CartProviderSSR({
     }
   }, [businessUnit])
 
-  // Check if there was a checkout in progress (OAuth redirect return)
-  useEffect(() => {
-    if (!businessUnit) return
-
-    const checkoutInProgress = localStorage.getItem('checkout_in_progress')
-    if (checkoutInProgress) {
-      try {
-        const checkoutData = JSON.parse(checkoutInProgress)
-        // Only restore if less than 10 minutes old and same business unit
-        const isRecent = Date.now() - checkoutData.timestamp < 10 * 60 * 1000
-        const isSameBusinessUnit = checkoutData.businessUnit === businessUnit
-
-        if (isRecent && isSameBusinessUnit && checkoutData.cart?.length > 0) {
-          console.log('[CartProviderSSR] Restoring checkout after OAuth redirect')
-          // Restore cart from checkout data
-          setCart(checkoutData.cart)
-          // Small delay to let auth state settle, then open checkout modal
-          setTimeout(() => {
-            setShowCheckoutModal(true)
-          }, 500)
-        }
-        // Clear the flag
-        localStorage.removeItem('checkout_in_progress')
-      } catch (e) {
-        console.error('Error restoring checkout:', e)
-        localStorage.removeItem('checkout_in_progress')
-      }
-    }
-  }, [businessUnit])
 
   // Save cart to localStorage
   useEffect(() => {
@@ -157,8 +128,6 @@ export default function CartProviderSSR({
     setCart([])
     setShowCheckoutModal(false)
     setShowCartSidebar(false)
-    // Clear any pending checkout flag
-    localStorage.removeItem('checkout_in_progress')
   }
 
   const cartTotal = cart.reduce((sum, item) => sum + ((item.product.cost_price || 0) * item.quantity), 0)
