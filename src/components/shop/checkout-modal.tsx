@@ -411,6 +411,14 @@ export default function CheckoutModal({
   const handleSocialLogin = async (provider: 'google' | 'facebook') => {
     setSocialLoading(provider)
     try {
+      // Store checkout state in localStorage before OAuth redirect
+      localStorage.setItem('checkout_in_progress', JSON.stringify({
+        cart: cart,
+        businessUnit: businessUnitParam,
+        country: country,
+        timestamp: Date.now()
+      }))
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
@@ -420,10 +428,12 @@ export default function CheckoutModal({
       })
       if (error) {
         console.error('Social login error:', error)
+        localStorage.removeItem('checkout_in_progress')
         setSocialLoading(null)
       }
     } catch (err) {
       console.error('Social login failed:', err)
+      localStorage.removeItem('checkout_in_progress')
       setSocialLoading(null)
     }
   }
