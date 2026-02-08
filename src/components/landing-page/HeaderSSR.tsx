@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Menu, X, Search, User, ShoppingCart, Globe, Check } from 'lucide-react'
 import { getFontClass, headlineFont, serifFont } from '@/lib/fonts'
 import { useCart } from './CartProviderSSR'
+import { supabase } from '@/lib/supabase'
 
 interface HeaderSSRProps {
   logoUrl: string
@@ -49,6 +50,29 @@ export default function HeaderSSR({
   const { cartItemCount, openCart } = useCart()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false)
+  const [authUserName, setAuthUserName] = useState<string | null>(null)
+
+  // Check auth state
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        const meta = session.user.user_metadata || {}
+        setAuthUserName(meta.full_name || meta.name || session.user.email?.split('@')[0] || null)
+      }
+    }
+    checkAuth()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        const meta = session.user.user_metadata || {}
+        setAuthUserName(meta.full_name || meta.name || session.user.email?.split('@')[0] || null)
+      } else {
+        setAuthUserName(null)
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [])
 
   // Close language dropdown on outside click
   useEffect(() => {
@@ -134,9 +158,17 @@ export default function HeaderSSR({
 
             {/* Account */}
             {showAccount && (
-              <button className="hidden md:flex items-center gap-1.5 p-2 text-black hover:opacity-80 transition-colors">
+              <a
+                href="/account"
+                className="hidden md:flex items-center gap-1.5 p-2 text-black hover:opacity-80 transition-colors"
+              >
                 <User className="w-5 h-5" />
-              </button>
+                {authUserName && (
+                  <span className={`text-sm font-medium ${getFontClass(bodyFont)}`}>
+                    Hi, {authUserName}
+                  </span>
+                )}
+              </a>
             )}
 
             {/* Cart */}
@@ -214,13 +246,14 @@ export default function HeaderSSR({
             ))}
             {/* Mobile account link */}
             {showAccount && (
-              <button
+              <a
+                href="/account"
                 className={`px-4 py-3 text-black hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm font-bold tracking-[0.15em] uppercase w-full text-left ${headlineFont.className}`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <User className="w-4 h-4" />
-                My Account
-              </button>
+                {authUserName ? `Hi, ${authUserName}` : 'My Account'}
+              </a>
             )}
             {/* Mobile language selector */}
             {languages.length > 1 && (
