@@ -91,12 +91,8 @@ export default function HeaderSSR({
     setShowLanguageDropdown(false)
     setMobileMenuOpen(false)
     const currentPath = window.location.pathname
-    // Use full page reload to ensure ISR page fetches correct language data
-    if (languageCode === 'en') {
-      window.location.href = currentPath
-    } else {
-      window.location.href = `${currentPath}?lang=${languageCode}`
-    }
+    // Always include lang parameter to ensure correct language is loaded
+    window.location.href = `${currentPath}?lang=${languageCode}`
   }
 
   return (
