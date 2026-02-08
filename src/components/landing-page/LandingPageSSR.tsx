@@ -312,6 +312,7 @@ export default function LandingPageSSR({
           currentLang={lang}
           languages={languagesForCountry}
           bodyFont={landingPage.body_font}
+          accountUrl={landingPage.account_url || '/account'}
         />
 
         {/* Hero Carousel */}

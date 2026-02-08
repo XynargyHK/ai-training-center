@@ -20,6 +20,7 @@ interface HeaderSSRProps {
   currentLang: string
   languages: { country: string; language_code: string }[]
   bodyFont?: string
+  accountUrl?: string
 }
 
 const langName: Record<string, string> = {
@@ -45,6 +46,7 @@ export default function HeaderSSR({
   currentLang,
   languages,
   bodyFont,
+  accountUrl = '/account',
 }: HeaderSSRProps) {
   const router = useRouter()
   const { cartItemCount, openCart } = useCart()
@@ -159,7 +161,7 @@ export default function HeaderSSR({
             {/* Account */}
             {showAccount && (
               <a
-                href="/account"
+                href={accountUrl}
                 className="hidden md:flex items-center gap-1.5 p-2 text-black hover:opacity-80 transition-colors"
               >
                 <User className="w-5 h-5" />
@@ -247,7 +249,7 @@ export default function HeaderSSR({
             {/* Mobile account link */}
             {showAccount && (
               <a
-                href="/account"
+                href={accountUrl}
                 className={`px-4 py-3 text-black hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm font-bold tracking-[0.15em] uppercase w-full text-left ${headlineFont.className}`}
                 onClick={() => setMobileMenuOpen(false)}
               >
