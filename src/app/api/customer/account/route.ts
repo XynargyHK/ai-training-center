@@ -28,9 +28,6 @@ export async function GET(request: NextRequest) {
       .eq('user_id', userId)
       .maybeSingle()
 
-    console.log('[API] GET profile for userId:', userId)
-    console.log('[API] Profile shipping_address:', profile?.shipping_address)
-
     if (error) {
       console.error('Error fetching profile:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
@@ -46,14 +43,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Create or update customer profile (used by social login at checkout)
+// POST - Create or update customer profile
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { userId, name, email, phone, businessUnitId, shippingAddress } = body
-
-    console.log('[API] POST profile - userId:', userId)
-    console.log('[API] POST profile - shippingAddress received:', shippingAddress)
 
     if (!userId) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 })
@@ -61,49 +55,25 @@ export async function POST(request: NextRequest) {
 
     const supabase = getSupabaseServiceClient()
 
-    // Check if profile exists by user_id first, then by email
-    let existing = null
-
-    const { data: byUserId } = await supabase
+    // Find existing profile by user_id
+    const { data: existing, error: findError } = await supabase
       .from('customer_profiles')
-      .select('id, user_id, email, shipping_address')
+      .select('*')
       .eq('user_id', userId)
       .maybeSingle()
 
-    if (byUserId) {
-      existing = byUserId
-    } else if (email) {
-      // Try to find by email if not found by user_id
-      const { data: byEmail } = await supabase
-        .from('customer_profiles')
-        .select('id, user_id, email, shipping_address')
-        .eq('email', email)
-        .maybeSingle()
-
-      if (byEmail) {
-        existing = byEmail
-        // Update the user_id if it was null
-        if (!byEmail.user_id) {
-          await supabase
-            .from('customer_profiles')
-            .update({ user_id: userId })
-            .eq('id', byEmail.id)
-        }
-      }
+    if (findError) {
+      console.error('Error finding profile:', findError)
+      return NextResponse.json({ error: findError.message }, { status: 500 })
     }
 
-    console.log('[API] Existing profile found:', existing)
-    console.log('[API] Existing shipping_address:', existing?.shipping_address)
-
     if (existing) {
-      // Update existing profile - only update fields that are passed
+      // Build update data - only include fields that are passed
       const updateData: Record<string, any> = { updated_at: new Date().toISOString() }
       if (name !== undefined) updateData.name = name
       if (email !== undefined) updateData.email = email
       if (phone !== undefined) updateData.phone = phone
       if (shippingAddress !== undefined) updateData.shipping_address = shippingAddress
-
-      console.log('[API] Updating profile with data:', updateData)
 
       const { data, error } = await supabase
         .from('customer_profiles')
@@ -116,9 +86,6 @@ export async function POST(request: NextRequest) {
         console.error('Error updating profile:', error)
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
-
-      console.log('[API] Updated profile:', data)
-      console.log('[API] Updated shipping_address:', data?.shipping_address)
 
       return NextResponse.json({ success: true, profile: data })
     } else {
@@ -133,8 +100,6 @@ export async function POST(request: NextRequest) {
       if (shippingAddress !== undefined) insertData.shipping_address = shippingAddress
       if (businessUnitId !== undefined) insertData.business_unit_id = businessUnitId
 
-      console.log('[API] Creating profile with data:', insertData)
-
       const { data, error } = await supabase
         .from('customer_profiles')
         .insert(insertData)
@@ -146,7 +111,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
 
-      console.log('[API] Created profile:', data)
       return NextResponse.json({ success: true, profile: data })
     }
   } catch (error) {
