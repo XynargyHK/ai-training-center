@@ -61,14 +61,39 @@ export async function POST(request: NextRequest) {
 
     const supabase = getSupabaseServiceClient()
 
-    // Check if profile exists
-    const { data: existing } = await supabase
+    // Check if profile exists by user_id first, then by email
+    let existing = null
+
+    const { data: byUserId } = await supabase
       .from('customer_profiles')
-      .select('id')
+      .select('id, user_id, email, shipping_address')
       .eq('user_id', userId)
       .maybeSingle()
 
-    console.log('[API] Existing profile:', existing)
+    if (byUserId) {
+      existing = byUserId
+    } else if (email) {
+      // Try to find by email if not found by user_id
+      const { data: byEmail } = await supabase
+        .from('customer_profiles')
+        .select('id, user_id, email, shipping_address')
+        .eq('email', email)
+        .maybeSingle()
+
+      if (byEmail) {
+        existing = byEmail
+        // Update the user_id if it was null
+        if (!byEmail.user_id) {
+          await supabase
+            .from('customer_profiles')
+            .update({ user_id: userId })
+            .eq('id', byEmail.id)
+        }
+      }
+    }
+
+    console.log('[API] Existing profile found:', existing)
+    console.log('[API] Existing shipping_address:', existing?.shipping_address)
 
     if (existing) {
       // Update existing profile - only update fields that are passed
