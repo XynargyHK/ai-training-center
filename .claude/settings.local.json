@@ -109,7 +109,9 @@
       "Bash(file \"C:\\\\Users\\\\Denny\\\\.claude\\\\file-history\\\\fcef344c-5964-4f48-9ac2-5c4fa381d9bf\"/*)",
       "Bash(for f in /c/Users/Denny/.claude/file-history/fcef344c-5964-4f48-9ac2-5c4fa381d9bf/*)",
       "Bash(do grep -il \"lander\" \"$f\")",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(git status:*)",
+      "Bash(echo.:*)"
     ],
     "deny": [],
     "ask": []

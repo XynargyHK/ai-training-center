@@ -5,6 +5,7 @@ import { Menu, X, Search, User, ShoppingCart, Globe, Check } from 'lucide-react'
 import { getFontClass, headlineFont, serifFont } from '@/lib/fonts'
 import { useCart } from './CartProviderSSR'
 import { supabase } from '@/lib/supabase'
+import AccountModal from './AccountModal'
 
 interface HeaderSSRProps {
   logoUrl: string
@@ -19,6 +20,7 @@ interface HeaderSSRProps {
   currentLang: string
   languages: { country: string; language_code: string }[]
   bodyFont?: string
+  headingFont?: string
   accountUrl?: string
 }
 
@@ -45,11 +47,13 @@ export default function HeaderSSR({
   currentLang,
   languages,
   bodyFont,
+  headingFont,
   accountUrl = '/account',
 }: HeaderSSRProps) {
   const { cartItemCount, openCart } = useCart()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false)
+  const [showAccountModal, setShowAccountModal] = useState(false)
   const [authUserName, setAuthUserName] = useState<string | null>(null)
 
   // Check auth state
@@ -159,8 +163,8 @@ export default function HeaderSSR({
 
             {/* Account */}
             {showAccount && (
-              <a
-                href={accountUrl}
+              <button
+                onClick={() => setShowAccountModal(true)}
                 className="hidden md:flex items-center gap-1.5 p-2 text-black hover:opacity-80 transition-colors"
               >
                 <User className="w-5 h-5" />
@@ -169,7 +173,7 @@ export default function HeaderSSR({
                     Hi, {authUserName}
                   </span>
                 )}
-              </a>
+              </button>
             )}
 
             {/* Cart */}
@@ -247,14 +251,13 @@ export default function HeaderSSR({
             ))}
             {/* Mobile account link */}
             {showAccount && (
-              <a
-                href={accountUrl}
+              <button
                 className={`px-4 py-3 text-black hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm font-bold tracking-[0.15em] uppercase w-full text-left ${headlineFont.className}`}
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => { setMobileMenuOpen(false); setShowAccountModal(true) }}
               >
                 <User className="w-4 h-4" />
                 {authUserName ? `Hi, ${authUserName}` : 'My Account'}
-              </a>
+              </button>
             )}
             {/* Mobile language selector */}
             {languages.length > 1 && (
@@ -278,6 +281,16 @@ export default function HeaderSSR({
           </nav>
         </div>
       )}
+
+      {/* Account Modal */}
+      <AccountModal
+        isOpen={showAccountModal}
+        onClose={() => setShowAccountModal(false)}
+        onSignOut={() => setAuthUserName(null)}
+        headingFont={headingFont}
+        bodyFont={bodyFont}
+        language={currentLang}
+      />
     </header>
   )
 }

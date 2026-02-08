@@ -311,7 +311,8 @@ export default function LandingPageSSR({
           countryPath={countryPath}
           currentLang={lang}
           languages={languagesForCountry}
-          bodyFont={landingPage.body_font}
+          bodyFont={bodyFontFamily}
+          headingFont={headingFontFamily}
           accountUrl={landingPage.account_url || '/account'}
         />
 
