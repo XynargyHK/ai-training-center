@@ -212,6 +212,7 @@ export default function AccountModal({
 
   const loadProfile = async () => {
     if (!user) return
+    console.log('[AccountModal] loadProfile for user_id:', user.id)
     try {
       const res = await fetch(`/api/customer/account?userId=${user.id}`)
       const data = await res.json()
@@ -341,6 +342,7 @@ export default function AccountModal({
         postal_code: editForm.postal_code,
         country: editForm.addressCountry
       }
+      console.log('[AccountModal] Saving for user_id:', user.id)
       console.log('[AccountModal] Saving shipping address:', shippingAddress)
       const res = await fetch('/api/customer/account', {
         method: 'POST',
