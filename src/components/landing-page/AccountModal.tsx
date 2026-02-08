@@ -339,6 +339,7 @@ export default function AccountModal({
         postal_code: editForm.postal_code,
         country: editForm.addressCountry
       }
+      console.log('[AccountModal] Saving shipping address:', shippingAddress)
       const res = await fetch('/api/customer/account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -351,6 +352,7 @@ export default function AccountModal({
         })
       })
       const data = await res.json()
+      console.log('[AccountModal] Save response:', data)
       if (data.success) {
         setProfile(data.profile)
         setEditing(false)

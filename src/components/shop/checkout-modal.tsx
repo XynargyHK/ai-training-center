@@ -378,6 +378,8 @@ export default function CheckoutModal({
           try {
             const res = await fetch(`/api/customer/account?userId=${session.user.id}`)
             const data = await res.json()
+            console.log('[CheckoutModal] Loaded profile:', data.profile)
+            console.log('[CheckoutModal] shipping_address:', data.profile?.shipping_address)
             if (data.success && data.profile) {
               // Pre-fill from saved profile
               if (data.profile.name) setCustomerInfo(prev => ({ ...prev, name: data.profile.name }))
@@ -394,6 +396,7 @@ export default function CheckoutModal({
               }
               // Pre-fill saved shipping address
               if (data.profile.shipping_address) {
+                console.log('[CheckoutModal] Setting shipping address:', data.profile.shipping_address)
                 setShippingAddress(data.profile.shipping_address)
               }
             }
