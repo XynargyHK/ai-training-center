@@ -314,6 +314,7 @@ export default function LandingPageSSR({
           bodyFont={bodyFontFamily}
           headingFont={headingFontFamily}
           accountUrl={landingPage.account_url || '/account'}
+          country={country}
         />
 
         {/* Hero Carousel */}

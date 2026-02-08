@@ -46,6 +46,17 @@ interface Order {
   order_items: OrderItem[]
 }
 
+// Phone country codes by country
+const phoneCountryCodes: Record<string, { code: string; flag: string; name: string }> = {
+  HK: { code: '+852', flag: '🇭🇰', name: 'Hong Kong' },
+  US: { code: '+1', flag: '🇺🇸', name: 'USA' },
+  SG: { code: '+65', flag: '🇸🇬', name: 'Singapore' },
+  GB: { code: '+44', flag: '🇬🇧', name: 'UK' },
+  CN: { code: '+86', flag: '🇨🇳', name: 'China' },
+  TW: { code: '+886', flag: '🇹🇼', name: 'Taiwan' },
+  JP: { code: '+81', flag: '🇯🇵', name: 'Japan' },
+}
+
 interface AccountModalProps {
   isOpen: boolean
   onClose: () => void
@@ -53,6 +64,7 @@ interface AccountModalProps {
   headingFont?: string
   bodyFont?: string
   language?: string
+  country?: string
 }
 
 export default function AccountModal({
@@ -61,7 +73,8 @@ export default function AccountModal({
   onSignOut,
   headingFont = 'Josefin Sans',
   bodyFont = 'Cormorant Garamond',
-  language = 'en'
+  language = 'en',
+  country = 'US'
 }: AccountModalProps) {
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [loading, setLoading] = useState(true)
@@ -72,7 +85,17 @@ export default function AccountModal({
   const [activeTab, setActiveTab] = useState<'profile' | 'orders'>('profile')
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [editForm, setEditForm] = useState({ name: '', email: '', phone: '' })
+  const [phoneCode, setPhoneCode] = useState(phoneCountryCodes[country]?.code || '+1')
+  const [editForm, setEditForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    postal_code: '',
+    addressCountry: ''
+  })
   const [socialLoading, setSocialLoading] = useState<'google' | 'facebook' | null>(null)
 
   // Translations
@@ -82,12 +105,18 @@ export default function AccountModal({
     profile: '個人資料',
     orders: '訂單',
     profileInfo: '個人資料',
+    shippingAddress: '送貨地址',
     edit: '編輯',
     cancel: '取消',
     save: '儲存',
     name: '姓名',
     email: '電郵',
     phone: '電話',
+    address: '街道地址',
+    city: '城市',
+    state: '州/省',
+    postalCode: '郵遞區號',
+    country: '國家/地區',
     notSet: '未設定',
     signedInVia: '透過以下方式登入',
     noOrders: '暫無訂單',
@@ -111,12 +140,18 @@ export default function AccountModal({
     profile: 'Profile',
     orders: 'Orders',
     profileInfo: 'Profile Information',
+    shippingAddress: 'Shipping Address',
     edit: 'Edit',
     cancel: 'Cancel',
     save: 'Save',
     name: 'Name',
     email: 'Email',
     phone: 'Phone',
+    address: 'Street Address',
+    city: 'City',
+    state: 'State/Province',
+    postalCode: 'Postal Code',
+    country: 'Country',
     notSet: 'Not set',
     signedInVia: 'Signed in via',
     noOrders: 'No orders yet',
@@ -182,16 +217,39 @@ export default function AccountModal({
       const data = await res.json()
       if (data.success && data.profile) {
         setProfile(data.profile)
+        const addr = data.profile.shipping_address || {}
+        // Parse phone - extract country code if present
+        let phone = data.profile.phone || ''
+        if (phone.startsWith('+')) {
+          // Try to match known country codes
+          for (const [, info] of Object.entries(phoneCountryCodes)) {
+            if (phone.startsWith(info.code)) {
+              setPhoneCode(info.code)
+              phone = phone.slice(info.code.length).trim()
+              break
+            }
+          }
+        }
         setEditForm({
           name: data.profile.name || user.user_metadata?.full_name || '',
           email: data.profile.email || user.email || '',
-          phone: data.profile.phone || ''
+          phone: phone,
+          address: addr.address || '',
+          city: addr.city || '',
+          state: addr.state || '',
+          postal_code: addr.postal_code || '',
+          addressCountry: addr.country || country
         })
       } else {
         setEditForm({
           name: user.user_metadata?.full_name || user.user_metadata?.name || '',
           email: user.email || '',
-          phone: ''
+          phone: '',
+          address: '',
+          city: '',
+          state: '',
+          postal_code: '',
+          addressCountry: country
         })
         await fetch('/api/customer/account', {
           method: 'POST',
@@ -271,6 +329,16 @@ export default function AccountModal({
     if (!user) return
     setSaving(true)
     try {
+      // Combine phone code with number
+      const fullPhone = editForm.phone ? `${phoneCode} ${editForm.phone}` : ''
+      // Build shipping address object
+      const shippingAddress = {
+        address: editForm.address,
+        city: editForm.city,
+        state: editForm.state,
+        postal_code: editForm.postal_code,
+        country: editForm.addressCountry
+      }
       const res = await fetch('/api/customer/account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -278,7 +346,8 @@ export default function AccountModal({
           userId: user.id,
           name: editForm.name,
           email: editForm.email,
-          phone: editForm.phone
+          phone: fullPhone,
+          shippingAddress: shippingAddress
         })
       })
       const data = await res.json()
@@ -468,6 +537,7 @@ export default function AccountModal({
                   </div>
 
                   <div className="space-y-4">
+                    {/* Name */}
                     <div>
                       <label className={`block text-[11px] text-gray-400 mb-0.5 ${getFontClass(bodyFont)}`}>{t.name}</label>
                       {editing ? (
@@ -484,22 +554,97 @@ export default function AccountModal({
                       )}
                     </div>
 
+                    {/* Email */}
                     <div>
                       <label className={`block text-[11px] text-gray-400 mb-0.5 ${getFontClass(bodyFont)}`}>{t.email}</label>
                       <p className={`text-sm text-gray-900 ${getFontClass(bodyFont)}`}>{user.email || t.notSet}</p>
                     </div>
 
+                    {/* Phone with country code */}
                     <div>
                       <label className={`block text-[11px] text-gray-400 mb-0.5 ${getFontClass(bodyFont)}`}>{t.phone}</label>
                       {editing ? (
-                        <input
-                          type="tel"
-                          value={editForm.phone}
-                          onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                          className={`w-full px-2.5 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-black ${getFontClass(bodyFont)}`}
-                        />
+                        <div className="flex gap-2">
+                          <select
+                            value={phoneCode}
+                            onChange={(e) => setPhoneCode(e.target.value)}
+                            className={`px-2 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-black ${getFontClass(bodyFont)}`}
+                          >
+                            {Object.entries(phoneCountryCodes).map(([key, info]) => (
+                              <option key={key} value={info.code}>{info.flag} {info.code}</option>
+                            ))}
+                          </select>
+                          <input
+                            type="tel"
+                            value={editForm.phone}
+                            onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                            placeholder="1234 5678"
+                            className={`flex-1 px-2.5 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-black ${getFontClass(bodyFont)}`}
+                          />
+                        </div>
                       ) : (
                         <p className={`text-sm text-gray-900 ${getFontClass(bodyFont)}`}>{profile?.phone || t.notSet}</p>
+                      )}
+                    </div>
+
+                    {/* Shipping Address Section */}
+                    <div className="pt-3 border-t border-gray-100">
+                      <label className={`block text-[11px] text-gray-400 mb-2 ${getFontClass(bodyFont)}`}>{t.shippingAddress}</label>
+
+                      {editing ? (
+                        <div className="space-y-3">
+                          <input
+                            type="text"
+                            value={editForm.address}
+                            onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                            placeholder={t.address}
+                            className={`w-full px-2.5 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-black ${getFontClass(bodyFont)}`}
+                          />
+                          <div className="grid grid-cols-2 gap-2">
+                            <input
+                              type="text"
+                              value={editForm.city}
+                              onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                              placeholder={t.city}
+                              className={`px-2.5 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-black ${getFontClass(bodyFont)}`}
+                            />
+                            <input
+                              type="text"
+                              value={editForm.state}
+                              onChange={(e) => setEditForm({ ...editForm, state: e.target.value })}
+                              placeholder={t.state}
+                              className={`px-2.5 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-black ${getFontClass(bodyFont)}`}
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <input
+                              type="text"
+                              value={editForm.postal_code}
+                              onChange={(e) => setEditForm({ ...editForm, postal_code: e.target.value })}
+                              placeholder={t.postalCode}
+                              className={`px-2.5 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-black ${getFontClass(bodyFont)}`}
+                            />
+                            <input
+                              type="text"
+                              value={editForm.addressCountry}
+                              onChange={(e) => setEditForm({ ...editForm, addressCountry: e.target.value })}
+                              placeholder={t.country}
+                              className={`px-2.5 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-black ${getFontClass(bodyFont)}`}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className={`text-sm text-gray-900 ${getFontClass(bodyFont)}`}>
+                          {profile?.shipping_address?.address ? (
+                            <>
+                              <p>{profile.shipping_address.address}</p>
+                              <p>{profile.shipping_address.city}{profile.shipping_address.state ? `, ${profile.shipping_address.state}` : ''} {profile.shipping_address.postal_code}</p>
+                              <p>{profile.shipping_address.country}</p>
+                            </>
+                          ) : (
+                            <p className="text-gray-400">{t.notSet}</p>
+                          )}
+                        </div>
                       )}
                     </div>
 

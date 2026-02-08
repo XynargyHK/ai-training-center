@@ -9,6 +9,17 @@ import { supabase } from '@/lib/supabase'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '')
 
+// Phone country codes by country
+const phoneCountryCodes: Record<string, { code: string; flag: string }> = {
+  HK: { code: '+852', flag: '🇭🇰' },
+  US: { code: '+1', flag: '🇺🇸' },
+  SG: { code: '+65', flag: '🇸🇬' },
+  GB: { code: '+44', flag: '🇬🇧' },
+  CN: { code: '+86', flag: '🇨🇳' },
+  TW: { code: '+886', flag: '🇹🇼' },
+  JP: { code: '+81', flag: '🇯🇵' },
+}
+
 // Translations for checkout modal
 const translations: Record<string, Record<string, string>> = {
   en: {
@@ -340,6 +351,7 @@ export default function CheckoutModal({
   )
 
   const [socialLoading, setSocialLoading] = useState<'google' | 'facebook' | null>(null)
+  const [phoneCode, setPhoneCode] = useState(phoneCountryCodes[country]?.code || '+1')
 
   // Check auth state on mount and reset state when modal opens
   useEffect(() => {
@@ -347,6 +359,7 @@ export default function CheckoutModal({
       setClientSecret('')
       setOrderId('')
       setStep('loading')
+      setPhoneCode(phoneCountryCodes[country]?.code || '+1')
 
       // Check if user is already logged in
       const checkAuth = async () => {
@@ -368,7 +381,17 @@ export default function CheckoutModal({
             if (data.success && data.profile) {
               // Pre-fill from saved profile
               if (data.profile.name) setCustomerInfo(prev => ({ ...prev, name: data.profile.name }))
-              if (data.profile.phone) setCustomerInfo(prev => ({ ...prev, phone: data.profile.phone }))
+              if (data.profile.phone) {
+                // Parse phone country code if present
+                const savedPhone = data.profile.phone
+                const matchedCode = Object.values(phoneCountryCodes).find(({ code }) => savedPhone.startsWith(code))
+                if (matchedCode) {
+                  setPhoneCode(matchedCode.code)
+                  setCustomerInfo(prev => ({ ...prev, phone: savedPhone.replace(matchedCode.code, '').trim() }))
+                } else {
+                  setCustomerInfo(prev => ({ ...prev, phone: savedPhone }))
+                }
+              }
               // Pre-fill saved shipping address
               if (data.profile.shipping_address) {
                 setShippingAddress(data.profile.shipping_address)
@@ -386,7 +409,7 @@ export default function CheckoutModal({
       }
       checkAuth()
     }
-  }, [isOpen])
+  }, [isOpen, country])
 
   // Listen for auth state changes (social login callback)
   useEffect(() => {
@@ -535,6 +558,9 @@ export default function CheckoutModal({
       return
     }
 
+    // Combine phone code with phone number
+    const fullPhone = customerInfo.phone ? `${phoneCode}${customerInfo.phone.replace(/^\s+/, '')}` : ''
+
     try {
       // Create payment intent
       const response = await fetch('/api/shop/create-payment-intent', {
@@ -545,7 +571,8 @@ export default function CheckoutModal({
           currency: currency,
           metadata: {
             customer_email: customerInfo.email,
-            customer_name: customerInfo.name
+            customer_name: customerInfo.name,
+            customer_phone: fullPhone
           }
         })
       })
@@ -554,6 +581,11 @@ export default function CheckoutModal({
 
       if (data.error) {
         throw new Error(data.error)
+      }
+
+      // Update customerInfo with combined phone for the payment step
+      if (fullPhone) {
+        setCustomerInfo(prev => ({ ...prev, phone: fullPhone }))
       }
 
       setClientSecret(data.clientSecret)
@@ -569,19 +601,20 @@ export default function CheckoutModal({
     setStep('success')
     onSuccess(orderId)
 
-    // Save shipping address to customer profile for next time
-    if (currentUser?.id && shippingAddress.address) {
+    // Save profile data (phone with country code, shipping address) for next time
+    if (currentUser?.id) {
       try {
         await fetch('/api/customer/account', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             userId: currentUser.id,
-            shippingAddress: shippingAddress
+            phone: customerInfo.phone || null,
+            shippingAddress: shippingAddress.address ? shippingAddress : null
           })
         })
       } catch (err) {
-        console.error('Failed to save shipping address:', err)
+        console.error('Failed to save profile:', err)
       }
     }
   }
@@ -732,8 +765,8 @@ export default function CheckoutModal({
                 </div>
               </div>
 
-              {/* Social Login - Quick Fill */}
-              {enableSocialLogin && (
+              {/* Social Login - Quick Fill (only show if not already logged in) */}
+              {enableSocialLogin && !currentUser && (
               <div>
                 <h3 className={`font-light tracking-[0.15em] uppercase text-gray-900 mb-3 ${getFontClass(headingFont)}`}>{t.quickFill}</h3>
                 <div className="flex gap-3 mb-3">
@@ -813,13 +846,26 @@ export default function CheckoutModal({
                     <label className={`block text-sm font-medium text-gray-700 mb-1 ${getFontClass(bodyFont)}`}>
                       {t.phoneOptional}
                     </label>
-                    <input
-                      type="tel"
-                      value={customerInfo.phone}
-                      onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                      placeholder={language === 'tw' ? '+852 1234 5678' : '+1 (555) 123-4567'}
-                    />
+                    <div className="flex">
+                      <select
+                        value={phoneCode}
+                        onChange={(e) => setPhoneCode(e.target.value)}
+                        className="px-2 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-black focus:border-transparent bg-gray-50 text-sm"
+                      >
+                        {Object.entries(phoneCountryCodes).map(([code, { code: dialCode, flag }]) => (
+                          <option key={code} value={dialCode}>
+                            {flag} {dialCode}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="tel"
+                        value={customerInfo.phone}
+                        onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
+                        className="flex-1 px-4 py-2 border border-l-0 border-gray-300 rounded-r-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                        placeholder={language === 'tw' ? '1234 5678' : '(555) 123-4567'}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

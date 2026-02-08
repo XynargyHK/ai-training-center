@@ -22,6 +22,7 @@ interface HeaderSSRProps {
   bodyFont?: string
   headingFont?: string
   accountUrl?: string
+  country?: string
 }
 
 const langName: Record<string, string> = {
@@ -49,6 +50,7 @@ export default function HeaderSSR({
   bodyFont,
   headingFont,
   accountUrl = '/account',
+  country = 'US',
 }: HeaderSSRProps) {
   const { cartItemCount, openCart } = useCart()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -286,6 +288,7 @@ export default function HeaderSSR({
         headingFont={headingFont}
         bodyFont={bodyFont}
         language={currentLang}
+        country={country}
       />
     </header>
   )
