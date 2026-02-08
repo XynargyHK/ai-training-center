@@ -98,8 +98,9 @@ export default function AccountModal({
   })
   const [socialLoading, setSocialLoading] = useState<'google' | 'facebook' | null>(null)
 
-  // Translations
-  const t = language === 'tw' ? {
+  // Translations - support both 'tw' and 'zh-Hant' for Traditional Chinese
+  const isChinese = language === 'tw' || language === 'zh-Hant'
+  const t = isChinese ? {
     myAccount: '我的帳戶',
     signOut: '登出',
     profile: '個人資料',
@@ -316,7 +317,7 @@ export default function AccountModal({
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(language === 'tw' ? 'zh-TW' : 'en-US', {
+    return new Date(dateString).toLocaleDateString(isChinese ? 'zh-TW' : 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'

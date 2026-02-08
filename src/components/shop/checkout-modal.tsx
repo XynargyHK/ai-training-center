@@ -323,7 +323,10 @@ export default function CheckoutModal({
   language = 'en',
   enableSocialLogin = false
 }: CheckoutModalProps) {
-  const t = translations[language] || translations.en
+  // Support both 'tw' and 'zh-Hant' for Traditional Chinese
+  const langKey = (language === 'zh-Hant' || isChinese) ? 'tw' : language
+  const t = translations[langKey] || translations.en
+  const isChinese = langKey === 'tw'
   const currency = countryCurrencyMap[country] || 'usd'
   const currencySymbol = currencySymbolMap[currency] || '$'
 
@@ -652,8 +655,8 @@ export default function CheckoutModal({
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <h2 className={`text-xl font-light tracking-[0.2em] uppercase text-gray-900 ${getFontClass(headingFont)}`}>
-            {step === 'loading' && (language === 'tw' ? '載入中...' : 'Loading...')}
-            {step === 'login' && (language === 'tw' ? '登入' : 'Sign In')}
+            {step === 'loading' && (isChinese ? '載入中...' : 'Loading...')}
+            {step === 'login' && (isChinese ? '登入' : 'Sign In')}
             {step === 'info' && t.checkout}
             {step === 'payment' && t.payment}
             {step === 'success' && t.orderConfirmed}
@@ -704,7 +707,7 @@ export default function CheckoutModal({
               {/* Login Message */}
               <div className="text-center py-4">
                 <p className={`text-gray-600 mb-6 font-light ${getFontClass(bodyFont)}`}>
-                  {language === 'tw' ? '請先登入以繼續結帳' : 'Please sign in to continue checkout'}
+                  {isChinese ? '請先登入以繼續結帳' : 'Please sign in to continue checkout'}
                 </p>
 
                 {/* Social Login Buttons */}
@@ -725,7 +728,7 @@ export default function CheckoutModal({
                         <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                       </svg>
                     )}
-                    <span>{language === 'tw' ? '使用 Google 登入' : 'Continue with Google'}</span>
+                    <span>{isChinese ? '使用 Google 登入' : 'Continue with Google'}</span>
                   </button>
 
                   <button
@@ -741,7 +744,7 @@ export default function CheckoutModal({
                         <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                       </svg>
                     )}
-                    <span>{language === 'tw' ? '使用 Facebook 登入' : 'Continue with Facebook'}</span>
+                    <span>{isChinese ? '使用 Facebook 登入' : 'Continue with Facebook'}</span>
                   </button>
                 </div>
               </div>
@@ -844,7 +847,7 @@ export default function CheckoutModal({
                       value={customerInfo.name}
                       onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                      placeholder={language === 'tw' ? '陳大文' : 'John Doe'}
+                      placeholder={isChinese ? '陳大文' : 'John Doe'}
                     />
                   </div>
                   <div>
@@ -881,7 +884,7 @@ export default function CheckoutModal({
                         value={customerInfo.phone}
                         onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
                         className="flex-1 px-4 py-2 border border-l-0 border-gray-300 rounded-r-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                        placeholder={language === 'tw' ? '1234 5678' : '(555) 123-4567'}
+                        placeholder={isChinese ? '1234 5678' : '(555) 123-4567'}
                       />
                     </div>
                   </div>
@@ -901,7 +904,7 @@ export default function CheckoutModal({
                       value={shippingAddress.address}
                       onChange={(e) => setShippingAddress({ ...shippingAddress, address: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                      placeholder={language === 'tw' ? '中環德輔道中123號' : '123 Main St'}
+                      placeholder={isChinese ? '中環德輔道中123號' : '123 Main St'}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -914,7 +917,7 @@ export default function CheckoutModal({
                         value={shippingAddress.city}
                         onChange={(e) => setShippingAddress({ ...shippingAddress, city: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                        placeholder={language === 'tw' ? '香港' : 'New York'}
+                        placeholder={isChinese ? '香港' : 'New York'}
                       />
                     </div>
                     <div>
@@ -926,7 +929,7 @@ export default function CheckoutModal({
                         value={shippingAddress.state}
                         onChange={(e) => setShippingAddress({ ...shippingAddress, state: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                        placeholder={language === 'tw' ? '香港島' : 'NY'}
+                        placeholder={isChinese ? '香港島' : 'NY'}
                       />
                     </div>
                   </div>
@@ -952,7 +955,7 @@ export default function CheckoutModal({
                         value={shippingAddress.country}
                         onChange={(e) => setShippingAddress({ ...shippingAddress, country: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                        placeholder={language === 'tw' ? '香港' : 'US'}
+                        placeholder={isChinese ? '香港' : 'US'}
                       />
                     </div>
                   </div>
