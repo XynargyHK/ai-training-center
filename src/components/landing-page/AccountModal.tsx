@@ -215,6 +215,8 @@ export default function AccountModal({
     try {
       const res = await fetch(`/api/customer/account?userId=${user.id}`)
       const data = await res.json()
+      console.log('[AccountModal] loadProfile response:', data)
+      console.log('[AccountModal] loadProfile shipping_address:', data.profile?.shipping_address)
       if (data.success && data.profile) {
         setProfile(data.profile)
         const addr = data.profile.shipping_address || {}
@@ -354,11 +356,16 @@ export default function AccountModal({
       const data = await res.json()
       console.log('[AccountModal] Save response:', data)
       if (data.success) {
+        console.log('[AccountModal] Saved profile shipping_address:', data.profile?.shipping_address)
         setProfile(data.profile)
         setEditing(false)
+      } else {
+        console.error('[AccountModal] Save failed:', data.error)
+        alert('Failed to save: ' + (data.error || 'Unknown error'))
       }
     } catch (error) {
       console.error('Failed to save profile:', error)
+      alert('Failed to save profile. Please try again.')
     } finally {
       setSaving(false)
     }
