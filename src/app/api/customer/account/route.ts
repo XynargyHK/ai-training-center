@@ -61,38 +61,69 @@ export async function POST(request: NextRequest) {
 
     const supabase = getSupabaseServiceClient()
 
-    // Build upsert data - only include defined fields
-    const upsertData: Record<string, any> = {
-      user_id: userId,
-      updated_at: new Date().toISOString()
-    }
-    if (name !== undefined) upsertData.name = name
-    if (email !== undefined) upsertData.email = email
-    if (phone !== undefined) upsertData.phone = phone
-    if (shippingAddress !== undefined) upsertData.shipping_address = shippingAddress
-    if (businessUnitId !== undefined) upsertData.business_unit_id = businessUnitId
-
-    console.log('[API] Upserting profile with data:', upsertData)
-
-    // Use upsert to insert or update based on user_id
-    const { data, error } = await supabase
+    // Check if profile exists
+    const { data: existing } = await supabase
       .from('customer_profiles')
-      .upsert(upsertData, {
-        onConflict: 'user_id',
-        ignoreDuplicates: false
-      })
-      .select()
-      .single()
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle()
 
-    if (error) {
-      console.error('Error upserting profile:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    console.log('[API] Existing profile:', existing)
+
+    if (existing) {
+      // Update existing profile - only update fields that are passed
+      const updateData: Record<string, any> = { updated_at: new Date().toISOString() }
+      if (name !== undefined) updateData.name = name
+      if (email !== undefined) updateData.email = email
+      if (phone !== undefined) updateData.phone = phone
+      if (shippingAddress !== undefined) updateData.shipping_address = shippingAddress
+
+      console.log('[API] Updating profile with data:', updateData)
+
+      const { data, error } = await supabase
+        .from('customer_profiles')
+        .update(updateData)
+        .eq('id', existing.id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating profile:', error)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+
+      console.log('[API] Updated profile:', data)
+      console.log('[API] Updated shipping_address:', data?.shipping_address)
+
+      return NextResponse.json({ success: true, profile: data })
+    } else {
+      // Create new profile
+      const insertData: Record<string, any> = {
+        user_id: userId,
+        source: 'social_login'
+      }
+      if (name !== undefined) insertData.name = name
+      if (email !== undefined) insertData.email = email
+      if (phone !== undefined) insertData.phone = phone
+      if (shippingAddress !== undefined) insertData.shipping_address = shippingAddress
+      if (businessUnitId !== undefined) insertData.business_unit_id = businessUnitId
+
+      console.log('[API] Creating profile with data:', insertData)
+
+      const { data, error } = await supabase
+        .from('customer_profiles')
+        .insert(insertData)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error creating profile:', error)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+
+      console.log('[API] Created profile:', data)
+      return NextResponse.json({ success: true, profile: data })
     }
-
-    console.log('[API] Upserted profile result:', data)
-    console.log('[API] Upserted shipping_address:', data?.shipping_address)
-
-    return NextResponse.json({ success: true, profile: data })
   } catch (error) {
     console.error('Customer account POST error:', error)
     return NextResponse.json(
