@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { Menu, X, Search, User, ShoppingCart, Globe, Check } from 'lucide-react'
 import { getFontClass, headlineFont, serifFont } from '@/lib/fonts'
 import { useCart } from './CartProviderSSR'
@@ -48,7 +47,6 @@ export default function HeaderSSR({
   bodyFont,
   accountUrl = '/account',
 }: HeaderSSRProps) {
-  const router = useRouter()
   const { cartItemCount, openCart } = useCart()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false)
@@ -89,10 +87,11 @@ export default function HeaderSSR({
     setShowLanguageDropdown(false)
     setMobileMenuOpen(false)
     const currentPath = window.location.pathname
+    // Use full page reload to ensure ISR page fetches correct language data
     if (languageCode === 'en') {
-      router.push(currentPath)
+      window.location.href = currentPath
     } else {
-      router.push(`${currentPath}?lang=${languageCode}`)
+      window.location.href = `${currentPath}?lang=${languageCode}`
     }
   }
 
