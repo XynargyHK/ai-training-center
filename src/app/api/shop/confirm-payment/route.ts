@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       .from('orders')
       .update({
         payment_status: 'paid',
-        status: 'confirmed',
+        status: 'processing',
         metadata: {
           payment_intent_id: paymentIntentId,
           payment_method: paymentIntent.payment_method,
