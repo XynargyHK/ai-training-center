@@ -360,6 +360,14 @@ export default function CheckoutModal({
       setOrderId('')
       setStep('loading')
       setPhoneCode(phoneCountryCodes[country]?.code || '+1')
+      // Reset shipping address to defaults before loading
+      setShippingAddress({
+        address: '',
+        city: '',
+        state: '',
+        postal_code: '',
+        country: country || 'US'
+      })
 
       // Check if user is already logged in
       const checkAuth = async () => {
@@ -395,9 +403,16 @@ export default function CheckoutModal({
                 }
               }
               // Pre-fill saved shipping address
-              if (data.profile.shipping_address) {
-                console.log('[CheckoutModal] Setting shipping address:', data.profile.shipping_address)
-                setShippingAddress(data.profile.shipping_address)
+              const savedAddr = data.profile.shipping_address
+              if (savedAddr && typeof savedAddr === 'object') {
+                console.log('[CheckoutModal] Setting shipping address:', savedAddr)
+                setShippingAddress({
+                  address: savedAddr.address || '',
+                  city: savedAddr.city || '',
+                  state: savedAddr.state || '',
+                  postal_code: savedAddr.postal_code || '',
+                  country: savedAddr.country || country || 'US'
+                })
               }
             }
           } catch (err) {
