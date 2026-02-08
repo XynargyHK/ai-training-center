@@ -28,6 +28,9 @@ export async function GET(request: NextRequest) {
       .eq('user_id', userId)
       .maybeSingle()
 
+    console.log('[API] GET profile for userId:', userId)
+    console.log('[API] Profile shipping_address:', profile?.shipping_address)
+
     if (error) {
       console.error('Error fetching profile:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
@@ -48,6 +51,9 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { userId, name, email, phone, businessUnitId, shippingAddress } = body
+
+    console.log('[API] POST profile - userId:', userId)
+    console.log('[API] POST profile - shippingAddress received:', shippingAddress)
 
     if (!userId) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 })
@@ -70,6 +76,8 @@ export async function POST(request: NextRequest) {
       if (phone !== undefined) updateData.phone = phone
       if (shippingAddress !== undefined) updateData.shipping_address = shippingAddress
 
+      console.log('[API] Updating profile with data:', updateData)
+
       const { data, error } = await supabase
         .from('customer_profiles')
         .update(updateData)
@@ -81,6 +89,9 @@ export async function POST(request: NextRequest) {
         console.error('Error updating profile:', error)
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
+
+      console.log('[API] Updated profile result:', data)
+      console.log('[API] Updated shipping_address:', data?.shipping_address)
 
       return NextResponse.json({ success: true, profile: data, action: 'updated' })
     } else {
