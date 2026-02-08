@@ -317,7 +317,7 @@ export default function CheckoutModal({
   const currencySymbol = currencySymbolMap[currency] || '$'
 
   console.log('[CheckoutModal] country:', country, 'currency:', currency)
-  const [step, setStep] = useState<'login' | 'info' | 'payment' | 'success'>('login')
+  const [step, setStep] = useState<'loading' | 'login' | 'info' | 'payment' | 'success'>('loading')
   const [clientSecret, setClientSecret] = useState('')
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [customerInfo, setCustomerInfo] = useState({
@@ -346,10 +346,12 @@ export default function CheckoutModal({
     if (isOpen) {
       setClientSecret('')
       setOrderId('')
+      setStep('loading')
 
       // Check if user is already logged in
       const checkAuth = async () => {
         const { data: { session } } = await supabase.auth.getSession()
+        console.log('[CheckoutModal] Auth check - session:', session?.user?.email || 'none')
         if (session?.user) {
           setCurrentUser(session.user)
           const meta = session.user.user_metadata || {}
@@ -599,6 +601,7 @@ export default function CheckoutModal({
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <h2 className={`text-xl font-light tracking-[0.2em] uppercase text-gray-900 ${getFontClass(headingFont)}`}>
+            {step === 'loading' && (language === 'tw' ? '載入中...' : 'Loading...')}
             {step === 'login' && (language === 'tw' ? '登入' : 'Sign In')}
             {step === 'info' && t.checkout}
             {step === 'payment' && t.payment}
@@ -616,6 +619,13 @@ export default function CheckoutModal({
 
         {/* Content */}
         <div className="p-6">
+          {/* Loading State */}
+          {step === 'loading' && (
+            <div className="flex items-center justify-center py-12">
+              <div className="w-8 h-8 border-2 border-gray-300 border-t-black rounded-full animate-spin" />
+            </div>
+          )}
+
           {/* Step 0: Login Required */}
           {step === 'login' && (
             <div className="space-y-6">
