@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { userId, name, email, phone, businessUnitId } = body
+    const { userId, name, email, phone, businessUnitId, shippingAddress } = body
 
     if (!userId) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 })
@@ -68,6 +68,7 @@ export async function POST(request: NextRequest) {
       if (name !== undefined) updateData.name = name
       if (email !== undefined) updateData.email = email
       if (phone !== undefined) updateData.phone = phone
+      if (shippingAddress !== undefined) updateData.shipping_address = shippingAddress
 
       const { data, error } = await supabase
         .from('customer_profiles')
@@ -91,6 +92,7 @@ export async function POST(request: NextRequest) {
           name: name || null,
           email: email || null,
           phone: phone || null,
+          shipping_address: shippingAddress || null,
           business_unit_id: businessUnitId || null,
           source: 'social_login'
         })

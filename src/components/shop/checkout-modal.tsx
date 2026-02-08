@@ -358,6 +358,24 @@ export default function CheckoutModal({
             email: session.user.email || '',
             phone: meta.phone || ''
           })
+
+          // Load saved profile including shipping address
+          try {
+            const res = await fetch(`/api/customer/account?userId=${session.user.id}`)
+            const data = await res.json()
+            if (data.success && data.profile) {
+              // Pre-fill from saved profile
+              if (data.profile.name) setCustomerInfo(prev => ({ ...prev, name: data.profile.name }))
+              if (data.profile.phone) setCustomerInfo(prev => ({ ...prev, phone: data.profile.phone }))
+              // Pre-fill saved shipping address
+              if (data.profile.shipping_address) {
+                setShippingAddress(data.profile.shipping_address)
+              }
+            }
+          } catch (err) {
+            console.error('Failed to load profile:', err)
+          }
+
           setStep('info')
         } else {
           setCurrentUser(null)
@@ -544,10 +562,26 @@ export default function CheckoutModal({
     }
   }
 
-  const handlePaymentSuccess = (orderId: string) => {
+  const handlePaymentSuccess = async (orderId: string) => {
     setOrderId(orderId)
     setStep('success')
     onSuccess(orderId)
+
+    // Save shipping address to customer profile for next time
+    if (currentUser?.id && shippingAddress.address) {
+      try {
+        await fetch('/api/customer/account', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: currentUser.id,
+            shippingAddress: shippingAddress
+          })
+        })
+      } catch (err) {
+        console.error('Failed to save shipping address:', err)
+      }
+    }
   }
 
   if (!isOpen) return null

@@ -93,6 +93,8 @@ export default function AccountModal({
     noOrders: '暫無訂單',
     orderHistory: '您的訂單記錄將顯示在這裡',
     order: '訂單',
+    pending: '待處理',
+    confirmed: '已確認',
     processing: '處理中',
     shipped: '已發貨',
     delivered: '已送達',
@@ -121,6 +123,8 @@ export default function AccountModal({
     noOrders: 'No orders yet',
     orderHistory: 'Your order history will appear here',
     order: 'Order',
+    pending: 'Pending',
+    confirmed: 'Confirmed',
     processing: 'Processing',
     shipped: 'Shipped',
     delivered: 'Delivered',
@@ -224,6 +228,8 @@ export default function AccountModal({
 
   const getStatusIcon = (status: string) => {
     switch (status) {
+      case 'pending': return <Clock className="w-4 h-4 text-gray-400" />
+      case 'confirmed': return <CheckCircle className="w-4 h-4 text-green-500" />
       case 'processing': return <Clock className="w-4 h-4 text-yellow-500" />
       case 'shipped': return <Truck className="w-4 h-4 text-blue-500" />
       case 'delivered': return <CheckCircle className="w-4 h-4 text-green-500" />
@@ -233,6 +239,8 @@ export default function AccountModal({
 
   const getStatusLabel = (status: string) => {
     switch (status) {
+      case 'pending': return t.pending
+      case 'confirmed': return t.confirmed
       case 'processing': return t.processing
       case 'shipped': return t.shipped
       case 'delivered': return t.delivered
@@ -242,6 +250,8 @@ export default function AccountModal({
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'pending': return 'bg-gray-100 text-gray-600'
+      case 'confirmed': return 'bg-green-100 text-green-700'
       case 'processing': return 'bg-yellow-100 text-yellow-700'
       case 'shipped': return 'bg-blue-100 text-blue-700'
       case 'delivered': return 'bg-green-100 text-green-700'
