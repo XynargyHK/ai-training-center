@@ -55,7 +55,7 @@ interface TrainingData {
 }
 
 const AITrainingCenter = () => {
-  const [activeTab, setActiveTab] = useState<'knowledge' | 'training' | 'analytics' | 'roleplay' | 'faq' | 'canned' | 'aimodel' | 'booking' | 'conversations'>('knowledge')
+  const [activeTab, setActiveTab] = useState<'knowledge' | 'training' | 'analytics' | 'roleplay' | 'faq' | 'canned' | 'aimodel' | 'booking' | 'history'>('knowledge')
   const [knowledgeEntries, setKnowledgeEntries] = useState<KnowledgeEntry[]>([])
   const [trainingData, setTrainingData] = useState<TrainingData[]>([])
   const [faqs, setFaqs] = useState<FAQ[]>([])
@@ -2062,7 +2062,7 @@ Format as JSON array:
               { id: 'canned', label: t.cannedMessages, icon: Mail },
               { id: 'roleplay', label: t.roleplay, icon: Users },
               { id: 'aimodel', label: t.aiModel, icon: Settings },
-              { id: 'conversations', label: t.conversations || 'Conversations', icon: MessageSquare }
+              { id: 'history', label: t.history || 'History', icon: MessageSquare }
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -4396,13 +4396,13 @@ Format as JSON array:
             </div>
           )}
 
-          {/* Conversations Tab */}
-          {activeTab === 'conversations' && (
+          {/* History Tab */}
+          {activeTab === 'history' && (
             <div className="h-[calc(100vh-200px)]">
               <iframe
-                src="/admin/conversations"
+                src="/admin/history"
                 className="w-full h-full border-0"
-                title="Conversations"
+                title="History"
               />
             </div>
           )}

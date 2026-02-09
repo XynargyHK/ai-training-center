@@ -636,6 +636,7 @@ export interface Translations {
   landingPageTab: string
   imageLibrary: string
   conversations: string
+  history: string
 
   // Industry Knowledge Section
   uploadDocumentsDesc: string
@@ -1377,6 +1378,7 @@ export const translations: Record<Language, Translations> = {
     landingPageTab: 'Landing Page',
     imageLibrary: 'Image Library',
     conversations: 'Conversations',
+    history: 'History',
 
     // Industry Knowledge Section
     uploadDocumentsDesc: 'Upload documents or scrape websites for AI staff to learn from',
@@ -2061,6 +2063,7 @@ export const translations: Record<Language, Translations> = {
     landingPageTab: '落地页',
     imageLibrary: '图片库',
     conversations: '对话记录',
+    history: '历史记录',
     uploadDocumentsDesc: '上传文件或抓取网站内容供AI员工学习',
     uploadDocument: '上传文件',
     browseFiles: '浏览文件',
@@ -2724,6 +2727,7 @@ export const translations: Record<Language, Translations> = {
     landingPageTab: '著陸頁',
     imageLibrary: '圖片庫',
     conversations: '對話記錄',
+    history: '歷史記錄',
     uploadDocumentsDesc: '上傳文件或擷取網站內容供AI員工學習',
     uploadDocument: '上傳文件',
     browseFiles: '瀏覽文件',
@@ -3387,6 +3391,7 @@ export const translations: Record<Language, Translations> = {
     landingPageTab: 'Trang Đích',
     imageLibrary: 'Thư Viện Hình Ảnh',
     conversations: 'Cuộc Hội Thoại',
+    history: 'Lịch Sử',
     uploadDocumentsDesc: 'Tải lên tài liệu hoặc thu thập nội dung web để AI nhân viên học hỏi',
     uploadDocument: 'Tải Lên Tài Liệu',
     browseFiles: 'Duyệt Tệp',
