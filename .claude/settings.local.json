@@ -113,7 +113,8 @@
       "Bash(git status:*)",
       "Bash(echo.:*)",
       "Bash(git revert:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(GIT_CURL_VERBOSE=1 git push:*)"
     ],
     "deny": [],
     "ask": []

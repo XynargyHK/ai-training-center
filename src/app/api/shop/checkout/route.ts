@@ -49,6 +49,8 @@ export async function POST(request: NextRequest) {
     const body: CheckoutData = await request.json()
     const { customer, shipping_address, items, subtotal, total, currency, notes, user_id, business_unit_id, business_unit, language } = body
 
+    console.log('📦 Checkout API - language received:', language)
+
     // Look up business_unit_id from slug if not provided directly
     let finalBusinessUnitId = business_unit_id
     if (!finalBusinessUnitId && business_unit) {

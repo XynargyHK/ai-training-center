@@ -80,6 +80,8 @@ export async function POST(request: NextRequest) {
 
       console.log('📧 Customer email:', customerEmail)
       console.log('📧 Customer name:', customerName)
+      console.log('📧 Order metadata:', JSON.stringify(existingOrder?.metadata))
+      console.log('📧 Language from metadata:', existingOrder?.metadata?.language)
 
       if (customerEmail) {
         const currencyCode = order.currency_code || 'USD'
