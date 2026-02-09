@@ -22,7 +22,7 @@ export function getLLMConfig() {
   // Fallback to environment variables
   return {
     provider: (process.env.LLM_PROVIDER as any) || 'google',
-    model: process.env.LLM_MODEL || 'gemini-1.5-flash',
+    model: process.env.LLM_MODEL || 'gemini-2.5-flash',
     anthropicKey: process.env.ANTHROPIC_API_KEY,
     openaiKey: process.env.OPENAI_API_KEY,
     googleKey: process.env.GOOGLE_GEMINI_API_KEY,

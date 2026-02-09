@@ -532,7 +532,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
       setMessages(prev => [...prev, aiMessage])
 
       // Save AI response to database
-      saveMessageToDatabase('ai', aiResponse, undefined, 'gemini-1.5-flash', 'google')
+      saveMessageToDatabase('ai', aiResponse, undefined, 'gemini-2.5-flash', 'google')
     } catch (error) {
       console.error('Error generating AI response:', error)
       const errorMessage: Message = {
