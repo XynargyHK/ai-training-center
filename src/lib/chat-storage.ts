@@ -280,9 +280,36 @@ export async function endChatSession(sessionId: string): Promise<void> {
 
     console.log('✅ Chat session ended:', sessionId)
 
+    // Trigger AI analysis of the conversation (async, don't block)
+    analyzeConversationAsync(sessionId, supabase)
+
   } catch (error) {
     console.error('End chat session error:', error)
     throw error
+  }
+}
+
+/**
+ * Analyze conversation asynchronously (non-blocking)
+ */
+async function analyzeConversationAsync(sessionId: string, supabase: any): Promise<void> {
+  try {
+    const { analyzeAndUpdateSession } = await import('./conversation-analyzer')
+
+    // Fetch messages
+    const { data: messages } = await supabase
+      .from('chat_messages')
+      .select('message_type, content, created_at')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: true })
+
+    if (messages && messages.length > 0) {
+      await analyzeAndUpdateSession(sessionId, messages, supabase)
+      console.log('✅ Conversation analyzed:', sessionId)
+    }
+  } catch (error) {
+    // Don't throw - this is a background task
+    console.error('Conversation analysis failed (non-blocking):', error)
   }
 }
 
