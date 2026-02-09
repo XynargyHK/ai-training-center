@@ -111,7 +111,9 @@
       "Bash(do grep -il \"lander\" \"$f\")",
       "Bash(done)",
       "Bash(git status:*)",
-      "Bash(echo.:*)"
+      "Bash(echo.:*)",
+      "Bash(git revert:*)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Brain, Database, Plus, Edit, Trash2, Save, BarChart3, Book, Sparkles, Users, User, HelpCircle, Mail, Upload, FileText, TestTube, Settings, Calendar, Globe, X, Languages } from 'lucide-react'
+import { Brain, Database, Plus, Edit, Trash2, Save, BarChart3, Book, Sparkles, Users, User, HelpCircle, Mail, Upload, FileText, TestTube, Settings, Calendar, Globe, X, Languages, MessageSquare } from 'lucide-react'
 import ProfileModal from './profile-modal'
 import RoleplayTraining from './roleplay-training'
 import KnowledgeBase from './knowledge-base'
@@ -55,7 +55,7 @@ interface TrainingData {
 }
 
 const AITrainingCenter = () => {
-  const [activeTab, setActiveTab] = useState<'knowledge' | 'training' | 'analytics' | 'roleplay' | 'faq' | 'canned' | 'aimodel' | 'booking'>('knowledge')
+  const [activeTab, setActiveTab] = useState<'knowledge' | 'training' | 'analytics' | 'roleplay' | 'faq' | 'canned' | 'aimodel' | 'booking' | 'conversations'>('knowledge')
   const [knowledgeEntries, setKnowledgeEntries] = useState<KnowledgeEntry[]>([])
   const [trainingData, setTrainingData] = useState<TrainingData[]>([])
   const [faqs, setFaqs] = useState<FAQ[]>([])
@@ -2061,7 +2061,8 @@ Format as JSON array:
               { id: 'faq', label: t.faq, icon: HelpCircle },
               { id: 'canned', label: t.cannedMessages, icon: Mail },
               { id: 'roleplay', label: t.roleplay, icon: Users },
-              { id: 'aimodel', label: t.aiModel, icon: Settings }
+              { id: 'aimodel', label: t.aiModel, icon: Settings },
+              { id: 'conversations', label: t.conversations || 'Conversations', icon: MessageSquare }
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -4392,6 +4393,17 @@ Format as JSON array:
                   )}
                 </form>
               </div>
+            </div>
+          )}
+
+          {/* Conversations Tab */}
+          {activeTab === 'conversations' && (
+            <div className="h-[calc(100vh-200px)]">
+              <iframe
+                src="/admin/conversations"
+                className="w-full h-full border-0"
+                title="Conversations"
+              />
             </div>
           )}
         </div>
