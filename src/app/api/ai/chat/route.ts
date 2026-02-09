@@ -38,7 +38,9 @@ export async function POST(request: NextRequest) {
       trainingMemory = {},
       language = 'en',  // Default to English
       image = null,  // Image data for vision models
-      userName = null  // User's name for personalized greeting
+      userName = null,  // User's name for personalized greeting
+      userProfile = null,  // User's profile data (for logged-in users)
+      userOrders = null  // User's order history (for logged-in users)
     } = await request.json()
 
     if (!message || typeof message !== 'string') {
@@ -87,7 +89,9 @@ export async function POST(request: NextRequest) {
       trainingMemory,
       language,
       image,
-      userName
+      userName,
+      userProfile,
+      userOrders
     )
 
     return NextResponse.json({
@@ -120,7 +124,9 @@ async function generateAIResponse(
   trainingMemory: {[key: string]: string[]} = {},
   language: string = 'en',
   image: string | null = null,
-  userName: string | null = null
+  userName: string | null = null,
+  userProfile: any = null,
+  userOrders: any[] | null = null
 ): Promise<string> {
 
   // Debug logging
@@ -129,6 +135,8 @@ async function generateAIResponse(
   console.log('Guidelines:', guidelines.length)
   console.log('User Message:', message)
   console.log('📷 Image provided:', image ? 'YES (length: ' + image.length + ')' : 'NO')
+  console.log('👤 User Profile:', userProfile ? 'YES' : 'NO')
+  console.log('📦 User Orders:', userOrders ? userOrders.length : 0)
 
   if (knowledgeBase.length > 0) {
     console.log('✅ Including ALL knowledge base entries:', knowledgeBase.length)
@@ -218,6 +226,8 @@ async function generateAIResponse(
     language,
     image,
     userName,
+    userProfile,
+    userOrders,
   }) + (trainingContext ? `\n${trainingContext}` : '')
 
   try {

@@ -110,6 +110,8 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
   const [businessUnitId, setBusinessUnitId] = useState<string | null>(null)
   const [socialLoading, setSocialLoading] = useState<'google' | 'facebook' | null>(null)
   const [hasActiveServices, setHasActiveServices] = useState(false)
+  const [userProfile, setUserProfile] = useState<any>(null)
+  const [userOrders, setUserOrders] = useState<any[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Check if already signed in — auto-fill name/email and skip pre-chat form
@@ -134,10 +136,50 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
         setUserEmail(session.user.email || '')
         setSocialLoading(null)
         setShowPreChatForm(false)
+        // Load profile and orders for logged-in user
+        loadUserProfileAndOrders(session.user.id)
       }
     })
     return () => subscription.unsubscribe()
   }, [enableSocialLogin])
+
+  // Load user profile and orders for AI context
+  const loadUserProfileAndOrders = async (userId: string) => {
+    try {
+      // Load profile
+      const profileRes = await fetch(`/api/customer/account?userId=${userId}`)
+      if (profileRes.ok) {
+        const profileData = await profileRes.json()
+        if (profileData.profile) {
+          setUserProfile(profileData.profile)
+          console.log('✅ Loaded user profile for AI context')
+        }
+      }
+
+      // Load orders
+      const ordersRes = await fetch(`/api/shop/orders?userId=${userId}`)
+      if (ordersRes.ok) {
+        const ordersData = await ordersRes.json()
+        if (ordersData.orders) {
+          setUserOrders(ordersData.orders)
+          console.log('✅ Loaded user orders for AI context:', ordersData.orders.length)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load user profile/orders:', error)
+    }
+  }
+
+  // Load profile/orders on initial auth check too
+  useEffect(() => {
+    const loadOnAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        loadUserProfileAndOrders(session.user.id)
+      }
+    }
+    loadOnAuth()
+  }, [])
 
   const handleSocialLogin = async (provider: 'google' | 'facebook') => {
     setSocialLoading(provider)
@@ -437,7 +479,9 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
         trainingMemory: currentStaff?.trainingMemory || {},
         language: selectedLanguage,  // Add selected language
         image: imageData,  // Add image data for vision models
-        userName: userName || undefined  // Add user's name for personalized greeting
+        userName: userName || undefined,  // Add user's name for personalized greeting
+        userProfile: userProfile || undefined,  // Add user profile for context
+        userOrders: userOrders.length > 0 ? userOrders : undefined  // Add user orders for context
       }
 
       console.log('Sending to API - knowledgeBase entries:', knowledgeBase.length)
@@ -445,6 +489,8 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
       console.log('Sending to API - guidelines entries:', guidelines.length)
       console.log('Sending to API - Staff:', currentStaff?.name, '(', currentStaff?.role, ')')
       console.log('Sending to API - Training Memory scenarios:', Object.keys(currentStaff?.trainingMemory || {}).length)
+      if (userProfile) console.log('Sending to API - User Profile: YES')
+      if (userOrders.length > 0) console.log('Sending to API - User Orders:', userOrders.length)
 
       const response = await fetch('/api/ai/chat', {
         method: 'POST',

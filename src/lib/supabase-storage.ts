@@ -26,6 +26,7 @@ export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 
 // Default business unit (skincoach) - used as fallback
 const DEFAULT_BUSINESS_UNIT_ID = '77313e61-2a19-4f3e-823b-80390dde8bd2' // skincoach
+const BUSINESS_UNIT_ID = DEFAULT_BUSINESS_UNIT_ID // Alias for vector search functions
 
 // ============================================
 // HELPER FUNCTIONS

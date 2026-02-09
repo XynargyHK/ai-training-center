@@ -25,6 +25,29 @@ export interface Guideline {
   content: string
 }
 
+export interface UserProfile {
+  id: string
+  full_name?: string
+  email?: string
+  phone?: string
+  skin_type?: string
+  skin_concerns?: string[]
+  preferences?: any
+  created_at?: string
+}
+
+export interface UserOrder {
+  id: string
+  order_number?: string
+  status: string
+  total_amount: number
+  currency: string
+  items?: any[]
+  created_at: string
+  shipping_address?: any
+  tracking_number?: string
+}
+
 export interface PromptOptions {
   // Core (shared by both livechat and roleplay)
   staffName: string
@@ -38,6 +61,10 @@ export interface PromptOptions {
   language?: string
   image?: string | null
   userName?: string | null
+
+  // User data (for logged-in customers)
+  userProfile?: UserProfile | null
+  userOrders?: UserOrder[] | null
 
   // Roleplay-specific
   scenario?: {
@@ -162,6 +189,64 @@ function buildVisionInstruction(image?: string | null): string {
 function buildGreetingInstruction(userName?: string | null): string {
   if (!userName) return ''
   return `\n\n👋 PERSONALIZED GREETING: The user's name is ${userName}. If this is the first message in the conversation (no conversation history), start your response with a warm, personalized greeting using their name (e.g., "Hi ${userName}!" or "Hello ${userName}, nice to meet you!"). For subsequent messages, you can occasionally use their name naturally in conversation.\n`
+}
+
+// ─── User Profile & Orders Context ──────────────────────────────────
+function buildUserContext(userProfile?: UserProfile | null, userOrders?: UserOrder[] | null): string {
+  const parts: string[] = []
+
+  if (userProfile) {
+    parts.push('\n\n👤 CUSTOMER PROFILE - YOU HAVE ACCESS TO THIS CUSTOMER\'S ACCOUNT:')
+    parts.push(`Name: ${userProfile.full_name || 'Not provided'}`)
+    if (userProfile.email) parts.push(`Email: ${userProfile.email}`)
+    if (userProfile.phone) parts.push(`Phone: ${userProfile.phone}`)
+    if (userProfile.skin_type) parts.push(`Skin Type: ${userProfile.skin_type}`)
+    if (userProfile.skin_concerns && userProfile.skin_concerns.length > 0) {
+      parts.push(`Skin Concerns: ${userProfile.skin_concerns.join(', ')}`)
+    }
+    if (userProfile.created_at) {
+      const memberSince = new Date(userProfile.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+      parts.push(`Member Since: ${memberSince}`)
+    }
+  }
+
+  if (userOrders && userOrders.length > 0) {
+    parts.push('\n\n📦 ORDER HISTORY - THIS CUSTOMER\'S ORDERS:')
+    parts.push(`Total Orders: ${userOrders.length}`)
+    parts.push('')
+
+    // Show recent orders (up to 5)
+    const recentOrders = userOrders.slice(0, 5)
+    recentOrders.forEach((order, index) => {
+      const orderDate = new Date(order.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+      parts.push(`Order ${index + 1}: #${order.order_number || order.id.slice(0, 8)}`)
+      parts.push(`  - Date: ${orderDate}`)
+      parts.push(`  - Status: ${order.status}`)
+      parts.push(`  - Total: ${order.currency} ${order.total_amount.toFixed(2)}`)
+      if (order.tracking_number) {
+        parts.push(`  - Tracking: ${order.tracking_number}`)
+      }
+      if (order.items && order.items.length > 0) {
+        const itemNames = order.items.map((item: any) => item.product_name || item.name || 'Unknown item').join(', ')
+        parts.push(`  - Items: ${itemNames}`)
+      }
+      parts.push('')
+    })
+
+    if (userOrders.length > 5) {
+      parts.push(`... and ${userOrders.length - 5} more orders`)
+    }
+
+    parts.push('\n⚠️ CUSTOMER SERVICE INSTRUCTIONS FOR ORDERS:')
+    parts.push('- When customer asks about their order, check the order history above')
+    parts.push('- Provide accurate status, tracking, and order details')
+    parts.push('- If order is delayed or has issues, be empathetic and offer help')
+    parts.push('- Never guess order information - only use what is shown above')
+  }
+
+  if (parts.length === 0) return ''
+
+  return parts.join('\n')
 }
 
 // ─── Scenario Context (roleplay only) ────────────────────────────────
@@ -303,6 +388,9 @@ export function buildAIPrompt(opts: PromptOptions): string {
   parts.push(buildLanguageInstruction(opts.language))
   parts.push(buildVisionInstruction(opts.image))
   parts.push(buildGreetingInstruction(opts.userName))
+
+  // 5b. User profile & orders context (for logged-in customers)
+  parts.push(buildUserContext(opts.userProfile, opts.userOrders))
 
   // 6. Conversation history
   if (opts.conversationHistory) {
