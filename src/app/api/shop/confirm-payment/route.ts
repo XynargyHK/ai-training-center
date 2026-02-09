@@ -94,10 +94,10 @@ export async function POST(request: NextRequest) {
           items: (order.order_items || []).map((item: any) => ({
             title: item.title,
             quantity: item.quantity,
-            unit_price: item.unit_price / 100 // Convert from cents
+            unit_price: item.unit_price // Already in dollars
           })),
-          subtotal: (order.subtotal || order.total) / 100,
-          total: order.total / 100,
+          subtotal: order.subtotal || order.total,
+          total: order.total,
           currencySymbol,
           shippingAddress: order.shipping_address,
           businessName: 'SkinCoach',
