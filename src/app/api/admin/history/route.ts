@@ -25,9 +25,9 @@ export async function GET(request: NextRequest) {
       // Get customers from both profiles AND orders (some customers may only exist in orders)
       const allCustomers = new Map<string, any>()
 
-      // 1. Get from customer_profiles
+      // 1. Get from user_profiles
       const { data: profiles } = await supabase
-        .from('customer_profiles')
+        .from('user_profiles')
         .select('*')
 
       for (const p of profiles || []) {
@@ -37,7 +37,6 @@ export async function GET(request: NextRequest) {
             full_name: p.full_name,
             email: p.email,
             phone: p.phone,
-            skin_type: p.skin_type,
             created_at: p.created_at
           })
         }
@@ -57,7 +56,6 @@ export async function GET(request: NextRequest) {
             full_name: addr ? `${addr.first_name || ''} ${addr.last_name || ''}`.trim() : null,
             email: o.email,
             phone: addr?.phone || null,
-            skin_type: null,
             created_at: o.created_at
           })
         }
@@ -154,7 +152,7 @@ export async function GET(request: NextRequest) {
           let displayName = session.user_identifier || `Guest_${session.id.slice(0, 6)}`
           if (session.user_id) {
             const { data: profile } = await supabase
-              .from('customer_profiles')
+              .from('user_profiles')
               .select('full_name, email')
               .eq('user_id', session.user_id)
               .single()
@@ -230,7 +228,7 @@ export async function GET(request: NextRequest) {
 
           if (order.user_id) {
             const { data: profile } = await supabase
-              .from('customer_profiles')
+              .from('user_profiles')
               .select('full_name, email, phone')
               .eq('user_id', order.user_id)
               .single()
@@ -289,7 +287,7 @@ export async function POST(request: NextRequest) {
 
       // Get profile
       const { data: profile } = await supabase
-        .from('customer_profiles')
+        .from('user_profiles')
         .select('*')
         .eq('user_id', userId)
         .single()
