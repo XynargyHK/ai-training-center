@@ -327,7 +327,8 @@ function LiveChatShopContent() {
           })),
           subtotal: cartTotal,
           total: cartTotal,
-          notes: customerForm.notes
+          notes: customerForm.notes,
+          business_unit: businessUnitParam
         })
       })
 

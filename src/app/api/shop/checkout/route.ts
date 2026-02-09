@@ -38,13 +38,26 @@ interface CheckoutData {
   currency?: string
   notes?: string
   user_id?: string
+  business_unit_id?: string
+  business_unit?: string  // Slug - will be looked up to get UUID
 }
 
 // POST - Create order
 export async function POST(request: NextRequest) {
   try {
     const body: CheckoutData = await request.json()
-    const { customer, shipping_address, items, subtotal, total, currency, notes, user_id } = body
+    const { customer, shipping_address, items, subtotal, total, currency, notes, user_id, business_unit_id, business_unit } = body
+
+    // Look up business_unit_id from slug if not provided directly
+    let finalBusinessUnitId = business_unit_id
+    if (!finalBusinessUnitId && business_unit) {
+      const { data: bu } = await supabase
+        .from('business_units')
+        .select('id')
+        .eq('slug', business_unit)
+        .single()
+      finalBusinessUnitId = bu?.id || null
+    }
 
     if (!customer?.email || !customer?.name) {
       return NextResponse.json(
@@ -64,6 +77,7 @@ export async function POST(request: NextRequest) {
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
+        business_unit_id: finalBusinessUnitId || null,
         user_id: user_id || null,
         email: customer.email,
         status: 'processing',

@@ -19,16 +19,31 @@ export async function GET(request: NextRequest) {
     const view = searchParams.get('view') || 'chat'
     const search = searchParams.get('search') || ''
     const flagFilter = searchParams.get('flag') || 'all'
-    const businessUnitSlug = searchParams.get('businessUnit') || 'skincoach'
+    const businessUnitParam = searchParams.get('businessUnit') || 'skincoach'
 
-    // Look up business unit ID from slug
-    const { data: businessUnit } = await supabase
-      .from('business_units')
-      .select('id')
-      .eq('slug', businessUnitSlug)
-      .single()
+    // Look up business unit - could be slug OR UUID
+    let businessUnitId: string | null = null
 
-    const businessUnitId = businessUnit?.id
+    // First try as UUID (if it looks like a UUID)
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(businessUnitParam)
+
+    if (isUUID) {
+      // It's a UUID, verify it exists
+      const { data: bu } = await supabase
+        .from('business_units')
+        .select('id')
+        .eq('id', businessUnitParam)
+        .single()
+      businessUnitId = bu?.id || null
+    } else {
+      // It's a slug, look up the ID
+      const { data: bu } = await supabase
+        .from('business_units')
+        .select('id')
+        .eq('slug', businessUnitParam)
+        .single()
+      businessUnitId = bu?.id || null
+    }
 
     if (!businessUnitId) {
       return NextResponse.json({ error: 'Business unit not found' }, { status: 404 })

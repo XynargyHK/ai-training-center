@@ -149,7 +149,8 @@ function CheckoutForm({
   language = 'en',
   currencySymbol = '$',
   currency = 'usd',
-  userId
+  userId,
+  businessUnit
 }: {
   cart: CartItem[]
   onSuccess: (orderId: string) => void
@@ -163,6 +164,7 @@ function CheckoutForm({
   currencySymbol?: string
   currency?: string
   userId?: string
+  businessUnit?: string
 }) {
   const t = translations[language] || translations.en
   const stripe = useStripe()
@@ -198,7 +200,8 @@ function CheckoutForm({
           subtotal: total,
           total: total,
           currency: currency,
-          user_id: userId
+          user_id: userId,
+          business_unit: businessUnit
         })
       })
 
@@ -448,15 +451,18 @@ export default function CheckoutModal({
         // Move to info step after login
         setStep('info')
 
-        // Save to customer_profiles
+        // Save to customer_profiles with business unit
         try {
+          // Look up business unit ID from URL param
+          const buParam = new URLSearchParams(window.location.search).get('businessUnit') || ''
           await fetch('/api/customer/account', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               userId: user.id,
               name: meta.full_name || meta.name || null,
-              email: user.email || null
+              email: user.email || null,
+              businessUnit: buParam
             })
           })
         } catch (err) {
@@ -996,6 +1002,7 @@ export default function CheckoutModal({
                 currencySymbol={currencySymbol}
                 currency={currency}
                 userId={currentUser?.id}
+                businessUnit={businessUnitParam}
               />
             </Elements>
           )}

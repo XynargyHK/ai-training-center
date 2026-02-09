@@ -47,13 +47,24 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { userId, name, email, phone, businessUnitId, shippingAddress } = body
+    const { userId, name, email, phone, businessUnitId, businessUnit, shippingAddress } = body
 
     if (!userId) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 })
     }
 
     const supabase = getSupabaseServiceClient()
+
+    // Look up business_unit_id from slug if not provided directly
+    let finalBusinessUnitId = businessUnitId
+    if (!finalBusinessUnitId && businessUnit) {
+      const { data: bu } = await supabase
+        .from('business_units')
+        .select('id')
+        .eq('slug', businessUnit)
+        .single()
+      finalBusinessUnitId = bu?.id || null
+    }
 
     // Find existing profile by user_id
     const { data: existing, error: findError } = await supabase
@@ -98,7 +109,7 @@ export async function POST(request: NextRequest) {
       if (email !== undefined) insertData.email = email
       if (phone !== undefined) insertData.phone = phone
       if (shippingAddress !== undefined) insertData.shipping_address = shippingAddress
-      if (businessUnitId !== undefined) insertData.business_unit_id = businessUnitId
+      if (finalBusinessUnitId) insertData.business_unit_id = finalBusinessUnitId
 
       const { data, error } = await supabase
         .from('customer_profiles')
