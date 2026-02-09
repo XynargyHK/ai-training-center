@@ -1753,6 +1753,7 @@ export function LandingPageContent({
         cart={cart}
         onSuccess={handleCheckoutSuccess}
         businessUnitParam={businessUnitParam}
+        country={countryParam}
         headingFont={headingFont}
         bodyFont={bodyFont}
         language={langParam}
