@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
+import { sendOrderConfirmationEmail } from '@/lib/email-service'
+
+// Currency symbol mapping
+const currencySymbols: Record<string, string> = {
+  USD: '$',
+  HKD: 'HK$',
+  SGD: 'S$',
+  GBP: '£',
+  EUR: '€',
+}
 
 export async function POST(request: NextRequest) {
   const supabase = createClient(
@@ -31,10 +41,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get existing order to merge metadata
+    // Get existing order with items to merge metadata and send email
     const { data: existingOrder } = await supabase
       .from('orders')
-      .select('metadata')
+      .select('*, order_items(*)')
       .eq('id', orderId)
       .single()
 
@@ -53,10 +63,44 @@ export async function POST(request: NextRequest) {
         }
       })
       .eq('id', orderId)
-      .select()
+      .select('*, order_items(*)')
       .single()
 
     if (updateError) throw updateError
+
+    // Send order confirmation email
+    if (order && existingOrder) {
+      const customerEmail = order.email || existingOrder.metadata?.customer_email
+      const customerName = existingOrder.metadata?.customer_name ||
+                          order.shipping_address?.first_name ||
+                          'Valued Customer'
+
+      if (customerEmail) {
+        const currencyCode = order.currency_code || 'USD'
+        const currencySymbol = currencySymbols[currencyCode.toUpperCase()] || '$'
+
+        // Send email asynchronously (don't block response)
+        sendOrderConfirmationEmail({
+          orderId: order.id,
+          displayId: order.display_id,
+          customerName,
+          customerEmail,
+          items: (order.order_items || []).map((item: any) => ({
+            title: item.title,
+            quantity: item.quantity,
+            unit_price: item.unit_price / 100 // Convert from cents
+          })),
+          subtotal: (order.subtotal || order.total) / 100,
+          total: order.total / 100,
+          currencySymbol,
+          shippingAddress: order.shipping_address,
+          businessName: 'SkinCoach',
+          supportEmail: 'hello@skincoach.ai'
+        }).catch(err => console.error('Email send error:', err))
+      } else {
+        console.warn('No customer email found for order:', orderId)
+      }
+    }
 
     return NextResponse.json({
       success: true,
