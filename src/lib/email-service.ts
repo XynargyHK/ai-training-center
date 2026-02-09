@@ -244,6 +244,7 @@ export async function sendOrderConfirmationEmail(data: OrderConfirmationData) {
     const result = await resend.emails.send({
       from: `${businessName} <cs@skincoach.ai>`,
       to: customerEmail,
+      cc: 'order@skincoach.ai',
       subject: `${t.subjectPrefix} - ${orderNumber}`,
       html: emailHtml
     })
