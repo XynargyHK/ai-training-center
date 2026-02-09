@@ -31,13 +31,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Update order payment status
+    // Get existing order to merge metadata
+    const { data: existingOrder } = await supabase
+      .from('orders')
+      .select('metadata')
+      .eq('id', orderId)
+      .single()
+
+    // Update order - change from 'pending' to 'processing' after successful payment
     const { data: order, error: updateError } = await supabase
       .from('orders')
       .update({
         payment_status: 'paid',
         status: 'processing',
+        fulfillment_status: 'processing',
         metadata: {
+          ...(existingOrder?.metadata || {}),
           payment_intent_id: paymentIntentId,
           payment_method: paymentIntent.payment_method,
           paid_at: new Date().toISOString()

@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
         if (p.user_id) {
           allCustomers.set(p.user_id, {
             user_id: p.user_id,
-            full_name: p.name,  // customer_profiles uses 'name' not 'full_name'
+            name: p.name,
             email: p.email,
             phone: p.phone,
             skin_type: p.skin_type,
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
 
           allCustomers.set(o.user_id, {
             user_id: o.user_id,
-            full_name: fullName,
+            name: fullName,
             email: o.email,
             phone: addr?.phone || meta?.customer_phone || null,
             created_at: o.created_at
@@ -135,13 +135,13 @@ export async function GET(request: NextRequest) {
 
       // Sort by name and filter by search
       let result = profilesWithCounts.sort((a, b) =>
-        (a.full_name || '').localeCompare(b.full_name || '')
+        (a.name || '').localeCompare(b.name || '')
       )
 
       if (search) {
         const searchLower = search.toLowerCase()
         result = result.filter(p =>
-          p.full_name?.toLowerCase().includes(searchLower) ||
+          p.name?.toLowerCase().includes(searchLower) ||
           p.email?.toLowerCase().includes(searchLower) ||
           p.phone?.includes(search)
         )
@@ -251,7 +251,6 @@ export async function GET(request: NextRequest) {
           user_id,
           email,
           status,
-          fulfillment_status,
           total,
           currency_code,
           tracking_number,
@@ -330,8 +329,7 @@ export async function GET(request: NextRequest) {
             ...order,
             user_name: userName,
             user_email: userEmail,
-            user_phone: userPhone,
-            items: order.order_items
+            user_phone: userPhone
           }
         })
       )
@@ -422,10 +420,8 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        profile: profile
-          ? { ...profile, full_name: profile.name }  // Map 'name' to 'full_name' for frontend
-          : { user_id: userId, full_name: 'Unknown', email: null },
-        orders: orders?.map(o => ({ ...o, items: o.order_items })) || [],
+        profile: profile || { user_id: userId, name: 'Unknown', email: null },
+        orders: orders || [],
         chats: chats || [],
         messages: messages.reverse() // Show oldest first
       })

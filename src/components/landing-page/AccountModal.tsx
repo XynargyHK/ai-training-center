@@ -404,6 +404,12 @@ export default function AccountModal({
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
+    // Clear all shopping carts from localStorage
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('shop_cart_')) {
+        localStorage.removeItem(key)
+      }
+    })
     setUser(null)
     setProfile(null)
     setOrders([])

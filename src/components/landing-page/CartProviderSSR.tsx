@@ -35,6 +35,7 @@ interface CartContextType {
   cart: CartItem[]
   cartItemCount: number
   addToCart: (product: any) => void
+  clearCart: () => void
   openCart: () => void
   language: string
   country: string
@@ -45,6 +46,7 @@ const CartContext = createContext<CartContextType>({
   cart: [],
   cartItemCount: 0,
   addToCart: () => {},
+  clearCart: () => {},
   openCart: () => {},
   language: 'en',
   country: 'US',
@@ -124,8 +126,13 @@ export default function CartProviderSSR({
     )
   }
 
-  const handleCheckoutSuccess = (orderId: string) => {
+  const clearCart = () => {
     setCart([])
+    localStorage.removeItem(`shop_cart_${businessUnit}`)
+  }
+
+  const handleCheckoutSuccess = (orderId: string) => {
+    clearCart()
     setShowCheckoutModal(false)
     setShowCartSidebar(false)
   }
@@ -151,7 +158,7 @@ export default function CartProviderSSR({
   }
 
   return (
-    <CartContext.Provider value={{ cart, cartItemCount, addToCart, openCart: () => setShowCartSidebar(true), language, country, businessUnit }}>
+    <CartContext.Provider value={{ cart, cartItemCount, addToCart, clearCart, openCart: () => setShowCartSidebar(true), language, country, businessUnit }}>
       {children}
 
       {/* Cart Sidebar */}

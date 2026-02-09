@@ -16,20 +16,22 @@ interface OrderItem {
 
 interface Order {
   id: string
-  display_id: string
+  display_id: number
   email: string
-  status: 'processing' | 'shipped' | 'delivered'
-  fulfillment_status: string
-  payment_status: string
+  status: string
   currency_code: string
   subtotal: number
   total: number
   shipping_address?: {
-    address?: string
+    first_name?: string
+    last_name?: string
+    address_1?: string
+    address_2?: string
     city?: string
-    state?: string
+    province?: string
     postal_code?: string
-    country?: string
+    country_code?: string
+    phone?: string
   }
   shipping_carrier?: string
   tracking_number?: string
@@ -134,6 +136,8 @@ export default function AccountPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
+      case 'pending':
+        return <Package className="w-4 h-4 text-orange-500" />
       case 'processing':
         return <Clock className="w-4 h-4 text-yellow-500" />
       case 'shipped':
@@ -147,6 +151,8 @@ export default function AccountPage() {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
+      case 'pending':
+        return 'Awaiting Payment'
       case 'processing':
         return 'Processing'
       case 'shipped':
@@ -160,6 +166,8 @@ export default function AccountPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'pending':
+        return 'bg-orange-100 text-orange-700'
       case 'processing':
         return 'bg-yellow-100 text-yellow-700'
       case 'shipped':
@@ -238,6 +246,12 @@ export default function AccountPage() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
+    // Clear all shopping carts from localStorage
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('shop_cart_')) {
+        localStorage.removeItem(key)
+      }
+    })
     setUser(null)
     setProfile(null)
   }
@@ -565,6 +579,24 @@ export default function AccountPage() {
                           {formatCurrency(order.total, order.currency_code)}
                         </span>
                       </div>
+
+                      {/* Pending order notice */}
+                      {order.status === 'pending' && (
+                        <div className="pt-4 mt-2 bg-orange-50 -mx-4 px-4 pb-4 rounded-b-xl">
+                          <p className="text-sm text-orange-700 font-medium mb-2">
+                            ⏳ Payment Incomplete
+                          </p>
+                          <p className="text-xs text-orange-600 mb-3">
+                            This order was not completed. Please add items to cart again and checkout.
+                          </p>
+                          <a
+                            href="/hk"
+                            className="inline-block px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-xs font-medium"
+                          >
+                            Continue Shopping
+                          </a>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

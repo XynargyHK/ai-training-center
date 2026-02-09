@@ -7,7 +7,7 @@ type ViewMode = 'profile' | 'chat' | 'order'
 
 interface UserProfile {
   user_id: string
-  full_name: string | null
+  name: string | null
   email: string | null
   phone: string | null
   skin_type: string | null
@@ -46,15 +46,20 @@ interface Order {
     address_1?: string
     address_2?: string
     city?: string
+    province?: string
     postal_code?: string
     country_code?: string
     phone?: string
   } | null
+  metadata?: {
+    customer_name?: string
+    customer_phone?: string
+    notes?: string
+  }
   status: string
-  fulfillment_status: string | null
   total: number
   currency_code: string
-  items: any[]
+  order_items: any[]
   created_at: string
   tracking_number: string | null
   shipping_carrier: string | null
@@ -140,7 +145,7 @@ function HistoryContent() {
   const openEditModal = (order: Order, e: React.MouseEvent) => {
     e.stopPropagation()
     setEditingOrder(order)
-    setEditStatus(order.fulfillment_status || order.status || 'processing')
+    setEditStatus(order.status || 'processing')
     setEditTracking(order.tracking_number || '')
     setEditCarrier(order.shipping_carrier || '')
   }
@@ -168,7 +173,7 @@ function HistoryContent() {
         // Update local state
         setOrders(orders.map(o =>
           o.id === editingOrder.id
-            ? { ...o, fulfillment_status: editStatus, status: editStatus, tracking_number: editTracking, shipping_carrier: editCarrier }
+            ? { ...o, status: editStatus, tracking_number: editTracking, shipping_carrier: editCarrier }
             : o
         ))
         setEditingOrder(null)
@@ -202,11 +207,12 @@ function HistoryContent() {
         addr.country_code
       ].filter(Boolean).join(', ') : '-'
 
-      const name = addr ? `${addr.first_name || ''} ${addr.last_name || ''}`.trim() : (order.user_name || '-')
-      const phone = addr?.phone || order.user_phone || '-'
-      const items = order.items?.map((i: any) => `${i.title} x${i.quantity}`).join('; ') || '-'
+      // API already computes user_name from metadata.customer_name or customer_profiles
+      const name = order.user_name || '-'
+      const phone = order.user_phone || addr?.phone || '-'
+      const items = order.order_items?.map((i: any) => `${i.title} x${i.quantity}`).join('; ') || '-'
       const total = `${order.currency_code} ${order.total.toFixed(2)}`
-      const status = order.fulfillment_status || order.status
+      const status = order.status
       const tracking = order.tracking_number ? `${order.shipping_carrier || ''} ${order.tracking_number}`.trim() : '-'
       const date = formatTimestamp(order.created_at)
 
@@ -439,7 +445,7 @@ function HistoryContent() {
                           onMouseLeave={handleMouseLeave}
                         >
                           <td className="px-4 py-3 font-medium text-gray-900">
-                            {profile.full_name || 'Unknown'}
+                            {profile.name || 'Unknown'}
                           </td>
                           <td className="px-4 py-3 text-gray-600">
                             {profile.email || '-'}
@@ -526,8 +532,9 @@ function HistoryContent() {
                     ) : (
                       orders.map((order) => {
                         const addr = order.shipping_address
-                        const name = addr ? `${addr.first_name || ''} ${addr.last_name || ''}`.trim() : (order.user_name || '-')
-                        const phone = addr?.phone || order.user_phone || '-'
+                        // API already computes user_name from metadata.customer_name or customer_profiles
+                        const name = order.user_name || '-'
+                        const phone = order.user_phone || addr?.phone || '-'
                         const address = addr ? [addr.address_1, addr.city].filter(Boolean).join(', ') : '-'
 
                         return (
@@ -550,7 +557,7 @@ function HistoryContent() {
                               {address}
                             </td>
                             <td className="px-3 py-3 text-gray-600 max-w-[150px] truncate text-sm">
-                              {order.items?.map((i: any) => i.title).join(', ') || '-'}
+                              {order.order_items?.map((i: any) => i.title).join(', ') || '-'}
                             </td>
                             <td className="px-3 py-3 text-right font-medium">
                               {order.currency_code} {order.total.toFixed(2)}
@@ -558,9 +565,9 @@ function HistoryContent() {
                             <td className="px-3 py-3 text-center">
                               <button
                                 onClick={(e) => openEditModal(order, e)}
-                                className={`px-2 py-1 text-xs rounded-full cursor-pointer hover:opacity-80 ${getStatusColor(order.fulfillment_status || order.status)}`}
+                                className={`px-2 py-1 text-xs rounded-full cursor-pointer hover:opacity-80 ${getStatusColor(order.status)}`}
                               >
-                                {order.fulfillment_status || order.status}
+                                {order.status}
                                 {order.tracking_number && <span className="ml-1">📦</span>}
                               </button>
                             </td>
@@ -594,7 +601,7 @@ function HistoryContent() {
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-lg">👤</span>
                 <span className="font-bold text-gray-900">
-                  {popupData.profile?.full_name || 'Unknown User'}
+                  {popupData.profile?.name || 'Unknown User'}
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm">
@@ -617,7 +624,7 @@ function HistoryContent() {
                     <div key={order.id} className="flex justify-between text-sm bg-gray-50 px-2 py-1 rounded">
                       <span>#{order.display_id}</span>
                       <span className="text-gray-600 truncate max-w-[150px]">
-                        {order.items?.map((i: any) => i.title).join(', ')}
+                        {order.order_items?.map((i: any) => i.title).join(', ')}
                       </span>
                       <span className={`text-xs px-1 rounded ${getStatusColor(order.status)}`}>
                         {order.status}

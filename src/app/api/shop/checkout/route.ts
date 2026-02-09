@@ -73,15 +73,38 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create the order - status is 'processing' since payment is done
+    // Check for duplicate order (same user, same total, within last 60 seconds)
+    if (user_id) {
+      const oneMinuteAgo = new Date(Date.now() - 60000).toISOString()
+      const { data: recentOrder } = await supabase
+        .from('orders')
+        .select('id, display_id')
+        .eq('user_id', user_id)
+        .eq('total', total)
+        .gte('created_at', oneMinuteAgo)
+        .limit(1)
+        .single()
+
+      if (recentOrder) {
+        // Return existing order instead of creating duplicate
+        console.log('Duplicate order prevented, returning existing order:', recentOrder.display_id)
+        return NextResponse.json({
+          success: true,
+          order: recentOrder,
+          duplicate: true
+        }, { status: 200 })
+      }
+    }
+
+    // Create the order with 'pending' status - will change to 'processing' after payment
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
         business_unit_id: finalBusinessUnitId || null,
         user_id: user_id || null,
         email: customer.email,
-        status: 'processing',
-        fulfillment_status: 'processing',
+        status: 'pending',
+        fulfillment_status: 'pending',
         payment_status: 'not_paid',
         currency_code: currency?.toUpperCase() || 'USD',
         subtotal: subtotal,

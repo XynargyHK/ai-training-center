@@ -374,7 +374,10 @@ export default function FooterEditor({ data, onChange, onEditPolicy }: FooterEdi
 
         {/* Company Info for Policies */}
         <h5 className="text-xs font-medium text-gray-500 mb-3 border-t border-gray-200 pt-4">Policy Template Fields</h5>
-        <div className="grid grid-cols-2 gap-3">
+        <p className="text-xs text-gray-400 mb-3">These values replace placeholders like {'{{REFUND_DAYS}}'} in policy pages</p>
+
+        {/* General Info */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
           <div>
             <label className="block text-xs text-gray-500 mb-1">Website URL</label>
             <input
@@ -406,7 +409,32 @@ export default function FooterEditor({ data, onChange, onEditPolicy }: FooterEdi
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Refund Days</label>
+            <label className="block text-xs text-gray-500 mb-1">Effective Date</label>
+            <input
+              type="text"
+              value={data.effective_date || ''}
+              onChange={(e) => updateField('effective_date', e.target.value)}
+              placeholder="January 1, 2025"
+              className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Liability Cap</label>
+            <input
+              type="text"
+              value={data.liability_cap || ''}
+              onChange={(e) => updateField('liability_cap', e.target.value)}
+              placeholder="$500"
+              className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-sm"
+            />
+          </div>
+        </div>
+
+        {/* Refund & Return */}
+        <h6 className="text-xs font-medium text-gray-400 mb-2">Refund & Return Policy</h6>
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Return Window (days)</label>
             <input
               type="text"
               value={data.refund_days || ''}
@@ -416,12 +444,117 @@ export default function FooterEditor({ data, onChange, onEditPolicy }: FooterEdi
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Free Shipping Threshold</label>
+            <label className="block text-xs text-gray-500 mb-1">Refund Processing (days)</label>
+            <input
+              type="text"
+              value={data.refund_processing_days || ''}
+              onChange={(e) => updateField('refund_processing_days', e.target.value)}
+              placeholder="7-10"
+              className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Warranty (months)</label>
+            <input
+              type="text"
+              value={data.warranty_months || ''}
+              onChange={(e) => updateField('warranty_months', e.target.value)}
+              placeholder="12"
+              className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Restocking Fee</label>
+            <input
+              type="text"
+              value={data.restocking_fee || ''}
+              onChange={(e) => updateField('restocking_fee', e.target.value)}
+              placeholder="$10"
+              className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-sm"
+            />
+          </div>
+          <div className="col-span-2">
+            <label className="block text-xs text-gray-500 mb-1">Return Address</label>
+            <input
+              type="text"
+              value={data.return_address || ''}
+              onChange={(e) => updateField('return_address', e.target.value)}
+              placeholder="Leave empty to use Business Address"
+              className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-sm"
+            />
+          </div>
+        </div>
+
+        {/* Shipping */}
+        <h6 className="text-xs font-medium text-gray-400 mb-2">Shipping Policy</h6>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Processing Time (days)</label>
+            <input
+              type="text"
+              value={data.processing_days || ''}
+              onChange={(e) => updateField('processing_days', e.target.value)}
+              placeholder="1-3"
+              className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Cutoff Time</label>
+            <input
+              type="text"
+              value={data.cutoff_time || ''}
+              onChange={(e) => updateField('cutoff_time', e.target.value)}
+              placeholder="2:00 PM HKT"
+              className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Domestic Shipping</label>
+            <input
+              type="text"
+              value={data.domestic_shipping_days || ''}
+              onChange={(e) => updateField('domestic_shipping_days', e.target.value)}
+              placeholder="2-5 business days"
+              className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">International Shipping</label>
+            <input
+              type="text"
+              value={data.international_shipping_days || ''}
+              onChange={(e) => updateField('international_shipping_days', e.target.value)}
+              placeholder="7-14 business days"
+              className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Free Shipping Above</label>
             <input
               type="text"
               value={data.free_shipping_threshold || ''}
               onChange={(e) => updateField('free_shipping_threshold', e.target.value)}
               placeholder="$50"
+              className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Warehouse Location</label>
+            <input
+              type="text"
+              value={data.warehouse_location || ''}
+              onChange={(e) => updateField('warehouse_location', e.target.value)}
+              placeholder="Hong Kong"
+              className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-sm"
+            />
+          </div>
+          <div className="col-span-2">
+            <label className="block text-xs text-gray-500 mb-1">Shipping Carriers</label>
+            <input
+              type="text"
+              value={data.shipping_carriers || ''}
+              onChange={(e) => updateField('shipping_carriers', e.target.value)}
+              placeholder="SF Express, DHL, FedEx"
               className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-sm"
             />
           </div>

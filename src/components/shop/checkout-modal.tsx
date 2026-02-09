@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { X, CreditCard, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
@@ -171,14 +171,21 @@ function CheckoutForm({
   const elements = useElements()
   const [isProcessing, setIsProcessing] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const isSubmittingRef = useRef(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Prevent double submission
+    if (isSubmittingRef.current) {
+      return
+    }
 
     if (!stripe || !elements) {
       return
     }
 
+    isSubmittingRef.current = true
     setIsProcessing(true)
     setErrorMessage('')
 
@@ -261,6 +268,7 @@ function CheckoutForm({
       setErrorMessage(error.message || 'Payment failed. Please try again.')
     } finally {
       setIsProcessing(false)
+      isSubmittingRef.current = false
     }
   }
 
