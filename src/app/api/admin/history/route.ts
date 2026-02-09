@@ -22,39 +22,60 @@ export async function GET(request: NextRequest) {
 
     // ===== PROFILE VIEW =====
     if (view === 'profile') {
-      // Get all customer profiles with order and chat counts
-      let query = supabase
+      // Get customers from both profiles AND orders (some customers may only exist in orders)
+      const allCustomers = new Map<string, any>()
+
+      // 1. Get from customer_profiles
+      const { data: profiles } = await supabase
         .from('customer_profiles')
         .select('*')
-        .order('full_name', { ascending: true })
 
-      if (search) {
-        query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`)
+      for (const p of profiles || []) {
+        if (p.user_id) {
+          allCustomers.set(p.user_id, {
+            user_id: p.user_id,
+            full_name: p.full_name,
+            email: p.email,
+            phone: p.phone,
+            skin_type: p.skin_type,
+            created_at: p.created_at
+          })
+        }
       }
 
-      const { data: profiles, error } = await query.limit(100)
+      // 2. Get unique users from orders (may not have profile)
+      const { data: orders } = await supabase
+        .from('orders')
+        .select('user_id, email, shipping_address, created_at')
+        .not('user_id', 'is', null)
 
-      if (error) {
-        console.error('Error fetching profiles:', error)
-        return NextResponse.json({ error: error.message }, { status: 500 })
+      for (const o of orders || []) {
+        if (o.user_id && !allCustomers.has(o.user_id)) {
+          const addr = o.shipping_address as any
+          allCustomers.set(o.user_id, {
+            user_id: o.user_id,
+            full_name: addr ? `${addr.first_name || ''} ${addr.last_name || ''}`.trim() : null,
+            email: o.email,
+            phone: addr?.phone || null,
+            skin_type: null,
+            created_at: o.created_at
+          })
+        }
       }
 
-      // Get counts for each user
+      // 3. Get counts for each customer
       const profilesWithCounts = await Promise.all(
-        (profiles || []).map(async (profile) => {
-          // Count orders
+        Array.from(allCustomers.values()).map(async (profile) => {
           const { count: orderCount } = await supabase
             .from('orders')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', profile.user_id)
 
-          // Count chats
           const { count: chatCount } = await supabase
             .from('chat_sessions')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', profile.user_id)
 
-          // Get last activity
           const { data: lastChat } = await supabase
             .from('chat_sessions')
             .select('started_at')
@@ -71,7 +92,21 @@ export async function GET(request: NextRequest) {
         })
       )
 
-      return NextResponse.json({ success: true, profiles: profilesWithCounts })
+      // Sort by name and filter by search
+      let result = profilesWithCounts.sort((a, b) =>
+        (a.full_name || '').localeCompare(b.full_name || '')
+      )
+
+      if (search) {
+        const searchLower = search.toLowerCase()
+        result = result.filter(p =>
+          p.full_name?.toLowerCase().includes(searchLower) ||
+          p.email?.toLowerCase().includes(searchLower) ||
+          p.phone?.includes(search)
+        )
+      }
+
+      return NextResponse.json({ success: true, profiles: result.slice(0, 100) })
     }
 
     // ===== CHAT VIEW =====
