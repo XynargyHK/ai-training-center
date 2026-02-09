@@ -38,6 +38,17 @@ interface Order {
   user_id: string
   user_name: string | null
   user_email: string | null
+  user_phone: string | null
+  shipping_address: {
+    first_name?: string
+    last_name?: string
+    address_1?: string
+    address_2?: string
+    city?: string
+    postal_code?: string
+    country_code?: string
+    phone?: string
+  } | null
   status: string
   fulfillment_status: string | null
   total: number
@@ -163,6 +174,54 @@ export default function HistoryPage() {
     } finally {
       setSaving(false)
     }
+  }
+
+  // Export orders to Excel/CSV
+  const exportToExcel = () => {
+    if (orders.length === 0) {
+      alert('No orders to export')
+      return
+    }
+
+    // Build CSV content
+    const headers = ['Order #', 'Name', 'Phone', 'Address', 'Items', 'Total', 'Status', 'Tracking', 'Date']
+    const rows = orders.map(order => {
+      const addr = order.shipping_address
+      const fullAddress = addr ? [
+        addr.address_1,
+        addr.address_2,
+        addr.city,
+        addr.postal_code,
+        addr.country_code
+      ].filter(Boolean).join(', ') : '-'
+
+      const name = addr ? `${addr.first_name || ''} ${addr.last_name || ''}`.trim() : (order.user_name || '-')
+      const phone = addr?.phone || order.user_phone || '-'
+      const items = order.items?.map((i: any) => `${i.title} x${i.quantity}`).join('; ') || '-'
+      const total = `${order.currency_code} ${order.total.toFixed(2)}`
+      const status = order.fulfillment_status || order.status
+      const tracking = order.tracking_number ? `${order.shipping_carrier || ''} ${order.tracking_number}`.trim() : '-'
+      const date = formatTimestamp(order.created_at)
+
+      return [order.display_id, name, phone, fullAddress, items, total, status, tracking, date]
+    })
+
+    // Convert to CSV
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n')
+
+    // Download file
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `orders_${new Date().toISOString().split('T')[0]}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
   }
 
   // Fetch popup data on hover
@@ -291,6 +350,17 @@ export default function HistoryPage() {
                 <option value="warning">⚠️ Warnings+</option>
               </select>
             )}
+
+            {/* Export button (only for order view) */}
+            {viewMode === 'order' && (
+              <button
+                onClick={exportToExcel}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+              >
+                <span>📥</span>
+                Export Excel
+              </button>
+            )}
           </div>
         </div>
 
@@ -324,12 +394,14 @@ export default function HistoryPage() {
               {/* Order View Header */}
               {viewMode === 'order' && (
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order #</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order #</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Address</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
+                  <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
+                  <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                 </tr>
               )}
             </thead>
@@ -440,44 +512,57 @@ export default function HistoryPage() {
                   {viewMode === 'order' && (
                     orders.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                        <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                           No orders found
                         </td>
                       </tr>
                     ) : (
-                      orders.map((order) => (
-                        <tr
-                          key={order.id}
-                          className="hover:bg-gray-50 cursor-pointer"
-                          onMouseEnter={(e) => handleMouseEnter(order.user_id, e)}
-                          onMouseLeave={handleMouseLeave}
-                        >
-                          <td className="px-4 py-3 font-medium text-gray-900">
-                            #{order.display_id}
-                          </td>
-                          <td className="px-4 py-3 text-gray-600 max-w-[150px] truncate">
-                            {order.user_name || order.user_email || 'Guest'}
-                          </td>
-                          <td className="px-4 py-3 text-gray-600 max-w-[200px] truncate">
-                            {order.items?.map((i: any) => `${i.title} x${i.quantity}`).join(', ') || '-'}
-                          </td>
-                          <td className="px-4 py-3 text-right font-medium">
-                            {order.currency_code} {order.total.toFixed(2)}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <button
-                              onClick={(e) => openEditModal(order, e)}
-                              className={`px-2 py-1 text-xs rounded-full cursor-pointer hover:opacity-80 ${getStatusColor(order.fulfillment_status || order.status)}`}
-                            >
-                              {order.fulfillment_status || order.status}
-                              {order.tracking_number && <span className="ml-1">📦</span>}
-                            </button>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-500 font-mono">
-                            {formatTimestamp(order.created_at)}
-                          </td>
-                        </tr>
-                      ))
+                      orders.map((order) => {
+                        const addr = order.shipping_address
+                        const name = addr ? `${addr.first_name || ''} ${addr.last_name || ''}`.trim() : (order.user_name || '-')
+                        const phone = addr?.phone || order.user_phone || '-'
+                        const address = addr ? [addr.address_1, addr.city].filter(Boolean).join(', ') : '-'
+
+                        return (
+                          <tr
+                            key={order.id}
+                            className="hover:bg-gray-50 cursor-pointer"
+                            onMouseEnter={(e) => handleMouseEnter(order.user_id, e)}
+                            onMouseLeave={handleMouseLeave}
+                          >
+                            <td className="px-3 py-3 font-medium text-gray-900">
+                              #{order.display_id}
+                            </td>
+                            <td className="px-3 py-3 text-gray-600 max-w-[120px] truncate">
+                              {name}
+                            </td>
+                            <td className="px-3 py-3 text-gray-600 text-sm">
+                              {phone}
+                            </td>
+                            <td className="px-3 py-3 text-gray-600 max-w-[150px] truncate text-sm">
+                              {address}
+                            </td>
+                            <td className="px-3 py-3 text-gray-600 max-w-[150px] truncate text-sm">
+                              {order.items?.map((i: any) => i.title).join(', ') || '-'}
+                            </td>
+                            <td className="px-3 py-3 text-right font-medium">
+                              {order.currency_code} {order.total.toFixed(2)}
+                            </td>
+                            <td className="px-3 py-3 text-center">
+                              <button
+                                onClick={(e) => openEditModal(order, e)}
+                                className={`px-2 py-1 text-xs rounded-full cursor-pointer hover:opacity-80 ${getStatusColor(order.fulfillment_status || order.status)}`}
+                              >
+                                {order.fulfillment_status || order.status}
+                                {order.tracking_number && <span className="ml-1">📦</span>}
+                              </button>
+                            </td>
+                            <td className="px-3 py-3 text-sm text-gray-500 font-mono">
+                              {formatTimestamp(order.created_at)}
+                            </td>
+                          </tr>
+                        )
+                      })
                     )
                   )}
                 </>

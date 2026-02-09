@@ -168,6 +168,8 @@ export async function GET(request: NextRequest) {
           total,
           currency_code,
           tracking_number,
+          shipping_carrier,
+          shipping_address,
           created_at,
           order_items (
             id,
@@ -189,16 +191,18 @@ export async function GET(request: NextRequest) {
         (orders || []).map(async (order) => {
           let userName = null
           let userEmail = order.email
+          let userPhone = null
 
           if (order.user_id) {
             const { data: profile } = await supabase
               .from('customer_profiles')
-              .select('full_name, email')
+              .select('full_name, email, phone')
               .eq('user_id', order.user_id)
               .single()
             if (profile) {
               userName = profile.full_name
               userEmail = profile.email || order.email
+              userPhone = profile.phone
             }
           }
 
@@ -206,6 +210,7 @@ export async function GET(request: NextRequest) {
             ...order,
             user_name: userName,
             user_email: userEmail,
+            user_phone: userPhone,
             items: order.order_items
           }
         })
