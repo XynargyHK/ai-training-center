@@ -25,18 +25,19 @@ export async function GET(request: NextRequest) {
       // Get customers from both profiles AND orders (some customers may only exist in orders)
       const allCustomers = new Map<string, any>()
 
-      // 1. Get from user_profiles
+      // 1. Get from customer_profiles (for SkinCoach customers)
       const { data: profiles } = await supabase
-        .from('user_profiles')
+        .from('customer_profiles')
         .select('*')
 
       for (const p of profiles || []) {
         if (p.user_id) {
           allCustomers.set(p.user_id, {
             user_id: p.user_id,
-            full_name: p.full_name,
+            full_name: p.name,  // customer_profiles uses 'name' not 'full_name'
             email: p.email,
             phone: p.phone,
+            skin_type: p.skin_type,
             created_at: p.created_at
           })
         }
@@ -152,12 +153,12 @@ export async function GET(request: NextRequest) {
           let displayName = session.user_identifier || `Guest_${session.id.slice(0, 6)}`
           if (session.user_id) {
             const { data: profile } = await supabase
-              .from('user_profiles')
-              .select('full_name, email')
+              .from('customer_profiles')
+              .select('name, email')
               .eq('user_id', session.user_id)
               .single()
             if (profile) {
-              displayName = profile.full_name || profile.email || displayName
+              displayName = profile.name || profile.email || displayName
             }
           } else if (session.metadata?.userName) {
             displayName = session.metadata.userName
@@ -228,12 +229,12 @@ export async function GET(request: NextRequest) {
 
           if (order.user_id) {
             const { data: profile } = await supabase
-              .from('user_profiles')
-              .select('full_name, email, phone')
+              .from('customer_profiles')
+              .select('name, email, phone')
               .eq('user_id', order.user_id)
               .single()
             if (profile) {
-              userName = profile.full_name
+              userName = profile.name
               userEmail = profile.email || order.email
               userPhone = profile.phone
             }
@@ -285,9 +286,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'userId required' }, { status: 400 })
       }
 
-      // Get profile
+      // Get profile from customer_profiles
       const { data: profile } = await supabase
-        .from('user_profiles')
+        .from('customer_profiles')
         .select('*')
         .eq('user_id', userId)
         .single()
@@ -335,7 +336,9 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        profile: profile || { user_id: userId, full_name: 'Unknown', email: null },
+        profile: profile
+          ? { ...profile, full_name: profile.name }  // Map 'name' to 'full_name' for frontend
+          : { user_id: userId, full_name: 'Unknown', email: null },
         orders: orders?.map(o => ({ ...o, items: o.order_items })) || [],
         chats: chats || [],
         messages: messages.reverse() // Show oldest first
