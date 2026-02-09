@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 type ViewMode = 'profile' | 'chat' | 'order'
@@ -74,7 +74,7 @@ interface PopupData {
   messages: Message[]
 }
 
-export default function HistoryPage() {
+function HistoryContent() {
   const searchParams = useSearchParams()
   const businessUnit = searchParams.get('businessUnit') || 'skincoach'
 
@@ -736,5 +736,13 @@ export default function HistoryPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function HistoryPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">Loading...</div>}>
+      <HistoryContent />
+    </Suspense>
   )
 }
