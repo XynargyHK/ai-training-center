@@ -34,7 +34,8 @@ export async function POST(request: NextRequest) {
           userId: params.userId,
           userIp,
           userAgent,
-          language: params.language
+          language: params.language,
+          country: params.country
         })
         return NextResponse.json({ success: true, sessionId })
       }

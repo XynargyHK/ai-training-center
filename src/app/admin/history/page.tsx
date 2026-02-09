@@ -77,6 +77,7 @@ interface PopupData {
 function HistoryContent() {
   const searchParams = useSearchParams()
   const businessUnit = searchParams.get('businessUnit') || 'skincoach'
+  const country = searchParams.get('country') || 'HK'
 
   const [viewMode, setViewMode] = useState<ViewMode>('chat')
   const [profiles, setProfiles] = useState<UserProfile[]>([])
@@ -106,6 +107,7 @@ function HistoryContent() {
       const params = new URLSearchParams()
       params.set('view', viewMode)
       params.set('businessUnit', businessUnit)
+      params.set('country', country)
       if (search) params.set('search', search)
       if (flagFilter !== 'all') params.set('flag', flagFilter)
 
@@ -126,7 +128,7 @@ function HistoryContent() {
 
   useEffect(() => {
     fetchData()
-  }, [viewMode, flagFilter, businessUnit])
+  }, [viewMode, flagFilter, businessUnit, country])
 
   // Search with debounce
   useEffect(() => {

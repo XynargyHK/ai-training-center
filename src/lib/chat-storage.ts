@@ -120,6 +120,7 @@ export async function createChatSession(params: {
   userIp?: string
   userAgent?: string
   language?: string
+  country?: string
 }): Promise<string> {
   try {
     const supabase = getSupabaseServiceClient()
@@ -130,7 +131,8 @@ export async function createChatSession(params: {
       user_identifier: params.userIdentifier,
       user_ip: params.userIp,
       user_agent: params.userAgent,
-      language: params.language || 'en'
+      language: params.language || 'en',
+      metadata: params.country ? { country: params.country } : {}
     }
     if (params.userId) {
       insertData.user_id = params.userId

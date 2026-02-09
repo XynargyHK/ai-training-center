@@ -284,7 +284,8 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
               userIdentifier,
               userName: userName || undefined,
               userEmail: userEmail || undefined,
-              language: selectedLanguage
+              language: selectedLanguage,
+              country: country
             })
           })
 
@@ -313,7 +314,8 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
           userIdentifier,
           userName: userName || undefined,
           userEmail: userEmail || undefined,
-          language: selectedLanguage
+          language: selectedLanguage,
+          country: country
         })
       })
 

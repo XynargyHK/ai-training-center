@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const flagFilter = searchParams.get('flag') || 'all'
     const businessUnitParam = searchParams.get('businessUnit') || 'skincoach'
+    const country = searchParams.get('country') || ''  // e.g., 'US', 'HK', 'SG'
 
     // Look up business unit - could be slug OR UUID
     let businessUnitId: string | null = null
@@ -173,16 +174,26 @@ export async function GET(request: NextRequest) {
         query = query.in('flag_level', ['warning', 'alert'])
       }
 
-      const { data: sessions, error } = await query.limit(100)
+      const { data: sessions, error } = await query.limit(200)  // Fetch more, filter by country
 
       if (error) {
         console.error('Error fetching chats:', error)
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
 
+      // Filter by country if specified (stored in metadata.country)
+      let filteredSessions = sessions || []
+      if (country) {
+        filteredSessions = filteredSessions.filter(session => {
+          const meta = session.metadata as any
+          const sessionCountry = meta?.country || ''
+          return sessionCountry.toUpperCase() === country.toUpperCase()
+        })
+      }
+
       // Get display name and last message for each session
       const chatsWithDetails = await Promise.all(
-        (sessions || []).map(async (session) => {
+        filteredSessions.slice(0, 100).map(async (session) => {
           // Get last message
           const { data: messages } = await supabase
             .from('chat_messages')
@@ -257,16 +268,27 @@ export async function GET(request: NextRequest) {
         .eq('business_unit_id', businessUnitId)
         .order('created_at', { ascending: false })
 
-      const { data: orders, error } = await query.limit(100)
+      const { data: orders, error } = await query.limit(200)  // Fetch more, filter later
 
       if (error) {
         console.error('Error fetching orders:', error)
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
 
-      // Get user names for orders
+      // Filter by country if specified
+      let filteredByCountry = orders || []
+      if (country) {
+        filteredByCountry = filteredByCountry.filter(order => {
+          const addr = order.shipping_address as any
+          // Check both country and country_code fields
+          const orderCountry = addr?.country_code || addr?.country || ''
+          return orderCountry.toUpperCase() === country.toUpperCase()
+        })
+      }
+
+      // Get user names for orders (limit to 100)
       const ordersWithUsers = await Promise.all(
-        (orders || []).map(async (order) => {
+        filteredByCountry.slice(0, 100).map(async (order) => {
           // Name can come from multiple sources:
           // 1. shipping_address (first_name + last_name)
           // 2. order.metadata.customer_name (stored at checkout)
@@ -325,7 +347,7 @@ export async function GET(request: NextRequest) {
         )
       }
 
-      return NextResponse.json({ success: true, orders: filteredOrders })
+      return NextResponse.json({ success: true, orders: filteredOrders.slice(0, 100) })
     }
 
     return NextResponse.json({ error: 'Invalid view mode' }, { status: 400 })

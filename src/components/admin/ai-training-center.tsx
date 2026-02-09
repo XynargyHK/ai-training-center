@@ -4400,7 +4400,7 @@ Format as JSON array:
           {activeTab === 'history' && (
             <div className="h-[calc(100vh-200px)]">
               <iframe
-                src={`/admin/history?businessUnit=${selectedBusinessUnit}`}
+                src={`/admin/history?businessUnit=${selectedBusinessUnit}&country=${selectedCountry}`}
                 className="w-full h-full border-0"
                 title="History"
               />
