@@ -236,10 +236,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Get detailed user data for popup
+// POST - Get detailed user data for popup or update orders
 export async function POST(request: NextRequest) {
   try {
-    const { action, userId } = await request.json()
+    const body = await request.json()
+    const { action, userId, orderId, status, trackingNumber, shippingCarrier } = body
 
     if (action === 'get_user_details') {
       if (!userId) {
@@ -301,6 +302,49 @@ export async function POST(request: NextRequest) {
         chats: chats || [],
         messages: messages.reverse() // Show oldest first
       })
+    }
+
+    if (action === 'update_order') {
+      if (!orderId) {
+        return NextResponse.json({ error: 'orderId required' }, { status: 400 })
+      }
+
+      // Build update object
+      const updateData: any = {
+        status: status,
+        fulfillment_status: status,
+        updated_at: new Date().toISOString()
+      }
+
+      if (trackingNumber !== undefined) {
+        updateData.tracking_number = trackingNumber
+      }
+
+      if (shippingCarrier !== undefined) {
+        updateData.shipping_carrier = shippingCarrier
+      }
+
+      // Set shipped_at timestamp when status changes to shipped
+      if (status === 'shipped') {
+        updateData.shipped_at = new Date().toISOString()
+      }
+
+      // Set delivered_at timestamp when status changes to delivered
+      if (status === 'delivered') {
+        updateData.delivered_at = new Date().toISOString()
+      }
+
+      const { error } = await supabase
+        .from('orders')
+        .update(updateData)
+        .eq('id', orderId)
+
+      if (error) {
+        console.error('Error updating order:', error)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+
+      return NextResponse.json({ success: true })
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 })

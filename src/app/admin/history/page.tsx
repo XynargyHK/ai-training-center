@@ -45,6 +45,7 @@ interface Order {
   items: any[]
   created_at: string
   tracking_number: string | null
+  shipping_carrier: string | null
 }
 
 interface Message {
@@ -75,6 +76,13 @@ export default function HistoryPage() {
   const [popupData, setPopupData] = useState<PopupData | null>(null)
   const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 })
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Edit order modal state
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null)
+  const [editStatus, setEditStatus] = useState('')
+  const [editTracking, setEditTracking] = useState('')
+  const [editCarrier, setEditCarrier] = useState('')
+  const [saving, setSaving] = useState(false)
 
   // Fetch data based on view mode
   const fetchData = async () => {
@@ -109,6 +117,53 @@ export default function HistoryPage() {
     const timeout = setTimeout(fetchData, 300)
     return () => clearTimeout(timeout)
   }, [search])
+
+  // Open edit modal
+  const openEditModal = (order: Order, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditingOrder(order)
+    setEditStatus(order.fulfillment_status || order.status || 'processing')
+    setEditTracking(order.tracking_number || '')
+    setEditCarrier(order.shipping_carrier || '')
+  }
+
+  // Save order update
+  const saveOrderUpdate = async () => {
+    if (!editingOrder) return
+    setSaving(true)
+
+    try {
+      const res = await fetch('/api/admin/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_order',
+          orderId: editingOrder.id,
+          status: editStatus,
+          trackingNumber: editTracking,
+          shippingCarrier: editCarrier
+        })
+      })
+
+      const data = await res.json()
+      if (data.success) {
+        // Update local state
+        setOrders(orders.map(o =>
+          o.id === editingOrder.id
+            ? { ...o, fulfillment_status: editStatus, status: editStatus, tracking_number: editTracking, shipping_carrier: editCarrier }
+            : o
+        ))
+        setEditingOrder(null)
+      } else {
+        alert('Failed to update order: ' + data.error)
+      }
+    } catch (error) {
+      console.error('Failed to update order:', error)
+      alert('Failed to update order')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   // Fetch popup data on hover
   const handleMouseEnter = async (userId: string | null, event: React.MouseEvent) => {
@@ -162,6 +217,17 @@ export default function HistoryPage() {
     if (level === 'alert') return '🚨'
     if (level === 'warning') return '⚠️'
     return ''
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'delivered': return 'bg-green-100 text-green-700'
+      case 'shipped': return 'bg-blue-100 text-blue-700'
+      case 'processing': return 'bg-yellow-100 text-yellow-700'
+      case 'pending': return 'bg-gray-100 text-gray-700'
+      case 'cancelled': return 'bg-red-100 text-red-700'
+      default: return 'bg-gray-100 text-gray-700'
+    }
   }
 
   return (
@@ -396,17 +462,16 @@ export default function HistoryPage() {
                             {order.items?.map((i: any) => `${i.title} x${i.quantity}`).join(', ') || '-'}
                           </td>
                           <td className="px-4 py-3 text-right font-medium">
-                            {order.currency_code} {(order.total / 100).toFixed(2)}
+                            {order.currency_code} {order.total.toFixed(2)}
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              order.status === 'delivered' ? 'bg-green-100 text-green-700' :
-                              order.status === 'shipped' ? 'bg-blue-100 text-blue-700' :
-                              order.status === 'processing' ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-gray-100 text-gray-700'
-                            }`}>
+                            <button
+                              onClick={(e) => openEditModal(order, e)}
+                              className={`px-2 py-1 text-xs rounded-full cursor-pointer hover:opacity-80 ${getStatusColor(order.fulfillment_status || order.status)}`}
+                            >
                               {order.fulfillment_status || order.status}
-                            </span>
+                              {order.tracking_number && <span className="ml-1">📦</span>}
+                            </button>
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-500 font-mono">
                             {formatTimestamp(order.created_at)}
@@ -462,11 +527,7 @@ export default function HistoryPage() {
                       <span className="text-gray-600 truncate max-w-[150px]">
                         {order.items?.map((i: any) => i.title).join(', ')}
                       </span>
-                      <span className={`text-xs px-1 rounded ${
-                        order.status === 'delivered' ? 'bg-green-100 text-green-700' :
-                        order.status === 'shipped' ? 'bg-blue-100 text-blue-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>
+                      <span className={`text-xs px-1 rounded ${getStatusColor(order.status)}`}>
                         {order.status}
                       </span>
                     </div>
@@ -501,6 +562,85 @@ export default function HistoryPage() {
               ) : (
                 <div className="text-gray-400 text-sm">No conversations</div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Edit Order Modal */}
+        {editingOrder && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+              <div className="p-4 border-b">
+                <h3 className="text-lg font-bold">Update Order #{editingOrder.display_id}</h3>
+              </div>
+
+              <div className="p-4 space-y-4">
+                {/* Status */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="processing">Processing</option>
+                    <option value="shipped">Shipped</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+
+                {/* Shipping Carrier */}
+                {(editStatus === 'shipped' || editStatus === 'delivered') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Shipping Carrier</label>
+                    <select
+                      value={editCarrier}
+                      onChange={(e) => setEditCarrier(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="">Select carrier...</option>
+                      <option value="SF Express">SF Express</option>
+                      <option value="DHL">DHL</option>
+                      <option value="FedEx">FedEx</option>
+                      <option value="UPS">UPS</option>
+                      <option value="Hong Kong Post">Hong Kong Post</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                )}
+
+                {/* Tracking Number */}
+                {(editStatus === 'shipped' || editStatus === 'delivered') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Tracking Number</label>
+                    <input
+                      type="text"
+                      value={editTracking}
+                      onChange={(e) => setEditTracking(e.target.value)}
+                      placeholder="Enter tracking number"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="p-4 border-t flex justify-end gap-2">
+                <button
+                  onClick={() => setEditingOrder(null)}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveOrderUpdate}
+                  disabled={saving}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+                >
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
             </div>
           </div>
         )}
