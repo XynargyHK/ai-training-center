@@ -208,7 +208,8 @@ function CheckoutForm({
           total: total,
           currency: currency,
           user_id: userId,
-          business_unit: businessUnit
+          business_unit: businessUnit,
+          language: language
         })
       })
 

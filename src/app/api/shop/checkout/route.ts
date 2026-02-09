@@ -40,13 +40,14 @@ interface CheckoutData {
   user_id?: string
   business_unit_id?: string
   business_unit?: string  // Slug - will be looked up to get UUID
+  language?: string  // en, tw, etc.
 }
 
 // POST - Create order
 export async function POST(request: NextRequest) {
   try {
     const body: CheckoutData = await request.json()
-    const { customer, shipping_address, items, subtotal, total, currency, notes, user_id, business_unit_id, business_unit } = body
+    const { customer, shipping_address, items, subtotal, total, currency, notes, user_id, business_unit_id, business_unit, language } = body
 
     // Look up business_unit_id from slug if not provided directly
     let finalBusinessUnitId = business_unit_id
@@ -113,7 +114,8 @@ export async function POST(request: NextRequest) {
         metadata: {
           customer_name: customer.name,
           customer_phone: customer.phone || null,
-          notes: notes || null
+          notes: notes || null,
+          language: language || 'en'
         }
       })
       .select()

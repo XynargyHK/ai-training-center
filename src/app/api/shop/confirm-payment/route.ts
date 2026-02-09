@@ -101,7 +101,8 @@ export async function POST(request: NextRequest) {
           currencySymbol,
           shippingAddress: order.shipping_address,
           businessName: 'SkinCoach',
-          supportEmail: 'cs@skincoach.ai'
+          supportEmail: 'cs@skincoach.ai',
+          language: existingOrder.metadata?.language || 'en'
         }).catch(err => console.error('Email send error:', err))
       } else {
         console.warn('No customer email found for order:', orderId)
