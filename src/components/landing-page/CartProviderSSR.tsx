@@ -135,7 +135,8 @@ export default function CartProviderSSR({
   const currencySymbol = countryCurrencySymbol[country] || '$'
 
   // Cart translations — matching livechat/page.tsx
-  const cartText = language === 'tw' ? {
+  const isChinese = language === 'tw' || language === 'zh-Hant'
+  const cartText = isChinese ? {
     shoppingCart: '購物車',
     cartEmpty: '您的購物車是空的',
     total: '總計',

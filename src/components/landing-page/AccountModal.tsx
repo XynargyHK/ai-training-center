@@ -100,7 +100,6 @@ export default function AccountModal({
 
   // Translations - support both 'tw' and 'zh-Hant' for Traditional Chinese
   const isChinese = language === 'tw' || language === 'zh-Hant'
-  console.log('[AccountModal] language:', language, 'isChinese:', isChinese)
   const t = isChinese ? {
     myAccount: '我的帳戶',
     signOut: '登出',

@@ -85,7 +85,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
   // Initialize language from prop — map short URL codes (tw/cn) to Language type (zh-TW/zh-CN)
   const mapLangToLanguageType = (lang?: string): Language => {
     if (!lang) return 'en'
-    const mapping: Record<string, Language> = { 'tw': 'zh-TW', 'cn': 'zh-CN', 'en': 'en', 'vi': 'vi', 'zh-TW': 'zh-TW', 'zh-CN': 'zh-CN' }
+    const mapping: Record<string, Language> = { 'tw': 'zh-TW', 'zh-Hant': 'zh-TW', 'cn': 'zh-CN', 'zh-Hans': 'zh-CN', 'en': 'en', 'vi': 'vi', 'zh-TW': 'zh-TW', 'zh-CN': 'zh-CN' }
     return mapping[lang] || 'en'
   }
   const [selectedLanguage, setSelectedLanguage] = useState<Language>(mapLangToLanguageType(language))

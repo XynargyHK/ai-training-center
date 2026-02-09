@@ -52,7 +52,6 @@ export default function HeaderSSR({
   accountUrl = '/account',
   country = 'US',
 }: HeaderSSRProps) {
-  console.log('[HeaderSSR] currentLang:', currentLang)
   const { cartItemCount, openCart } = useCart()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false)
