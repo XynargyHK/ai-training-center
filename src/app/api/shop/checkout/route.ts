@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
         user_id: user_id || null,
         email: customer.email,
         status: 'processing',
-        fulfillment_status: 'not_fulfilled',
+        fulfillment_status: 'processing',
         payment_status: 'not_paid',
         currency_code: currency?.toUpperCase() || 'USD',
         subtotal: subtotal,

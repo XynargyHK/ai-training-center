@@ -46,17 +46,27 @@ export async function GET(request: NextRequest) {
       // 2. Get unique users from orders (may not have profile)
       const { data: orders } = await supabase
         .from('orders')
-        .select('user_id, email, shipping_address, created_at')
+        .select('user_id, email, shipping_address, metadata, created_at')
         .not('user_id', 'is', null)
 
       for (const o of orders || []) {
         if (o.user_id && !allCustomers.has(o.user_id)) {
           const addr = o.shipping_address as any
+          const meta = o.metadata as any
+
+          // Get name from shipping_address or metadata
+          let fullName = null
+          if (addr?.first_name || addr?.last_name) {
+            fullName = `${addr.first_name || ''} ${addr.last_name || ''}`.trim()
+          } else if (meta?.customer_name) {
+            fullName = meta.customer_name
+          }
+
           allCustomers.set(o.user_id, {
             user_id: o.user_id,
-            full_name: addr ? `${addr.first_name || ''} ${addr.last_name || ''}`.trim() : null,
+            full_name: fullName,
             email: o.email,
-            phone: addr?.phone || null,
+            phone: addr?.phone || meta?.customer_phone || null,
             created_at: o.created_at
           })
         }
@@ -204,6 +214,7 @@ export async function GET(request: NextRequest) {
           tracking_number,
           shipping_carrier,
           shipping_address,
+          metadata,
           created_at,
           order_items (
             id,
@@ -223,11 +234,31 @@ export async function GET(request: NextRequest) {
       // Get user names for orders
       const ordersWithUsers = await Promise.all(
         (orders || []).map(async (order) => {
+          // Name can come from multiple sources:
+          // 1. shipping_address (first_name + last_name)
+          // 2. order.metadata.customer_name (stored at checkout)
+          // 3. customer_profiles (if linked by user_id)
+          const addr = order.shipping_address as any
+          const meta = order.metadata as any
+
           let userName = null
           let userEmail = order.email
           let userPhone = null
 
-          if (order.user_id) {
+          // Try shipping address first
+          if (addr?.first_name || addr?.last_name) {
+            userName = `${addr.first_name || ''} ${addr.last_name || ''}`.trim()
+            userPhone = addr.phone || null
+          }
+
+          // Try metadata.customer_name
+          if (!userName && meta?.customer_name) {
+            userName = meta.customer_name
+            userPhone = meta.customer_phone || userPhone
+          }
+
+          // Try customer_profiles as last resort
+          if (!userName && order.user_id) {
             const { data: profile } = await supabase
               .from('customer_profiles')
               .select('name, email, phone')
@@ -236,7 +267,7 @@ export async function GET(request: NextRequest) {
             if (profile) {
               userName = profile.name
               userEmail = profile.email || order.email
-              userPhone = profile.phone
+              userPhone = profile.phone || userPhone
             }
           }
 
