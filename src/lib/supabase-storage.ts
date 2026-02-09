@@ -271,7 +271,6 @@ Category: ${service.category || 'General'}`,
     if (footer.return_address) footerMetaText += `\nReturn Address: ${footer.return_address}`
 
     // Shipping policy
-    if (footer.processing_days) footerMetaText += `\nOrder Processing Time: ${footer.processing_days} business days`
     if (footer.cutoff_time) footerMetaText += `\nOrder Cutoff Time: ${footer.cutoff_time}`
     if (footer.domestic_shipping_days) footerMetaText += `\nDomestic Shipping: ${footer.domestic_shipping_days} business days`
     if (footer.international_shipping_days) footerMetaText += `\nInternational Shipping: ${footer.international_shipping_days} business days`

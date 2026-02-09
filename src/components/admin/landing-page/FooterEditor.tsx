@@ -46,7 +46,6 @@ interface FooterData {
   warranty_months?: string
   restocking_fee?: string
   return_address?: string
-  processing_days?: string
   domestic_shipping_days?: string
   international_shipping_days?: string
   free_shipping_threshold?: string
@@ -488,16 +487,6 @@ export default function FooterEditor({ data, onChange, onEditPolicy }: FooterEdi
         {/* Shipping */}
         <h6 className="text-xs font-medium text-gray-400 mb-2">Shipping Policy</h6>
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Processing Time (days)</label>
-            <input
-              type="text"
-              value={data.processing_days || ''}
-              onChange={(e) => updateField('processing_days', e.target.value)}
-              placeholder="1-3"
-              className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-sm"
-            />
-          </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1">Cutoff Time</label>
             <input
