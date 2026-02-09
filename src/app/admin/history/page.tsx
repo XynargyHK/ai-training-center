@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 type ViewMode = 'profile' | 'chat' | 'order'
 
@@ -74,6 +75,9 @@ interface PopupData {
 }
 
 export default function HistoryPage() {
+  const searchParams = useSearchParams()
+  const businessUnit = searchParams.get('businessUnit') || 'skincoach'
+
   const [viewMode, setViewMode] = useState<ViewMode>('chat')
   const [profiles, setProfiles] = useState<UserProfile[]>([])
   const [chats, setChats] = useState<ChatSession[]>([])
@@ -101,6 +105,7 @@ export default function HistoryPage() {
     try {
       const params = new URLSearchParams()
       params.set('view', viewMode)
+      params.set('businessUnit', businessUnit)
       if (search) params.set('search', search)
       if (flagFilter !== 'all') params.set('flag', flagFilter)
 
@@ -121,7 +126,7 @@ export default function HistoryPage() {
 
   useEffect(() => {
     fetchData()
-  }, [viewMode, flagFilter])
+  }, [viewMode, flagFilter, businessUnit])
 
   // Search with debounce
   useEffect(() => {

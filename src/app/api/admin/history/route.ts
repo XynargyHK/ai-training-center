@@ -19,16 +19,31 @@ export async function GET(request: NextRequest) {
     const view = searchParams.get('view') || 'chat'
     const search = searchParams.get('search') || ''
     const flagFilter = searchParams.get('flag') || 'all'
+    const businessUnitSlug = searchParams.get('businessUnit') || 'skincoach'
+
+    // Look up business unit ID from slug
+    const { data: businessUnit } = await supabase
+      .from('business_units')
+      .select('id')
+      .eq('slug', businessUnitSlug)
+      .single()
+
+    const businessUnitId = businessUnit?.id
+
+    if (!businessUnitId) {
+      return NextResponse.json({ error: 'Business unit not found' }, { status: 404 })
+    }
 
     // ===== PROFILE VIEW =====
     if (view === 'profile') {
       // Get customers from both profiles AND orders (some customers may only exist in orders)
       const allCustomers = new Map<string, any>()
 
-      // 1. Get from customer_profiles (for SkinCoach customers)
+      // 1. Get from customer_profiles (for this business unit)
       const { data: profiles } = await supabase
         .from('customer_profiles')
         .select('*')
+        .eq('business_unit_id', businessUnitId)
 
       for (const p of profiles || []) {
         if (p.user_id) {
@@ -47,6 +62,7 @@ export async function GET(request: NextRequest) {
       const { data: orders } = await supabase
         .from('orders')
         .select('user_id, email, shipping_address, metadata, created_at')
+        .eq('business_unit_id', businessUnitId)
         .not('user_id', 'is', null)
 
       for (const o of orders || []) {
@@ -132,6 +148,7 @@ export async function GET(request: NextRequest) {
           started_at,
           metadata
         `)
+        .eq('business_unit_id', businessUnitId)
         .order('started_at', { ascending: false })
 
       // Apply flag filter
@@ -222,6 +239,7 @@ export async function GET(request: NextRequest) {
             quantity
           )
         `)
+        .eq('business_unit_id', businessUnitId)
         .order('created_at', { ascending: false })
 
       const { data: orders, error } = await query.limit(100)
