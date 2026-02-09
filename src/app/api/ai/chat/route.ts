@@ -228,7 +228,7 @@ async function generateAIResponse(
 
     // ONLY use Google Gemini - no fallbacks
     const genAI = getGoogleClient()
-    const model = genAI.getGenerativeModel({ model: llmConfig.model || 'gemini-2.5-flash' })
+    const model = genAI.getGenerativeModel({ model: llmConfig.model || 'gemini-1.5-flash' })
 
     // Build conversation history for Gemini
     const geminiContents: any[] = []
@@ -312,7 +312,7 @@ export async function GET() {
   return NextResponse.json({
     status: 'ready',
     message: 'AI Chat API is operational',
-    model: config.model || 'gemini-2.5-flash',
+    model: config.model || 'gemini-1.5-flash',
     provider: 'google',
     endpoints: {
       POST: 'Send a chat message with optional knowledgeBase and trainingData',
