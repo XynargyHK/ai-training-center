@@ -1562,6 +1562,15 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
             <Image className="w-3.5 h-3.5" />
             {t.imageLibrary}
           </button>
+
+          {/* Conversations Tab - Links to admin page */}
+          <a
+            href="/admin/conversations"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-none transition-all bg-gray-100 text-gray-600 hover:bg-purple-100 hover:text-purple-700"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            {t.conversations || 'Conversations'}
+          </a>
         </div>
 
         {/* View Mode Toggle */}
