@@ -252,13 +252,36 @@ Category: ${service.category || 'General'}`,
       }
     }
 
-    // Extract footer metadata (company info, refund days, contact info)
+    // Extract footer metadata (company info, policies, shipping info)
     let footerMetaText = ''
-    if (footer.refund_days) footerMetaText += `\nRefund Period: ${footer.refund_days} days`
+    // Company info
     if (footer.company_name) footerMetaText += `\nCompany: ${footer.company_name}`
+    if (footer.brand_name) footerMetaText += `\nBrand: ${footer.brand_name}`
+    if (footer.website_url) footerMetaText += `\nWebsite: ${footer.website_url}`
     if (footer.contact_email) footerMetaText += `\nContact Email: ${footer.contact_email}`
     if (footer.contact_phone) footerMetaText += `\nContact Phone: ${footer.contact_phone}`
-    if (footer.address) footerMetaText += `\nAddress: ${footer.address}`
+    if (footer.contact_address) footerMetaText += `\nAddress: ${footer.contact_address}`
+    if (footer.governing_state) footerMetaText += `\nGoverning State/Region: ${footer.governing_state}`
+
+    // Refund & Return policy
+    if (footer.refund_days) footerMetaText += `\nRefund Period: ${footer.refund_days} days`
+    if (footer.refund_processing_days) footerMetaText += `\nRefund Processing Time: ${footer.refund_processing_days} business days`
+    if (footer.warranty_months) footerMetaText += `\nWarranty Period: ${footer.warranty_months} months`
+    if (footer.restocking_fee) footerMetaText += `\nRestocking Fee: ${footer.restocking_fee}%`
+    if (footer.return_address) footerMetaText += `\nReturn Address: ${footer.return_address}`
+
+    // Shipping policy
+    if (footer.processing_days) footerMetaText += `\nOrder Processing Time: ${footer.processing_days} business days`
+    if (footer.cutoff_time) footerMetaText += `\nOrder Cutoff Time: ${footer.cutoff_time}`
+    if (footer.domestic_shipping_days) footerMetaText += `\nDomestic Shipping: ${footer.domestic_shipping_days} business days`
+    if (footer.international_shipping_days) footerMetaText += `\nInternational Shipping: ${footer.international_shipping_days} business days`
+    if (footer.free_shipping_threshold) footerMetaText += `\nFree Shipping Threshold: $${footer.free_shipping_threshold}`
+    if (footer.warehouse_location) footerMetaText += `\nWarehouse Location: ${footer.warehouse_location}`
+    if (footer.shipping_carriers) footerMetaText += `\nShipping Carriers: ${footer.shipping_carriers}`
+
+    // Other
+    if (footer.effective_date) footerMetaText += `\nPolicy Effective Date: ${footer.effective_date}`
+    if (footer.liability_cap) footerMetaText += `\nLiability Cap: $${footer.liability_cap}`
 
     // Extract menu bar items
     const menuBar = lp.menu_bar || []
