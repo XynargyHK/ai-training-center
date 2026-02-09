@@ -1,6 +1,12 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Check if API key is configured
+const apiKey = process.env.RESEND_API_KEY
+if (!apiKey) {
+  console.warn('⚠️ RESEND_API_KEY is not configured - emails will not be sent')
+}
+
+const resend = new Resend(apiKey)
 
 interface OrderItem {
   title: string
@@ -179,6 +185,15 @@ export async function sendOrderConfirmationEmail(data: OrderConfirmationData) {
     </html>
   `
 
+  // Check API key before attempting to send
+  if (!apiKey) {
+    console.error('❌ Cannot send email: RESEND_API_KEY not configured')
+    return { success: false, error: 'RESEND_API_KEY not configured' }
+  }
+
+  console.log('📧 Attempting to send order confirmation email to:', customerEmail)
+  console.log('📧 Order:', orderNumber, 'Total:', currencySymbol + total.toFixed(2))
+
   try {
     const result = await resend.emails.send({
       from: `${businessName} <cs@skincoach.ai>`,
@@ -187,10 +202,11 @@ export async function sendOrderConfirmationEmail(data: OrderConfirmationData) {
       html: emailHtml
     })
 
-    console.log('✅ Order confirmation email sent:', result)
+    console.log('✅ Order confirmation email sent:', JSON.stringify(result))
     return { success: true, data: result }
-  } catch (error) {
-    console.error('❌ Failed to send order confirmation email:', error)
+  } catch (error: any) {
+    console.error('❌ Failed to send order confirmation email:', error?.message || error)
+    console.error('❌ Full error:', JSON.stringify(error, null, 2))
     return { success: false, error }
   }
 }

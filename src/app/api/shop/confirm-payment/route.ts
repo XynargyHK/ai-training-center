@@ -69,11 +69,17 @@ export async function POST(request: NextRequest) {
     if (updateError) throw updateError
 
     // Send order confirmation email
+    console.log('📧 Preparing to send order confirmation email...')
+    console.log('📧 Order exists:', !!order, 'Existing order:', !!existingOrder)
+
     if (order && existingOrder) {
       const customerEmail = order.email || existingOrder.metadata?.customer_email
       const customerName = existingOrder.metadata?.customer_name ||
                           order.shipping_address?.first_name ||
                           'Valued Customer'
+
+      console.log('📧 Customer email:', customerEmail)
+      console.log('📧 Customer name:', customerName)
 
       if (customerEmail) {
         const currencyCode = order.currency_code || 'USD'
