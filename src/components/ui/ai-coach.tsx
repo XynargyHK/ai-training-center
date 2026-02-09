@@ -157,7 +157,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
       }
 
       // Load orders
-      const ordersRes = await fetch(`/api/shop/orders?userId=${userId}`)
+      const ordersRes = await fetch(`/api/customer/orders?userId=${userId}`)
       if (ordersRes.ok) {
         const ordersData = await ordersRes.json()
         if (ordersData.orders) {

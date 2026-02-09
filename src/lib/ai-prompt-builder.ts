@@ -38,14 +38,19 @@ export interface UserProfile {
 
 export interface UserOrder {
   id: string
-  order_number?: string
+  display_id?: number
   status: string
-  total_amount: number
-  currency: string
-  items?: any[]
+  fulfillment_status?: string
+  payment_status?: string
+  total: number
+  subtotal?: number
+  currency_code: string
+  order_items?: any[]
   created_at: string
   shipping_address?: any
   tracking_number?: string
+  shipping_carrier?: string
+  estimated_delivery?: string
 }
 
 export interface PromptOptions {
@@ -219,15 +224,18 @@ function buildUserContext(userProfile?: UserProfile | null, userOrders?: UserOrd
     const recentOrders = userOrders.slice(0, 5)
     recentOrders.forEach((order, index) => {
       const orderDate = new Date(order.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-      parts.push(`Order ${index + 1}: #${order.order_number || order.id.slice(0, 8)}`)
+      parts.push(`Order ${index + 1}: #${order.display_id || order.id.slice(0, 8)}`)
       parts.push(`  - Date: ${orderDate}`)
-      parts.push(`  - Status: ${order.status}`)
-      parts.push(`  - Total: ${order.currency} ${order.total_amount.toFixed(2)}`)
+      parts.push(`  - Status: ${order.status}${order.fulfillment_status ? ` (Fulfillment: ${order.fulfillment_status})` : ''}`)
+      parts.push(`  - Total: ${order.currency_code} ${(order.total / 100).toFixed(2)}`)
       if (order.tracking_number) {
-        parts.push(`  - Tracking: ${order.tracking_number}`)
+        parts.push(`  - Tracking: ${order.tracking_number}${order.shipping_carrier ? ` (${order.shipping_carrier})` : ''}`)
       }
-      if (order.items && order.items.length > 0) {
-        const itemNames = order.items.map((item: any) => item.product_name || item.name || 'Unknown item').join(', ')
+      if (order.estimated_delivery) {
+        parts.push(`  - Estimated Delivery: ${order.estimated_delivery}`)
+      }
+      if (order.order_items && order.order_items.length > 0) {
+        const itemNames = order.order_items.map((item: any) => `${item.title} x${item.quantity}`).join(', ')
         parts.push(`  - Items: ${itemNames}`)
       }
       parts.push('')
