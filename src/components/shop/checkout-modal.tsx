@@ -324,9 +324,8 @@ export default function CheckoutModal({
   enableSocialLogin = false
 }: CheckoutModalProps) {
   // Support both 'tw' and 'zh-Hant' for Traditional Chinese
-  const langKey = (language === 'zh-Hant' || isChinese) ? 'tw' : language
-  const t = translations[langKey] || translations.en
-  const isChinese = langKey === 'tw'
+  const isChinese = language === 'zh-Hant' || language === 'tw'
+  const t = translations[isChinese ? 'tw' : language] || translations.en
   const currency = countryCurrencyMap[country] || 'usd'
   const currencySymbol = currencySymbolMap[currency] || '$'
 
