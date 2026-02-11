@@ -6,6 +6,7 @@ import { loadStripe } from '@stripe/stripe-js'
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { getFontClass } from '@/lib/fonts'
 import { supabase } from '@/lib/supabase'
+import { MetaPixel } from '@/lib/meta-pixel'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '')
 
@@ -249,6 +250,13 @@ function CheckoutForm({
             orderId: orderData.order.id,
             paymentIntentId: paymentIntent.id
           })
+        })
+
+        MetaPixel.purchase({
+          value: total,
+          currency: currency,
+          content_ids: cart.map(item => item.product.id),
+          num_items: cart.reduce((sum, item) => sum + item.quantity, 0),
         })
 
         onSuccess(orderData.order.id)
@@ -587,6 +595,7 @@ export default function CheckoutModal({
   }
 
   const handleContinueToPayment = async () => {
+    MetaPixel.lead({ content_name: 'Checkout Contact Info', value: total, currency: currency })
     // Validate customer info
     if (!customerInfo.name || !customerInfo.email) {
       alert(t.fillNameEmail)
@@ -625,6 +634,11 @@ export default function CheckoutModal({
 
       setClientSecret(data.clientSecret)
       setStep('payment')
+      MetaPixel.initiateCheckout({
+        value: total,
+        currency: currency,
+        num_items: cart.length,
+      })
     } catch (error: any) {
       console.error('Error creating payment intent:', error)
       alert(error.message || t.failedInitPayment)

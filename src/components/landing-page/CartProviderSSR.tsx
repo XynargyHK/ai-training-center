@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { X, ShoppingCart, Trash2 } from 'lucide-react'
 import { getFontClass } from '@/lib/fonts'
 import dynamic from 'next/dynamic'
+import { MetaPixel } from '@/lib/meta-pixel'
 
 const CheckoutModal = dynamic(() => import('@/components/shop/checkout-modal'), { ssr: false })
 
@@ -112,6 +113,13 @@ export default function CartProviderSSR({
       return [...prev, { product, quantity: 1 }]
     })
     setShowCartSidebar(true)
+    MetaPixel.addToCart({
+      content_name: product.title,
+      content_ids: [product.id],
+      content_type: 'product',
+      value: product.cost_price || 0,
+      currency: country === 'HK' ? 'HKD' : country === 'SG' ? 'SGD' : 'USD',
+    })
   }
 
   const removeFromCart = (productId: string) => {

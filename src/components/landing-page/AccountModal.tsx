@@ -5,6 +5,7 @@ import { X, User, LogOut, Edit2, Save, Loader2, Package, Truck, CheckCircle, Clo
 import { supabase } from '@/lib/supabase'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 import { getFontClass } from '@/lib/fonts'
+import { MetaPixel } from '@/lib/meta-pixel'
 
 interface OrderItem {
   id: string
@@ -205,6 +206,7 @@ export default function AccountModal({
         const { access_token, refresh_token } = event.data.session
         await supabase.auth.setSession({ access_token, refresh_token })
         setSocialLoading(null)
+        MetaPixel.completeRegistration({ content_name: 'Social Login', status: 'complete' })
       }
     }
     window.addEventListener('message', handleMessage)

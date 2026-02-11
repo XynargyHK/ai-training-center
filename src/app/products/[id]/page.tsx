@@ -8,6 +8,7 @@
 
 import { useState, useEffect, use } from 'react'
 import Link from 'next/link'
+import { MetaPixel } from '@/lib/meta-pixel'
 
 interface Product {
   id: string
@@ -100,6 +101,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
       if (response.ok) {
         setProduct(data.product)
+        MetaPixel.viewContent({
+          content_name: data.product.title,
+          content_ids: [data.product.id],
+          content_type: 'product',
+          value: data.product.cost_price || data.product.price || 0,
+          currency: 'USD',
+        })
         if (data.product.product_variants?.length > 0) {
           setSelectedVariant(data.product.product_variants[0].id)
         }
