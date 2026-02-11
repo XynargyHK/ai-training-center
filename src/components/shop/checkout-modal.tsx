@@ -220,6 +220,12 @@ function CheckoutForm({
         throw new Error(orderData.error || 'Failed to create order')
       }
 
+      MetaPixel.addPaymentInfo({
+        value: total,
+        currency: currency,
+        content_ids: cart.map(item => item.product.id),
+      })
+
       // Submit the payment
       const { error: submitError } = await elements.submit()
       if (submitError) {

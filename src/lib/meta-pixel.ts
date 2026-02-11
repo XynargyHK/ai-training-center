@@ -43,4 +43,20 @@ export const MetaPixel = {
   lead(params?: { content_name?: string; value?: number; currency?: string }) {
     track('Lead', params)
   },
+
+  addPaymentInfo(params?: { value?: number; currency?: string; content_ids?: string[] }) {
+    track('AddPaymentInfo', params)
+  },
+
+  contact(params?: { content_name?: string }) {
+    track('Contact', params)
+  },
+
+  schedule(params?: { content_name?: string }) {
+    track('Schedule', params)
+  },
+
+  search(params?: { search_string?: string }) {
+    track('Search', params)
+  },
 }

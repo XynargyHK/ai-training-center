@@ -6,6 +6,7 @@ import { loadFAQCategories, loadFAQs } from '@/lib/api-client'
 import { type Language, getTranslation, languageNames } from '@/lib/translations'
 import { BookingModal } from '@/components/appointments/booking-modal'
 import { supabase } from '@/lib/supabase'
+import { MetaPixel } from '@/lib/meta-pixel'
 
 interface FAQ {
   id: string
@@ -548,6 +549,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
 
   const handleSendMessage = async () => {
     if ((!inputValue.trim() && !selectedImage) || isTyping) return
+    MetaPixel.contact({ content_name: 'AI Coach Chat' })
 
     const userMessage: Message = {
       id: Date.now().toString(),
