@@ -21,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${serifFont.variable} ${headlineFont.variable} ${playfairFont.variable} ${montserratFont.variable} ${interFont.variable} ${loraFont.variable} ${ralewayFont.variable} ${openSansFont.variable} ${notoSansTC.variable} ${notoSansSC.variable}`}>
-      <head>
+      <body className="antialiased bg-gray-50">
         <Script id="meta-pixel" strategy="afterInteractive">
           {`
             !function(f,b,e,v,n,t,s)
@@ -45,8 +45,6 @@ export default function RootLayout({
             alt=""
           />
         </noscript>
-      </head>
-      <body className="antialiased bg-gray-50">
         {children}
       </body>
     </html>
