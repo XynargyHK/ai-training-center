@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Script from "next/script";
+import MetaPixel from "@/components/MetaPixel";
 import "./globals.css";
 
-const META_PIXEL_ID = '1193064696375296';
 import { serifFont, headlineFont, playfairFont, montserratFont, interFont, loraFont, ralewayFont, openSansFont, notoSansTC, notoSansSC } from '@/lib/fonts'
 
 export const metadata: Metadata = {
@@ -24,36 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${serifFont.variable} ${headlineFont.variable} ${playfairFont.variable} ${montserratFont.variable} ${interFont.variable} ${loraFont.variable} ${ralewayFont.variable} ${openSansFont.variable} ${notoSansTC.variable} ${notoSansSC.variable}`}>
       <body className="antialiased bg-gray-50">
-        <Script
-          id="meta-pixel-base"
-          strategy="beforeInteractive"
-          src="https://connect.facebook.net/en_US/fbevents.js"
-        />
-        <Script
-          id="meta-pixel-init"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              !function(f,b,e,v,n,t,s)
-              {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-              n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-              if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-              n.queue=[];}(window, document,'script',
-              'https://connect.facebook.net/en_US/fbevents.js');
-              fbq('init', '${META_PIXEL_ID}');
-              fbq('track', 'PageView');
-            `,
-          }}
-        />
-        <noscript>
-          <img
-            height="1"
-            width="1"
-            style={{ display: 'none' }}
-            src={`https://www.facebook.com/tr?id=${META_PIXEL_ID}&ev=PageView&noscript=1`}
-            alt=""
-          />
-        </noscript>
+        <MetaPixel />
         {children}
       </body>
     </html>
