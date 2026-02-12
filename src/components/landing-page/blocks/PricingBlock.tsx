@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Check } from 'lucide-react'
 import { getFontClass } from '@/lib/fonts'
 import { useSearchParams } from 'next/navigation'
+import { MetaPixel } from '@/lib/meta-pixel'
 
 const pricingTranslations: Record<string, { mostPopular: string; saveVsSingle: (pct: number) => string }> = {
   en: { mostPopular: 'MOST POPULAR', saveVsSingle: (pct) => `Save ${pct}% vs single treatment` },
@@ -310,7 +311,11 @@ export default function PricingBlock({ data, anchorId, onAddToCart, language, co
                       ? 'border-black bg-gray-100'
                       : 'border-gray-200 bg-white hover:border-gray-300'
                   }`}
-                  onClick={() => setSelectedPlanIndex(index)}
+                  onClick={() => {
+                    setSelectedPlanIndex(index)
+                    if (countryParam === 'HK') MetaPixel.custom('HK_Price_Click')
+                    if (countryParam === 'US') MetaPixel.custom('US_Price_Click')
+                  }}
                 >
                   {/* Most Popular Badge */}
                   {plan.popular && (
@@ -382,7 +387,11 @@ export default function PricingBlock({ data, anchorId, onAddToCart, language, co
         {data.cta_text && (
           <div className="text-center">
             <button
-              onClick={handleAddToCart}
+              onClick={() => {
+                if (countryParam === 'HK') MetaPixel.custom('HK_Checkout_Click')
+                if (countryParam === 'US') MetaPixel.custom('US_Checkout_Click')
+                handleAddToCart()
+              }}
               className={`w-full px-8 py-4 bg-black tracking-wider uppercase hover:bg-gray-800 transition-colors shadow-lg ${getFontClass(data.cta_font_family || data.headline_font_family)} ${
                 (data.cta_text_align || 'center') === 'left' ? 'text-left' :
                 (data.cta_text_align || 'center') === 'right' ? 'text-right' :

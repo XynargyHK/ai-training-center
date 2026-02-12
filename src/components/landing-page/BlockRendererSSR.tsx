@@ -49,7 +49,7 @@ export default function BlockRendererSSR({ blocks, onAddToCart, language, countr
 
           case 'accordion':
             // AccordionBlock stays as client component (needs useState for expand/collapse)
-            return <AccordionBlock key={block.id} anchorId={anchorId} data={block.data as any} heading={block.name} />
+            return <AccordionBlock key={block.id} anchorId={anchorId} data={block.data as any} heading={block.name} country={country} />
 
           case 'steps':
             return <StepsBlockSSR key={block.id} anchorId={anchorId} data={block.data as any} heading={block.name} />

@@ -19,6 +19,16 @@ function track(eventName: string, params?: Record<string, unknown>) {
   }
 }
 
+function trackCustom(eventName: string, params?: Record<string, unknown>) {
+  if (typeof window !== 'undefined' && window.fbq) {
+    if (params) {
+      window.fbq('trackCustom', eventName, params)
+    } else {
+      window.fbq('trackCustom', eventName)
+    }
+  }
+}
+
 export const MetaPixel = {
   viewContent(params: { content_name: string; content_ids?: string[]; content_type?: string; value?: number; currency?: string }) {
     track('ViewContent', params)
@@ -58,5 +68,9 @@ export const MetaPixel = {
 
   search(params?: { search_string?: string }) {
     track('Search', params)
+  },
+
+  custom(eventName: string, params?: Record<string, unknown>) {
+    trackCustom(eventName, params)
   },
 }

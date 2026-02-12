@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { getFontClass } from '@/lib/fonts'
+import { MetaPixel } from '@/lib/meta-pixel'
 
 interface AccordionItem {
   title: string
@@ -34,9 +35,10 @@ interface AccordionBlockProps {
   data: AccordionBlockData
   heading?: string
   anchorId?: string
+  country?: string
 }
 
-export default function AccordionBlock({ data, heading = '', anchorId }: AccordionBlockProps) {
+export default function AccordionBlock({ data, heading = '', anchorId, country }: AccordionBlockProps) {
   const {
     heading_font_size = '2.5rem',
     heading_font_family = 'Josefin Sans',
@@ -52,6 +54,8 @@ export default function AccordionBlock({ data, heading = '', anchorId }: Accordi
 
   const toggleItem = (index: number) => {
     setExpandedIndex(expandedIndex === index ? null : index)
+    if (country === 'HK') MetaPixel.custom('HK_FAQ_Click')
+    if (country === 'US') MetaPixel.custom('US_FAQ_Click')
   }
 
   if (!items || items.length === 0) {
