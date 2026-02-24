@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 import {
   createChatSession,
   saveChatMessage,
@@ -8,6 +9,7 @@ import {
   getFlaggedSessions,
   linkSessionToUser
 } from '@/lib/chat-storage'
+import { analyzeAndUpdateSession } from '@/lib/conversation-analyzer'
 
 export async function POST(request: NextRequest) {
   try {
@@ -53,6 +55,30 @@ export async function POST(request: NextRequest) {
           flagReason: params.flagReason,
           sentiment: params.sentiment
         })
+
+        // Trigger analysis after each AI response (async, don't block)
+        if (params.messageType === 'ai' && params.sessionId) {
+          (async () => {
+            try {
+              const messages = await loadChatHistory(params.sessionId)
+              if (messages.length >= 2) {
+                const supabase = createClient(
+                  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                  process.env.SUPABASE_SERVICE_ROLE_KEY!
+                )
+                await analyzeAndUpdateSession(params.sessionId, messages.map(m => ({
+                  message_type: m.message_type,
+                  content: m.content,
+                  created_at: m.created_at
+                })), supabase)
+                console.log('✅ Live analysis complete for session:', params.sessionId)
+              }
+            } catch (err) {
+              console.error('Live analysis error:', err)
+            }
+          })()
+        }
+
         return NextResponse.json({ success: true, messageId })
       }
 

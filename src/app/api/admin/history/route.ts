@@ -55,23 +55,21 @@ export async function GET(request: NextRequest) {
       // Get customers from both profiles AND orders (some customers may only exist in orders)
       const allCustomers = new Map<string, any>()
 
-      // 1. Get from customer_profiles (for this business unit)
+      // 1. Get all customer_profiles (customers come from website, no business_unit filter)
       const { data: profiles } = await supabase
         .from('customer_profiles')
         .select('*')
-        .eq('business_unit_id', businessUnitId)
 
       for (const p of profiles || []) {
-        if (p.user_id) {
-          allCustomers.set(p.user_id, {
-            user_id: p.user_id,
-            name: p.name,
-            email: p.email,
-            phone: p.phone,
-            skin_type: p.skin_type,
-            created_at: p.created_at
-          })
-        }
+        const key = p.user_id || p.id || p.email || `profile_${Math.random()}`
+        allCustomers.set(key, {
+          user_id: p.user_id || p.id,
+          name: p.name,
+          email: p.email,
+          phone: p.phone,
+          skin_type: p.skin_type,
+          created_at: p.created_at
+        })
       }
 
       // 2. Get unique users from orders (may not have profile)
@@ -164,7 +162,6 @@ export async function GET(request: NextRequest) {
           started_at,
           metadata
         `)
-        .eq('business_unit_id', businessUnitId)
         .order('started_at', { ascending: false })
 
       // Apply flag filter
@@ -174,31 +171,25 @@ export async function GET(request: NextRequest) {
         query = query.in('flag_level', ['warning', 'alert'])
       }
 
-      const { data: sessions, error } = await query.limit(200)  // Fetch more, filter by country
+      const { data: sessions, error } = await query.limit(200)
 
       if (error) {
         console.error('Error fetching chats:', error)
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
 
-      // Filter by country if specified (stored in metadata.country)
+      // Show all chats
       let filteredSessions = sessions || []
-      if (country) {
-        filteredSessions = filteredSessions.filter(session => {
-          const meta = session.metadata as any
-          const sessionCountry = meta?.country || ''
-          return sessionCountry.toUpperCase() === country.toUpperCase()
-        })
-      }
 
       // Get display name and last message for each session
       const chatsWithDetails = await Promise.all(
         filteredSessions.slice(0, 100).map(async (session) => {
-          // Get last message
+          // Get last user message
           const { data: messages } = await supabase
             .from('chat_messages')
             .select('message_type, content')
             .eq('session_id', session.id)
+            .eq('message_type', 'user')
             .order('created_at', { ascending: false })
             .limit(1)
 
@@ -264,7 +255,6 @@ export async function GET(request: NextRequest) {
             quantity
           )
         `)
-        .eq('business_unit_id', businessUnitId)
         .order('created_at', { ascending: false })
 
       const { data: orders, error } = await query.limit(200)  // Fetch more, filter later
@@ -274,16 +264,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
 
-      // Filter by country if specified
+      // Show all orders (no country filter — orders come from website)
       let filteredByCountry = orders || []
-      if (country) {
-        filteredByCountry = filteredByCountry.filter(order => {
-          const addr = order.shipping_address as any
-          // Check both country and country_code fields
-          const orderCountry = addr?.country_code || addr?.country || ''
-          return orderCountry.toUpperCase() === country.toUpperCase()
-        })
-      }
 
       // Get user names for orders (limit to 100)
       const ordersWithUsers = await Promise.all(

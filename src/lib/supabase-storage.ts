@@ -1095,6 +1095,8 @@ export async function loadBusinessUnits() {
   // Transform to match existing interface
   return data.map(unit => ({
     id: unit.slug || unit.id,
+    uuid: unit.id,
+    slug: unit.slug,
     name: unit.name,
     industry: unit.industry || 'General',
     createdAt: new Date(unit.created_at)

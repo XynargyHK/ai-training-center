@@ -98,12 +98,38 @@ function HistoryContent() {
   const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 })
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
+  // Chat detail modal state
+  const [selectedChat, setSelectedChat] = useState<ChatSession | null>(null)
+  const [chatMessages, setChatMessages] = useState<Message[]>([])
+  const [loadingMessages, setLoadingMessages] = useState(false)
+
   // Edit order modal state
   const [editingOrder, setEditingOrder] = useState<Order | null>(null)
   const [editStatus, setEditStatus] = useState('')
   const [editTracking, setEditTracking] = useState('')
   const [editCarrier, setEditCarrier] = useState('')
   const [saving, setSaving] = useState(false)
+
+  // Open chat detail modal
+  const openChatDetail = async (chat: ChatSession) => {
+    setSelectedChat(chat)
+    setLoadingMessages(true)
+    try {
+      const res = await fetch('/api/admin/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get_messages', sessionId: chat.id })
+      })
+      const data = await res.json()
+      if (data.success) {
+        setChatMessages(data.messages || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch messages:', error)
+    } finally {
+      setLoadingMessages(false)
+    }
+  }
 
   // Fetch data based on view mode
   const fetchData = async () => {
@@ -303,78 +329,69 @@ function HistoryContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-6 text-xs">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">History</h1>
-          <p className="text-gray-600">Customer profiles, conversations, and orders</p>
-        </div>
+        {/* Header + View Mode + Search — all one line */}
+        <div className="flex items-center gap-3 mb-4">
+          <h1 className="text-sm font-bold text-gray-900 whitespace-nowrap">History</h1>
 
-        {/* View Mode Buttons + Filters */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="flex flex-wrap gap-4 items-center">
-            {/* View Mode Buttons */}
-            <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
-              {[
-                { id: 'profile', label: 'Profile', icon: '👤' },
-                { id: 'chat', label: 'Chat', icon: '💬' },
-                { id: 'order', label: 'Order', icon: '📦' }
-              ].map(({ id, label, icon }) => (
-                <button
-                  key={id}
-                  onClick={() => setViewMode(id as ViewMode)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                    viewMode === id
-                      ? 'bg-purple-600 text-white'
-                      : 'text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  <span>{icon}</span>
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            {/* Search */}
-            <div className="flex-1 min-w-[200px]">
-              <input
-                type="text"
-                placeholder={
-                  viewMode === 'profile' ? 'Search name, email...' :
-                  viewMode === 'chat' ? 'Search user, keywords...' :
-                  'Search order #, user...'
-                }
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-              />
-            </div>
-
-            {/* Flag filter (only for chat view) */}
-            {viewMode === 'chat' && (
-              <select
-                value={flagFilter}
-                onChange={(e) => setFlagFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg"
-              >
-                <option value="all">All Flags</option>
-                <option value="alert">🚨 Alerts Only</option>
-                <option value="warning">⚠️ Warnings+</option>
-              </select>
-            )}
-
-            {/* Export button (only for order view) */}
-            {viewMode === 'order' && (
+          {/* View Mode Buttons */}
+          <div className="flex gap-0.5 bg-gray-100 p-0.5 rounded">
+            {[
+              { id: 'profile', label: 'Profile', icon: '👤' },
+              { id: 'chat', label: 'Chat', icon: '💬' },
+              { id: 'order', label: 'Order', icon: '📦' }
+            ].map(({ id, label, icon }) => (
               <button
-                onClick={exportToExcel}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                key={id}
+                onClick={() => setViewMode(id as ViewMode)}
+                className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all ${
+                  viewMode === id
+                    ? 'bg-purple-600 text-white'
+                    : 'text-gray-600 hover:bg-gray-200'
+                }`}
               >
-                <span>📥</span>
-                Export Excel
+                <span>{icon}</span>
+                {label}
               </button>
-            )}
+            ))}
           </div>
+
+          {/* Search */}
+          <input
+            type="text"
+            placeholder={
+              viewMode === 'profile' ? 'Search name, email...' :
+              viewMode === 'chat' ? 'Search user, keywords...' :
+              'Search order #, user...'
+            }
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-purple-500"
+          />
+
+          {/* Flag filter (only for chat view) */}
+          {viewMode === 'chat' && (
+            <select
+              value={flagFilter}
+              onChange={(e) => setFlagFilter(e.target.value)}
+              className="px-2 py-1 border border-gray-300 rounded text-xs"
+            >
+              <option value="all">All Flags</option>
+              <option value="alert">Alerts</option>
+              <option value="warning">Warnings+</option>
+            </select>
+          )}
+
+          {/* Export button (only for order view) */}
+          {viewMode === 'order' && (
+            <button
+              onClick={exportToExcel}
+              className="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1 text-xs whitespace-nowrap"
+            >
+              📥 Export
+            </button>
+          )}
         </div>
 
         {/* Data Table */}
@@ -411,6 +428,7 @@ function HistoryContent() {
                   <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                   <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
                   <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Address</th>
+                  <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Country</th>
                   <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
                   <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
                   <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
@@ -480,6 +498,7 @@ function HistoryContent() {
                         <tr
                           key={chat.id}
                           className="hover:bg-gray-50 cursor-pointer"
+                          onClick={() => openChatDetail(chat)}
                           onMouseEnter={(e) => handleMouseEnter(chat.user_id, e)}
                           onMouseLeave={handleMouseLeave}
                         >
@@ -525,7 +544,7 @@ function HistoryContent() {
                   {viewMode === 'order' && (
                     orders.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                        <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
                           No orders found
                         </td>
                       </tr>
@@ -536,6 +555,7 @@ function HistoryContent() {
                         const name = order.user_name || '-'
                         const phone = order.user_phone || addr?.phone || '-'
                         const address = addr ? [addr.address_1, addr.city].filter(Boolean).join(', ') : '-'
+                        const orderCountry = addr?.country_code || addr?.country || '-'
 
                         return (
                           <tr
@@ -555,6 +575,9 @@ function HistoryContent() {
                             </td>
                             <td className="px-3 py-3 text-gray-600 max-w-[150px] truncate text-sm">
                               {address}
+                            </td>
+                            <td className="px-3 py-3 text-center text-gray-600 text-sm">
+                              {orderCountry}
                             </td>
                             <td className="px-3 py-3 text-gray-600 max-w-[150px] truncate text-sm">
                               {order.order_items?.map((i: any) => i.title).join(', ') || '-'}
@@ -661,6 +684,46 @@ function HistoryContent() {
               ) : (
                 <div className="text-gray-400 text-sm">No conversations</div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Chat Detail Modal */}
+        {selectedChat && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedChat(null)}>
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-lg flex flex-col" style={{ maxHeight: '80vh' }} onClick={(e) => e.stopPropagation()}>
+              {/* Header */}
+              <div className="px-4 py-3 border-b bg-purple-50 rounded-t-lg flex items-center justify-between">
+                <div>
+                  <div className="font-bold text-sm text-gray-900">{selectedChat.display_name}</div>
+                  <div className="text-xs text-gray-500">{formatTimestamp(selectedChat.started_at)}</div>
+                </div>
+                <button onClick={() => setSelectedChat(null)} className="text-gray-400 hover:text-gray-600 text-lg">✕</button>
+              </div>
+
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+                {loadingMessages ? (
+                  <div className="text-center text-gray-500 py-8">Loading messages...</div>
+                ) : chatMessages.length === 0 ? (
+                  <div className="text-center text-gray-400 py-8">No messages found</div>
+                ) : (
+                  chatMessages.map((msg) => (
+                    <div key={msg.id} className={`flex ${msg.message_type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[80%] px-3 py-2 rounded-lg text-xs ${
+                        msg.message_type === 'user'
+                          ? 'bg-purple-600 text-white rounded-br-sm'
+                          : 'bg-white text-gray-800 border border-gray-200 rounded-bl-sm'
+                      }`}>
+                        <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+                        <div className={`text-[10px] mt-1 ${msg.message_type === 'user' ? 'text-purple-200' : 'text-gray-400'}`}>
+                          {formatTimestamp(msg.created_at)}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         )}

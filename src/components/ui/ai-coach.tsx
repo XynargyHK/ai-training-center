@@ -280,7 +280,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               action: 'create_session',
-              businessUnitId: fallbackBU.id,
+              businessUnitId: fallbackBU.uuid || fallbackBU.id,
               aiStaffId: currentStaff?.id,
               userIdentifier,
               userName: userName || undefined,
@@ -310,7 +310,7 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'create_session',
-          businessUnitId: businessUnitData.id,
+          businessUnitId: businessUnitData.uuid || businessUnitData.id,
           aiStaffId: currentStaff?.id,
           userIdentifier,
           userName: userName || undefined,

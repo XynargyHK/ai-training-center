@@ -50,9 +50,10 @@ export async function analyzeConversation(messages: ChatMessage[]): Promise<Anal
    - Action tags if applicable (e.g., complaint, inquiry, purchase, cancel)
 
 2. FLAG_LEVEL: Determine if this conversation needs attention:
-   - "alert" = Angry customer, complaint, refund demand, threatening, very negative
-   - "warning" = Mild frustration, unresolved issue, concern, confusion
-   - "none" = Normal conversation, happy customer, resolved issue
+   - "alert" = Any mention of refund, return, cancel order, complaint, angry, threatening, or very negative
+   - "warning" = Mild frustration, unresolved issue, concern, confusion, product problem, delivery issue
+   - "none" = Normal conversation, happy customer, general product inquiry
+   IMPORTANT: If the customer mentions "refund", "return", or "cancel" in ANY context, flag_level MUST be "alert".
 
 3. FLAG_REASON: If flag_level is not "none", briefly explain why (e.g., "Customer demands refund", "Unresolved shipping complaint")
 
@@ -71,21 +72,22 @@ Respond in this exact JSON format only, no other text:
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0.3,
-        maxOutputTokens: 256,
+        maxOutputTokens: 1024,
       }
     })
 
     const responseText = result.response.text().trim()
+    console.log('🔍 Gemini raw response:', responseText)
 
-    // Extract JSON from response (handle markdown code blocks)
-    let jsonText = responseText
-    if (responseText.includes('```')) {
-      const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
-      if (jsonMatch) {
-        jsonText = jsonMatch[1]
-      }
+    // Extract JSON: find first { and last } in the response
+    const start = responseText.indexOf('{')
+    const end = responseText.lastIndexOf('}')
+    if (start === -1 || end === -1) {
+      console.error('No JSON found in Gemini response:', responseText)
+      return { keywords: [], flag_level: 'none', flag_reason: null }
     }
-
+    const jsonText = responseText.slice(start, end + 1)
+    console.log('🔍 Extracted JSON:', jsonText)
     const analysis = JSON.parse(jsonText)
 
     return {
