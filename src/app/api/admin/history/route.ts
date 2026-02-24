@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
         .from('customer_profiles')
         .select('*')
       if (country) {
-        profileQuery = profileQuery.eq('country', country.toUpperCase())
+        profileQuery = profileQuery.ilike('country', country.toUpperCase())
       }
       const { data: profiles } = await profileQuery
 
