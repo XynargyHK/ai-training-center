@@ -55,15 +55,10 @@ export async function GET(request: NextRequest) {
       // Get customers from both profiles AND orders (some customers may only exist in orders)
       const allCustomers = new Map<string, any>()
 
-      // 1. Get customer_profiles filtered by country
-      let profileQuery = supabase
+      // 1. Get ALL customer_profiles (don't filter by country yet - determine country from multiple sources)
+      const { data: profiles } = await supabase
         .from('customer_profiles')
         .select('*')
-      if (country) {
-        profileQuery = profileQuery.ilike('country', country.toUpperCase())
-      }
-      const { data: profiles } = await profileQuery
-      console.log('🔍 PROFILE DEBUG: country filter =', country, '| profiles found =', profiles?.length, '| profile countries =', profiles?.map(p => p.country))
 
       for (const p of profiles || []) {
         const key = p.user_id || p.id || p.email || `profile_${Math.random()}`
@@ -73,6 +68,7 @@ export async function GET(request: NextRequest) {
           email: p.email,
           phone: p.phone,
           skin_type: p.skin_type,
+          country: (p.country || '').toUpperCase(),
           created_at: p.created_at
         })
       }
@@ -85,11 +81,12 @@ export async function GET(request: NextRequest) {
         .not('user_id', 'is', null)
 
       for (const o of orders || []) {
-        if (o.user_id && !allCustomers.has(o.user_id)) {
-          const addr = o.shipping_address as any
-          const meta = o.metadata as any
+        const addr = o.shipping_address as any
+        const meta = o.metadata as any
+        const orderCountry = (addr?.country_code || addr?.country || '').toUpperCase()
 
-          // Get name from shipping_address or metadata
+        if (o.user_id && !allCustomers.has(o.user_id)) {
+          // New user from orders
           let fullName = null
           if (addr?.first_name || addr?.last_name) {
             fullName = `${addr.first_name || ''} ${addr.last_name || ''}`.trim()
@@ -102,11 +99,49 @@ export async function GET(request: NextRequest) {
             name: fullName,
             email: o.email,
             phone: addr?.phone || meta?.customer_phone || null,
+            country: orderCountry,
             created_at: o.created_at
           })
+        } else if (o.user_id && allCustomers.has(o.user_id)) {
+          // Existing user - fill in country from order if profile country is missing
+          const existing = allCustomers.get(o.user_id)
+          if (!existing.country && orderCountry) {
+            existing.country = orderCountry
+            allCustomers.set(o.user_id, existing)
+          }
         }
       }
-      console.log('🔍 PROFILE DEBUG: total customers after merging orders =', allCustomers.size, '| names =', Array.from(allCustomers.values()).map(c => c.name))
+
+      // 3. Also check chat sessions for country (metadata.country)
+      if (country) {
+        for (const [userId, customer] of allCustomers) {
+          if (!customer.country && customer.user_id) {
+            const { data: chatSession } = await supabase
+              .from('chat_sessions')
+              .select('metadata')
+              .eq('user_id', customer.user_id)
+              .limit(1)
+              .single()
+            if (chatSession?.metadata) {
+              const chatCountry = ((chatSession.metadata as any).country || '').toUpperCase()
+              if (chatCountry) {
+                customer.country = chatCountry
+                allCustomers.set(userId, customer)
+              }
+            }
+          }
+        }
+      }
+
+      // 4. Filter by country AFTER determining from all sources
+      if (country) {
+        const countryUpper = country.toUpperCase()
+        for (const [key, customer] of allCustomers) {
+          if (customer.country !== countryUpper) {
+            allCustomers.delete(key)
+          }
+        }
+      }
 
       // 3. Get counts for each customer
       const profilesWithCounts = await Promise.all(
