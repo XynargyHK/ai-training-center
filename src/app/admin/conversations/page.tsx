@@ -277,10 +277,10 @@ export default function ConversationsPage() {
                     <td className="px-4 py-3">
                       {conv.last_message && (
                         <div className="flex items-center gap-2 max-w-[250px]">
-                          <span className={conv.last_message.type === 'user' ? 'text-blue-600' : 'text-gray-600'}>
+                          <span className={conv.last_message.type === 'user' ? 'text-green-600' : 'text-gray-600'}>
                             {conv.last_message.type === 'user' ? '👤' : '🤖'}
                           </span>
-                          <span className={`truncate ${conv.last_message.type === 'user' ? 'text-blue-600' : 'text-gray-600'}`}>
+                          <span className={`truncate ${conv.last_message.type === 'user' ? 'text-green-600' : 'text-gray-600'}`}>
                             {conv.last_message.content}
                           </span>
                         </div>
@@ -339,7 +339,7 @@ export default function ConversationsPage() {
                     </span>
                     <div
                       className={`text-sm ${
-                        msg.message_type === 'user' ? 'text-blue-600' : 'text-gray-700'
+                        msg.message_type === 'user' ? 'text-green-600' : 'text-gray-700'
                       }`}
                     >
                       {msg.content}

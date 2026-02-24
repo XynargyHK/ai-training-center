@@ -519,7 +519,8 @@ export function LandingPageContent({
             body: JSON.stringify({
               userId: authUser.id,
               name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || null,
-              email: authUser.email || null
+              email: authUser.email || null,
+              country: countryParam
             })
           })
         }

@@ -263,7 +263,8 @@ export default function AccountModal({
           body: JSON.stringify({
             userId: user.id,
             name: user.user_metadata?.full_name || user.user_metadata?.name || null,
-            email: user.email || null
+            email: user.email || null,
+            country
           })
         })
       }
@@ -355,7 +356,8 @@ export default function AccountModal({
           name: editForm.name,
           email: editForm.email,
           phone: fullPhone,
-          shippingAddress: shippingAddress
+          shippingAddress: shippingAddress,
+          country
         })
       })
       const data = await res.json()

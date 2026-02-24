@@ -55,10 +55,14 @@ export async function GET(request: NextRequest) {
       // Get customers from both profiles AND orders (some customers may only exist in orders)
       const allCustomers = new Map<string, any>()
 
-      // 1. Get all customer_profiles (customers come from website, no business_unit filter)
-      const { data: profiles } = await supabase
+      // 1. Get customer_profiles filtered by country
+      let profileQuery = supabase
         .from('customer_profiles')
         .select('*')
+      if (country) {
+        profileQuery = profileQuery.eq('country', country.toUpperCase())
+      }
+      const { data: profiles } = await profileQuery
 
       for (const p of profiles || []) {
         const key = p.user_id || p.id || p.email || `profile_${Math.random()}`
@@ -178,8 +182,16 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
 
-      // Show all chats
+      // Filter by country if specified
       let filteredSessions = sessions || []
+      if (country) {
+        const countryUpper = country.toUpperCase()
+        filteredSessions = filteredSessions.filter(s => {
+          const meta = s.metadata as any
+          const sessionCountry = (meta?.country || '').toUpperCase()
+          return sessionCountry === countryUpper
+        })
+      }
 
       // Get display name and last message for each session
       const chatsWithDetails = await Promise.all(
@@ -264,8 +276,16 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
 
-      // Show all orders (no country filter — orders come from website)
+      // Filter orders by country if specified
       let filteredByCountry = orders || []
+      if (country) {
+        const countryUpper = country.toUpperCase()
+        filteredByCountry = filteredByCountry.filter(o => {
+          const addr = o.shipping_address as any
+          const orderCountry = (addr?.country_code || addr?.country || '').toUpperCase()
+          return orderCountry === countryUpper
+        })
+      }
 
       // Get user names for orders (limit to 100)
       const ordersWithUsers = await Promise.all(
