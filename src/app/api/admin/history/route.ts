@@ -63,6 +63,7 @@ export async function GET(request: NextRequest) {
         profileQuery = profileQuery.ilike('country', country.toUpperCase())
       }
       const { data: profiles } = await profileQuery
+      console.log('🔍 PROFILE DEBUG: country filter =', country, '| profiles found =', profiles?.length, '| profile countries =', profiles?.map(p => p.country))
 
       for (const p of profiles || []) {
         const key = p.user_id || p.id || p.email || `profile_${Math.random()}`
@@ -105,6 +106,7 @@ export async function GET(request: NextRequest) {
           })
         }
       }
+      console.log('🔍 PROFILE DEBUG: total customers after merging orders =', allCustomers.size, '| names =', Array.from(allCustomers.values()).map(c => c.name))
 
       // 3. Get counts for each customer
       const profilesWithCounts = await Promise.all(
