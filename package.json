@@ -26,6 +26,7 @@
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "formidable": "^3.5.4",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.542.0",
     "mammoth": "^1.11.0",
     "moment": "^2.30.1",

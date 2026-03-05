@@ -122,6 +122,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
   // Media Library state
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([])
   const [mediaLoading, setMediaLoading] = useState(false)
+  const [imageDimensions, setImageDimensions] = useState<Record<string, string>>({})
+  const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null)
   const [mediaUploading, setMediaUploading] = useState(false)
   const [logoUploading, setLogoUploading] = useState(false)
   const logoInputRef = useRef<HTMLInputElement>(null)
@@ -1267,12 +1269,25 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
         const result = await response.json()
 
         if (result.success) {
-          setProcessingMessage(`AI extracted ${result.count} knowledge entries from PDF!`)
+          setProcessingMessage(`AI extracted ${result.count} knowledge entries from PDF! Extracting images...`)
+          // Also extract images from the PDF in parallel
+          try {
+            const imgFormData = new FormData()
+            imgFormData.append('file', file)
+            imgFormData.append('businessUnitId', businessUnitId)
+            const imgRes = await fetch('/api/knowledge-base/extract-doc-images', { method: 'POST', body: imgFormData })
+            const imgResult = await imgRes.json()
+            const imgMsg = imgResult.count > 0 ? ` Also saved ${imgResult.count} image${imgResult.count !== 1 ? 's' : ''} to media library.` : ''
+            setProcessingMessage(`AI extracted ${result.count} knowledge entries from PDF!${imgMsg}`)
+            if (imgResult.count > 0) loadMediaFiles()
+          } catch {
+            setProcessingMessage(`AI extracted ${result.count} knowledge entries from PDF!`)
+          }
           setTimeout(() => {
             setIsProcessing(false)
             setProcessingMessage('')
             loadData()
-          }, 2000)
+          }, 3000)
         } else {
           throw new Error(result.error || 'Failed to process PDF')
         }
@@ -1361,12 +1376,29 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
       const result = await response.json()
 
       if (result.success) {
-        setProcessingMessage(`Document "${fileName}" imported successfully!`)
+        // Also extract images from DOCX/DOC files
+        if (fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
+          try {
+            setProcessingMessage(`Document imported! Extracting images...`)
+            const imgFormData = new FormData()
+            imgFormData.append('file', file)
+            imgFormData.append('businessUnitId', businessUnitId)
+            const imgRes = await fetch('/api/knowledge-base/extract-doc-images', { method: 'POST', body: imgFormData })
+            const imgResult = await imgRes.json()
+            const imgMsg = imgResult.count > 0 ? ` Also saved ${imgResult.count} image${imgResult.count !== 1 ? 's' : ''} to media library.` : ''
+            setProcessingMessage(`Document "${fileName}" imported successfully!${imgMsg}`)
+            if (imgResult.count > 0) loadMediaFiles()
+          } catch {
+            setProcessingMessage(`Document "${fileName}" imported successfully!`)
+          }
+        } else {
+          setProcessingMessage(`Document "${fileName}" imported successfully!`)
+        }
         setTimeout(() => {
           setIsProcessing(false)
           setProcessingMessage('')
           loadData()
-        }, 2000)
+        }, 3000)
       } else {
         throw new Error(result.error || 'Failed to save document')
       }
@@ -1452,13 +1484,18 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
       const result = await response.json()
 
       if (result.success) {
-        setProcessingMessage(`Website "${result.title || url}" imported successfully!`)
+        const pagesMsg = result.pagesScraped > 1 ? ` (${result.pagesScraped} pages)` : ''
+        const imgMsg = result.imageCount > 0
+          ? ` Saved ${result.imageCount} image${result.imageCount !== 1 ? 's' : ''} to media library.`
+          : ''
+        setProcessingMessage(`Website "${result.title || url}" imported${pagesMsg}!${imgMsg}`)
+        if (result.imageCount > 0) loadMediaFiles()
         setTimeout(() => {
           setIsProcessing(false)
           setProcessingMessage('')
           setUrlInput('')
           loadData()
-        }, 2000)
+        }, 3000)
       } else {
         throw new Error(result.error || 'Failed to scrape website')
       }
@@ -4256,6 +4293,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                               src={file.url}
                               alt={file.name}
                               className="w-full h-full object-cover"
+                              onLoad={(e) => {
+                                const img = e.target as HTMLImageElement
+                                setImageDimensions(prev => ({
+                                  ...prev,
+                                  [file.name]: `${img.naturalWidth}×${img.naturalHeight}px`
+                                }))
+                              }}
                             />
                           ) : isVideo(file.type) ? (
                             <div className="w-full h-full flex items-center justify-center">
@@ -4278,6 +4322,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                           {/* Hover overlay */}
                           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                             <button
+                              onClick={() => setPreviewImage({ url: file.url, name: file.name })}
+                              className="p-2 bg-white/20 hover:bg-white/30 rounded-none transition-colors"
+                              title="Preview"
+                            >
+                              <Eye className="w-5 h-5 text-white" />
+                            </button>
+                            <button
                               onClick={() => copyToClipboard(file.url)}
                               className="p-2 bg-white/20 hover:bg-white/30 rounded-none transition-colors"
                               title={t.copyUrl}
@@ -4285,7 +4336,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                               {copiedUrl === file.url ? (
                                 <Check className="w-5 h-5 text-green-600" />
                               ) : (
-                                <Copy className="w-5 h-5 text-gray-800" />
+                                <Copy className="w-5 h-5 text-white" />
                               )}
                             </button>
                             <button
@@ -4293,7 +4344,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                               className="p-2 bg-red-50/20 hover:bg-red-50/40 rounded-none transition-colors"
                               title={t.delete}
                             >
-                              <Trash2 className="w-5 h-5 text-red-600" />
+                              <Trash2 className="w-5 h-5 text-red-400" />
                             </button>
                           </div>
                         </div>
@@ -4301,10 +4352,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                         {/* File info */}
                         <div className="p-3">
                           <p className="text-xs text-gray-800 truncate" title={file.name}>
-                            {file.name.replace(/^\d+_/, '')}
+                            {file.name.replace(/^\d+_/, '').replace(/-[a-z0-9]{13,}-\d+(\.[^.]+)$/, '$1')}
                           </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {formatFileSize(file.size)}
+                          <p className="text-xs text-gray-500 mt-1 flex gap-2">
+                            <span>{formatFileSize(file.size)}</span>
+                            {imageDimensions[file.name] && (
+                              <span className="text-gray-400">{imageDimensions[file.name]}</span>
+                            )}
                           </p>
                         </div>
                       </div>
@@ -4331,6 +4385,32 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
           </>
         )}
       </div>
+
+      {/* Image Preview Lightbox */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] flex flex-col items-center" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setPreviewImage(null)}
+              className="absolute -top-10 right-0 text-white/70 hover:text-white"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <img
+              src={previewImage.url}
+              alt={previewImage.name}
+              className="max-w-full max-h-[80vh] object-contain rounded"
+            />
+            <p className="mt-3 text-white/70 text-xs truncate max-w-full">
+              {previewImage.name.replace(/-[a-z0-9]{6}(\.[^.]+)$/, '$1')}
+              {imageDimensions[previewImage.name] && ` · ${imageDimensions[previewImage.name]}`}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* URL Scrape Modal */}
       {showUrlModal && (

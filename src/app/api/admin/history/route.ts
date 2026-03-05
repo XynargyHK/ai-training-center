@@ -55,10 +55,11 @@ export async function GET(request: NextRequest) {
       // Get customers from both profiles AND orders (some customers may only exist in orders)
       const allCustomers = new Map<string, any>()
 
-      // 1. Get ALL customer_profiles (don't filter by country yet - determine country from multiple sources)
+      // 1. Get customer_profiles for this business unit
       const { data: profiles } = await supabase
         .from('customer_profiles')
         .select('*')
+        .eq('business_unit_id', businessUnitId)
 
       for (const p of profiles || []) {
         const key = p.user_id || p.id || p.email || `profile_${Math.random()}`
@@ -203,6 +204,7 @@ export async function GET(request: NextRequest) {
           started_at,
           metadata
         `)
+        .eq('business_unit_id', businessUnitId)
         .order('started_at', { ascending: false })
 
       // Apply flag filter
@@ -304,6 +306,7 @@ export async function GET(request: NextRequest) {
             quantity
           )
         `)
+        .eq('business_unit_id', businessUnitId)
         .order('created_at', { ascending: false })
 
       const { data: orders, error } = await query.limit(200)  // Fetch more, filter later

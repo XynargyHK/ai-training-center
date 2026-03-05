@@ -6,6 +6,9 @@ import ChatFloatingButton from './ChatFloatingButton'
 import HeaderSSR from './HeaderSSR'
 import CartProviderSSR from './CartProviderSSR'
 import BlocksWithCart from './BlocksWithCart'
+import BrezCodeHero from './blocks/BrezCodeHero'
+import BrezCodeFeatures from './blocks/BrezCodeFeatures'
+import { BrezCodeHowItWorks, BrezCodeTestimonials, BrezCodeFAQ, BrezCodePromise, BrezCodeResults, BrezCodeSignUp, BrezCodePricing } from './blocks/BrezCodeSections'
 
 interface LandingPageSSRProps {
   landingPage: any
@@ -317,27 +320,46 @@ export default function LandingPageSSR({
           country={country}
         />
 
-        {/* Hero Carousel */}
-        {carouselSlides.length > 0 && (
-          carouselSlides.length === 1 ? (
-            <HeroSlideContent slide={carouselSlides[0]} isFirst={true} />
-          ) : (
-            <HeroCarousel autoplay autoplayInterval={5000}>
-              {carouselSlides.map((slide: any, i: number) => (
-                <HeroSlideContent key={i} slide={slide} isFirst={i === 0} />
-              ))}
-            </HeroCarousel>
-          )
+        {/* Hero Section — custom hero for brezcode, standard carousel for others */}
+        {businessUnit?.slug === 'brezcode' ? (
+          <BrezCodeHero />
+        ) : (
+          <>
+            {carouselSlides.length > 0 && (
+              carouselSlides.length === 1 ? (
+                <HeroSlideContent slide={carouselSlides[0]} isFirst={true} />
+              ) : (
+                <HeroCarousel autoplay autoplayInterval={5000}>
+                  {carouselSlides.map((slide: any, i: number) => (
+                    <HeroSlideContent key={i} slide={slide} isFirst={i === 0} />
+                  ))}
+                </HeroCarousel>
+              )
+            )}
+
+            {/* Static Hero Banners */}
+            {staticSlides.length > 0 && staticSlides.map((slide: any, i: number) => (
+              <StaticBannerSlide key={i} slide={slide} />
+            ))}
+          </>
         )}
 
-        {/* Static Hero Banners */}
-        {staticSlides.length > 0 && staticSlides.map((slide: any, i: number) => (
-          <StaticBannerSlide key={i} slide={slide} />
-        ))}
-
-        {/* Dynamic Blocks (with cart integration) */}
-        {landingPage.blocks && landingPage.blocks.length > 0 && (
-          <BlocksWithCart blocks={landingPage.blocks} />
+        {/* Dynamic Blocks — custom sections for brezcode, generic blocks for others */}
+        {businessUnit?.slug === 'brezcode' ? (
+          <>
+            <BrezCodeHowItWorks />
+            <BrezCodeFeatures />
+            <BrezCodeTestimonials />
+            <BrezCodeFAQ />
+            <BrezCodePromise />
+            <BrezCodeResults />
+            <BrezCodeSignUp />
+            <BrezCodePricing />
+          </>
+        ) : (
+          landingPage.blocks && landingPage.blocks.length > 0 && (
+            <BlocksWithCart blocks={landingPage.blocks} />
+          )
         )}
 
         {/* Footer */}

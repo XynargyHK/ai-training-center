@@ -2,15 +2,27 @@ import type { SplitBlockData } from '@/types/landing-page-blocks'
 import { getFontClass } from '@/lib/fonts'
 
 interface SplitBlockSSRProps {
-  data: SplitBlockData
+  data: SplitBlockData & {
+    bg_color?: string
+    headline_font_size?: string
+    headline_font_family?: string
+    headline_color?: string
+    headline_bold?: boolean
+    content_font_size?: string
+    content_font_family?: string
+    content_color?: string
+  }
   anchorId?: string
 }
 
 export default function SplitBlockSSR({ data, anchorId }: SplitBlockSSRProps) {
   const isImageLeft = data.layout === 'image-left'
+  const bgColor = data.bg_color || '#0f172a'
+  const headlineColor = data.headline_color || '#ffffff'
+  const contentColor = data.content_color || '#cbd5e1'
 
   return (
-    <div id={anchorId} className="w-full py-16 px-4 bg-gradient-to-b from-slate-900 to-slate-800">
+    <div id={anchorId} className="w-full py-16 px-4" style={{ backgroundColor: bgColor }}>
       <div className="max-w-6xl mx-auto">
         <div className={`grid md:grid-cols-2 gap-8 items-center ${isImageLeft ? '' : 'md:grid-flow-dense'}`}>
           {/* Image Column */}
@@ -32,13 +44,26 @@ export default function SplitBlockSSR({ data, anchorId }: SplitBlockSSRProps) {
           {/* Text Column */}
           <div className={isImageLeft ? '' : 'md:col-start-1 md:row-start-1'}>
             {data.headline && (
-              <h2 className={`text-3xl md:text-4xl font-light tracking-[0.2em] uppercase leading-tight text-white mb-4 ${getFontClass('Josefin Sans')}`}>
+              <h2
+                className={`text-3xl md:text-4xl leading-tight mb-4 ${getFontClass(data.headline_font_family || 'Josefin Sans')}`}
+                style={{
+                  fontSize: data.headline_font_size,
+                  color: headlineColor,
+                  fontWeight: data.headline_bold ? 'bold' : 300
+                }}
+              >
                 {data.headline}
               </h2>
             )}
 
             {data.content && (
-              <p className={`text-lg font-light text-slate-300 leading-relaxed mb-6 whitespace-pre-wrap ${getFontClass('Cormorant Garamond')}`}>
+              <p
+                className={`text-lg leading-relaxed mb-6 whitespace-pre-wrap ${getFontClass(data.content_font_family || 'Cormorant Garamond')}`}
+                style={{
+                  fontSize: data.content_font_size,
+                  color: contentColor
+                }}
+              >
                 {data.content}
               </p>
             )}
@@ -46,7 +71,11 @@ export default function SplitBlockSSR({ data, anchorId }: SplitBlockSSRProps) {
             {data.cta_text && data.cta_url && (
               <a
                 href={data.cta_url}
-                className={`inline-block px-8 py-3 bg-white text-black text-sm font-bold tracking-[0.15em] uppercase hover:bg-black hover:text-white transition-colors ${getFontClass('Josefin Sans')}`}
+                className={`inline-block px-8 py-3 text-sm font-bold tracking-[0.15em] uppercase transition-colors ${getFontClass(data.headline_font_family || 'Josefin Sans')}`}
+                style={{
+                  backgroundColor: headlineColor === '#ffffff' ? '#ffffff' : headlineColor,
+                  color: bgColor
+                }}
               >
                 {data.cta_text}
               </a>

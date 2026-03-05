@@ -2,6 +2,7 @@
 
 import type { LandingPageBlock } from '@/types/landing-page-blocks'
 import SplitBlock from './blocks/SplitBlock'
+import CardBlockSSR from './blocks/CardBlockSSR'
 import TestimonialsBlock from './blocks/TestimonialsBlock'
 import AccordionBlock from './blocks/AccordionBlock'
 import StepsBlock from './blocks/StepsBlock'
@@ -57,14 +58,7 @@ export default function BlockRenderer({ blocks, onAddToCart }: BlockRendererProp
             return <TestimonialsBlock key={block.id} anchorId={anchorId} data={block.data as any} heading={block.name} />
 
           case 'card':
-            // TODO: Implement CardBlock component
-            return (
-              <div key={block.id} id={anchorId} className="py-16 px-4 bg-gray-50">
-                <div className="max-w-6xl mx-auto text-center text-gray-500">
-                  Card Block (Coming Soon)
-                </div>
-              </div>
-            )
+            return <CardBlockSSR key={block.id} anchorId={anchorId} data={block.data as any} heading={block.name} />
 
           case 'accordion':
             return <AccordionBlock key={block.id} anchorId={anchorId} data={block.data as any} heading={block.name} />

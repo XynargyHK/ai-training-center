@@ -6,11 +6,12 @@ export const revalidate = 3600
 export default async function SGPage({
   searchParams,
 }: {
-  searchParams: Promise<{ lang?: string }>
+  searchParams: Promise<{ lang?: string; _bu?: string }>
 }) {
   const params = await searchParams
   const lang = params.lang || 'en'
-  const { landingPage, businessUnit, availableLocales, aiStaffList } = await fetchLandingPageData('skincoach', 'SG', lang)
+  const bu = params._bu || 'skincoach'
+  const { landingPage, businessUnit, availableLocales, aiStaffList } = await fetchLandingPageData(bu, 'SG', lang)
 
   return (
     <LandingPageSSR

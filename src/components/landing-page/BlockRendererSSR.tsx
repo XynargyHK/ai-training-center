@@ -1,5 +1,6 @@
 import type { LandingPageBlock } from '@/types/landing-page-blocks'
 import SplitBlockSSR from './blocks/SplitBlockSSR'
+import CardBlockSSR from './blocks/CardBlockSSR'
 import TestimonialsBlock from './blocks/TestimonialsBlock'
 import AccordionBlock from './blocks/AccordionBlock'
 import StepsBlockSSR from './blocks/StepsBlockSSR'
@@ -38,6 +39,9 @@ export default function BlockRendererSSR({ blocks, onAddToCart, language, countr
         switch (block.type) {
           case 'split':
             return <SplitBlockSSR key={block.id} anchorId={anchorId} data={block.data as any} />
+
+          case 'card':
+            return <CardBlockSSR key={block.id} anchorId={anchorId} data={block.data as any} heading={block.name} />
 
           case 'pricing':
             // PricingBlock stays as client component (needs useState for plan selection + cart)

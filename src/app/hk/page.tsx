@@ -6,11 +6,12 @@ export const revalidate = 3600
 export default async function HKPage({
   searchParams,
 }: {
-  searchParams: Promise<{ lang?: string }>
+  searchParams: Promise<{ lang?: string; _bu?: string }>
 }) {
   const params = await searchParams
   const lang = params.lang || 'tw'
-  const { landingPage, businessUnit, availableLocales, aiStaffList } = await fetchLandingPageData('skincoach', 'HK', lang)
+  const bu = params._bu || 'skincoach'
+  const { landingPage, businessUnit, availableLocales, aiStaffList } = await fetchLandingPageData(bu, 'HK', lang)
 
   return (
     <LandingPageSSR

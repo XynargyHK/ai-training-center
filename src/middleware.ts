@@ -11,6 +11,15 @@ const COUNTRY_MAP: Record<string, { country: string; lang: string }> = {
 
 const DEFAULT_COUNTRY = 'us'
 
+// Domain-to-business-unit mapping for multi-tenant landing pages
+// Add new domains here as new businesses are created
+const LANDING_DOMAINS: Record<string, string> = {
+  'brezcode.com': 'brezcode',
+  'www.brezcode.com': 'brezcode',
+  'xynargy.hk': 'xynargy',
+  'www.xynargy.hk': 'xynargy',
+}
+
 // Detect if request is from a bot/crawler
 function isBot(userAgent: string): boolean {
   const botPatterns = [
@@ -72,13 +81,61 @@ async function detectCountryFromIP(request: NextRequest): Promise<string> {
 
 export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host')?.split(':')[0] ?? ''
+  const { pathname } = request.nextUrl
+
+  // === MULTI-TENANT LANDING PAGE ROUTING ===
+  // Handles brezcode.com and future business domains
+  const mappedBusinessUnit = LANDING_DOMAINS[hostname]
+  if (mappedBusinessUnit) {
+    // Allow pass-through for app routes, static files, etc.
+    if (PASS_THROUGH_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+      return NextResponse.next()
+    }
+    if (pathname.match(/\.(xml|html|txt|ico|png|jpg|svg)\/?$/)) {
+      return NextResponse.next()
+    }
+
+    // Handle country paths: /us, /hk, /sg → rewrite with business unit
+    const pathMatch = pathname.match(/^\/(us|hk|sg)(\/.*)?$/i)
+    if (pathMatch) {
+      const countryPath = pathMatch[1].toLowerCase()
+      if (COUNTRY_MAP[countryPath]) {
+        const url = request.nextUrl.clone()
+        url.searchParams.set('_bu', mappedBusinessUnit)
+        const response = NextResponse.rewrite(url)
+        response.cookies.set('preferred_country', countryPath, {
+          maxAge: 60 * 60 * 24 * 365,
+          path: '/',
+          sameSite: 'lax',
+        })
+        return response
+      }
+    }
+
+    // Handle root path: / → redirect to detected country
+    if (pathname === '/' || pathname === '') {
+      const savedCountry = request.cookies.get('preferred_country')?.value
+      if (savedCountry && COUNTRY_MAP[savedCountry]) {
+        const url = request.nextUrl.clone()
+        url.pathname = `/${savedCountry}`
+        return NextResponse.redirect(url, 302)
+      }
+
+      const detectedCountry = await detectCountryFromIP(request)
+      const url = request.nextUrl.clone()
+      url.pathname = `/${detectedCountry}`
+      return NextResponse.redirect(url, 302)
+    }
+
+    return NextResponse.next()
+  }
+
+  // === SKINCOACH.AI HANDLING (COMPLETELY UNCHANGED BELOW) ===
 
   // Only apply to SkinCoach domains
   if (!SKINCOACH_HOSTS.includes(hostname)) {
     return NextResponse.next()
   }
-
-  const { pathname } = request.nextUrl
   const userAgent = request.headers.get('user-agent') || ''
 
   // Allow pass-through for specific prefixes
