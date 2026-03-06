@@ -1758,7 +1758,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                       <h3 className="text-xs font-medium text-gray-600 uppercase tracking-wide">
                         Uploaded Documents ({industryKnowledge.length})
                       </h3>
-                      {industryKnowledge.length > 1 && (
+                      {industryKnowledge.length > 0 && (
                         <button
                           onClick={handleDeleteAllIndustryKnowledge}
                           className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
