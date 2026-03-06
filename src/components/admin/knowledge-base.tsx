@@ -1447,11 +1447,9 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
       }
     } catch (error: any) {
       console.error('Industry doc upload error:', error)
-      setProcessingMessage(error.message || 'Failed to process document')
-      setTimeout(() => {
-        setIsProcessing(false)
-        setProcessingMessage('')
-      }, 3000)
+      setIsProcessing(false)
+      setProcessingMessage('')
+      alert(`Upload failed: ${error.message || 'Unknown error'}`)
     }
 
     // Clear input
