@@ -404,12 +404,13 @@ export async function POST(request: NextRequest) {
           console.log(`[scrape-url] Uploading image: ${imgUrl} (${img.buffer.length} bytes, ${img.mimeType})`)
           const baseName = await generateImageName(img.buffer, img.mimeType)
           const suffix = Math.random().toString(36).slice(2, 8)
-          const uniqueName = `${baseName}-${suffix}.${img.ext}`
+          const srcPrefix = validUrl.hostname.replace(/[^a-zA-Z0-9-]/g, '-').slice(0, 25)
+          const uniqueName = `${srcPrefix}__${baseName}-${suffix}.${img.ext}`
           const uploadPath = `${storageFolder}/${uniqueName}`
 
           const { error } = await supabase.storage
             .from('media-library')
-            .upload(uploadPath, img.buffer, { contentType: img.mimeType, upsert: false, metadata: { source: validUrl.hostname } })
+            .upload(uploadPath, img.buffer, { contentType: img.mimeType, upsert: false })
 
           if (error) {
             console.error(`[scrape-url] Supabase upload error for ${uniqueName}:`, error)

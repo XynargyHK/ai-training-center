@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
           url: urlData.publicUrl,
           createdAt: file.created_at,
           updatedAt: file.updated_at,
-          source: file.metadata?.source || ''
+          source: file.name.includes('__') ? file.name.split('__')[0].replace(/-/g, ' ') : (file.metadata?.source || '')
         }
       })
 

@@ -163,12 +163,13 @@ export async function POST(request: NextRequest) {
         batch.map(async (img, idx) => {
           const baseName = await generateImageName(img.data, img.mimeType)
           const suffix = Math.random().toString(36).slice(2, 8)
-          const uniqueName = `${baseName}-${suffix}.${img.ext}`
+          const srcPrefix = fileName.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9-]/g, '-').slice(0, 25)
+          const uniqueName = `${srcPrefix}__${baseName}-${suffix}.${img.ext}`
           const uploadPath = `${storageFolder}/${uniqueName}`
 
           const { error } = await supabase.storage
             .from('media-library')
-            .upload(uploadPath, img.data, { contentType: img.mimeType, upsert: false, metadata: { source: fileName } })
+            .upload(uploadPath, img.data, { contentType: img.mimeType, upsert: false })
 
           if (error) throw error
 
