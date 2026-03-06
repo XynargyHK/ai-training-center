@@ -331,6 +331,7 @@ export async function POST(request: NextRequest) {
     let pagesScraped = 0
     let firstTitle = ''
     let firstContentLength = 0
+    const allPageContent: string[] = [] // collect all page text to save as one entry
 
     while (queue.length > 0 && pagesScraped < MAX_PAGES) {
       // Process up to 3 pages concurrently
@@ -346,19 +347,7 @@ export async function POST(request: NextRequest) {
           const { title, text } = extractPageText(html)
           if (text.length < 30) return null
 
-          // Save this page's text to knowledge base (wrapped so failures don't abort image collection)
           const pageTitle = title || new URL(pageUrl).pathname || validUrl.hostname
-          try {
-            await saveKnowledge({
-              topic: pageTitle,
-              content: `URL: ${pageUrl}\n\n${text}`,
-              category: 'Website Content',
-              keywords: [validUrl.hostname, 'website', 'scraped'],
-              confidence: 0.8
-            }, businessUnitId)
-          } catch (saveErr) {
-            console.warn(`[scrape-url] saveKnowledge failed for ${pageUrl}:`, saveErr)
-          }
 
           // Collect image URLs from this page
           const pageImages = extractImageUrls(html, pageUrl)
@@ -372,7 +361,7 @@ export async function POST(request: NextRequest) {
             }
           })
 
-          return { title: pageTitle, contentLength: text.length }
+          return { title: pageTitle, text, contentLength: text.length }
         })
       )
 
@@ -382,9 +371,22 @@ export async function POST(request: NextRequest) {
             firstTitle = r.value.title
             firstContentLength = r.value.contentLength
           }
+          allPageContent.push(`## ${r.value.title}\n\n${r.value.text}`)
           pagesScraped++
         }
       }
+    }
+
+    // Save all scraped content as ONE knowledge entry (one embedding call, one DB insert)
+    if (allPageContent.length > 0) {
+      const combinedContent = `Source: ${validUrl.hostname}\n\n${allPageContent.join('\n\n---\n\n')}`
+      await saveKnowledge({
+        topic: firstTitle || validUrl.hostname,
+        content: combinedContent,
+        category: 'Website Content',
+        keywords: [validUrl.hostname, 'website', 'scraped'],
+        confidence: 0.8
+      }, businessUnitId)
     }
 
     // === DOWNLOAD & SAVE IMAGES ===
