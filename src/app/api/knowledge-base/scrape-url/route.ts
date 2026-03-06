@@ -9,8 +9,8 @@ const supabase = createClient(
 )
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY || '')
 
-const MAX_PAGES = 40      // max pages to crawl per site
-const MAX_IMAGES = 60     // max images to save per site
+const MAX_PAGES = 5       // max pages to crawl per site (keep under Railway timeout)
+const MAX_IMAGES = 10     // max images to save per site
 const PAGE_TIMEOUT = 8000 // 8s per page fetch
 
 // Parse URLs and image URLs from sitemap XML (handles CDATA and sitemap index)
@@ -402,7 +402,9 @@ export async function POST(request: NextRequest) {
           }
 
           console.log(`[scrape-url] Uploading image: ${imgUrl} (${img.buffer.length} bytes, ${img.mimeType})`)
-          const baseName = await generateImageName(img.buffer, img.mimeType)
+          // Use URL filename directly — skip Gemini naming to avoid timeout
+          const urlBaseName = imgUrl.split('/').pop()?.split('?')[0]?.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9-]/g, '-').slice(0, 40) || 'image'
+          const baseName = urlBaseName || 'image'
           const suffix = Math.random().toString(36).slice(2, 8)
           const srcPrefix = validUrl.hostname.replace(/[^a-zA-Z0-9-]/g, '-').slice(0, 25)
           const uniqueName = `${srcPrefix}__${baseName}-${suffix}.${img.ext}`

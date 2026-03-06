@@ -1551,11 +1551,9 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
       }
     } catch (error: any) {
       console.error('URL scrape error:', error)
-      setProcessingMessage(error.message || 'Failed to scrape website')
-      setTimeout(() => {
-        setIsProcessing(false)
-        setProcessingMessage('')
-      }, 3000)
+      setIsProcessing(false)
+      setProcessingMessage('')
+      alert(`URL scrape failed: ${error.message || 'Unknown error'}`)
     }
   }
 
