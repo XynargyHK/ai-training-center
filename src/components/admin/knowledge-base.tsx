@@ -62,6 +62,7 @@ interface MediaFile {
   type: string
   url: string
   createdAt: string
+  source?: string
 }
 type ViewMode = 'grid' | 'list'
 
@@ -124,6 +125,9 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
   const [mediaLoading, setMediaLoading] = useState(false)
   const [imageDimensions, setImageDimensions] = useState<Record<string, string>>({})
   const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null)
+  const [selectedMedia, setSelectedMedia] = useState<Set<string>>(new Set())
+  const [mediaViewMode, setMediaViewMode] = useState<'grid' | 'list'>('grid')
+  const [thumbCols, setThumbCols] = useState(4)
   const [mediaUploading, setMediaUploading] = useState(false)
   const [logoUploading, setLogoUploading] = useState(false)
   const logoInputRef = useRef<HTMLInputElement>(null)
@@ -1008,6 +1012,45 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
     }
   }
 
+  const deleteAllMedia = async () => {
+    if (mediaFiles.length === 0) return
+    if (!confirm(`Delete all ${mediaFiles.length} file${mediaFiles.length !== 1 ? 's' : ''}? This cannot be undone.`)) return
+
+    // Delete in batches of 5 to avoid overwhelming the server
+    const names = mediaFiles.map(f => f.name)
+    for (let i = 0; i < names.length; i += 5) {
+      await Promise.allSettled(
+        names.slice(i, i + 5).map(fileName =>
+          fetch(`/api/media-library?businessUnit=${businessUnitId}&fileName=${encodeURIComponent(fileName)}`, { method: 'DELETE' })
+        )
+      )
+    }
+    setSelectedMedia(new Set())
+    await new Promise(r => setTimeout(r, 300))
+    await loadMediaFiles()
+  }
+
+  const deleteSelectedMedia = async () => {
+    if (selectedMedia.size === 0) return
+    if (!confirm(`Delete ${selectedMedia.size} selected file${selectedMedia.size !== 1 ? 's' : ''}? This cannot be undone.`)) return
+
+    await Promise.allSettled(
+      Array.from(selectedMedia).map(fileName =>
+        fetch(`/api/media-library?businessUnit=${businessUnitId}&fileName=${encodeURIComponent(fileName)}`, { method: 'DELETE' })
+      )
+    )
+    setSelectedMedia(new Set())
+    await loadMediaFiles()
+  }
+
+  const toggleSelectMedia = (fileName: string) => {
+    setSelectedMedia(prev => {
+      const next = new Set(prev)
+      next.has(fileName) ? next.delete(fileName) : next.add(fileName)
+      return next
+    })
+  }
+
   const copyToClipboard = async (url: string) => {
     try {
       await navigator.clipboard.writeText(url)
@@ -1456,6 +1499,15 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
     }
   }
 
+  const handleDeleteAllIndustryKnowledge = async () => {
+    if (!confirm(`Delete all ${industryKnowledge.length} knowledge entries? This cannot be undone.`)) return
+
+    for (const entry of industryKnowledge) {
+      await fetch(`/api/knowledge?action=delete_knowledge&id=${entry.id}`, { method: 'DELETE' })
+    }
+    loadData()
+  }
+
   // Handle URL scraping
   const handleUrlScrape = async () => {
     if (!urlInput.trim()) return
@@ -1702,9 +1754,19 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <h3 className="text-xs font-medium text-gray-600 uppercase tracking-wide">
-                      Uploaded Documents ({industryKnowledge.length})
-                    </h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-medium text-gray-600 uppercase tracking-wide">
+                        Uploaded Documents ({industryKnowledge.length})
+                      </h3>
+                      {industryKnowledge.length > 1 && (
+                        <button
+                          onClick={handleDeleteAllIndustryKnowledge}
+                          className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3 h-3" /> Delete All
+                        </button>
+                      )}
+                    </div>
                     <div className="grid gap-2">
                       {industryKnowledge.map((entry) => (
                         <div
@@ -4234,6 +4296,66 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                     </h2>
                     <p className="text-gray-500 mt-1">Upload and manage images and videos for your landing pages and products.</p>
                   </div>
+                  <div className="flex items-center gap-2">
+                    {selectedMedia.size > 0 && (
+                      <button
+                        onClick={deleteSelectedMedia}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 rounded-none text-sm font-medium"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete ({selectedMedia.size})
+                      </button>
+                    )}
+                    {selectedMedia.size > 0 && (
+                      <button
+                        onClick={() => setSelectedMedia(new Set())}
+                        className="px-3 py-2 text-gray-500 hover:text-gray-700 text-sm"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                    {mediaFiles.length > 0 && (
+                      <button
+                        onClick={deleteAllMedia}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 rounded-none text-sm font-medium"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete All
+                      </button>
+                    )}
+                  </div>
+                  {/* Thumbnail size + view toggle */}
+                  <div className="flex items-center gap-1 border border-gray-200 rounded-none overflow-hidden">
+                    {mediaViewMode === 'grid' && (
+                      <>
+                        <button
+                          onClick={() => setThumbCols(c => Math.min(c + 1, 8))}
+                          className="px-2 py-1.5 text-xs text-gray-600 hover:bg-gray-100 border-r border-gray-200"
+                          title="Smaller thumbnails"
+                        >−</button>
+                        <span className="px-2 text-xs text-gray-500 select-none">{thumbCols}</span>
+                        <button
+                          onClick={() => setThumbCols(c => Math.max(c - 1, 2))}
+                          className="px-2 py-1.5 text-xs text-gray-600 hover:bg-gray-100 border-r border-gray-200"
+                          title="Larger thumbnails"
+                        >+</button>
+                      </>
+                    )}
+                    <button
+                      onClick={() => setMediaViewMode('grid')}
+                      className={`px-2 py-1.5 border-r border-gray-200 ${mediaViewMode === 'grid' ? 'bg-gray-100 text-gray-800' : 'text-gray-400 hover:bg-gray-50'}`}
+                      title="Grid view"
+                    >
+                      <Grid className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setMediaViewMode('list')}
+                      className={`px-2 py-1.5 ${mediaViewMode === 'list' ? 'bg-gray-100 text-gray-800' : 'text-gray-400 hover:bg-gray-50'}`}
+                      title="List view"
+                    >
+                      <List className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                   <button
                     onClick={() => mediaInputRef.current?.click()}
                     disabled={mediaUploading}
@@ -4282,12 +4404,86 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                       Upload Your First File
                     </button>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                ) : mediaViewMode === 'list' ? (
+                  <div className="border border-gray-200 divide-y divide-gray-100">
                     {mediaFiles.map((file) => (
-                      <div key={file.id || file.name} className="bg-white rounded-none overflow-hidden border border-gray-200 group">
+                      <div
+                        key={file.id || file.name}
+                        className={`flex items-center gap-3 px-3 py-2 group transition-all ${selectedMedia.has(file.name) ? 'bg-pink-50' : 'hover:bg-gray-50'}`}
+                      >
+                        {/* Checkbox */}
+                        <div
+                          onClick={() => toggleSelectMedia(file.name)}
+                          className={`flex-shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center cursor-pointer transition-all ${selectedMedia.has(file.name) ? 'bg-pink-500 border-pink-500' : 'border-gray-300 opacity-0 group-hover:opacity-100'}`}
+                        >
+                          {selectedMedia.has(file.name) && <Check className="w-2.5 h-2.5 text-white" />}
+                        </div>
+                        {/* Thumbnail */}
+                        <div className="flex-shrink-0 w-10 h-10 bg-gray-100 overflow-hidden">
+                          {isImage(file.type) ? (
+                            <img src={file.url} alt={file.name} className="w-full h-full object-cover"
+                              onLoad={(e) => {
+                                const img = e.target as HTMLImageElement
+                                setImageDimensions(prev => ({ ...prev, [file.name]: `${img.naturalWidth}×${img.naturalHeight}px` }))
+                              }}
+                            />
+                          ) : isVideo(file.type) ? (
+                            <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                              <Video className="w-5 h-5 text-gray-500" />
+                            </div>
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <FileText className="w-5 h-5 text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-gray-800 truncate" title={file.name}>
+                            {file.name.replace(/^\d+_/, '').replace(/-[a-z0-9]{13,}-\d+(\.[^.]+)$/, '$1')}
+                          </p>
+                          <p className="text-xs text-gray-400 flex gap-2 mt-0.5">
+                            <span>{formatFileSize(file.size)}</span>
+                            {imageDimensions[file.name] && <span>{imageDimensions[file.name]}</span>}
+                            {file.source && <span className="text-violet-400 truncate">{file.source}</span>}
+                          </p>
+                        </div>
+                        {/* Actions */}
+                        <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => setPreviewImage({ url: file.url, name: file.name })} className="p-1 hover:bg-gray-100 rounded" title="Preview">
+                            <Eye className="w-4 h-4 text-gray-500" />
+                          </button>
+                          <button onClick={() => copyToClipboard(file.url)} className="p-1 hover:bg-gray-100 rounded" title={t.copyUrl}>
+                            {copiedUrl === file.url ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-gray-500" />}
+                          </button>
+                          <button onClick={() => deleteMediaFile(file.name)} className="p-1 hover:bg-red-50 rounded" title={t.delete}>
+                            <Trash2 className="w-4 h-4 text-red-400" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    className="grid gap-3"
+                    style={{ gridTemplateColumns: `repeat(${thumbCols}, minmax(0, 1fr))` }}
+                  >
+                    {mediaFiles.map((file) => (
+                      <div
+                        key={file.id || file.name}
+                        className={`bg-white rounded-none overflow-hidden border transition-all group ${selectedMedia.has(file.name) ? 'border-pink-500 ring-2 ring-pink-300' : 'border-gray-200'}`}
+                      >
                         {/* Preview */}
                         <div className="aspect-square relative bg-white">
+                          {/* Select checkbox */}
+                          <div
+                            className="absolute top-2 left-2 z-10"
+                            onClick={(e) => { e.stopPropagation(); toggleSelectMedia(file.name) }}
+                          >
+                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer transition-all ${selectedMedia.has(file.name) ? 'bg-pink-500 border-pink-500' : 'bg-white/80 border-gray-400 opacity-0 group-hover:opacity-100'}`}>
+                              {selectedMedia.has(file.name) && <Check className="w-3 h-3 text-white" />}
+                            </div>
+                          </div>
                           {isImage(file.type) ? (
                             <img
                               src={file.url}
@@ -4354,6 +4550,11 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                           <p className="text-xs text-gray-800 truncate" title={file.name}>
                             {file.name.replace(/^\d+_/, '').replace(/-[a-z0-9]{13,}-\d+(\.[^.]+)$/, '$1')}
                           </p>
+                          {file.source && (
+                            <p className="text-xs text-violet-500 truncate mt-0.5" title={file.source}>
+                              {file.source}
+                            </p>
+                          )}
                           <p className="text-xs text-gray-500 mt-1 flex gap-2">
                             <span>{formatFileSize(file.size)}</span>
                             {imageDimensions[file.name] && (

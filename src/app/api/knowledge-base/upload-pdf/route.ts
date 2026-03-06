@@ -171,34 +171,24 @@ export async function POST(request: NextRequest) {
 
     if (type === 'industry') {
       prompt = `You are analyzing a document that contains industry knowledge, training material, or reference information.
-Extract the key knowledge and information from this document and return it as a JSON array of knowledge entries.
+Extract ALL content from this document and return it as a single JSON object (not an array).
 
-Each entry should have these fields:
-- topic: A short title/topic for this piece of knowledge (required)
-- content: The detailed content/information (required)
-- category: Category for this knowledge (e.g., "Training", "Product Info", "Guidelines", "FAQ", etc.)
+The object should have these fields:
+- topic: A concise title for this document (required)
+- content: ALL the content from the document, well-organized with clear headings and sections preserved. Include everything — do not summarize or skip any detail. (required)
+- category: Best category for this document (e.g., "Training", "Product Info", "Guidelines", "FAQ", "Research", etc.)
 - tags: Array of relevant keywords/tags
 
-Break down the document into logical sections or topics. Each significant piece of information should be a separate entry.
-
 Example output:
-[
-  {
-    "topic": "Product Benefits Overview",
-    "content": "Detailed content about product benefits...",
-    "category": "Product Info",
-    "tags": ["benefits", "features"]
-  },
-  {
-    "topic": "Usage Instructions",
-    "content": "Step by step instructions on how to use...",
-    "category": "Training",
-    "tags": ["instructions", "how-to"]
-  }
-]
+{
+  "topic": "Breast Cancer Risk Reduction Guide",
+  "content": "## Overview\\n\\nThis guide covers...\\n\\n## Section 1\\n\\nDetailed content here...\\n\\n## Section 2\\n\\nMore content...",
+  "category": "Training",
+  "tags": ["breast cancer", "risk reduction", "guidelines"]
+}
 
-Extract as much useful knowledge as you can find. Return ONLY valid JSON array, no other text.
-If you cannot extract any knowledge, return an empty array: []`
+Return ONLY a single valid JSON object, no array, no other text.
+If you cannot extract any content, return: {"topic": "Document", "content": "", "category": "General", "tags": []}`
     } else if (type === 'products') {
       prompt = `You are analyzing a document that contains product information (likely skincare boosters or treatments).
 Extract ALL products you can find and return them as a JSON array.
@@ -353,9 +343,9 @@ If you cannot find any policies, return an empty array: []`
     }
     text = text.trim()
 
-    let extractedItems: any[]
+    let parsed: any
     try {
-      extractedItems = JSON.parse(text)
+      parsed = JSON.parse(text)
     } catch (parseError) {
       console.error('Failed to parse AI response:', text.substring(0, 500))
       return NextResponse.json(
@@ -364,7 +354,31 @@ If you cannot find any policies, return an empty array: []`
       )
     }
 
-    if (!Array.isArray(extractedItems) || extractedItems.length === 0) {
+    // Industry ALWAYS returns exactly 1 document — never split into multiple entries
+    let extractedItems: any[]
+    if (type === 'industry') {
+      if (Array.isArray(parsed)) {
+        // Gemini returned an array — merge all into one single entry
+        const combinedContent = parsed.map((item: any) => {
+          const heading = item.topic || item.title || ''
+          return heading ? `## ${heading}\n\n${item.content || ''}` : (item.content || JSON.stringify(item))
+        }).join('\n\n---\n\n')
+        extractedItems = [{
+          topic: parsed[0]?.topic || parsed[0]?.title || 'Industry Document',
+          content: combinedContent,
+          category: parsed[0]?.category || 'General',
+          tags: parsed[0]?.tags || []
+        }]
+      } else if (parsed && (parsed.topic || parsed.content)) {
+        extractedItems = [parsed]
+      } else {
+        extractedItems = []
+      }
+    } else {
+      extractedItems = Array.isArray(parsed) ? parsed : []
+    }
+
+    if (extractedItems.length === 0) {
       return NextResponse.json(
         { success: false, error: `No ${type} found in the document` },
         { status: 400 }

@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
 
           const { error } = await supabase.storage
             .from('media-library')
-            .upload(uploadPath, img.data, { contentType: img.mimeType, upsert: false })
+            .upload(uploadPath, img.data, { contentType: img.mimeType, upsert: false, metadata: { source: fileName } })
 
           if (error) throw error
 

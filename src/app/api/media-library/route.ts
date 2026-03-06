@@ -79,7 +79,8 @@ export async function GET(request: NextRequest) {
           type: file.metadata?.mimetype || 'unknown',
           url: urlData.publicUrl,
           createdAt: file.created_at,
-          updatedAt: file.updated_at
+          updatedAt: file.updated_at,
+          source: file.metadata?.source || ''
         }
       })
 

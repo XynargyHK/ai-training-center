@@ -409,7 +409,7 @@ export async function POST(request: NextRequest) {
 
           const { error } = await supabase.storage
             .from('media-library')
-            .upload(uploadPath, img.buffer, { contentType: img.mimeType, upsert: false })
+            .upload(uploadPath, img.buffer, { contentType: img.mimeType, upsert: false, metadata: { source: validUrl.hostname } })
 
           if (error) {
             console.error(`[scrape-url] Supabase upload error for ${uniqueName}:`, error)
