@@ -410,10 +410,19 @@ If you cannot find any policies, return an empty array: []`
         }
         validItems.push(item)
       } else if (type === 'industry' && item.topic && item.content) {
-        // Industry knowledge entries
-        if (!item.category) item.category = 'General'
-        if (!item.tags) item.tags = []
-        validItems.push(item)
+        // Industry knowledge entries — map to knowledge_base schema
+        validItems.push({
+          business_unit_id: businessUnitId,
+          reference_id: crypto.randomUUID(),
+          topic: item.topic,
+          title: item.topic,
+          content: item.content,
+          category: item.category || 'General',
+          keywords: item.tags || [],
+          confidence: 1.0,
+          source_type: 'document',
+          is_active: true,
+        })
       }
     }
 
@@ -427,7 +436,7 @@ If you cannot find any policies, return an empty array: []`
     // Insert into database
     const tableName = type === 'products' ? 'kb_products' :
                       type === 'services' ? 'kb_services' :
-                      type === 'industry' ? 'knowledge' : 'kb_policies'
+                      type === 'industry' ? 'knowledge_base' : 'kb_policies'
 
     const { error } = await supabase
       .from(tableName)
