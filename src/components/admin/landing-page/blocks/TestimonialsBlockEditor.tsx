@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus, Trash2, Upload } from 'lucide-react'
+import { Plus, Trash2, Upload, Image } from 'lucide-react'
 import type { LandingPageBlock } from '@/types/landing-page-blocks'
 import TextEditorControls from '../TextEditorControls'
 import { useState } from 'react'
@@ -9,9 +9,10 @@ interface TestimonialsBlockEditorProps {
   block: LandingPageBlock
   onUpdate: (block: LandingPageBlock) => void
   businessUnitId?: string
+  onMediaLibraryOpen?: (callback: (url: string) => void) => void
 }
 
-export default function TestimonialsBlockEditor({ block, onUpdate, businessUnitId }: TestimonialsBlockEditorProps) {
+export default function TestimonialsBlockEditor({ block, onUpdate, businessUnitId, onMediaLibraryOpen }: TestimonialsBlockEditorProps) {
   const [expandedTestimonial, setExpandedTestimonial] = useState<number | null>(0)
 
   const updateData = (key: string, value: any) => {
@@ -218,19 +219,30 @@ export default function TestimonialsBlockEditor({ block, onUpdate, businessUnitI
 
                       {/* Upload Button */}
                       <div className="flex-1">
-                        <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-none text-sm text-gray-800 transition-colors">
-                          <Upload className="w-4 h-4" />
-                          Upload Image
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0]
-                              if (file) handleImageUpload(testimonialIndex, file)
-                            }}
-                            className="hidden"
-                          />
-                        </label>
+                        <div className="flex gap-2 flex-wrap">
+                          <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-none text-sm text-gray-800 transition-colors">
+                            <Upload className="w-4 h-4" />
+                            Upload Image
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0]
+                                if (file) handleImageUpload(testimonialIndex, file)
+                              }}
+                              className="hidden"
+                            />
+                          </label>
+                          {onMediaLibraryOpen && (
+                            <button
+                              onClick={() => onMediaLibraryOpen((url) => updateTestimonial(testimonialIndex, 'image_url', url))}
+                              className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-none text-sm text-gray-800 transition-colors"
+                            >
+                              <Image className="w-4 h-4" />
+                              Library
+                            </button>
+                          )}
+                        </div>
                         <p className="text-xs text-gray-400 mt-2">Upload a square image showing before and after transformation</p>
                       </div>
                     </div>

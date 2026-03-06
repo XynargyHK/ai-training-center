@@ -9,9 +9,10 @@ interface StaticBannerBlockEditorProps {
   block: LandingPageBlock
   onUpdate: (block: LandingPageBlock) => void
   businessUnitId?: string
+  onMediaLibraryOpen?: (callback: (url: string) => void) => void
 }
 
-export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitId }: StaticBannerBlockEditorProps) {
+export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitId, onMediaLibraryOpen }: StaticBannerBlockEditorProps) {
   const [uploading, setUploading] = useState(false)
   const [uploadingPoster, setUploadingPoster] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -253,6 +254,16 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
               </>
             )}
           </button>
+
+          {onMediaLibraryOpen && (
+            <button
+              onClick={() => onMediaLibraryOpen((url) => updateField('background_url', url))}
+              className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm rounded-none transition-colors flex items-center gap-1.5"
+            >
+              <Image className="w-4 h-4" />
+              Library
+            </button>
+          )}
 
           {/* Hidden file input */}
           <input

@@ -171,6 +171,7 @@ export async function POST(request: NextRequest) {
       language_code: language,
       is_active: true,
       hero_type: 'carousel',
+      hero_headline: '',
       hero_slides: [],
       announcements: [],
       blocks: [],

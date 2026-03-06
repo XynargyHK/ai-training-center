@@ -327,6 +327,15 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
                     </>
                   )}
                 </button>
+                {onMediaLibraryOpen && (
+                  <button
+                    onClick={() => onMediaLibraryOpen((url) => updateStep(index, { background_url: url }))}
+                    className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm rounded-none transition-colors flex items-center gap-1.5"
+                  >
+                    <Image className="w-4 h-4" />
+                    Library
+                  </button>
+                )}
                 <input
                   ref={(el) => { stepInputRefs.current[index] = el }}
                   type="file"

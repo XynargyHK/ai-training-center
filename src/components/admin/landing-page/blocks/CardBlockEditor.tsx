@@ -8,9 +8,10 @@ interface CardBlockEditorProps {
   block: LandingPageBlock
   onUpdate: (block: LandingPageBlock) => void
   businessUnitId?: string
+  onMediaLibraryOpen?: (callback: (url: string) => void) => void
 }
 
-export default function CardBlockEditor({ block, onUpdate, businessUnitId }: CardBlockEditorProps) {
+export default function CardBlockEditor({ block, onUpdate, businessUnitId, onMediaLibraryOpen }: CardBlockEditorProps) {
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null)
   const data = block.data as {
     layout: string
@@ -127,29 +128,40 @@ export default function CardBlockEditor({ block, onUpdate, businessUnitId }: Car
                   </div>
                 )}
 
-                <label className="px-4 py-2 bg-pink-50 hover:bg-pink-700 text-gray-800 rounded-none text-sm font-medium transition-colors cursor-pointer flex items-center gap-2 w-fit">
-                  {uploadingIndex === index ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-4 h-4" />
-                      Upload Image
-                    </>
+                <div className="flex gap-2 flex-wrap">
+                  <label className="px-4 py-2 bg-pink-50 hover:bg-pink-700 text-gray-800 rounded-none text-sm font-medium transition-colors cursor-pointer flex items-center gap-2">
+                    {uploadingIndex === index ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4" />
+                        Upload Image
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) handleImageUpload(index, file)
+                      }}
+                      className="hidden"
+                      disabled={uploadingIndex === index}
+                    />
+                  </label>
+                  {onMediaLibraryOpen && (
+                    <button
+                      onClick={() => onMediaLibraryOpen((url) => updateCard(index, { image_url: url }))}
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-none text-sm font-medium transition-colors flex items-center gap-2"
+                    >
+                      <Image className="w-4 h-4" />
+                      Library
+                    </button>
                   )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (file) handleImageUpload(index, file)
-                    }}
-                    className="hidden"
-                    disabled={uploadingIndex === index}
-                  />
-                </label>
+                </div>
               </div>
             </div>
 

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
-import { Plus, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Languages, Loader2 } from 'lucide-react'
+import { Plus, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Languages, Loader2, Image, X, Check } from 'lucide-react'
 import type { LandingPageBlock } from '@/types/landing-page-blocks'
 import { createNewBlock } from './block-registry'
 import BlockContainer from './BlockContainer'
@@ -66,6 +66,25 @@ export default function BlockManager({
   const [showBlockPicker, setShowBlockPicker] = useState(false)
   const [showBgColorPicker, setShowBgColorPicker] = useState<string | null>(null)
   const [translatingBlockIndex, setTranslatingBlockIndex] = useState<number | null>(null)
+  const [mediaPickerCallback, setMediaPickerCallback] = useState<((url: string) => void) | null>(null)
+  const [mediaFiles, setMediaFiles] = useState<Array<{ id: string; name: string; url: string; type: string }>>([])
+  const [mediaLoading, setMediaLoading] = useState(false)
+
+  const handleOpenMediaLibrary = async (callback: (url: string) => void) => {
+    setMediaPickerCallback(() => callback)
+    // Only fetch if not already loaded
+    if (mediaFiles.length > 0 || !businessUnitId) return
+    setMediaLoading(true)
+    try {
+      const response = await fetch(`/api/media-library?businessUnit=${businessUnitId}`)
+      const data = await response.json()
+      setMediaFiles(data.files || [])
+    } catch (error) {
+      console.error('Error loading media files:', error)
+    } finally {
+      setMediaLoading(false)
+    }
+  }
 
   const handleTranslateBlock = async (index: number) => {
     if (!translationSourceBlocks || !targetLanguage || !onTranslateBlock) return
@@ -1626,6 +1645,7 @@ export default function BlockManager({
             block={block}
             onUpdate={(updatedBlock) => handleUpdateBlock(index, updatedBlock)}
             businessUnitId={businessUnitId}
+            onMediaLibraryOpen={handleOpenMediaLibrary}
           />
         )
 
@@ -1635,6 +1655,7 @@ export default function BlockManager({
             block={block}
             onUpdate={(updatedBlock) => handleUpdateBlock(index, updatedBlock)}
             businessUnitId={businessUnitId}
+            onMediaLibraryOpen={handleOpenMediaLibrary}
           />
         )
 
@@ -1660,6 +1681,7 @@ export default function BlockManager({
             block={block}
             onUpdate={(updatedBlock) => handleUpdateBlock(index, updatedBlock)}
             businessUnitId={businessUnitId}
+            onMediaLibraryOpen={handleOpenMediaLibrary}
           />
         )
 
@@ -1669,6 +1691,7 @@ export default function BlockManager({
             block={block}
             onUpdate={(updatedBlock) => handleUpdateBlock(index, updatedBlock)}
             businessUnitId={businessUnitId}
+            onMediaLibraryOpen={handleOpenMediaLibrary}
           />
         )
 
@@ -1678,6 +1701,7 @@ export default function BlockManager({
             block={block}
             onUpdate={(updatedBlock) => handleUpdateBlock(index, updatedBlock)}
             businessUnitId={businessUnitId}
+            onMediaLibraryOpen={handleOpenMediaLibrary}
           />
         )
 
@@ -1795,6 +1819,55 @@ export default function BlockManager({
           onSelect={handleAddBlock}
           onClose={() => setShowBlockPicker(false)}
         />
+      )}
+
+      {/* Media Library Picker Modal */}
+      {mediaPickerCallback && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-none shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-base font-semibold text-gray-800">Image Library</h3>
+              <button onClick={() => setMediaPickerCallback(null)} className="text-gray-500 hover:text-gray-800">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto flex-1">
+              {mediaLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin text-violet-600" />
+                </div>
+              ) : mediaFiles.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Image className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>No images in library</p>
+                  <p className="text-xs">Upload images in the Image Library tab first</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                  {mediaFiles.filter(f => f.type.startsWith('image/') || f.type.startsWith('video/')).map((file) => (
+                    <button
+                      key={file.id}
+                      onClick={() => {
+                        mediaPickerCallback(file.url)
+                        setMediaPickerCallback(null)
+                      }}
+                      className="relative aspect-square bg-gray-100 rounded-none overflow-hidden hover:ring-2 hover:ring-violet-500 transition-all group"
+                    >
+                      {file.type.startsWith('video/') ? (
+                        <video src={file.url} className="w-full h-full object-cover" muted />
+                      ) : (
+                        <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
+                      )}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                        <Check className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
