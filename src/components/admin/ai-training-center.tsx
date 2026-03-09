@@ -78,6 +78,9 @@ const AITrainingCenter = () => {
   const [selectedCountry, setSelectedCountry] = useState<string>('US')
   const [selectedLangCode, setSelectedLangCode] = useState<string>('en')
   const [availableLocales, setAvailableLocales] = useState<{country: string, language_code: string, slug?: string}[]>([])
+  // Tracks the active locale inside the landing page editor (may differ from selectedLangCode)
+  const [landingPageActiveCountry, setLandingPageActiveCountry] = useState<string>(selectedCountry)
+  const [landingPageActiveLang, setLandingPageActiveLang] = useState<string>('en')
   const [showAddLocaleModal, setShowAddLocaleModal] = useState(false)
 
   // Map short lang code to Language type for UI translations
@@ -1988,9 +1991,11 @@ Format as JSON array:
             {/* View Live Chat Button */}
             <a
               href={(() => {
-                const currentLocale = availableLocales.find(l => l.country === selectedCountry && l.language_code === selectedLangCode)
+                const activeCountry = activeTab === 'knowledge' ? landingPageActiveCountry : selectedCountry
+                const activeLang = activeTab === 'knowledge' ? landingPageActiveLang : selectedLangCode
+                const currentLocale = availableLocales.find(l => l.country === activeCountry && l.language_code === activeLang)
                 const pageSlug = currentLocale?.slug
-                return `/livechat?businessUnit=${selectedBusinessUnit}&country=${selectedCountry}&lang=${selectedLangCode}${pageSlug ? `&page=${pageSlug}` : ''}`
+                return `/livechat?businessUnit=${selectedBusinessUnit}&country=${activeCountry}&lang=${activeLang}${pageSlug ? `&page=${pageSlug}` : ''}`
               })()}
               target="_blank"
               rel="noopener noreferrer"
@@ -2090,6 +2095,10 @@ Format as JSON array:
               businessUnitId={selectedBusinessUnit}
               language={selectedLanguage}
               country={selectedCountry}
+              onLandingPageLocaleChange={(country, lang) => {
+                setLandingPageActiveCountry(country)
+                setLandingPageActiveLang(lang)
+              }}
             />
           )}
 

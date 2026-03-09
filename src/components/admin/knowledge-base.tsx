@@ -51,6 +51,7 @@ interface KnowledgeBaseProps {
   businessUnitId: string
   language: Language
   country?: string
+  onLandingPageLocaleChange?: (country: string, lang: string) => void
 }
 
 type ActiveSubTab = 'industry' | 'products' | 'services' | 'landing' | 'media'
@@ -66,7 +67,7 @@ interface MediaFile {
 }
 type ViewMode = 'grid' | 'list'
 
-const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language, country: parentCountry }) => {
+const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language, country: parentCountry, onLandingPageLocaleChange }) => {
   const t = getTranslation(language)
 
   // State
@@ -401,6 +402,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
 
         setLandingPageData(landingPage)
         setHasLandingPage(true)
+        onLandingPageLocaleChange?.(loadCountry, loadLang)
 
         // Auto-load EN data for anchor fallback when viewing non-EN languages
         if (loadLang !== 'en') {
