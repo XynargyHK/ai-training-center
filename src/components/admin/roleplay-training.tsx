@@ -376,25 +376,31 @@ const RoleplayTraining = ({ onTrainingSessionsUpdate, businessUnit, knowledgeEnt
     setEditingStaffName(staff.name)
   }
 
+  const handleDeleteAIStaff = async (staff: AIStaff, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!confirm(`Delete "${staff.name}"?`)) return
+    await deleteAIStaff(staff.id)
+    const updatedList = aiStaffList.filter(s => s.id !== staff.id)
+    setAiStaffList(updatedList)
+    if (selectedStaff?.id === staff.id) {
+      if (updatedList.length > 0) {
+        setSelectedStaff(updatedList[0])
+        setSelectedRole(updatedList[0].role)
+      } else {
+        setSelectedStaff(null)
+      }
+    }
+  }
+
   const handleStaffNameChange = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       const newName = editingStaffName.trim()
 
       if (newName === '') {
-        // Delete staff if name is blank
-        await deleteAIStaff(editingStaffId!)
-        const updatedList = aiStaffList.filter(s => s.id !== editingStaffId)
-        setAiStaffList(updatedList)
-
-        // If deleted staff was selected, select first available or null
-        if (selectedStaff?.id === editingStaffId) {
-          if (updatedList.length > 0) {
-            setSelectedStaff(updatedList[0])
-            setSelectedRole(updatedList[0].role)
-          } else {
-            setSelectedStaff(null)
-          }
-        }
+        // Just cancel edit if name is blank - don't delete
+        setEditingStaffId(null)
+        setEditingStaffName('')
+        return
       } else {
         // Update staff name
         const updatedStaff = aiStaffList.find(s => s.id === editingStaffId)
@@ -1728,7 +1734,7 @@ Apply this feedback when handling similar situations in the future.`
                     }}
                     autoFocus
                     className="font-medium bg-gray-100 text-gray-800 px-2 py-1 rounded-none border border-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 w-32"
-                    placeholder="Enter name or blank to delete"
+                    placeholder="Enter new name"
                   />
                 ) : (
                   <div
@@ -1746,6 +1752,13 @@ Apply this feedback when handling similar situations in the future.`
                   t.roleScientist
                 }</div>
               </div>
+              <button
+                onClick={(e) => handleDeleteAIStaff(staff, e)}
+                className="ml-1 p-0.5 text-gray-400 hover:text-red-500 transition-colors"
+                title="Delete staff"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
             </div>
           ))}
         </div>

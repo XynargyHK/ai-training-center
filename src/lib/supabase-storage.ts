@@ -97,13 +97,12 @@ export async function loadKnowledge(businessUnitSlugOrId?: string | null, countr
   const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
   const dbLang = language ? urlLangToDbLang(language) : null
 
-  // Load industry knowledge — filter by language (ISO code) if provided
+  // Load ALL industry knowledge — no language filter, knowledge is universal for the business unit
   let knowledgeQuery = supabase
     .from('knowledge_base')
     .select('*')
     .eq('business_unit_id', businessUnitId)
     .order('created_at', { ascending: false })
-  if (dbLang) knowledgeQuery = knowledgeQuery.eq('language', dbLang)
 
   const { data: knowledgeData, error: knowledgeError } = await knowledgeQuery
 
@@ -809,7 +808,7 @@ export async function loadGuidelines(businessUnitSlugOrId?: string | null, langu
     .select('*')
     .eq('business_unit_id', businessUnitId)
     .order('created_at', { ascending: false })
-  if (dbLang) query = query.eq('language', dbLang)
+  if (dbLang) query = query.or(`language.eq.${dbLang},language.is.null`)
 
   const { data, error } = await query
 
@@ -892,6 +891,7 @@ export async function saveGuidelines(guidelines: any[], businessUnitSlugOrId?: s
         category: g.category,
         title: g.title,
         content: g.content,
+        language: g.language || 'en',
         created_at: g.createdAt,
         updated_at: g.updatedAt
       }))

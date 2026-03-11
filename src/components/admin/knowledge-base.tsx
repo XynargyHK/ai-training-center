@@ -22,6 +22,7 @@ import PolicyRichTextEditor from './landing-page/PolicyRichTextEditor'
 import { policyTemplates } from '@/data/policy-templates'
 import LanguageBar from './landing-page/LanguageBar'
 import AddLocaleModal from './landing-page/AddLocaleModal'
+import LandingPageGenerator from './landing-page/LandingPageGenerator'
 
 // Types
 interface Service {
@@ -2063,6 +2064,17 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                         <Globe className="w-4 h-4" />
                         {t.preview}
                       </button>
+
+                      {/* Generate with AI Button */}
+                      <LandingPageGenerator
+                        businessUnitId={businessUnitId}
+                        country={selectedCountry}
+                        languageCode={selectedLangCode}
+                        existingBlocks={landingPageData.blocks || []}
+                        onInsert={(blocks) => {
+                          setLandingPageData({ ...landingPageData, blocks })
+                        }}
+                      />
 
                       {/* Add Block Button */}
                       <div className="relative">
