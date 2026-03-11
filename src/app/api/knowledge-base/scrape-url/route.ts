@@ -386,7 +386,8 @@ export async function POST(request: NextRequest) {
         text: combinedContent,
         sourceUrl: validUrl.href,
         title: firstTitle || validUrl.hostname,
-        businessUnitId
+        businessUnitId,
+        singleEntry: true // Force ONE high-quality summary instead of chunks
       })
     }
 

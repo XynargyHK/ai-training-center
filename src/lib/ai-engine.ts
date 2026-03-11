@@ -313,31 +313,81 @@ function formatHistoryForGemini(history: any[]): any[] {
 
 /**
  * THE LIBRARIAN - TEXT INGESTION
- * Logical RAG approach: 10k character chunks for stability and search accuracy.
+ * Logical RAG approach: 10k character chunks for stability, OR Single Master Entry for quality.
  */
 export async function processTextIngestion(opts: {
   text: string,
   sourceUrl: string,
   title: string,
-  businessUnitId: string
+  businessUnitId: string,
+  singleEntry?: boolean // If true, force ONE high-quality summary instead of chunks
 }) {
-  const { text, sourceUrl, title, businessUnitId } = opts
+  const { text, sourceUrl, title, businessUnitId, singleEntry = false } = opts
   const { saveKnowledge, getBusinessUnitId } = await import('./supabase-storage')
   const resolvedBUId = await getBusinessUnitId(businessUnitId)
 
-  console.log(`📚 LIBRARIAN: Indexing ${title} (${text.length} chars) using 10k-chunk logic.`)
+  console.log(`📚 LIBRARIAN: Indexing ${title} (${text.length} chars). Mode: ${singleEntry ? 'SINGLE' : 'CHUNKED'}`)
 
   try {
-    // 1. Determine Chunks (Stable 10,000 characters each)
+    const genAI = getGoogleClient()
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+
+    if (singleEntry) {
+      // SINGLE ENTRY MODE: Use Gemini to synthesize the entire content into one master summary
+      const synthPrompt = `You are a "Librarian" for a business knowledge base. 
+      Analyze this document: "${title}" from source: ${sourceUrl}.
+      
+      Create a single, high-quality Executive Summary that captures ALL key information.
+      Use Markdown headings (##) to organize the information.
+      Include a "Metadata" section with 5-10 keywords.
+      
+      Document Content:
+      ${text.substring(0, 30000)} // Gemini 2.5-flash can handle up to 1M tokens, but we'll be conservative
+      
+      Return your answer as a JSON object:
+      {
+        "topic": "Master Title",
+        "summary": "Full Markdown summary...",
+        "keywords": ["tag1", "tag2"]
+      }`
+
+      let synthData = { topic: title, summary: text, keywords: [title] }
+      try {
+        const res = await model.generateContent(synthPrompt)
+        const jsonMatch = res.response.text().match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0])
+          synthData = {
+            topic: parsed.topic || title,
+            summary: parsed.summary || text,
+            keywords: parsed.keywords || [title]
+          }
+        }
+      } catch (e) {
+        console.warn('Synthesis pass failed, using raw text')
+      }
+
+      await saveKnowledge({
+        topic: synthData.topic,
+        content: synthData.summary,
+        category: 'Industry Knowledge',
+        keywords: synthData.keywords,
+        fileName: title,
+        filePath: sourceUrl,
+        source_type: 'web_scrape'
+      }, resolvedBUId)
+
+      return 1 // Count as 1 entry
+    }
+
+    // CHUNKED MODE: (Fallback/Default) 10,000 characters each
     const CHUNK_SIZE = 10000
     const chunks = []
     for (let i = 0; i < text.length; i += CHUNK_SIZE) {
       chunks.push(text.substring(i, i + CHUNK_SIZE))
     }
 
-    // 2. Process first chunk with Gemini to get a global summary/tags
-    const genAI = getGoogleClient()
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+    // Process first chunk with Gemini to get a global summary/tags
     const summaryPrompt = `Analyze this document start: "${title}". Provide a short summary and 5 keywords. 
     Return JSON: { "summary": "string", "keywords": ["string"] }
     
@@ -350,7 +400,7 @@ export async function processTextIngestion(opts: {
       if (jsonMatch) metadata = JSON.parse(jsonMatch[0])
     } catch (e) { console.warn('Summary pass failed, using title as tag') }
 
-    // 3. Save Chunks sequentially (Stable & Fast)
+    // 3. Save Chunks sequentially
     for (let i = 0; i < chunks.length; i++) {
       await saveKnowledge({
         topic: chunks.length === 1 ? title : `${title} [Segment ${i + 1}/${chunks.length}]`,
@@ -358,13 +408,12 @@ export async function processTextIngestion(opts: {
         category: 'Industry Knowledge',
         keywords: metadata.keywords,
         fileName: title,
-        filePath: sourceUrl
+        filePath: sourceUrl,
+        source_type: 'web_scrape'
       }, resolvedBUId)
     }
 
-    console.log(`✅ LIBRARIAN: Successfully indexed ${title} in ${chunks.length} chunks.`)
     return chunks.length
-
   } catch (error: any) {
     console.error(`❌ Ingestion Error:`, error)
     throw error
