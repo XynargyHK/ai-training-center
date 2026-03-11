@@ -43,7 +43,7 @@ function isValidUUID(str: string): boolean {
 /**
  * Get business unit ID from slug or UUID, with fallback to default
  */
-async function getBusinessUnitId(slugOrId: string | null | undefined): Promise<string> {
+export async function getBusinessUnitId(slugOrId: string | null | undefined): Promise<string> {
   if (!slugOrId) {
     console.log('⚠️ No business unit ID provided, using default (skincoach)')
     return DEFAULT_BUSINESS_UNIT_ID
@@ -166,10 +166,10 @@ export async function loadKnowledge(businessUnitSlugOrId?: string | null, countr
     content: item.content,
     keywords: item.keywords || [],
     confidence: item.confidence || 1.0,
-    createdAt: new Date(item.created_at),
-    updatedAt: new Date(item.updated_at),
-    fileName: item.file_name,
-    filePath: item.file_path
+    created_at: item.created_at, // Use snake_case to match DB and UI expectation
+    updated_at: item.updated_at,
+    file_name: item.file_name,   // Use snake_case to match DB and UI expectation
+    file_path: item.file_path
   }))
 
   // Transform products into knowledge entries
@@ -385,15 +385,16 @@ export async function deleteKnowledge(id: string) {
  * Search knowledge base using vector similarity
  * This is the semantic search that understands meaning, not just keywords
  */
-export async function vectorSearchKnowledge(query: string, limit: number = 10) {
+export async function vectorSearchKnowledge(query: string, businessUnitSlugOrId: string, limit: number = 10) {
   try {
+    const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
     // Generate embedding for the query
     const { generateEmbedding } = await import('./embeddings')
     const queryEmbedding = await generateEmbedding(query)
 
     // Call the vector search function
     const { data, error } = await supabase.rpc('vector_search_knowledge', {
-      p_business_unit_id: BUSINESS_UNIT_ID,
+      p_business_unit_id: businessUnitId,
       p_query_embedding: queryEmbedding,
       p_match_threshold: 0.5, // Minimum similarity score (0-1)
       p_match_count: limit
@@ -423,18 +424,19 @@ export async function vectorSearchKnowledge(query: string, limit: number = 10) {
  * Hybrid search: Combines vector search with keyword search
  * Best of both worlds - finds semantically similar AND keyword matches
  */
-export async function hybridSearchKnowledge(query: string, limit: number = 10) {
+export async function hybridSearchKnowledge(query: string, businessUnitSlugOrId: string, limit: number = 10) {
   try {
+    const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
     // Generate embedding for the query
     const { generateEmbedding } = await import('./embeddings')
     const queryEmbedding = await generateEmbedding(query)
 
     // Call the hybrid search function
     const { data, error } = await supabase.rpc('hybrid_search_knowledge', {
-      p_business_unit_id: BUSINESS_UNIT_ID,
+      p_business_unit_id: businessUnitId,
       p_query_embedding: queryEmbedding,
       p_query_text: query,
-      p_match_threshold: 0.5,
+      p_match_threshold: 0.2, // Lowered for better recall
       p_match_count: limit
     })
 
@@ -455,6 +457,42 @@ export async function hybridSearchKnowledge(query: string, limit: number = 10) {
     }))
   } catch (error) {
     handleSupabaseError(error, 'Hybrid search')
+    return []
+  }
+}
+
+/**
+ * Image library search
+ * Finds relevant images based on description embedding
+ */
+export async function hybridSearchImages(query: string, businessUnitSlugOrId: string, limit: number = 5) {
+  try {
+    const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
+    const { generateEmbedding } = await import('./embeddings')
+    const queryEmbedding = await generateEmbedding(query)
+
+    const { data, error } = await supabase.rpc('match_images', {
+      query_embedding: queryEmbedding,
+      match_threshold: 0.2,
+      match_count: limit,
+      p_business_unit_id: businessUnitId
+    })
+
+    if (error) {
+      // Fallback to simple select if RPC fails
+      console.warn('match_images RPC failed, using simple fallback:', error.message)
+      const { data: fallbackData } = await supabase
+        .from('image_library')
+        .select('*')
+        .eq('business_unit_id', businessUnitId)
+        .limit(limit)
+      
+      return fallbackData || []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error('Image search error:', error)
     return []
   }
 }
@@ -1416,13 +1454,14 @@ export async function deleteTrainingSession(id: string) {
 /**
  * Vector search for FAQs
  */
-export async function vectorSearchFAQs(query: string, limit: number = 10) {
+export async function vectorSearchFAQs(query: string, businessUnitSlugOrId: string, limit: number = 10) {
   try {
+    const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
     const { generateEmbedding } = await import('./embeddings')
     const queryEmbedding = await generateEmbedding(query)
 
     const { data, error } = await supabase.rpc('vector_search_faqs', {
-      p_business_unit_id: BUSINESS_UNIT_ID,
+      p_business_unit_id: businessUnitId,
       p_query_embedding: queryEmbedding,
       p_match_threshold: 0.5,
       p_match_count: limit
@@ -1443,13 +1482,14 @@ export async function vectorSearchFAQs(query: string, limit: number = 10) {
 /**
  * Hybrid search for FAQs (vector + keyword)
  */
-export async function hybridSearchFAQs(query: string, limit: number = 10) {
+export async function hybridSearchFAQs(query: string, businessUnitSlugOrId: string, limit: number = 10) {
   try {
+    const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
     const { generateEmbedding } = await import('./embeddings')
     const queryEmbedding = await generateEmbedding(query)
 
     const { data, error } = await supabase.rpc('hybrid_search_faqs', {
-      p_business_unit_id: BUSINESS_UNIT_ID,
+      p_business_unit_id: businessUnitId,
       p_query_embedding: queryEmbedding,
       p_query_text: query,
       p_match_threshold: 0.5,
@@ -1471,13 +1511,14 @@ export async function hybridSearchFAQs(query: string, limit: number = 10) {
 /**
  * Vector search for Canned Messages
  */
-export async function vectorSearchCannedMessages(query: string, limit: number = 10) {
+export async function vectorSearchCannedMessages(query: string, businessUnitSlugOrId: string, limit: number = 10) {
   try {
+    const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
     const { generateEmbedding } = await import('./embeddings')
     const queryEmbedding = await generateEmbedding(query)
 
     const { data, error } = await supabase.rpc('vector_search_canned_messages', {
-      p_business_unit_id: BUSINESS_UNIT_ID,
+      p_business_unit_id: businessUnitId,
       p_query_embedding: queryEmbedding,
       p_match_threshold: 0.5,
       p_match_count: limit
@@ -1498,13 +1539,14 @@ export async function vectorSearchCannedMessages(query: string, limit: number = 
 /**
  * Hybrid search for Canned Messages (vector + keyword)
  */
-export async function hybridSearchCannedMessages(query: string, limit: number = 10) {
+export async function hybridSearchCannedMessages(query: string, businessUnitSlugOrId: string, limit: number = 10) {
   try {
+    const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
     const { generateEmbedding } = await import('./embeddings')
     const queryEmbedding = await generateEmbedding(query)
 
     const { data, error } = await supabase.rpc('hybrid_search_canned_messages', {
-      p_business_unit_id: BUSINESS_UNIT_ID,
+      p_business_unit_id: businessUnitId,
       p_query_embedding: queryEmbedding,
       p_query_text: query,
       p_match_threshold: 0.5,
@@ -1526,13 +1568,14 @@ export async function hybridSearchCannedMessages(query: string, limit: number = 
 /**
  * Vector search for Guidelines
  */
-export async function vectorSearchGuidelines(query: string, limit: number = 10) {
+export async function vectorSearchGuidelines(query: string, businessUnitSlugOrId: string, limit: number = 10) {
   try {
+    const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
     const { generateEmbedding } = await import('./embeddings')
     const queryEmbedding = await generateEmbedding(query)
 
     const { data, error } = await supabase.rpc('vector_search_guidelines', {
-      p_business_unit_id: BUSINESS_UNIT_ID,
+      p_business_unit_id: businessUnitId,
       p_query_embedding: queryEmbedding,
       p_match_threshold: 0.5,
       p_match_count: limit
@@ -1553,13 +1596,14 @@ export async function vectorSearchGuidelines(query: string, limit: number = 10) 
 /**
  * Vector search for Training Data
  */
-export async function vectorSearchTrainingData(query: string, limit: number = 10) {
+export async function vectorSearchTrainingData(query: string, businessUnitSlugOrId: string, limit: number = 10) {
   try {
+    const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
     const { generateEmbedding } = await import('./embeddings')
     const queryEmbedding = await generateEmbedding(query)
 
     const { data, error } = await supabase.rpc('vector_search_training_data', {
-      p_business_unit_id: BUSINESS_UNIT_ID,
+      p_business_unit_id: businessUnitId,
       p_query_embedding: queryEmbedding,
       p_match_threshold: 0.5,
       p_match_count: limit

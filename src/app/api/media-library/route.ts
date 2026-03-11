@@ -190,15 +190,16 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE - Remove a file
+// DELETE - Remove a file or all files
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const businessUnitParam = searchParams.get('businessUnit')
     const fileName = searchParams.get('fileName')
+    const deleteAll = searchParams.get('all') === 'true'
 
-    if (!businessUnitParam || !fileName) {
-      return NextResponse.json({ error: 'businessUnit and fileName required' }, { status: 400 })
+    if (!businessUnitParam) {
+      return NextResponse.json({ error: 'businessUnit required' }, { status: 400 })
     }
 
     const businessUnitId = await resolveBusinessUnitId(businessUnitParam)
@@ -207,16 +208,43 @@ export async function DELETE(request: NextRequest) {
     }
 
     const bucketName = 'media-library'
+
+    if (deleteAll) {
+      // 1. List all files in the folder
+      const { data: files } = await supabase.storage.from(bucketName).list(businessUnitId)
+      
+      if (files && files.length > 0) {
+        // 2. Delete from storage
+        const paths = files.map(f => `${businessUnitId}/${f.name}`)
+        await supabase.storage.from(bucketName).remove(paths)
+      }
+
+      // 3. Delete from image_library table
+      await supabase.from('image_library').delete().eq('business_unit_id', businessUnitId)
+
+      return NextResponse.json({ success: true, message: 'All media deleted' })
+    }
+
+    if (!fileName) {
+      return NextResponse.json({ error: 'fileName required' }, { status: 400 })
+    }
+
     const filePath = `${businessUnitId}/${fileName}`
 
-    const { error } = await supabase.storage
+    // 1. Delete from storage
+    const { error: storageErr } = await supabase.storage
       .from(bucketName)
       .remove([filePath])
 
-    if (error) {
-      console.error('Delete error:', error)
-      return NextResponse.json({ error: 'Failed to delete file' }, { status: 500 })
+    if (storageErr) {
+      console.error('Storage delete error:', storageErr)
     }
+
+    // 2. Delete from database (try to find by partial URL match if name isn't exact)
+    await supabase.from('image_library')
+      .delete()
+      .eq('business_unit_id', businessUnitId)
+      .ilike('url', `%${fileName}%`)
 
     return NextResponse.json({ success: true })
 

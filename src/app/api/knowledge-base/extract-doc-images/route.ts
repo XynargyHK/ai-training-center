@@ -153,33 +153,33 @@ export async function POST(request: NextRequest) {
     // Resolve slug to UUID for correct storage folder
     const storageFolder = await resolveToUUID(businessUnitId)
 
-    // Process in batches of 3 to stay within Gemini rate limits
+    // Process in batches of 2 to stay within Gemini Vision rate limits
+    const { processImageIngestion } = await import('@/lib/ai-engine')
     const savedImages: { name: string; url: string }[] = []
-    const batchSize = 3
+    const batchSize = 2
 
     for (let i = 0; i < rawImages.length; i += batchSize) {
       const batch = rawImages.slice(i, i + batchSize)
       const results = await Promise.allSettled(
-        batch.map(async (img, idx) => {
-          const baseName = await generateImageName(img.data, img.mimeType)
-          const suffix = Math.random().toString(36).slice(2, 8)
-          const srcPrefix = fileName.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9-]/g, '-').slice(0, 25)
-          const uniqueName = `${srcPrefix}__${baseName}-${suffix}.${img.ext}`
-          const uploadPath = `${storageFolder}/${uniqueName}`
+        batch.map(async (img) => {
+          // Use the unified Librarian engine to analyze and save
+          const dbRecord = await processImageIngestion({
+            buffer: img.data,
+            mimeType: img.mimeType,
+            fileName: `${fileName}-extracted`,
+            sourceUrl: fileName,
+            businessUnitId: businessUnitId
+          })
 
-          const { error } = await supabase.storage
-            .from('media-library')
-            .upload(uploadPath, img.data, { contentType: img.mimeType, upsert: false })
-
-          if (error) throw error
-
-          const { data: urlData } = supabase.storage.from('media-library').getPublicUrl(uploadPath)
-          return { name: uniqueName, url: urlData.publicUrl }
+          if (dbRecord) {
+            return { name: dbRecord.name, url: dbRecord.url }
+          }
+          return null
         })
       )
 
       for (const r of results) {
-        if (r.status === 'fulfilled') savedImages.push(r.value)
+        if (r.status === 'fulfilled' && r.value) savedImages.push(r.value)
       }
 
       // Small delay between batches to avoid Gemini rate limits

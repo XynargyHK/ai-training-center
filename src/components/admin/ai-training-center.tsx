@@ -72,6 +72,8 @@ const AITrainingCenter = () => {
   const [trainingSessions, setTrainingSessions] = useState<any[]>([])
   const [trainingMemory, setTrainingMemory] = useState<{[key: string]: string[]}>({})
   const [completedTrainingSessions, setCompletedTrainingSessions] = useState<any[]>([])
+  const [aiStaffList, setAiStaffList] = useState<AIStaff[]>([])
+  const [selectedStaff, setSelectedStaff] = useState<AIStaff | null>(null)
   const [selectedLanguage, setSelectedLanguage] = useState<Language>('en')
 
   // Locale state: country + language code (e.g., "US" + "en", "HK" + "tw")
@@ -219,10 +221,8 @@ const AITrainingCenter = () => {
 
   // LLM Settings state
   const [llmSettings, setLLMSettings] = useState({
-    provider: 'anthropic',
-    model: 'claude-3-haiku-20240307',
-    anthropicKey: '',
-    openaiKey: '',
+    provider: 'google',
+    model: 'gemini-2.5-flash',
     ollamaUrl: 'http://localhost:11434',
     temperature: 0.7
   })
@@ -487,10 +487,8 @@ const AITrainingCenter = () => {
         // Load from API config (which reads from .env.local)
         // API keys are NOT stored in localStorage or exposed in UI
         setLLMSettings({
-          provider: apiConfig.provider || 'openai',
-          model: apiConfig.model || 'gpt-4o',
-          anthropicKey: '',  // API keys only in .env.local
-          openaiKey: '',      // API keys only in .env.local
+          provider: apiConfig.provider || 'google',
+          model: apiConfig.model || 'gemini-2.5-flash',
           ollamaUrl: apiConfig.ollamaUrl || 'http://localhost:11434',
           temperature: apiConfig.temperature ?? 0.7
         })
@@ -500,10 +498,8 @@ const AITrainingCenter = () => {
         // API failed, use defaults
         console.warn('Failed to load LLM settings from API, using defaults')
         setLLMSettings({
-          provider: 'openai',
-          model: 'gpt-4o',
-          anthropicKey: '',  // API keys only in .env.local
-          openaiKey: '',      // API keys only in .env.local
+          provider: 'google',
+          model: 'gemini-2.5-flash',
           ollamaUrl: 'http://localhost:11434',
           temperature: 0.7
         })
@@ -512,10 +508,8 @@ const AITrainingCenter = () => {
       console.error('Error loading LLM settings:', error)
       // Use defaults on error
       setLLMSettings({
-        provider: 'openai',
-        model: 'gpt-4o',
-        anthropicKey: '',  // API keys only in .env.local
-        openaiKey: '',      // API keys only in .env.local
+        provider: 'google',
+        model: 'gemini-2.5-flash',
         ollamaUrl: 'http://localhost:11434',
         temperature: 0.7
       })
@@ -674,10 +668,18 @@ const AITrainingCenter = () => {
       setRooms(roomsData || [])
       console.log(`✅ Loaded ${roomsData?.length || 0} rooms`)
 
-      // Load all room-service assignments
+      // Load room-service assignments
       const roomServicesData = await loadRoomServices()
       setAllRoomServices(roomServicesData || [])
       console.log(`✅ Loaded ${roomServicesData?.length || 0} room-service assignments`)
+
+      // Load AI Staff members
+      const aiStaffData = await loadAIStaff(selectedBusinessUnit)
+      setAiStaffList(aiStaffData || [])
+      if (aiStaffData && aiStaffData.length > 0 && !selectedStaff) {
+        setSelectedStaff(aiStaffData[0])
+      }
+      console.log(`✅ Loaded ${aiStaffData?.length || 0} AI staff members`)
 
       // Load appointments
       const appointmentsResponse = await fetch(`/api/appointments?businessUnitId=${selectedBusinessUnit}`)
@@ -1857,11 +1859,12 @@ Format as JSON array:
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          businessUnitId: selectedBusinessUnit,
+          aiStaffId: selectedStaff?.id,
           message: testQuery,
-          context: 'admin_test',
-          conversationHistory: [],
-          knowledgeBase: knowledgeEntries,
-          trainingData: trainingData
+          language: selectedLangCode,
+          country: selectedCountry,
+          conversationHistory: [] // Reset history for clean testing
         })
       })
 
@@ -2508,10 +2511,12 @@ Format as JSON array:
           <div style={{ display: activeTab === 'roleplay' ? 'block' : 'none' }}>
             <RoleplayTraining
               onTrainingSessionsUpdate={setTrainingSessions}
-              businessUnit={selectedBusinessUnit}
+              selectedBusinessUnit={selectedBusinessUnit}
               knowledgeEntries={knowledgeEntries}
               guidelines={guidelines}
               language={selectedLanguage}
+              selectedLangCode={selectedLangCode}
+              selectedCountry={selectedCountry}
               onAddGuideline={async (guideline) => {
                 const newGuideline: Guideline = {
                   id: `guideline-${Date.now()}`,
@@ -4311,9 +4316,8 @@ Format as JSON array:
                       onChange={(e) => setLLMSettings({ ...llmSettings, provider: e.target.value as any })}
                       className="w-full px-4 py-2 bg-white border border-gray-200 rounded-none focus:outline-none focus:ring-2 focus:ring-cyan-500"
                     >
-                      <option value="anthropic">{t.providerAnthropic}</option>
+                      <option value="google">Google Gemini</option>
                       <option value="ollama">{t.providerOllama}</option>
-                      <option value="openai">{t.providerOpenAI}</option>
                     </select>
                   </div>
 
@@ -4327,17 +4331,16 @@ Format as JSON array:
                       value={llmSettings.model}
                       onChange={(e) => setLLMSettings({ ...llmSettings, model: e.target.value })}
                       placeholder={
-                        llmSettings.provider === 'anthropic' ? t.modelPlaceholderAnthropic :
+                        llmSettings.provider === 'google' ? 'gemini-2.5-flash' :
                         llmSettings.provider === 'ollama' ? t.modelPlaceholderOllama :
-                        t.modelPlaceholderOpenAI
+                        'gemini-2.5-flash'
                       }
                       className="w-full px-4 py-2 bg-white border border-gray-200 rounded-none focus:outline-none focus:ring-2 focus:ring-cyan-500"
                       required
                     />
                     <p className="text-gray-500 text-xs mt-1">
-                      {llmSettings.provider === 'anthropic' && t.modelExamplesAnthropic}
+                      {llmSettings.provider === 'google' && 'Examples: gemini-2.5-flash, gemini-1.5-pro'}
                       {llmSettings.provider === 'ollama' && t.modelExamplesOllama}
-                      {llmSettings.provider === 'openai' && t.modelExamplesOpenAI}
                     </p>
                   </div>
 

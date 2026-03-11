@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { YoutubeTranscript } from 'youtube-transcript'
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,30 +41,40 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        // Fetch video information using oEmbed API (no API key required)
+        // 1. Try to get the actual transcript (The "Ear")
+        let transcriptText = ''
+        try {
+          const transcriptList = await YoutubeTranscript.fetchTranscript(url)
+          transcriptText = transcriptList.map(t => t.text).join(' ')
+          console.log(`✅ YouTube transcript fetched (${transcriptText.length} chars)`)
+        } catch (transcriptError) {
+          console.warn('⚠️ Could not fetch YouTube transcript:', transcriptError)
+          transcriptText = '(Transcript not available for this video)'
+        }
+
+        // 2. Fetch video metadata
         const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`
         const oembedResponse = await fetch(oembedUrl)
 
         if (oembedResponse.ok) {
           const oembedData = await oembedResponse.json()
           title = oembedData.title || 'YouTube Video'
-          content = `YouTube Video: ${title}\n\n`
+          
+          content = `YouTube Video: ${title}\n`
           content += `Author: ${oembedData.author_name || 'Unknown'}\n`
           content += `URL: ${url}\n\n`
-          content += `Video ID: ${videoId}\n\n`
-          content += `Note: This is a YouTube video. To access the full content, visit the URL above.`
+          content += `--- VIDEO TRANSCRIPT ---\n${transcriptText}\n------------------------\n`
 
           keywords = ['youtube', 'video', videoId, oembedData.author_name || '']
         } else {
-          // Fallback if oEmbed fails
           title = `YouTube Video ${videoId}`
-          content = `YouTube Video\nURL: ${url}\nVideo ID: ${videoId}\n\nNote: This is a YouTube video. To access the full content, visit the URL above.`
+          content = `YouTube Video\nURL: ${url}\n\n--- VIDEO TRANSCRIPT ---\n${transcriptText}\n------------------------\n`
           keywords = ['youtube', 'video', videoId]
         }
       } catch (error) {
         console.error('Error fetching YouTube data:', error)
         title = `YouTube Video ${videoId}`
-        content = `YouTube Video\nURL: ${url}\nVideo ID: ${videoId}\n\nNote: This is a YouTube video. To access the full content, visit the URL above.`
+        content = `YouTube Video\nURL: ${url}\nVideo ID: ${videoId}\n\nNote: Could not fully process this video.`
         keywords = ['youtube', 'video', videoId]
       }
     } else {

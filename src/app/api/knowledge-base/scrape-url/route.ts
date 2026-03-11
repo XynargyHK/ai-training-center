@@ -377,61 +377,50 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Save all scraped content as ONE knowledge entry (one embedding call, one DB insert)
+    // Save all scraped content using the Semantic Chunker (The Librarian)
     if (allPageContent.length > 0) {
-      const combinedContent = `Source: ${validUrl.hostname}\n\n${allPageContent.join('\n\n---\n\n')}`
-      await saveKnowledge({
-        topic: firstTitle || validUrl.hostname,
-        content: combinedContent,
-        category: 'Website Content',
-        keywords: [validUrl.hostname, 'website', 'scraped'],
-        confidence: 0.8
-      }, businessUnitId)
+      const combinedContent = allPageContent.join('\n\n---\n\n')
+      const { processTextIngestion } = await import('@/lib/ai-engine')
+      
+      await processTextIngestion({
+        text: combinedContent,
+        sourceUrl: validUrl.href,
+        title: firstTitle || validUrl.hostname,
+        businessUnitId
+      })
     }
 
     // === DOWNLOAD & SAVE IMAGES ===
+    const { processImageIngestion } = await import('@/lib/ai-engine')
     const imageUrlList = Array.from(allImageUrls).slice(0, MAX_IMAGES)
     const savedImages: { name: string; url: string }[] = []
 
-    for (let i = 0; i < imageUrlList.length; i += 3) {
-      const batch = imageUrlList.slice(i, i + 3)
+    for (let i = 0; i < imageUrlList.length; i += 2) { // Smaller batches for Vision processing
+      const batch = imageUrlList.slice(i, i + 2)
       const results = await Promise.allSettled(
-        batch.map(async (imgUrl, idx) => {
+        batch.map(async (imgUrl) => {
           const img = await fetchImage(imgUrl, validUrl.origin)
-          if (!img) {
-            console.log(`[scrape-url] fetchImage returned null for: ${imgUrl}`)
-            return null
+          if (!img) return null
+
+          console.log(`[scrape-url] Processing image with Vision: ${imgUrl}`)
+          
+          const dbRecord = await processImageIngestion({
+            buffer: img.buffer,
+            mimeType: img.mimeType,
+            fileName: imgUrl.split('/').pop() || 'image',
+            sourceUrl: imgUrl,
+            businessUnitId: businessUnitId
+          })
+
+          if (dbRecord) {
+            return { name: dbRecord.name, url: dbRecord.url }
           }
-
-          console.log(`[scrape-url] Uploading image: ${imgUrl} (${img.buffer.length} bytes, ${img.mimeType})`)
-          // Use URL filename directly — skip Gemini naming to avoid timeout
-          const urlBaseName = imgUrl.split('/').pop()?.split('?')[0]?.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9-]/g, '-').slice(0, 40) || 'image'
-          const baseName = urlBaseName || 'image'
-          const suffix = Math.random().toString(36).slice(2, 8)
-          const srcPrefix = validUrl.hostname.replace(/[^a-zA-Z0-9-]/g, '-').slice(0, 25)
-          const uniqueName = `${srcPrefix}__${baseName}-${suffix}.${img.ext}`
-          const uploadPath = `${storageFolder}/${uniqueName}`
-
-          const { error } = await supabase.storage
-            .from('media-library')
-            .upload(uploadPath, img.buffer, { contentType: img.mimeType, upsert: false })
-
-          if (error) {
-            console.error(`[scrape-url] Supabase upload error for ${uniqueName}:`, error)
-            throw error
-          }
-
-          const { data: urlData } = supabase.storage.from('media-library').getPublicUrl(uploadPath)
-          return { name: uniqueName, url: urlData.publicUrl }
+          return null
         })
       )
 
       for (const r of results) {
         if (r.status === 'fulfilled' && r.value) savedImages.push(r.value)
-      }
-
-      if (i + 3 < imageUrlList.length) {
-        await new Promise(resolve => setTimeout(resolve, 500))
       }
     }
 

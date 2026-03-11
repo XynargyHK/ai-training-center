@@ -89,7 +89,7 @@ interface SessionStats {
 
 interface RoleplayTrainingProps {
   onTrainingSessionsUpdate?: (sessions: TrainingSession[]) => void
-  businessUnit: string
+  selectedBusinessUnit: string
   knowledgeEntries: any[]
   guidelines: any[]
   onAddGuideline?: (guideline: {
@@ -98,6 +98,8 @@ interface RoleplayTrainingProps {
     content: string
   }) => void
   language?: Language
+  selectedLangCode?: string
+  selectedCountry?: string
 }
 
 interface AIStaff {
@@ -114,7 +116,16 @@ interface AIStaff {
 // 2. Knowledge base content uploaded by user
 // 3. Training guidelines created by user
 
-const RoleplayTraining = ({ onTrainingSessionsUpdate, businessUnit, knowledgeEntries, guidelines, onAddGuideline, language = 'en' }: RoleplayTrainingProps) => {
+const RoleplayTraining = ({ 
+  onTrainingSessionsUpdate, 
+  selectedBusinessUnit, 
+  knowledgeEntries, 
+  guidelines, 
+  onAddGuideline, 
+  language = 'en',
+  selectedLangCode = 'en',
+  selectedCountry = 'HK'
+}: RoleplayTrainingProps) => {
   const t = getTranslation(language)
   const [selectedScenario, setSelectedScenario] = useState<TrainingScenario | null>(null)
   const [activeSession, setActiveSession] = useState<TrainingSession | null>(null)
@@ -338,7 +349,7 @@ const RoleplayTraining = ({ onTrainingSessionsUpdate, businessUnit, knowledgeEnt
 
   useEffect(() => {
     initializeData()
-  }, [businessUnit])
+  }, [selectedBusinessUnit])
 
   // Selected role is session-specific state (no need to persist)
 
@@ -357,7 +368,7 @@ const RoleplayTraining = ({ onTrainingSessionsUpdate, businessUnit, knowledgeEnt
       trainingMemory: {},
       totalSessions: 0
     }
-    await saveAIStaff(newStaff, businessUnit)
+    await saveAIStaff(newStaff, selectedBusinessUnit)
     const updatedList = [...aiStaffList, newStaff]
     setAiStaffList(updatedList)
     setSelectedStaff(newStaff)
@@ -406,7 +417,7 @@ const RoleplayTraining = ({ onTrainingSessionsUpdate, businessUnit, knowledgeEnt
         const updatedStaff = aiStaffList.find(s => s.id === editingStaffId)
         if (updatedStaff) {
           const staffToUpdate = { ...updatedStaff, name: newName }
-          await saveAIStaff(staffToUpdate, businessUnit)
+          await saveAIStaff(staffToUpdate, selectedBusinessUnit)
           const updatedList = aiStaffList.map(s =>
             s.id === editingStaffId ? staffToUpdate : s
           )
@@ -518,7 +529,7 @@ const RoleplayTraining = ({ onTrainingSessionsUpdate, businessUnit, knowledgeEnt
     if (newScenarios.length > 0) {
       // Save each scenario to Supabase
       for (const scenario of newScenarios) {
-        await saveTrainingScenario(scenario, businessUnit)
+        await saveTrainingScenario(scenario, selectedBusinessUnit)
       }
       const updatedScenarios = [...scenarios, ...newScenarios]
       setScenarios(updatedScenarios)
@@ -546,7 +557,7 @@ const RoleplayTraining = ({ onTrainingSessionsUpdate, businessUnit, knowledgeEnt
       setScenarios([])
 
       // Load AI Staff from Supabase
-      const staff = await loadAIStaff(businessUnit)
+      const staff = await loadAIStaff(selectedBusinessUnit)
       if (staff && staff.length > 0) {
         setAiStaffList(staff)
         // Select first staff by default
@@ -560,7 +571,7 @@ const RoleplayTraining = ({ onTrainingSessionsUpdate, businessUnit, knowledgeEnt
       }
 
       // Load scenarios from Supabase
-      const savedScenarios = await loadTrainingScenarios(businessUnit)
+      const savedScenarios = await loadTrainingScenarios(selectedBusinessUnit)
       if (savedScenarios && savedScenarios.length > 0) {
         setScenarios(savedScenarios)
       } else {
@@ -569,7 +580,7 @@ const RoleplayTraining = ({ onTrainingSessionsUpdate, businessUnit, knowledgeEnt
         setScenarios(initialScenarios)
         // Save defaults to Supabase
         for (const scenario of initialScenarios) {
-          await saveTrainingScenario(scenario, businessUnit)
+          await saveTrainingScenario(scenario, selectedBusinessUnit)
         }
       }
 
@@ -895,55 +906,32 @@ The customer should naturally bring up their issue or question based on the scen
 
   const generateAICoachResponseToAll = async (customerMessage: string, scenario: TrainingScenario): Promise<string> => {
     try {
-      // Get relevant training memory for this scenario type
-      const scenarioMemory = trainingMemory[scenario.customerType] || []
-      const generalMemory = trainingMemory['general'] || []
-      const allRelevantMemory = [...scenarioMemory, ...generalMemory]
+      // PROOF: A is A. 
+      // 1. We call the SAME API as Live Chat.
+      // 2. We exclude the CURRENT message from history (API appends it automatically).
+      // 3. This prevents "doubling" which causes different AI responses.
+      const conversationHistory = messages
+        .filter(m => m.message !== customerMessage) // Exclude current message
+        .map(m => ({
+          role: m.sender === 'customer' ? 'user' : 'assistant',
+          content: m.message
+        }))
 
-      // Call the real OpenAI API with custom prompt including memory
-      console.log('🧠 AI Coach Training Memory:', {
-        scenario: scenario.name,
-        customerType: scenario.customerType,
-        customerMessage: customerMessage.substring(0, 50),
-        messagesCount: messages.length,
-        memoryItems: allRelevantMemory.length,
-        scenarioMemoryCount: scenarioMemory.length,
-        generalMemoryCount: generalMemory.length,
-        allMemory: allRelevantMemory
-      })
-
-      console.log('📚 Sending Knowledge Base:', {
-        knowledgeEntriesCount: knowledgeEntries?.length || 0,
-        guidelinesCount: guidelines?.length || 0,
-        firstKBEntry: knowledgeEntries?.[0]
-      })
-
-      const response = await fetch('/api/ai/coach-training', {
+      const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          staffName: selectedStaff?.name || 'AI Coach',
-          staffRole: selectedRole,
-          scenario: {
-            name: scenario.name,
-            description: scenario.scenario || scenario.description,
-            customerType: scenario.customerType,
-            successCriteria: scenario.successCriteria,
-          },
-          feedbackMemory: allRelevantMemory,
-          trainingMemory,
-          language,
-          customerMessage,
-          conversationHistory: messages.map(m => ({
-            sender: m.sender,
-            message: m.message,
-            timestamp: m.timestamp.toISOString()
-          })),
-          customerPersona: scenario.customerType,
-          knowledgeBase: knowledgeEntries,
-          guidelines: guidelines.filter(g => g.category === 'roleplay' || g.category === 'general')
+          businessUnitId: selectedBusinessUnit,
+          aiStaffId: selectedStaff?.id,
+          message: customerMessage,
+          language: selectedLangCode,
+          country: selectedCountry,
+          conversationHistory,
+          userName: 'Customer', // Unified name
+          userProfile: null,    // Unified profile
+          userOrders: []        // Unified orders
         })
       })
 
@@ -960,17 +948,9 @@ The customer should naturally bring up their issue or question based on the scen
       return data.response
 
     } catch (error) {
-      console.error('OpenAI API Error:', error)
-      console.error('Full error details:', {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        scenario: scenario?.name,
-        customerMessage: customerMessage?.substring(0, 100),
-        responseStatus: error instanceof Error && error.message.includes('API error:') ? error.message : 'Network or other error'
-      })
-
-      // For training purposes, we want to know when the real AI fails
-      // Don't use fallback - let the error bubble up so you can fix the root cause
-      throw new Error(`API error: ${error instanceof Error ? error.message : 'Unknown error'}. Check your Anthropic API.`)
+      console.error('AI Training API Error:', error)
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+      throw new Error(`AI Training Error: ${errorMsg}. Please check server logs for details.`)
     }
   }
 
@@ -1073,11 +1053,11 @@ The customer should naturally bring up their issue or question based on the scen
     const loadSessionsAndMemory = async () => {
       try {
         // Load training sessions from Supabase
-        const sessions = await loadTrainingSessions(businessUnit)
+        const sessions = await loadTrainingSessions(selectedBusinessUnit)
         setCompletedTrainingSessions(sessions)
 
         // Load training memory from AI Staff
-        const staff = await loadAIStaff(businessUnit)
+        const staff = await loadAIStaff(selectedBusinessUnit)
         if (staff.length > 0) {
           // Merge all staff training memories
           const mergedMemory = staff.reduce((acc: any, s: any) => {
@@ -1274,7 +1254,7 @@ The customer should naturally bring up their issue or question based on the scen
 
     // Save to Supabase
     try {
-      await saveTrainingSession(completedSession, businessUnit)
+      await saveTrainingSession(completedSession, selectedBusinessUnit)
       console.log('✅ Saved training session to Supabase')
 
       // Notify parent component about training sessions update
@@ -1376,6 +1356,8 @@ Apply this feedback when handling similar situations in the future.`
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
+          businessUnitId: selectedBusinessUnit, // REQUIRED
+          aiStaffId: selectedStaff?.id, // For personality and memory
           staffName: selectedStaff?.name || 'AI Coach',
           staffRole: selectedRole,
           scenario: {
@@ -1456,7 +1438,7 @@ Apply this feedback when handling similar situations in the future.`
       // Persist training memory to Supabase (update current AI staff)
       try {
         if (selectedStaff) {
-          await saveAIStaff({ ...selectedStaff, trainingMemory: newMemory }, businessUnit)
+          await saveAIStaff({ ...selectedStaff, trainingMemory: newMemory }, selectedBusinessUnit)
           console.log('✅ Saved training memory to Supabase')
         }
       } catch (error) {
@@ -1665,7 +1647,7 @@ Apply this feedback when handling similar situations in the future.`
       difficulty: scenarioData.difficulty || 'Intermediate'
     }
 
-    await saveTrainingScenario(newScenario, businessUnit)
+    await saveTrainingScenario(newScenario, selectedBusinessUnit)
     const updatedScenarios = [...scenarios, newScenario]
     setScenarios(updatedScenarios)
     setShowCreateScenario(false)

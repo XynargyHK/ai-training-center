@@ -57,10 +57,12 @@ export interface PromptOptions {
   // Core (shared by both livechat and roleplay)
   staffName: string
   staffRole: string
+  businessUnitName?: string // Brand identity
   knowledgeBase: KnowledgeEntry[]
   guidelines: Guideline[]
   trainingMemory: { [key: string]: string[] }
   conversationHistory: string // pre-formatted conversation text
+  relevantImages?: { url: string, description: string, name: string }[] // Images from library
 
   // Optional add-ons
   language?: string
@@ -106,12 +108,25 @@ function buildKnowledgeContext(knowledgeBase: KnowledgeEntry[]): string {
   )
 }
 
+// ─── Visual Assets Context ───────────────────────────────────────────
+function buildImagesContext(images?: { url: string, description: string, name: string }[]): string {
+  if (!images || images.length === 0) return ''
+
+  return (
+    '\n\n🖼️ VISUAL ASSETS (IMAGE LIBRARY):\n' +
+    'You have access to these specific images. If the customer asks about them, or if showing them would be helpful, you can embed them in your response using markdown: ![alt text](url)\n\n' +
+    images.map(img => `- Image Name: ${img.name}\n  URL: ${img.url}\n  Description: ${img.description}`).join('\n\n')
+  )
+}
+
 // ─── Anti-Hallucination Rules ────────────────────────────────────────
 function buildAntiHallucinationRules(hasKnowledge: boolean): string {
   if (!hasKnowledge) {
-    return `1. Provide helpful, accurate information
-2. Be professional and friendly
-3. If you're unsure, say "Let me check on that for you"`
+    return `You represent THIS company. While we are currently updating our digital knowledge base:
+1. Provide helpful, accurate information based on your general expertise in this industry.
+2. Be professional, warm, and friendly.
+3. If you're asked about a specific price or technical detail you're unsure of, say "Let me check the latest details on that for you."
+4. Always speak as "we", "our", and "us".`
   }
 
   return `YOU MUST FOLLOW THESE RULES OR YOU WILL SEND CUSTOMERS TO COMPETITOR BRANDS:
@@ -157,12 +172,12 @@ function buildTrainingMemoryContext(
 
   const memoryEntries = Object.entries(trainingMemory)
   return (
-    '\n\n📝 TRAINING MEMORY - IMPORTANT LESSONS LEARNED:\n' +
-    `You are ${staffName} (${staffRole}). Apply these lessons from your training:\n\n` +
+    '\n\n🚨 MANDATORY CORRECTIONS FROM YOUR TRAINER - YOU MUST FOLLOW THESE RULES:\n' +
+    `You are ${staffName} (${staffRole}). Your trainer has corrected your previous mistakes. You MUST apply these specific lessons to EVERY response:\n\n` +
     memoryEntries
       .map(
         ([scenario, lessons]) =>
-          `Scenario: ${scenario}\nLessons:\n${lessons.map((lesson) => `  • ${lesson}`).join('\n')}`
+          `Target Area: ${scenario}\nRules to Follow:\n${lessons.map((lesson) => `  • REQUIRED: ${lesson}`).join('\n')}`
       )
       .join('\n\n')
   )
@@ -375,16 +390,17 @@ export function buildAIPrompt(opts: PromptOptions): string {
   // Build the unified system prompt
   const parts: string[] = []
 
-  // 1. Staff identity + scenario (if roleplay)
-  if (opts.scenario) {
-    parts.push(`You are ${opts.staffName}, a ${opts.staffRole} representative helping a customer.`)
-    parts.push(buildScenarioContext(opts))
-  } else {
-    parts.push(`You are ${opts.staffName}, a ${opts.staffRole} for THIS company ONLY.`)
-  }
+  // 1. Staff identity
+  parts.push(`You are ${opts.staffName}, a ${opts.staffRole} for ${opts.businessUnitName || 'this company'} ONLY.`)
+
 
   // 2. Knowledge base + anti-hallucination rules
   parts.push(knowledgeContext)
+
+  // 2b. Visual Assets (Image Library)
+  if (opts.relevantImages && opts.relevantImages.length > 0) {
+    parts.push(buildImagesContext(opts.relevantImages))
+  }
 
   // 3. Guidelines
   parts.push(buildGuidelinesContext(opts.guidelines))
@@ -409,8 +425,11 @@ export function buildAIPrompt(opts: PromptOptions): string {
   parts.push(`\n🚨🚨🚨 ABSOLUTE RULES - VIOLATION WILL CAUSE SEVERE HARM 🚨🚨🚨\n`)
   parts.push(buildAntiHallucinationRules(hasKnowledge))
 
-  // 8. Response style
-  parts.push(`\nKeep responses clear and professional (2-4 sentences).`)
+  // 8. FINAL MANDATORY ENFORCEMENT (The last thing the AI reads)
+  parts.push(`\nSTRICT RESPONSE FORMAT:
+1. Response length: MUST be under 100 words. Be direct.
+2. Mandatory Corrections: Apply ALL "MANDATORY CORRECTIONS FROM YOUR TRAINER" listed above.
+3. No AI Disclosure: Never mention you are an AI or a language model.`)
 
   return parts.filter(Boolean).join('\n')
 }

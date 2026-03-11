@@ -431,76 +431,28 @@ const AICoach = ({ className = '', businessUnit = 'skincoach', country, language
         image: msg.imageUrl
       }))
 
-      // Load knowledge base, training data, and guidelines via client-safe API
       console.log('=== AICoach Frontend DEBUG ===')
       console.log('Business Unit:', businessUnit)
+      console.log('Staff:', currentStaff?.name)
 
-      // Import client-safe API functions dynamically
-      const { loadKnowledge, loadTrainingData, loadGuidelines } = await import('@/lib/api-client')
-
-      // Load data from Supabase — pass locale params so data is filtered by country/language
-      let knowledgeBase = []
-      let trainingData = []
-      let guidelines = []
-
-      try {
-        // Load all data in parallel for faster performance
-        const [kb, td, gl] = await Promise.all([
-          loadKnowledge(businessUnit, country, language),
-          loadTrainingData(businessUnit),
-          loadGuidelines(businessUnit, language)
-        ])
-
-        knowledgeBase = kb || []
-        trainingData = td || []
-        guidelines = gl || []
-
-        console.log('✅ Loaded from Supabase:')
-        console.log('  - Knowledge entries:', knowledgeBase.length)
-        console.log('  - Training data entries:', trainingData.length)
-        console.log('  - Guidelines:', guidelines.length)
-
-        if (knowledgeBase.length > 0) {
-          console.log('First knowledge entry:', knowledgeBase[0])
-        } else {
-          console.warn('⚠️ WARNING: Knowledge base is EMPTY!')
-        }
-      } catch (error) {
-        console.error('❌ Error loading training data from Supabase:', error)
-      }
-
-      // Call the backend AI API with knowledge base context
-      const requestBody = {
-        message: userMessage,
-        context: 'coach',
-        conversationHistory,
-        knowledgeBase,
-        trainingData,
-        guidelines,
-        staffName: currentStaff?.name,
-        staffRole: currentStaff?.role,
-        trainingMemory: currentStaff?.trainingMemory || {},
-        language: selectedLanguage,  // Add selected language
-        image: imageData,  // Add image data for vision models
-        userName: userName || undefined,  // Add user's name for personalized greeting
-        userProfile: userProfile || undefined,  // Add user profile for context
-        userOrders: userOrders.length > 0 ? userOrders : undefined  // Add user orders for context
-      }
-
-      console.log('Sending to API - knowledgeBase entries:', knowledgeBase.length)
-      console.log('Sending to API - trainingData entries:', trainingData.length)
-      console.log('Sending to API - guidelines entries:', guidelines.length)
-      console.log('Sending to API - Staff:', currentStaff?.name, '(', currentStaff?.role, ')')
-      console.log('Sending to API - Training Memory scenarios:', Object.keys(currentStaff?.trainingMemory || {}).length)
-      if (userProfile) console.log('Sending to API - User Profile: YES')
-      if (userOrders.length > 0) console.log('Sending to API - User Orders:', userOrders.length)
-
+      // Use the new server-side RAG API
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify({
+          message: userMessage,
+          businessUnitId: businessUnit, // Send the ID
+          aiStaffId: currentStaff?.id,  // Send the Staff ID for personalized memory
+          conversationHistory,
+          language: selectedLanguage,
+          country: country,
+          image: imageData,
+          userName: userName || undefined,
+          userProfile: userProfile || undefined,
+          userOrders: userOrders.length > 0 ? userOrders : undefined
+        })
       })
 
       if (!response.ok) {

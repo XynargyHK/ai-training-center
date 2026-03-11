@@ -7,7 +7,7 @@ import {
   Loader2, X, BookOpen, Globe, Layout, Save, Image, Video, Copy, Check,
   ChevronDown, ChevronUp, Zap, MessageSquare, Shield, ShoppingCart,
   AlignLeft, AlignCenter, AlignRight, Menu, Sparkles, Bold, Italic, Languages,
-  Eye, EyeOff
+  Eye, EyeOff, Clock
 } from 'lucide-react'
 import PolicyManager from './policy-manager'
 import ProductCatalogManager from './product-catalog-manager'
@@ -44,6 +44,7 @@ interface IndustryKnowledge {
   content: string
   category: string
   keywords?: string[]
+  file_name?: string
   created_at: string
   updated_at: string
 }
@@ -1019,18 +1020,23 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
     if (mediaFiles.length === 0) return
     if (!confirm(`Delete all ${mediaFiles.length} file${mediaFiles.length !== 1 ? 's' : ''}? This cannot be undone.`)) return
 
-    // Delete in batches of 5 to avoid overwhelming the server
-    const names = mediaFiles.map(f => f.name)
-    for (let i = 0; i < names.length; i += 5) {
-      await Promise.allSettled(
-        names.slice(i, i + 5).map(fileName =>
-          fetch(`/api/media-library?businessUnit=${businessUnitId}&fileName=${encodeURIComponent(fileName)}`, { method: 'DELETE' })
-        )
+    try {
+      const response = await fetch(
+        `/api/media-library?businessUnit=${businessUnitId}&all=true`,
+        { method: 'DELETE' }
       )
+      
+      if (response.ok) {
+        setSelectedMedia(new Set())
+        await loadMediaFiles()
+      } else {
+        const error = await response.json()
+        alert(`Failed to delete all: ${error.error}`)
+      }
+    } catch (error) {
+      console.error('Error deleting all media:', error)
+      alert('Error during mass deletion')
     }
-    setSelectedMedia(new Set())
-    await new Promise(r => setTimeout(r, 300))
-    await loadMediaFiles()
   }
 
   const deleteSelectedMedia = async () => {
@@ -1315,19 +1321,23 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
         const result = await response.json()
 
         if (result.success) {
-          setProcessingMessage(`AI extracted ${result.count} knowledge entries from PDF! Extracting images...`)
-          // Also extract images from the PDF in parallel
-          try {
-            const imgFormData = new FormData()
-            imgFormData.append('file', file)
-            imgFormData.append('businessUnitId', businessUnitId)
-            const imgRes = await fetch('/api/knowledge-base/extract-doc-images', { method: 'POST', body: imgFormData })
-            const imgResult = await imgRes.json()
-            const imgMsg = imgResult.count > 0 ? ` Also saved ${imgResult.count} image${imgResult.count !== 1 ? 's' : ''} to media library.` : ''
-            setProcessingMessage(`AI extracted ${result.count} knowledge entries from PDF!${imgMsg}`)
-            if (imgResult.count > 0) loadMediaFiles()
-          } catch {
-            setProcessingMessage(`AI extracted ${result.count} knowledge entries from PDF!`)
+          if (result.skipImageExtraction) {
+            setProcessingMessage(`AI analyzed document and images in ${result.duration?.toFixed(1)}s!`)
+          } else {
+            setProcessingMessage(`AI extracted ${result.count} knowledge entries from PDF! Extracting images...`)
+            // Also extract images from the PDF in parallel
+            try {
+              const imgFormData = new FormData()
+              imgFormData.append('file', file)
+              imgFormData.append('businessUnitId', businessUnitId)
+              const imgRes = await fetch('/api/knowledge-base/extract-doc-images', { method: 'POST', body: imgFormData })
+              const imgResult = await imgRes.json()
+              const imgMsg = imgResult.count > 0 ? ` Also saved ${imgResult.count} image${imgResult.count !== 1 ? 's' : ''} to media library.` : ''
+              setProcessingMessage(`AI extracted ${result.count} knowledge entries from PDF!${imgMsg}`)
+              if (imgResult.count > 0) loadMediaFiles()
+            } catch {
+              setProcessingMessage(`AI extracted ${result.count} knowledge entries from PDF!`)
+            }
           }
           setTimeout(() => {
             setIsProcessing(false)
@@ -1774,16 +1784,23 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <h4 className="text-gray-800 text-xs font-medium">{entry.topic}</h4>
+                              <h4 className="text-gray-800 text-xs font-bold flex items-center gap-2">
+                                <FileText className="w-3.5 h-3.5 text-blue-500" />
+                                {entry.file_name || entry.topic}
+                              </h4>
+                              {entry.file_name && (
+                                <p className="text-[10px] text-gray-400 mt-0.5">Topic: {entry.topic}</p>
+                              )}
                               <p className="text-gray-500 text-xs mt-1 line-clamp-2">
                                 {entry.content.substring(0, 200)}...
                               </p>
                               <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
-                                <span className="bg-gray-200 px-2 py-0.5 rounded-none">
+                                <span className="bg-gray-200 px-2 py-0.5 rounded-none text-[10px]">
                                   {entry.category}
                                 </span>
-                                <span>
-                                  {new Date(entry.created_at).toLocaleDateString()}
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {entry.created_at ? new Date(entry.created_at).toLocaleDateString() : 'Just now'}
                                 </span>
                               </div>
                             </div>
