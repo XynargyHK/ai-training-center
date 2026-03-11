@@ -342,7 +342,7 @@ export async function processTextIngestion(opts: {
       Include a "Metadata" section with 5-10 keywords.
       
       Document Content:
-      ${text.substring(0, 30000)} // Gemini 2.5-flash can handle up to 1M tokens, but we'll be conservative
+      ${text.substring(0, 10000)} // Reduced from 30k to stay under timeout limits
       
       Return your answer as a JSON object:
       {

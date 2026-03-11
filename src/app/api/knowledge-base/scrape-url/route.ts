@@ -9,9 +9,9 @@ const supabase = createClient(
 )
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY || '')
 
-const MAX_PAGES = 5       // max pages to crawl per site (keep under Railway timeout)
-const MAX_IMAGES = 10     // max images to save per site
-const PAGE_TIMEOUT = 8000 // 8s per page fetch
+const MAX_PAGES = 3       // Reduced from 5 to prevent timeouts
+const MAX_IMAGES = 5      // Reduced from 10 to prevent timeouts
+const PAGE_TIMEOUT = 5000 // 5s per page fetch
 
 // Parse URLs and image URLs from sitemap XML (handles CDATA and sitemap index)
 function parseSitemapXml(xml: string, hostname: string, skipPatterns: RegExp[]): { pageUrls: string[], imageUrls: string[] } {
