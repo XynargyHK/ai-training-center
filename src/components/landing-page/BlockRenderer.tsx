@@ -9,6 +9,12 @@ import StepsBlock from './blocks/StepsBlock'
 import PricingBlock from './blocks/PricingBlock'
 import StaticBannerBlock from './blocks/StaticBannerBlock'
 import TableBlock from './blocks/TableBlock'
+import FormBlock from './blocks/FormBlock'
+import VideoBlock from './blocks/VideoBlock'
+import SocialFeedBlock from './blocks/SocialFeedBlock'
+import LogoCloudBlock from './blocks/LogoCloudBlock'
+import ImageGridBlock from './blocks/ImageGridBlock'
+import StatsGridBlock from './blocks/StatsGridBlock'
 
 // Convert block name to URL-friendly anchor slug
 function toAnchorSlug(name: string | undefined): string | undefined {
@@ -64,6 +70,7 @@ export default function BlockRenderer({ blocks, onAddToCart }: BlockRendererProp
             return <AccordionBlock key={block.id} anchorId={anchorId} data={block.data as any} heading={block.name} />
 
           case 'steps':
+          case 'text_image_grid':
             return <StepsBlock key={block.id} anchorId={anchorId} data={block.data as any} heading={block.name} />
 
           case 'static_banner':
@@ -71,6 +78,24 @@ export default function BlockRenderer({ blocks, onAddToCart }: BlockRendererProp
 
           case 'table':
             return <TableBlock key={block.id} anchorId={anchorId} data={block.data as any} heading={block.name} />
+
+          case 'form':
+            return <FormBlock key={block.id} block={block} />
+
+          case 'video':
+            return <VideoBlock key={block.id} anchorId={anchorId} block={block} />
+
+          case 'social_feed':
+            return <SocialFeedBlock key={block.id} anchorId={anchorId} block={block} />
+
+          case 'logo_cloud':
+            return <LogoCloudBlock key={block.id} anchorId={anchorId} block={block} />
+
+          case 'image_grid':
+            return <ImageGridBlock key={block.id} anchorId={anchorId} block={block} />
+
+          case 'stats_grid':
+            return <StatsGridBlock key={block.id} anchorId={anchorId} block={block} />
 
           default:
             // Silently skip unknown block types (legacy blocks or removed types)

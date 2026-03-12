@@ -35,7 +35,10 @@ const NON_CONTENT_FIELDS = new Set([
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { businessUnitId, country, language_code, is_published } = body
+    const { businessUnitId, country, language_code, is_published, slug: slugParam } = body
+    
+    // Support both null and undefined for home page
+    const slug = slugParam === 'home' ? null : (slugParam || null)
 
     if (!businessUnitId) {
       return NextResponse.json({ error: 'businessUnitId required' }, { status: 400 })
@@ -59,7 +62,8 @@ export async function POST(request: NextRequest) {
         .eq('business_unit_id', resolvedBusinessUnitId)
         .eq('country', resolvedCountry)
         .eq('language_code', resolvedLang)
-        .single()
+        .eq('slug', slug)
+        .maybeSingle()
 
       if (readError || !currentRow) {
         return NextResponse.json({ error: 'Landing page not found' }, { status: 404 })
@@ -86,6 +90,7 @@ export async function POST(request: NextRequest) {
       .eq('business_unit_id', resolvedBusinessUnitId)
       .eq('country', resolvedCountry)
       .eq('language_code', resolvedLang)
+      .eq('slug', slug)
       .select()
       .single()
 

@@ -22,9 +22,9 @@ export interface BlockTypeConfig {
 export const BLOCK_TYPES: Record<string, BlockTypeConfig> = {
   split: {
     type: 'split',
-    label: 'Split',
-    icon: '⬌',
-    description: 'Text alongside image - perfect for features and benefits',
+    label: 'Features',
+    icon: '✨',
+    description: 'High-impact section with text and image side-by-side. Best for key benefits.',
     category: 'content',
     defaultData: {
       layout: 'image-right',
@@ -187,9 +187,9 @@ export const BLOCK_TYPES: Record<string, BlockTypeConfig> = {
 
   steps: {
     type: 'steps',
-    label: 'Text/Image Grid',
-    icon: '📝',
-    description: 'Flexible grid layout combining text and images - vertical or horizontal',
+    label: 'Steps (How-to Guide)',
+    icon: '1️⃣',
+    description: 'Perfect for step-by-step instructions and sequential guides',
     category: 'content',
     defaultData: {
       heading: 'HOW TO USE',
@@ -293,6 +293,165 @@ export const BLOCK_TYPES: Record<string, BlockTypeConfig> = {
       cell_bg_color: '#ffffff',
       cell_text_color: '#374151',
       border_color: '#e5e7eb'
+    }
+  },
+
+  form: {
+    type: 'form',
+    label: 'Form',
+    icon: '📝',
+    description: 'Custom form for registration, sign-off, or data collection',
+    category: 'interactive',
+    defaultData: {
+      headline: 'Register Your Location',
+      headline_font_size: '2rem',
+      headline_font_family: 'Josefin Sans',
+      headline_color: '#000000',
+      subheadline: 'Enter your details below to assign a username and password.',
+      fields: [
+        {
+          id: 'field-1',
+          label: 'Physical Address',
+          placeholder: 'Full address of the location',
+          type: 'text',
+          required: true
+        },
+        {
+          id: 'field-2',
+          label: 'Contact Email',
+          placeholder: 'email@example.com',
+          type: 'email',
+          required: true
+        }
+      ],
+      submit_button_text: 'Complete Registration',
+      submit_button_color: '#7c3aed',
+      success_message: 'Registration complete! Your credentials will be assigned shortly.',
+      background_color: '#ffffff',
+      border_radius: '0.5rem'
+    }
+  },
+
+  video: {
+    type: 'video',
+    label: 'Video',
+    icon: '🎥',
+    description: 'Embed YouTube, Vimeo, or direct video files',
+    category: 'content',
+    defaultData: {
+      headline: '',
+      video_url: '',
+      video_type: 'youtube',
+      aspect_ratio: '16/9',
+      autoplay: false,
+      muted: false,
+      loop: false,
+      controls: true,
+      max_width: '800px',
+      background_color: '#ffffff'
+    }
+  },
+
+  social_feed: {
+    type: 'social_feed',
+    label: 'Social Feed',
+    icon: '📱',
+    description: 'Display social media posts from Instagram, TikTok, etc.',
+    category: 'social',
+    defaultData: {
+      headline: 'Follow Us on Social',
+      layout: 'grid',
+      columns: 3,
+      feeds: [
+        {
+          id: 'post-1',
+          type: 'instagram',
+          url: 'https://instagram.com',
+          username: '@yourbrand'
+        }
+      ],
+      background_color: '#fafafa',
+      text_color: '#000000'
+    }
+  },
+
+  logo_cloud: {
+    type: 'logo_cloud',
+    label: 'Logo Cloud',
+    icon: '🏢',
+    description: 'Display partner or brand logos for trust and social proof',
+    category: 'social',
+    defaultData: {
+      headline: 'TRUSTED BY LEADING BRANDS',
+      headline_font_size: '1.25rem',
+      headline_font_family: 'Josefin Sans',
+      headline_color: '#6b7280',
+      logos: [],
+      background_color: '#ffffff',
+      logo_height: '40px',
+      grayscale: true,
+      opacity: 0.6
+    }
+  },
+
+  image_grid: {
+    type: 'image_grid',
+    label: 'Image Grid',
+    icon: '🖼️',
+    description: 'A responsive grid of images with captions',
+    category: 'content',
+    defaultData: {
+      headline: '',
+      columns: 3,
+      gap: '1rem',
+      images: [],
+      background_color: '#ffffff'
+    }
+  },
+
+  text_image_grid: {
+    type: 'text_image_grid',
+    label: 'Text/Image Grid',
+    icon: '🖼️',
+    description: 'Flexible grid of text and images. Ideal for features, services, or process steps.',
+    category: 'content',
+    defaultData: {
+      heading: 'Our Features',
+      heading_font_size: '2.5rem',
+      heading_font_family: 'Josefin Sans',
+      heading_color: '#000000',
+      background_color: '#ffffff',
+      overall_layout: 'horizontal',
+      steps: [
+        {
+          background_url: '',
+          background_type: 'image',
+          image_width: '400px',
+          subheadline: 'Feature Title',
+          text_content: 'Feature description goes here...',
+          text_position: 'above',
+          text_font_size: '1rem',
+          text_font_family: 'Cormorant Garamond',
+          text_color: '#000000'
+        }
+      ]
+    }
+  },
+
+  stats_grid: {
+    type: 'stats_grid',
+    label: 'Stats Grid',
+    icon: '📈',
+    description: 'Display impact numbers and statistics',
+    category: 'content',
+    defaultData: {
+      headline: 'Our Impact in Numbers',
+      stats: [
+        { id: '1', value: '96%', label: 'Customer Satisfaction' },
+        { id: '2', value: '10k+', label: 'Active Users' },
+        { id: '3', value: '24/7', label: 'Support Available' }
+      ],
+      background_color: '#f9fafb'
     }
   },
 

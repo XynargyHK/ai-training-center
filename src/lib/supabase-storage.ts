@@ -136,7 +136,7 @@ export async function loadKnowledge(businessUnitSlugOrId?: string | null, countr
     console.error('Error loading services for knowledge:', servicesError)
   }
 
-  // Load landing page — filter by country + language_code if provided
+  // Load landing pages — filter by country + language_code if provided
   let landingPageQuery = supabase
     .from('landing_pages')
     .select('*')
@@ -145,17 +145,10 @@ export async function loadKnowledge(businessUnitSlugOrId?: string | null, countr
   if (country) landingPageQuery = landingPageQuery.eq('country', country)
   if (language) landingPageQuery = landingPageQuery.eq('language_code', language)
 
-  const { data: rawLandingPage, error: landingPageError } = await landingPageQuery.maybeSingle()
-
-  // Use published_data (the published copy) if available
-  let landingPageData = rawLandingPage
-  if (rawLandingPage?.published_data) {
-    const { published_data, ...metadata } = rawLandingPage
-    landingPageData = { ...metadata, ...published_data }
-  }
+  const { data: rawLandingPages, error: landingPageError } = await landingPageQuery
 
   if (landingPageError) {
-    console.error('Error loading landing page for knowledge:', landingPageError)
+    console.error('Error loading landing pages for knowledge:', landingPageError)
   }
 
   // Transform industry knowledge
@@ -211,100 +204,71 @@ Category: ${service.category || 'General'}`,
 
   // Transform landing page content into knowledge entries
   const landingPageEntries: any[] = []
-  if (landingPageData) {
-    const lp = landingPageData
-
+  
+  if (rawLandingPages && rawLandingPages.length > 0) {
     // Helper to strip HTML tags from content
     const stripHtml = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim()
 
-    // Extract hero content
-    const heroSlides = lp.hero_slides || []
-    const heroContent = heroSlides.map((slide: any) =>
-      `${slide.headline || ''} ${slide.subheadline || ''} ${slide.content || ''}`
-    ).join(' ')
-
-    // Extract blocks content
-    const blocks = lp.blocks || []
-    const blocksContent = blocks.map((block: any) => {
-      if (block.data) {
-        return JSON.stringify(block.data).replace(/[{}"]/g, ' ')
+    rawLandingPages.forEach(rawLp => {
+      // Use published_data (the published copy) if available
+      let lp = rawLp
+      if (rawLp?.published_data) {
+        const { published_data, ...metadata } = rawLp
+        lp = { ...metadata, ...published_data }
       }
-      return ''
-    }).join(' ')
 
-    // Extract announcements (rotating announcements array)
-    const announcements = lp.announcements || []
-    const announcementsContent = announcements
-      .filter((a: any) => a.active !== false)
-      .map((a: any) => a.text || '')
-      .filter(Boolean)
-      .join('. ')
+      // Extract hero content
+      const heroSlides = lp.hero_slides || []
+      const heroContent = heroSlides.map((slide: any) =>
+        `${slide.headline || ''} ${slide.subheadline || ''} ${slide.content || ''}`
+      ).join(' ')
 
-    // Extract footer policy content (refund, shipping, privacy, terms, about-us)
-    const footer = lp.footer || {}
-    const policyContent = footer.policy_content || {}
-    let policiesText = ''
-    for (const [policyKey, policyHtml] of Object.entries(policyContent)) {
-      if (policyHtml && typeof policyHtml === 'string') {
-        const policyName = policyKey.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
-        policiesText += `\n${policyName}: ${stripHtml(policyHtml)}`
+      // Extract blocks content
+      const blocks = lp.blocks || []
+      const blocksContent = blocks.map((block: any) => {
+        if (block.data) {
+          return JSON.stringify(block.data).replace(/[{}"]/g, ' ')
+        }
+        return ''
+      }).join(' ')
+
+      // Extract announcements
+      const announcements = lp.announcements || []
+      const announcementsContent = announcements
+        .filter((a: any) => a.active !== false)
+        .map((a: any) => a.text || '')
+        .filter(Boolean)
+        .join('. ')
+
+      // Extract footer policy content
+      const footer = lp.footer || {}
+      const policyContent = footer.policy_content || {}
+      let policiesText = ''
+      for (const [policyKey, policyHtml] of Object.entries(policyContent)) {
+        if (policyHtml && typeof policyHtml === 'string') {
+          const policyName = policyKey.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
+          policiesText += `\n${policyName}: ${stripHtml(policyHtml)}`
+        }
       }
-    }
 
-    // Extract footer metadata (company info, policies, shipping info)
-    let footerMetaText = ''
-    // Company info
-    if (footer.company_name) footerMetaText += `\nCompany: ${footer.company_name}`
-    if (footer.brand_name) footerMetaText += `\nBrand: ${footer.brand_name}`
-    if (footer.website_url) footerMetaText += `\nWebsite: ${footer.website_url}`
-    if (footer.contact_email) footerMetaText += `\nContact Email: ${footer.contact_email}`
-    if (footer.contact_phone) footerMetaText += `\nContact Phone: ${footer.contact_phone}`
-    if (footer.contact_address) footerMetaText += `\nAddress: ${footer.contact_address}`
-    if (footer.governing_state) footerMetaText += `\nGoverning State/Region: ${footer.governing_state}`
-
-    // Refund & Return policy
-    if (footer.refund_days) footerMetaText += `\nRefund Period: ${footer.refund_days} days`
-    if (footer.refund_processing_days) footerMetaText += `\nRefund Processing Time: ${footer.refund_processing_days} business days`
-    if (footer.warranty_months) footerMetaText += `\nWarranty Period: ${footer.warranty_months} months`
-    if (footer.restocking_fee) footerMetaText += `\nRestocking Fee: ${footer.restocking_fee}%`
-    if (footer.return_address) footerMetaText += `\nReturn Address: ${footer.return_address}`
-
-    // Shipping policy
-    if (footer.cutoff_time) footerMetaText += `\nOrder Cutoff Time: ${footer.cutoff_time}`
-    if (footer.domestic_shipping_days) footerMetaText += `\nDomestic Shipping: ${footer.domestic_shipping_days} business days`
-    if (footer.international_shipping_days) footerMetaText += `\nInternational Shipping: ${footer.international_shipping_days} business days`
-    if (footer.free_shipping_threshold) footerMetaText += `\nFree Shipping Threshold: $${footer.free_shipping_threshold}`
-    if (footer.warehouse_location) footerMetaText += `\nWarehouse Location: ${footer.warehouse_location}`
-    if (footer.shipping_carriers) footerMetaText += `\nShipping Carriers: ${footer.shipping_carriers}`
-
-    // Other
-    if (footer.effective_date) footerMetaText += `\nPolicy Effective Date: ${footer.effective_date}`
-    if (footer.liability_cap) footerMetaText += `\nLiability Cap: $${footer.liability_cap}`
-
-    // Extract menu bar items
-    const menuBar = lp.menu_bar || []
-    const menuBarContent = menuBar
-      .map((item: any) => item.label || item.name || '')
-      .filter(Boolean)
-      .join(', ')
-
-    landingPageEntries.push({
-      id: `landing-page-${lp.id}`,
-      category: 'Landing Page',
-      topic: 'Website Content',
-      content: `Landing Page Content:
+      const slugSuffix = lp.slug ? ` (/${lp.slug})` : ' (Home)'
+      
+      landingPageEntries.push({
+        id: `landing-page-${lp.id}`,
+        category: 'Landing Page',
+        topic: `${lp.country}/${lp.language_code} Website${slugSuffix}`,
+        content: `Landing Page Content for ${lp.country}/${lp.language_code}${lp.slug ? ` at /${lp.slug}` : ' (Home)'}:
 ${heroContent}
 ${blocksContent}
 ${lp.announcement_text || ''}
 ${announcementsContent ? `Announcements: ${announcementsContent}` : ''}
 ${lp.footer_disclaimer || ''}
-${policiesText ? `\nPolicies:${policiesText}` : ''}
-${footerMetaText ? `\nCompany Info:${footerMetaText}` : ''}
-${menuBarContent ? `\nMenu: ${menuBarContent}` : ''}`,
-      keywords: ['landing page', 'website', 'homepage', 'refund', 'policy', 'shipping', 'contact'],
-      confidence: 1.0,
-      createdAt: new Date(lp.created_at),
-      updatedAt: new Date(lp.updated_at)
+${policiesText ? `\nPolicies:${policiesText}` : ''}`,
+        keywords: ['landing page', 'website', lp.slug].filter(Boolean),
+        confidence: 1.0,
+        createdAt: new Date(lp.created_at),
+        updatedAt: new Date(lp.updated_at)
+      })
     })
   }
 

@@ -15,6 +15,12 @@ import TestimonialsBlockEditor from './blocks/TestimonialsBlockEditor'
 import StepsBlockEditor from './blocks/StepsBlockEditor'
 import StaticBannerBlockEditor from './blocks/StaticBannerBlockEditor'
 import TableBlockEditor from './blocks/TableBlockEditor'
+import FormBlockEditor from './blocks/FormBlockEditor'
+import VideoBlockEditor from './blocks/VideoBlockEditor'
+import SocialFeedBlockEditor from './blocks/SocialFeedBlockEditor'
+import LogoCloudBlockEditor from './blocks/LogoCloudBlockEditor'
+import ImageGridBlockEditor from './blocks/ImageGridBlockEditor'
+import StatsGridBlockEditor from './blocks/StatsGridBlockEditor'
 
 interface BlockManagerProps {
   blocks: LandingPageBlock[]
@@ -1686,6 +1692,7 @@ export default function BlockManager({
         )
 
       case 'steps':
+      case 'text_image_grid':
         return (
           <StepsBlockEditor
             block={block}
@@ -1711,6 +1718,56 @@ export default function BlockManager({
             block={block}
             onUpdate={(updatedBlock) => handleUpdateBlock(index, updatedBlock)}
             businessUnitId={businessUnitId}
+          />
+        )
+
+      case 'form':
+        return (
+          <FormBlockEditor
+            block={block}
+            onUpdate={(updatedBlock) => handleUpdateBlock(index, updatedBlock)}
+          />
+        )
+
+      case 'video':
+        return (
+          <VideoBlockEditor
+            block={block}
+            onUpdate={(updatedBlock) => handleUpdateBlock(index, updatedBlock)}
+          />
+        )
+
+      case 'social_feed':
+        return (
+          <SocialFeedBlockEditor
+            block={block}
+            onUpdate={(updatedBlock) => handleUpdateBlock(index, updatedBlock)}
+          />
+        )
+
+      case 'logo_cloud':
+        return (
+          <LogoCloudBlockEditor
+            block={block}
+            onUpdate={(updatedBlock) => handleUpdateBlock(index, updatedBlock)}
+            onMediaLibraryOpen={handleOpenMediaLibrary}
+          />
+        )
+
+      case 'image_grid':
+        return (
+          <ImageGridBlockEditor
+            block={block}
+            onUpdate={(updatedBlock) => handleUpdateBlock(index, updatedBlock)}
+            onMediaLibraryOpen={handleOpenMediaLibrary}
+          />
+        )
+
+      case 'stats_grid':
+        return (
+          <StatsGridBlockEditor
+            block={block}
+            onUpdate={(updatedBlock) => handleUpdateBlock(index, updatedBlock)}
           />
         )
 
@@ -1775,7 +1832,7 @@ export default function BlockManager({
                               {/* Block-specific actions */}
                               {block.type === 'testimonials' ? renderTestimonialsHeaderActions(block, index) :
                                block.type === 'accordion' ? renderAccordionHeaderActions(block, index) :
-                               block.type === 'steps' ? renderStepsHeaderActions(block, index) :
+                               (block.type === 'steps' || block.type === 'text_image_grid') ? renderStepsHeaderActions(block, index) :
                                block.type === 'pricing' ? renderPricingHeaderActions(block, index) :
                                block.type === 'static_banner' ? renderStaticBannerHeaderActions(block, index) :
                                block.type === 'table' ? renderTableHeaderActions(block, index) :

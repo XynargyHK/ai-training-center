@@ -90,7 +90,7 @@ function HeroSlideContent({ slide, isFirst }: { slide: any; isFirst: boolean }) 
             </p>
           )}
           {slide.content && (
-            <p
+            <div
               className={`font-light mb-8 drop-shadow max-w-2xl whitespace-pre-wrap ${getFontClass(slide.content_font_family)} ${
                 (slide.content_text_align || 'center') === 'left' ? 'text-left' :
                 (slide.content_text_align || 'center') === 'right' ? 'text-right mr-0 ml-auto' :
@@ -102,9 +102,8 @@ function HeroSlideContent({ slide, isFirst }: { slide: any; isFirst: boolean }) 
                 fontWeight: slide.content_bold ? 'bold' : undefined,
                 fontStyle: slide.content_italic ? 'italic' : undefined
               }}
-            >
-              {slide.content}
-            </p>
+              dangerouslySetInnerHTML={{ __html: slide.content || '' }}
+            />
           )}
           {!slide.content && slide.subheadline && <div className="mb-4" />}
           {slide.cta_text && (
@@ -183,7 +182,7 @@ function StaticBannerSlide({ slide }: { slide: any }) {
             </p>
           )}
           {slide.content && (
-            <p
+            <div
               className={`font-light mb-8 drop-shadow max-w-2xl whitespace-pre-wrap ${getFontClass(slide.content_font_family)} ${
                 (slide.content_text_align || 'center') === 'left' ? 'text-left' :
                 (slide.content_text_align || 'center') === 'right' ? 'text-right mr-0 ml-auto' :
@@ -195,9 +194,8 @@ function StaticBannerSlide({ slide }: { slide: any }) {
                 fontWeight: slide.content_bold ? 'bold' : undefined,
                 fontStyle: slide.content_italic ? 'italic' : undefined
               }}
-            >
-              {slide.content}
-            </p>
+              dangerouslySetInnerHTML={{ __html: slide.content || '' }}
+            />
           )}
           {!slide.content && slide.subheadline && <div className="mb-4" />}
           {slide.cta_text && (

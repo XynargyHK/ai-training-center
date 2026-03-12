@@ -37,36 +37,50 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Business unit not found' }, { status: 404 })
     }
 
-    // List files from Supabase storage bucket
+    // 1. Fetch from image_library table first (contains rich metadata)
+    const { data: dbFiles, error: dbError } = await supabase
+      .from('image_library')
+      .select('*')
+      .eq('business_unit_id', businessUnitId)
+      .order('created_at', { ascending: false })
+
+    if (dbError) {
+      console.error('Error fetching image library table:', dbError)
+    }
+
+    // 2. Also list files from Storage as fallback/verification
     const bucketName = 'media-library'
     const folderPath = businessUnitId
 
-    // First check if the bucket exists, create if not
-    const { data: buckets } = await supabase.storage.listBuckets()
-    const bucketExists = buckets?.some(b => b.name === bucketName)
-
-    if (!bucketExists) {
-      await supabase.storage.createBucket(bucketName, {
-        public: true,
-        fileSizeLimit: 52428800 // 50MB
-      })
-    }
-
-    const { data: files, error } = await supabase.storage
+    const { data: storageFiles } = await supabase.storage
       .from(bucketName)
       .list(folderPath, {
         limit: 100,
         sortBy: { column: 'created_at', order: 'desc' }
       })
 
-    if (error) {
-      console.error('Error listing files:', error)
-      return NextResponse.json({ error: 'Failed to list files' }, { status: 500 })
-    }
+    // 3. Merge results
+    // Map DB files to unified format
+    const dbMedia = (dbFiles || []).map(file => ({
+      id: file.id,
+      name: file.name,
+      size: file.file_size || 0,
+      type: file.mime_type || 'image/jpeg',
+      url: file.url,
+      createdAt: file.created_at,
+      updatedAt: file.updated_at,
+      description: file.description,
+      source: file.source_url || '',
+      width: file.width,
+      height: file.height,
+      category: file.category,
+      fromDb: true
+    }))
 
-    // Get public URLs for each file
-    const mediaFiles = (files || [])
-      .filter(file => file.name !== '.emptyFolderPlaceholder')
+    // Add storage files that aren't in the DB yet
+    const storageMedia = (storageFiles || [])
+      .filter(sf => sf.name !== '.emptyFolderPlaceholder')
+      .filter(sf => !dbMedia.some(dm => dm.name === sf.name || dm.url.includes(sf.name)))
       .map(file => {
         const { data: urlData } = supabase.storage
           .from(bucketName)
@@ -80,11 +94,12 @@ export async function GET(request: NextRequest) {
           url: urlData.publicUrl,
           createdAt: file.created_at,
           updatedAt: file.updated_at,
-          source: file.name.includes('__') ? file.name.split('__')[0].replace(/-/g, ' ') : (file.metadata?.source || '')
+          source: file.name.includes('__') ? file.name.split('__')[0].replace(/-/g, ' ') : (file.metadata?.source || ''),
+          fromDb: false
         }
       })
 
-    return NextResponse.json({ files: mediaFiles })
+    return NextResponse.json({ files: [...dbMedia, ...storageMedia] })
 
   } catch (err) {
     console.error('Media library GET error:', err)

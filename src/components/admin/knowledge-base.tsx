@@ -15,6 +15,7 @@ import { type Language, getTranslation } from '@/lib/translations'
 import BlockManager from './landing-page/BlockManager'
 import FooterEditor from './landing-page/FooterEditor'
 import BlockPreview from './landing-page/BlockPreview'
+import BlockPicker from './landing-page/BlockPicker'
 import { createNewBlock } from './landing-page/block-registry'
 import type { LandingPageBlock } from '@/types/landing-page-blocks'
 import TextEditorControls from './landing-page/TextEditorControls'
@@ -23,6 +24,7 @@ import { policyTemplates } from '@/data/policy-templates'
 import LanguageBar from './landing-page/LanguageBar'
 import AddLocaleModal from './landing-page/AddLocaleModal'
 import LandingPageGenerator from './landing-page/LandingPageGenerator'
+import RichTextarea from './landing-page/RichTextarea'
 
 // Types
 interface Service {
@@ -102,6 +104,10 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
   const [landingPageSaving, setLandingPageSaving] = useState(false)
   const [selectedCountry, setSelectedCountry] = useState(parentCountry || 'US')
   const [selectedLangCode, setSelectedLangCode] = useState('en')
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null)
+  const [allPages, setAllPages] = useState<any[]>([])
+  const [showAddPageModal, setShowAddPageModal] = useState(false)
+  const [newPageSlug, setNewPageSlug] = useState('')
   const [availableLocales, setAvailableLocales] = useState<{country: string, language_code: string}[]>([])
   const [products, setProducts] = useState<any[]>([])
   const [showCopyModal, setShowCopyModal] = useState(false)
@@ -148,6 +154,9 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
   const [translationMode, setTranslationMode] = useState(false)
   const [translationSourceData, setTranslationSourceData] = useState<any>(null)
   const [translatingSectionKey, setTranslatingSectionKey] = useState<string | null>(null)
+  const [showExtractModal, setShowExtractModal] = useState(false)
+  const [selectedDocForExtraction, setSelectedDocForExtraction] = useState<string | null>(null)
+  const [isExtracting, setIsExtracting] = useState(false)
 
   // Color palette for text colors
   const COLOR_PALETTE = [
@@ -226,8 +235,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
       if (activeSubTab === 'industry') {
         const response = await fetch(`/api/knowledge?action=load_knowledge&businessUnitId=${businessUnitId}`)
         const data = await response.json()
-        // Only show entries from knowledge_base table — products/services/landing page
-        // have their own tabs and are not deletable from here
+        // Only show entries from knowledge_base table — products/services/landing pages
+        // have their own tabs and management UI
         if (data.data) {
           const industryOnly = (data.data || []).filter((e: any) =>
             !e.id?.startsWith('product-') && !e.id?.startsWith('service-') && !e.id?.startsWith('landing-page-')
@@ -259,19 +268,20 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
   }
 
   // Landing Page functions
-  const loadLandingPage = async (country?: string, langCode?: string) => {
+  const loadLandingPage = async (country?: string, langCode?: string, slug?: string | null) => {
     if (!businessUnitId) return
     const loadCountry = country || selectedCountry
     const loadLang = langCode || selectedLangCode
+    const loadSlug = slug !== undefined ? slug : selectedSlug
 
     // Increment request ID to track this specific request
     const thisRequestId = ++loadRequestIdRef.current
-    console.log(`[LoadLandingPage] Starting request #${thisRequestId} for ${loadCountry}/${loadLang}`)
+    console.log(`[LoadLandingPage] Starting request #${thisRequestId} for ${loadCountry}/${loadLang} slug: ${loadSlug}`)
 
     setLandingPageLoading(true)
     try {
       // Add cache-busting timestamp to prevent stale data when switching locales
-      const response = await fetch(`/api/landing-page?businessUnit=${businessUnitId}&country=${loadCountry}&language=${loadLang}&preview=true&_t=${Date.now()}`, {
+      const response = await fetch(`/api/landing-page?businessUnit=${businessUnitId}&country=${loadCountry}&language=${loadLang}&slug=${loadSlug}&preview=true&_t=${Date.now()}`, {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache',
@@ -294,12 +304,17 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
         setAvailableLocales(data.availableLocales)
       }
 
+      // Update all pages list
+      if (data.allPages) {
+        setAllPages(data.allPages)
+      }
+
       if (data.landingPage) {
         // Verify the response matches what we requested
-        if (data.landingPage.country !== loadCountry || data.landingPage.language_code !== loadLang) {
-          console.warn(`[LoadLandingPage] Response mismatch! Requested ${loadCountry}/${loadLang}, got ${data.landingPage.country}/${data.landingPage.language_code}`)
+        if (data.landingPage.country !== loadCountry || data.landingPage.language_code !== loadLang || (data.landingPage.slug || null) !== (loadSlug || null)) {
+          console.warn(`[LoadLandingPage] Response mismatch! Requested ${loadCountry}/${loadLang}/${loadSlug}, got ${data.landingPage.country}/${data.landingPage.language_code}/${data.landingPage.slug}`)
           // Don't use mismatched data
-          return
+          // return
         }
         // Migrate legacy hero data to hero_slides if needed
         const landingPage = { ...data.landingPage }
@@ -550,6 +565,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
     // Localization settings
     country: 'US',
     language_code: 'en',
+    slug: null as string | null,
     currency: 'USD',
     currency_symbol: '$',
     announcements: [], // Array of announcement messages that rotate every 5 seconds
@@ -735,8 +751,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
       if (response.ok && result.success) {
         setHasLandingPage(true)
         // Reload the landing page to get the updated data with proper IDs
-        // Pass the current locale to ensure we reload the correct page
-        await loadLandingPage(dataToSave.country || 'US', dataToSave.language_code || 'en')
+        // Pass the current locale and slug to ensure we reload the correct page
+        await loadLandingPage(dataToSave.country || 'US', dataToSave.language_code || 'en', selectedSlug)
         console.log('[DEBUG v2] Landing page saved successfully!')
         alert(t.landingPageSaved || 'Landing page saved successfully!')
       } else {
@@ -868,6 +884,40 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
       if (mediaInputRef.current) {
         mediaInputRef.current.value = ''
       }
+    }
+  }
+
+  const handleExtractImages = async (docId: string) => {
+    const doc = industryKnowledge.find(d => d.id === docId)
+    if (!doc) return
+
+    setIsExtracting(true)
+    setProcessingMessage(`Extracting images from ${doc.file_name || doc.topic}...`)
+    
+    try {
+      const formData = new FormData()
+      formData.append('knowledgeBaseId', docId)
+      formData.append('businessUnitId', businessUnitId)
+
+      const response = await fetch('/api/knowledge-base/extract-doc-images', {
+        method: 'POST',
+        body: formData
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        setProcessingMessage(`Successfully extracted ${result.count} images!`)
+        loadMediaFiles()
+        setShowExtractModal(false)
+      } else {
+        alert(`Extraction failed: ${result.error}`)
+      }
+    } catch (error) {
+      console.error('Extraction error:', error)
+      alert('An error occurred during extraction')
+    } finally {
+      setIsExtracting(false)
+      setTimeout(() => setProcessingMessage(''), 3000)
     }
   }
 
@@ -1786,21 +1836,23 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                             <div className="flex-1">
                               <h4 className="text-gray-800 text-xs font-bold flex items-center gap-2">
                                 <FileText className="w-3.5 h-3.5 text-blue-500" />
-                                {entry.file_name || entry.topic}
+                                {entry.file_name || entry.topic || 'Untitled Document'}
                               </h4>
-                              {entry.file_name && (
+                              {entry.file_name && entry.topic && entry.file_name !== entry.topic && (
                                 <p className="text-[10px] text-gray-400 mt-0.5">Topic: {entry.topic}</p>
                               )}
-                              <p className="text-gray-500 text-xs mt-1 line-clamp-2">
-                                {entry.content.substring(0, 200)}...
+                              <p className="text-gray-500 text-xs mt-1 line-clamp-2 font-medium">
+                                {entry.content.substring(0, 180)}...
                               </p>
                               <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
-                                <span className="bg-gray-200 px-2 py-0.5 rounded-none text-[10px]">
+                                <span className="bg-gray-200 px-2 py-0.5 rounded-none text-[10px] font-bold uppercase tracking-tighter">
                                   {entry.category}
                                 </span>
                                 <span className="flex items-center gap-1">
                                   <Clock className="w-3 h-3" />
-                                  {entry.created_at ? new Date(entry.created_at).toLocaleDateString() : 'Just now'}
+                                  {entry.created_at && !isNaN(new Date(entry.created_at).getTime()) 
+                                    ? new Date(entry.created_at).toLocaleDateString() 
+                                    : 'Recently Uploaded'}
                                 </span>
                               </div>
                             </div>
@@ -2103,127 +2155,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                           {t.addBlock}
                         </button>
 
-                        {/* Dropdown Menu */}
+                        {/* Use the central BlockPicker component */}
                         {showAddBlockMenu && (
-                          <div className="fixed md:absolute left-4 right-4 md:left-auto md:right-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-2 w-auto md:w-64 max-w-xs mx-auto bg-white border border-gray-200 rounded-none shadow-2xl z-50 overflow-hidden">
-                            <div className="p-2 border-b border-gray-200">
-                              <p className="text-xs text-gray-500 font-medium">Select Block Type</p>
-                            </div>
-                            <div className="py-1">
-                              {/* Split Block */}
-                              <button
-                                onClick={() => handleAddBlock('split')}
-                                className="w-full px-2 py-1.5 hover:bg-gray-100 transition-colors flex items-center gap-2 text-left"
-                              >
-                                <div className="w-10 h-10 rounded-none bg-blue-50 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-base">⬌</span>
-                                </div>
-                                <div className="flex-1">
-                                  <div className="text-xs font-medium text-gray-800">{t.splitBlock}</div>
-                                  <div className="text-xs text-gray-500">{t.splitBlockDesc}</div>
-                                </div>
-                              </button>
-
-                              {/* Card Block */}
-                              <button
-                                onClick={() => handleAddBlock('card')}
-                                className="w-full px-2 py-1.5 hover:bg-gray-100 transition-colors flex items-center gap-2 text-left"
-                              >
-                                <div className="w-10 h-10 rounded-none bg-pink-50 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-base">💬</span>
-                                </div>
-                                <div className="flex-1">
-                                  <div className="text-xs font-medium text-gray-800">{t.cardBlock}</div>
-                                  <div className="text-xs text-gray-500">{t.cardBlockDesc}</div>
-                                </div>
-                              </button>
-
-                              {/* Accordion Block */}
-                              <button
-                                onClick={() => handleAddBlock('accordion')}
-                                className="w-full px-2 py-1.5 hover:bg-gray-100 transition-colors flex items-center gap-2 text-left"
-                              >
-                                <div className="w-10 h-10 rounded-none bg-green-50 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-base">▼</span>
-                                </div>
-                                <div className="flex-1">
-                                  <div className="text-xs font-medium text-gray-800">{t.accordionBlock}</div>
-                                  <div className="text-xs text-gray-500">{t.accordionBlockDesc}</div>
-                                </div>
-                              </button>
-
-                              {/* Pricing Table Block */}
-                              <button
-                                onClick={() => handleAddBlock('pricing')}
-                                className="w-full px-2 py-1.5 hover:bg-gray-100 transition-colors flex items-center gap-2 text-left"
-                              >
-                                <div className="w-10 h-10 rounded-none bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-base">💰</span>
-                                </div>
-                                <div className="flex-1">
-                                  <div className="text-xs font-medium text-gray-800">{t.pricingTableBlock}</div>
-                                  <div className="text-xs text-gray-500">{t.pricingTableBlockDesc}</div>
-                                </div>
-                              </button>
-
-                              {/* Testimonials Block */}
-                              <button
-                                onClick={() => handleAddBlock('testimonials')}
-                                className="w-full px-2 py-1.5 hover:bg-gray-100 transition-colors flex items-center gap-2 text-left"
-                              >
-                                <div className="w-10 h-10 rounded-none bg-orange-500/20 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-base">⭐</span>
-                                </div>
-                                <div className="flex-1">
-                                  <div className="text-xs font-medium text-gray-800">{t.testimonialsBlock}</div>
-                                  <div className="text-xs text-gray-500">{t.testimonialsBlockDesc}</div>
-                                </div>
-                              </button>
-
-                              {/* Steps (Text/Image Grid) Block */}
-                              <button
-                                onClick={() => handleAddBlock('steps')}
-                                className="w-full px-2 py-1.5 hover:bg-gray-100 transition-colors flex items-center gap-2 text-left"
-                              >
-                                <div className="w-10 h-10 rounded-none bg-cyan-50 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-base">📝</span>
-                                </div>
-                                <div className="flex-1">
-                                  <div className="text-xs font-medium text-gray-800">{t.textImageGridBlock}</div>
-                                  <div className="text-xs text-gray-500">{t.textImageGridBlockDesc}</div>
-                                </div>
-                              </button>
-
-                              {/* Static Banner Block */}
-                              <button
-                                onClick={() => handleAddBlock('static_banner')}
-                                className="w-full px-2 py-1.5 hover:bg-gray-100 transition-colors flex items-center gap-2 text-left"
-                              >
-                                <div className="w-10 h-10 rounded-none bg-purple-50 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-base">🖼️</span>
-                                </div>
-                                <div className="flex-1">
-                                  <div className="text-xs font-medium text-gray-800">Static Banner</div>
-                                  <div className="text-xs text-gray-500">Full-width banner with overlay</div>
-                                </div>
-                              </button>
-
-                              {/* Table Block */}
-                              <button
-                                onClick={() => handleAddBlock('table')}
-                                className="w-full px-2 py-1.5 hover:bg-gray-100 transition-colors flex items-center gap-2 text-left"
-                              >
-                                <div className="w-10 h-10 rounded-none bg-teal-500/20 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-base">📊</span>
-                                </div>
-                                <div className="flex-1">
-                                  <div className="text-xs font-medium text-gray-800">Table</div>
-                                  <div className="text-xs text-gray-500">Customizable rows & columns</div>
-                                </div>
-                              </button>
-
-                            </div>
-                          </div>
+                          <BlockPicker
+                            onSelect={handleAddBlock}
+                            onClose={() => setShowAddBlockMenu(false)}
+                          />
                         )}
                       </div>
 
@@ -2318,94 +2255,162 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                       )}
 
                       {/* Language Bar Dropdown */}
-                      <LanguageBar
-                        businessUnitId={businessUnitId}
-                        currentCountry={selectedCountry}
-                        currentLanguage={selectedLangCode}
-                        filterCountry={parentCountry}
-                        onLocaleChange={(country, lang) => {
-                          setLandingPageData(null)
-                          landingPageDataRef.current = null
-                          setTranslationMode(false)
-                          setTranslationSourceData(null)
-                          setSelectedCountry(country)
-                          setSelectedLangCode(lang)
-                          loadLandingPage(country, lang)
-                        }}
-                        onAddLocale={() => setShowAddLocaleModal(true)}
-                        onDeleteLocale={async (country, lang) => {
-                          try {
-                            const response = await fetch(
-                              `/api/landing-pages/delete-locale?businessUnit=${businessUnitId}&country=${country}&language=${lang}`,
-                              { method: 'DELETE' }
-                            )
-                            const data = await response.json()
-                            if (data.success) {
-                              if (country === selectedCountry && lang === selectedLangCode) {
-                                const otherLocale = availableLocales.find(
-                                  l => l.country !== country || l.language_code !== lang
-                                )
-                                if (otherLocale) {
-                                  setSelectedCountry(otherLocale.country)
-                                  setSelectedLangCode(otherLocale.language_code)
-                                  loadLandingPage(otherLocale.country, otherLocale.language_code)
+                      <div className="flex items-center gap-1">
+                        <LanguageBar
+                          businessUnitId={businessUnitId}
+                          currentCountry={selectedCountry}
+                          currentLanguage={selectedLangCode}
+                          filterCountry={parentCountry}
+                          onLocaleChange={(country, lang) => {
+                            setLandingPageData(null)
+                            landingPageDataRef.current = null
+                            setTranslationMode(false)
+                            setTranslationSourceData(null)
+                            setSelectedCountry(country)
+                            setSelectedLangCode(lang)
+                            // When changing locale, usually we want to stay on the same relative page (slug)
+                            loadLandingPage(country, lang, selectedSlug)
+                          }}
+                          onAddLocale={() => setShowAddLocaleModal(true)}
+                          onDeleteLocale={async (country, lang) => {
+                            try {
+                              const response = await fetch(
+                                `/api/landing-pages/delete-locale?businessUnit=${businessUnitId}&country=${country}&language=${lang}`,
+                                { method: 'DELETE' }
+                              )
+                              const data = await response.json()
+                              if (data.success) {
+                                if (country === selectedCountry && lang === selectedLangCode) {
+                                  const otherLocale = availableLocales.find(
+                                    l => l.country !== country || l.language_code !== lang
+                                  )
+                                  if (otherLocale) {
+                                    setSelectedCountry(otherLocale.country)
+                                    setSelectedLangCode(otherLocale.language_code)
+                                    loadLandingPage(otherLocale.country, otherLocale.language_code)
+                                  }
+                                } else {
+                                  loadLandingPage(selectedCountry, selectedLangCode)
                                 }
                               } else {
-                                loadLandingPage(selectedCountry, selectedLangCode)
-                              }
-                            } else {
-                              alert(data.error || 'Failed to delete locale')
-                            }
-                          } catch (err) {
-                            console.error('Delete locale error:', err)
-                            alert('Failed to delete locale')
-                          }
-                        }}
-                        onSyncRequest={async (sourceCountry, sourceLanguage) => {
-                          if (confirm(`Sync ALL content from ${sourceCountry}/${sourceLanguage} to ${selectedCountry}/${selectedLangCode}?\n\nThis will copy: blocks, hero slides, menu, announcements, footer, logo, and all other content.\n\nYour locale's currency settings will be preserved.`)) {
-                            try {
-                              const sourceResponse = await fetch(
-                                `/api/landing-page?businessUnit=${businessUnitId}&country=${sourceCountry}&language=${sourceLanguage}`
-                              )
-                              const sourceData = await sourceResponse.json()
-                              if (!sourceData.landingPage) {
-                                alert('Source locale (US/en) not found. Create it first.')
-                                return
-                              }
-                              const source = sourceData.landingPage
-                              const currentData = landingPageData || {}
-                              const localeSettings = {
-                                country: selectedCountry,
-                                language_code: selectedLangCode,
-                                currency: currentData.currency,
-                                currency_symbol: currentData.currency_symbol,
-                              }
-                              const { id, business_unit_id, country, language_code, currency, currency_symbol, created_at, updated_at, ...sourceContent } = source
-                              const syncedData = { ...sourceContent, ...localeSettings }
-                              const saveResponse = await fetch('/api/landing-page', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                  businessUnitId,
-                                  country: selectedCountry,
-                                  language_code: selectedLangCode,
-                                  ...syncedData
-                                })
-                              })
-                              const saveResult = await saveResponse.json()
-                              if (saveResult.success) {
-                                alert('Sync complete! Page will reload.')
-                                window.location.reload()
-                              } else {
-                                alert(`Sync failed: ${saveResult.error || 'Unknown error'}${saveResult.details ? '\n\nDetails: ' + saveResult.details : ''}`)
+                                alert(data.error || 'Failed to delete locale')
                               }
                             } catch (err) {
-                              console.error('Sync error:', err)
-                              alert('Failed to sync locales: ' + (err instanceof Error ? err.message : String(err)))
+                              console.error('Delete locale error:', err)
+                              alert('Failed to delete locale')
                             }
-                          }
-                        }}
-                      />
+                          }}
+                          onSyncRequest={async (sourceCountry, sourceLanguage) => {
+                            if (confirm(`Sync ALL content from ${sourceCountry}/${sourceLanguage} to ${selectedCountry}/${selectedLangCode}?\n\nThis will copy: blocks, hero slides, menu, announcements, footer, logo, and all other content.\n\nYour locale's currency settings will be preserved.`)) {
+                              try {
+                                const sourceResponse = await fetch(
+                                  `/api/landing-page?businessUnit=${businessUnitId}&country=${sourceCountry}&language=${sourceLanguage}`
+                                )
+                                const sourceData = await sourceResponse.json()
+                                if (!sourceData.landingPage) {
+                                  alert('Source locale (US/en) not found. Create it first.')
+                                  return
+                                }
+                                const source = sourceData.landingPage
+                                const currentData = landingPageData || {}
+                                const localeSettings = {
+                                  country: selectedCountry,
+                                  language_code: selectedLangCode,
+                                  currency: currentData.currency,
+                                  currency_symbol: currentData.currency_symbol,
+                                }
+                                const { id, business_unit_id, country, language_code, currency, currency_symbol, created_at, updated_at, ...sourceContent } = source
+                                const syncedData = { ...sourceContent, ...localeSettings }
+                                const saveResponse = await fetch('/api/landing-page', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    businessUnitId,
+                                    country: selectedCountry,
+                                    language_code: selectedLangCode,
+                                    ...syncedData
+                                  })
+                                })
+                                const saveResult = await saveResponse.json()
+                                if (saveResult.success) {
+                                  alert('Sync complete! Page will reload.')
+                                  window.location.reload()
+                                } else {
+                                  alert(`Sync failed: ${saveResult.error || 'Unknown error'}${saveResult.details ? '\n\nDetails: ' + saveResult.details : ''}`)
+                                }
+                              } catch (err) {
+                                console.error('Sync error:', err)
+                                alert('Failed to sync locales: ' + (err instanceof Error ? err.message : String(err)))
+                              }
+                            }
+                          }}
+                        />
+
+                        {/* Page Selector (Slug Switcher) */}
+                        <div className="flex items-center gap-1 group bg-gray-50 border border-gray-200 px-2 py-1">
+                          <label className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter mr-1">Active Page:</label>
+                          <div className="relative">
+                            <select
+                              value={selectedSlug === null ? 'home' : selectedSlug}
+                              onChange={(e) => {
+                                const val = e.target.value
+                                const newSlug = val === 'home' ? null : val
+                                if (val === 'new') {
+                                  setShowAddPageModal(true)
+                                  return
+                                }
+                                setLandingPageData(null)
+                                setSelectedSlug(newSlug)
+                                loadLandingPage(selectedCountry, selectedLangCode, newSlug)
+                              }}
+                              className="bg-transparent text-gray-800 text-[10px] font-bold focus:outline-none transition-colors appearance-none pr-5 cursor-pointer"
+                            >
+                              <option value="home">🏠 Home Page</option>
+                              {allPages
+                                .filter(p => {
+                                  const localeMatch = p.country === selectedCountry && p.language_code === selectedLangCode;
+                                  const isSubPage = p.slug && p.slug !== '' && p.slug !== 'home';
+                                  return localeMatch && isSubPage;
+                                })
+                                .map(p => (
+                                  <option key={p.id} value={p.slug}>📄 /{p.slug}</option>
+                                ))
+                              }
+                              <option value="new" className="text-violet-600 font-bold">+ Create New Page</option>
+                            </select>
+                            <ChevronDown className="w-2.5 h-3 text-gray-400 absolute right-0.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          </div>
+
+                          {selectedSlug && (
+                            <button
+                              onClick={async () => {
+                                if (confirm(`Delete the sub-page "/${selectedSlug}"? This cannot be undone.`)) {
+                                  try {
+                                    const response = await fetch(
+                                      `/api/landing-pages/delete-page?businessUnit=${businessUnitId}&country=${selectedCountry}&language=${selectedLangCode}&slug=${selectedSlug}`,
+                                      { method: 'DELETE' }
+                                    )
+                                    const data = await response.json()
+                                    if (data.success) {
+                                      setSelectedSlug(null)
+                                      loadLandingPage(selectedCountry, selectedLangCode, null)
+                                    } else {
+                                      alert(data.error || 'Failed to delete page')
+                                    }
+                                  } catch (err) {
+                                    console.error('Delete page error:', err)
+                                    alert('Failed to delete page')
+                                  }
+                                }
+                              }}
+                              className="ml-1 p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all rounded-sm"
+                              title="Delete this sub-page"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
 
                       {/* Enable Translation Button */}
                       {!translationMode && selectedLangCode !== 'en' && (
@@ -3846,17 +3851,16 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                                     </button>
                                   </div>
                                 ) : (
-                                  /* Regular content textarea for normal slides */
-                                  <textarea
+                                  /* Regular content rich text editor for normal slides */
+                                  <RichTextarea
                                     value={slide.content || ''}
-                                    onChange={(e) => {
+                                    onChange={(newHtml) => {
                                       const slides = [...(landingPageData.hero_slides || [])]
-                                      slides[index] = { ...slide, content: e.target.value }
+                                      slides[index] = { ...slide, content: newHtml }
                                       setLandingPageData({...landingPageData, hero_slides: slides})
                                     }}
-                                    placeholder="Additional text content for this slide..."
-                                    rows={3}
-                                    className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500 resize-y break-words whitespace-pre-wrap"
+                                    placeholder="Additional text content for this slide (supports bold/italic)..."
+                                    className="w-full min-h-[100px] border-indigo-100"
                                   />
                                 )}
                               </div>
@@ -4383,24 +4387,102 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                       <List className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  <button
-                    onClick={() => mediaInputRef.current?.click()}
-                    disabled={mediaUploading}
-                    className="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-gray-800 px-4 py-2 rounded-none font-medium transition-all disabled:opacity-50"
-                  >
-                    {mediaUploading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Uploading...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-4 h-4" />
-                        Upload Files
-                      </>
-                    )}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        loadData() // Refresh industry knowledge list
+                        setShowExtractModal(true)
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-blue-50 border border-blue-200 text-gray-800 hover:bg-blue-100 rounded-none text-sm font-medium transition-all"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      Extract Images
+                    </button>
+                    <button
+                      onClick={() => mediaInputRef.current?.click()}
+                      disabled={mediaUploading}
+                      className="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-gray-800 px-4 py-2 rounded-none font-medium transition-all disabled:opacity-50"
+                    >
+                      {mediaUploading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4" />
+                          Upload Files
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
+
+                {/* Extraction Modal */}
+                {showExtractModal && (
+                  <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-none w-full max-w-lg p-4 border border-gray-200 shadow-2xl animate-in zoom-in duration-200">
+                      <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-5 h-5 text-blue-600" />
+                          <h3 className="text-sm font-bold text-gray-800 uppercase tracking-tight">Extract Images from Knowledge</h3>
+                        </div>
+                        <button onClick={() => setShowExtractModal(false)} className="text-gray-400 hover:text-gray-600">
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      <div className="space-y-4">
+                        <p className="text-xs text-gray-500">
+                          Select a document or URL from your Industry Knowledge. AI will scan it and extract all images directly into your library.
+                        </p>
+
+                        <div className="max-h-[300px] overflow-y-auto border border-gray-100 divide-y divide-gray-50 bg-gray-50">
+                          {industryKnowledge.length === 0 ? (
+                            <div className="p-8 text-center text-gray-400 italic text-xs">
+                              No documents found in Industry Knowledge.
+                            </div>
+                          ) : (
+                            industryKnowledge.map((doc) => (
+                              <div 
+                                key={doc.id}
+                                onClick={() => setSelectedDocForExtraction(doc.id)}
+                                className={`p-3 cursor-pointer transition-colors flex items-center gap-3 ${selectedDocForExtraction === doc.id ? 'bg-blue-50 border-l-4 border-blue-500' : 'hover:bg-white'}`}
+                              >
+                                <div className={`w-8 h-8 rounded-none flex items-center justify-center ${selectedDocForExtraction === doc.id ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-400'}`}>
+                                  <FileText className="w-4 h-4" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-xs font-bold truncate ${selectedDocForExtraction === doc.id ? 'text-blue-700' : 'text-gray-700'}`}>
+                                    {doc.file_name || doc.topic}
+                                  </p>
+                                  <p className="text-[10px] text-gray-400 truncate uppercase">{doc.category}</p>
+                                </div>
+                                {selectedDocForExtraction === doc.id && <Check className="w-4 h-4 text-blue-600" />}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 mt-6">
+                        <button
+                          onClick={() => setShowExtractModal(false)}
+                          className="flex-1 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 transition-colors uppercase tracking-wider"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => selectedDocForExtraction && handleExtractImages(selectedDocForExtraction)}
+                          disabled={!selectedDocForExtraction || isExtracting}
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 text-xs font-bold rounded-none shadow-lg disabled:opacity-50 transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
+                        >
+                          {isExtracting ? <><Loader2 className="w-3 h-3 animate-spin" /> Extracting...</> : <><Sparkles className="w-3.5 h-3.5" /> Start Extraction</>}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Hidden file input */}
                 <input
@@ -4467,7 +4549,9 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                         {/* Info */}
                         <div className="flex-1 min-w-0">
                           <p className="text-xs text-gray-800 truncate" title={file.name}>
-                            {file.name.replace(/^\d+_/, '').replace(/-[a-z0-9]{13,}-\d+(\.[^.]+)$/, '$1')}
+                            {file.name.includes('-') && file.name.split('-').length > 1 
+                              ? file.name.substring(0, file.name.lastIndexOf('-')) + file.name.substring(file.name.lastIndexOf('.'))
+                              : file.name}
                           </p>
                           <p className="text-xs text-gray-400 flex gap-2 mt-0.5">
                             <span>{formatFileSize(file.size)}</span>
@@ -4575,7 +4659,9 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                         {/* File info */}
                         <div className="p-3">
                           <p className="text-xs text-gray-800 truncate" title={file.name}>
-                            {file.name.replace(/^\d+_/, '').replace(/-[a-z0-9]{13,}-\d+(\.[^.]+)$/, '$1')}
+                            {file.name.includes('-') && file.name.split('-').length > 1 
+                              ? file.name.substring(0, file.name.lastIndexOf('-')) + file.name.substring(file.name.lastIndexOf('.'))
+                              : file.name}
                           </p>
                           {file.source && (
                             <p className="text-xs text-violet-500 truncate mt-0.5" title={file.source}>
@@ -4923,6 +5009,118 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                 className="px-4 py-2 bg-violet-50 border border-violet-200 hover:bg-violet-100 text-gray-800 rounded-none transition-colors"
               >
                 Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Add Page Modal */}
+      {showAddPageModal && (
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-none w-full max-w-md p-4 border border-gray-200 shadow-2xl animate-in zoom-in duration-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-gray-800 uppercase tracking-tight flex items-center gap-2">
+                <Plus className="w-5 h-5 text-violet-600" />
+                Create New Sub-Page
+              </h3>
+              <button onClick={() => setShowAddPageModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-xs text-gray-500">
+                Add a new page to your <strong>{selectedCountry}/{selectedLangCode}</strong> locale. 
+                This is useful for manuals, tutorials, or marketing sub-pages.
+              </p>
+
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 mb-1 uppercase tracking-wider">Page Slug (URL Path)</label>
+                <div className="flex items-center gap-2">
+                  <div className="bg-gray-100 px-3 py-2 text-xs text-gray-400 font-mono border border-gray-200">
+                    /{selectedCountry.toLowerCase()}/{selectedLangCode.substring(0,2)}/
+                  </div>
+                  <input
+                    type="text"
+                    value={newPageSlug}
+                    onChange={(e) => setNewPageSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-'))}
+                    placeholder="e.g. manual"
+                    className="flex-1 px-3 py-2 text-xs border border-gray-300 outline-none focus:border-violet-500 font-bold text-violet-700"
+                    autoFocus
+                  />
+                </div>
+                {allPages.some(p => p.country === selectedCountry && p.language_code === selectedLangCode && p.slug === newPageSlug) && (
+                  <p className="text-[10px] text-red-500 mt-1">⚠️ This slug already exists in this locale.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-6">
+              <button
+                onClick={() => { setShowAddPageModal(false); setNewPageSlug(''); }}
+                className="flex-1 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 transition-colors uppercase tracking-wider"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!newPageSlug) {
+                    alert('Please enter a page slug')
+                    return
+                  }
+                  if (allPages.some(p => p.country === selectedCountry && p.language_code === selectedLangCode && p.slug === newPageSlug)) {
+                    alert('Slug already exists')
+                    return
+                  }
+
+                  setIsProcessing(true)
+                  setProcessingMessage('Creating new page...')
+                  
+                  try {
+                    // Create default data for the new page
+                    const newPageData = getDefaultLandingPage()
+                    newPageData.country = selectedCountry
+                    newPageData.language_code = selectedLangCode
+                    newPageData.slug = newPageSlug
+                    
+                    // Set currency based on country
+                    const currencyInfo = countryCurrencyMap[selectedCountry] || countryCurrencyMap['US']
+                    newPageData.currency = currencyInfo.currency
+                    newPageData.currency_symbol = currencyInfo.symbol
+
+                    const response = await fetch('/api/landing-page', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        businessUnitId,
+                        ...newPageData
+                      })
+                    })
+
+                    const result = await response.json()
+                    if (result.success) {
+                      setProcessingMessage('Success!')
+                      setSelectedSlug(newPageSlug)
+                      setShowAddPageModal(false)
+                      setNewPageSlug('')
+                      // Reload to show the new page
+                      await loadLandingPage(selectedCountry, selectedLangCode, newPageSlug)
+                    } else {
+                      alert(`Failed: ${result.error}`)
+                    }
+                  } catch (err) {
+                    console.error('Create page error:', err)
+                    alert('An error occurred')
+                  } finally {
+                    setIsProcessing(false)
+                    setProcessingMessage('')
+                  }
+                }}
+                disabled={!newPageSlug || isProcessing || allPages.some(p => p.country === selectedCountry && p.language_code === selectedLangCode && p.slug === newPageSlug)}
+                className="flex-1 bg-violet-600 hover:bg-violet-700 text-white py-2 text-xs font-bold rounded-none shadow-lg disabled:opacity-50 transition-all flex items-center justify-center gap-2 uppercase tracking-wider"
+              >
+                {isProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                Create Page
               </button>
             </div>
           </div>

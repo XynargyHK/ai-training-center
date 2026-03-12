@@ -7,6 +7,12 @@ import StepsBlockSSR from './blocks/StepsBlockSSR'
 import PricingBlock from './blocks/PricingBlock'
 import StaticBannerBlockSSR from './blocks/StaticBannerBlockSSR'
 import TableBlockSSR from './blocks/TableBlockSSR'
+import FormBlock from './blocks/FormBlock'
+import VideoBlock from './blocks/VideoBlock'
+import SocialFeedBlock from './blocks/SocialFeedBlock'
+import LogoCloudBlock from './blocks/LogoCloudBlock'
+import ImageGridBlock from './blocks/ImageGridBlock'
+import StatsGridBlock from './blocks/StatsGridBlock'
 
 function toAnchorSlug(name: string | undefined): string | undefined {
   if (!name) return undefined
@@ -63,6 +69,24 @@ export default function BlockRendererSSR({ blocks, onAddToCart, language, countr
 
           case 'table':
             return <TableBlockSSR key={block.id} anchorId={anchorId} data={block.data as any} heading={block.name} />
+
+          case 'form':
+            return <FormBlock key={block.id} block={block} />
+
+          case 'video':
+            return <VideoBlock key={block.id} anchorId={anchorId} block={block} />
+
+          case 'social_feed':
+            return <SocialFeedBlock key={block.id} anchorId={anchorId} block={block} />
+
+          case 'logo_cloud':
+            return <LogoCloudBlock key={block.id} anchorId={anchorId} block={block} />
+
+          case 'image_grid':
+            return <ImageGridBlock key={block.id} anchorId={anchorId} block={block} />
+
+          case 'stats_grid':
+            return <StatsGridBlock key={block.id} anchorId={anchorId} block={block} />
 
           default:
             return null

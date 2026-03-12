@@ -18,6 +18,8 @@ interface AccordionItem {
   content_color?: string
   content_bold?: boolean
   content_italic?: boolean
+  image_url?: string
+  image_position?: 'above' | 'below'
 }
 
 interface AccordionBlockData {
@@ -118,6 +120,9 @@ export default function AccordionBlock({ data, heading = '', anchorId, country }
 
               {expandedIndex === index && (
                 <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                  {item.image_url && (item.image_position === 'above' || !item.image_position) && (
+                    <img src={item.image_url} alt={item.title} className="w-full max-w-lg mx-auto mb-4 rounded shadow-sm border border-gray-100" />
+                  )}
                   <p
                     className={`font-light leading-relaxed whitespace-pre-wrap ${getFontClass(item.content_font_family || 'Cormorant Garamond')}`}
                     style={{
@@ -129,6 +134,9 @@ export default function AccordionBlock({ data, heading = '', anchorId, country }
                   >
                     {item.content}
                   </p>
+                  {item.image_url && item.image_position === 'below' && (
+                    <img src={item.image_url} alt={item.title} className="w-full max-w-lg mx-auto mt-4 rounded shadow-sm border border-gray-100" />
+                  )}
                 </div>
               )}
             </div>

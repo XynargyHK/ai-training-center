@@ -33,7 +33,8 @@ export interface LandingPageResult {
 export const fetchLandingPageData = cache(async (
   businessUnitSlug: string,
   country: string,
-  languageCode: string
+  languageCode: string,
+  slug: string | null = null
 ): Promise<LandingPageResult> => {
   const businessUnitId = await resolveBusinessUnitId(businessUnitSlug)
 
@@ -55,8 +56,9 @@ export const fetchLandingPageData = cache(async (
       .eq('business_unit_id', businessUnitId)
       .eq('country', country)
       .eq('language_code', languageCode)
+      .eq('slug', slug)
       .eq('is_active', true)
-      .single(),
+      .maybeSingle(),
     supabase
       .from('business_units')
       .select('id, name, slug')

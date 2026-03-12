@@ -34,6 +34,9 @@ export async function GET(request: NextRequest) {
     // Accept both 'lang' and 'language' parameters
     const languageCode = searchParams.get('lang') || searchParams.get('language') || 'en'
     const isPreview = searchParams.get('preview') === 'true'
+    // Support both 'slug' and 'page' parameters
+    let slug = searchParams.get('slug') || searchParams.get('page')
+    if (slug === 'null' || slug === 'undefined') slug = null
 
     if (!businessUnitParam) {
       return NextResponse.json({ error: 'businessUnit parameter required' }, { status: 400 })
@@ -46,16 +49,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Run all queries in PARALLEL for faster response
-    const [landingPageResult, businessUnitResult, availableLocalesResult] = await Promise.all([
-      // Fetch the landing page for this business unit + country + language
+    const [landingPageResult, businessUnitResult, availableLocalesResult, allPagesResult] = await Promise.all([
+      // Fetch the landing page for this business unit + country + language + slug
       supabase
         .from('landing_pages')
         .select('*')
         .eq('business_unit_id', businessUnitId)
         .eq('country', country)
         .eq('language_code', languageCode)
+        .eq('slug', slug)
         .eq('is_active', true)
-        .single(),
+        .maybeSingle(),
       // Fetch business unit info
       supabase
         .from('business_units')
@@ -67,12 +71,19 @@ export async function GET(request: NextRequest) {
         .from('landing_pages')
         .select('country, language_code')
         .eq('business_unit_id', businessUnitId)
+        .eq('is_active', true),
+      // Fetch all pages for this business unit to allow selection
+      supabase
+        .from('landing_pages')
+        .select('id, slug, country, language_code')
+        .eq('business_unit_id', businessUnitId)
         .eq('is_active', true)
     ])
 
     const { data: landingPage, error } = landingPageResult
     const { data: businessUnit } = businessUnitResult
     const { data: availableLocales } = availableLocalesResult
+    const { data: allPages } = allPagesResult
 
     if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
       console.error('Error fetching landing page:', error)
@@ -93,13 +104,14 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log('[LandingPage API GET] isPreview:', isPreview, 'Has footer:', !!resolvedPage?.footer, 'Footer policy_content keys:', resolvedPage?.footer?.policy_content ? Object.keys(resolvedPage.footer.policy_content) : 'none')
+    console.log('[LandingPage API GET] isPreview:', isPreview, 'Slug:', slug, 'Has footer:', !!resolvedPage?.footer)
 
     return NextResponse.json({
       landingPage: resolvedPage || null,
       businessUnit,
       hasLandingPage: !!resolvedPage,
       availableLocales: availableLocales || [],
+      allPages: allPages || [],
       currentLocale: { country, language: languageCode },
       isPreview
     })
@@ -142,7 +154,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Business unit not found' }, { status: 404 })
     }
 
-    // Check if landing page exists for this business unit + country + language
+    // Check if landing page exists for this business unit + country + language + slug
     // Use maybeSingle() to avoid error when no rows found
     const { data: existing, error: existingError } = await supabase
       .from('landing_pages')
@@ -150,6 +162,7 @@ export async function POST(request: NextRequest) {
       .eq('business_unit_id', resolvedBusinessUnitId)
       .eq('country', country)
       .eq('language_code', languageCode)
+      .eq('slug', landingPageData.slug)
       .maybeSingle()
 
     if (existingError) {
@@ -190,6 +203,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         error: 'Failed to save landing page',
         details: result.error.message,
+        hint: result.error.hint,
         code: result.error.code
       }, { status: 500 })
     }

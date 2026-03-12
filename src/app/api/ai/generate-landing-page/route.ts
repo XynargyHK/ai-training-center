@@ -9,7 +9,7 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 async function resolveBusinessUnitId(param: string): Promise<string | null> {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
   if (uuidRegex.test(param)) return param
   const { data } = await supabase.from('business_units').select('id').eq('slug', param).single()
   return data?.id || null
@@ -64,7 +64,15 @@ const LANGUAGE_NAMES: Record<string, string> = {
 
 export async function POST(request: NextRequest) {
   try {
-    const { businessUnitId, country, languageCode } = await request.json()
+    const { 
+      businessUnitId, 
+      country, 
+      languageCode,
+      sourceType,
+      sources,
+      customInstructions,
+      existingSections
+    } = await request.json()
 
     if (!businessUnitId) {
       return NextResponse.json({ error: 'businessUnitId required' }, { status: 400 })
@@ -75,147 +83,156 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Business unit not found' }, { status: 404 })
     }
 
-    // Load industry knowledge
-    const { data: knowledgeRows } = await supabase
-      .from('knowledge_base')
-      .select('topic, content, category')
-      .eq('business_unit_id', resolvedId)
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .limit(20)
+    let sourceContent = ''
 
-    if (!knowledgeRows || knowledgeRows.length === 0) {
-      return NextResponse.json({ error: 'No industry knowledge found. Please add knowledge first.' }, { status: 400 })
+    if (sourceType === 'multi' && sources && Array.isArray(sources)) {
+      const contents = await Promise.all(sources.map(async (src: any) => {
+        if (src.type === 'document') {
+          const { data: doc } = await supabase
+            .from('knowledge_base')
+            .select('topic, content')
+            .eq('id', src.id)
+            .single()
+          return doc ? `DOCUMENT [${doc.topic}]:\n${doc.content}` : ''
+        } else {
+          const { data: scraped } = await supabase
+            .from('knowledge_base')
+            .select('content')
+            .eq('file_path', src.value)
+            .maybeSingle()
+          return scraped ? `URL [${src.value}]:\n${scraped.content}` : `URL [${src.value}]: (Analyze public presence)`
+        }
+      }))
+      sourceContent = contents.filter(Boolean).join('\n\n---\n\n')
+    } else {
+      const { data: knowledgeRows } = await supabase
+        .from('knowledge_base')
+        .select('topic, content, category')
+        .eq('business_unit_id', resolvedId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(20)
+
+      if (knowledgeRows && knowledgeRows.length > 0) {
+        sourceContent = knowledgeRows
+          .map(k => `[${k.category}] ${k.topic}:\n${k.content}`)
+          .join('\n\n---\n\n')
+      }
     }
 
-    const knowledgeSummary = knowledgeRows
-      .map(k => `[${k.category}] ${k.topic}:\n${k.content}`)
-      .join('\n\n---\n\n')
-      .slice(0, 8000)
+    if (!sourceContent) {
+      return NextResponse.json({ error: 'No source content found. Please add knowledge first.' }, { status: 400 })
+    }
 
     const lang = languageCode || 'en'
     const langName = LANGUAGE_NAMES[lang] || 'English'
 
-    const prompt = `You are an expert landing page copywriter. Based on the following business knowledge, generate compelling landing page content in ${langName}.
+    // 1. Fetch relevant images from the media library to provide as context
+    let availableImages: any[] = []
+    try {
+      const { data: images } = await supabase
+        .from('image_library')
+        .select('name, url, description')
+        .eq('business_unit_id', resolvedId)
+        .limit(30)
+      availableImages = images || []
+    } catch (err) {
+      console.error('Error fetching images for context:', err)
+    }
 
-BUSINESS KNOWLEDGE:
-${knowledgeSummary}
+    const imageContext = availableImages.length > 0 
+      ? `\nAVAILABLE IMAGES IN MEDIA LIBRARY:\n${availableImages.map(img => `- "${img.name}": ${img.description || 'No description'} (URL: ${img.url})`).join('\n')}`
+      : ''
 
-Generate a complete landing page content structure with 2 variations for each section. Output ONLY valid JSON in this exact format:
+    let contextPrompt = ''
+    if (existingSections) {
+      contextPrompt = `
+CURRENT DRAFT:
+${JSON.stringify(existingSections, null, 2)}
 
+You are refining this draft. Keep the sections the user likes, but apply the changes requested in the custom instructions below.
+`
+    }
+
+    const prompt = `You are an expert B2B landing page designer. Generate a tutorial-focused landing page for BrezCode, a system where beauticians help customers perform a 45-minute Quick Test using a tablet in a physical salon.
+
+${contextPrompt}
+SOURCE CONTENT (B2B Manual):
+${sourceContent.slice(0, 10000)}
+${imageContext}
+
+USER CUSTOM INSTRUCTIONS:
+${customInstructions || "Reconstruct the B2B tutorial: Step 1 Add Client, Step 2 Pair Device, Step 3 Wear Sensors, Step 4 Upload. Use an interactive accordion where each step is a title, and clicking it opens the instruction and matching image."}
+
+Output MUST be a single, valid JSON object.
+
+AVAILABLE BLOCKS & THEIR SCHEMAS:
+- 'split': { "type": "split", "headline": "...", "subheadline": "...", "content": "...", "button_text": "...", "layout": "image-right" | "image-left", "background_url": "URL from Available Images" }
+- 'steps': { "type": "steps", "heading": "...", "subheading": "...", "steps": [ { "title": "...", "text_content": "...", "background_url": "URL from Available Images" } ] }
+- 'form': { "type": "form", "headline": "...", "subheadline": "...", "cta_text": "...", "fields": [ { "label": "...", "placeholder": "...", "type": "text"|"email"|"tel"|"textarea", "required": true } ] }
+- 'accordion': { "type": "accordion", "headline": "...", "items": [ { "title": "...", "content": "...", "image_url": "URL from Available Images" } ] }
+
+BLOCK MAPPING RULES:
+1. For the interactive "Press to Open" tutorial, use the 'accordion' block. Each item should be a "STEP".
+2. If the user wants a static visual flow, use 'steps'.
+3. Always match images from the 'AVAILABLE IMAGES' list.
+
+STRUCTURE:
 {
-  "problem": [
-    {
-      "heading": "Section heading (e.g. 'Are You Struggling With...')",
-      "steps": [
-        { "title": "Pain point title", "text_content": "1-2 sentence description of this pain point" },
-        { "title": "Pain point title", "text_content": "1-2 sentence description" },
-        { "title": "Pain point title", "text_content": "1-2 sentence description" }
-      ]
-    },
-    {
-      "heading": "Alternative section heading",
-      "steps": [
-        { "title": "Pain point title", "text_content": "Description" },
-        { "title": "Pain point title", "text_content": "Description" },
-        { "title": "Pain point title", "text_content": "Description" }
-      ]
-    }
-  ],
-  "solution": [
-    {
-      "heading": "Section heading (e.g. 'Introducing Our Solution')",
-      "steps": [
-        { "title": "Benefit title", "text_content": "How this solves the problem" },
-        { "title": "Benefit title", "text_content": "Description" },
-        { "title": "Benefit title", "text_content": "Description" }
-      ]
-    },
-    {
-      "heading": "Alternative heading",
-      "steps": [
-        { "title": "Benefit title", "text_content": "Description" },
-        { "title": "Benefit title", "text_content": "Description" },
-        { "title": "Benefit title", "text_content": "Description" }
-      ]
-    }
-  ],
-  "howItWorks": [
-    {
-      "heading": "Section heading (e.g. 'How It Works')",
-      "steps": [
-        { "title": "Step 1 title", "text_content": "What happens in this step" },
-        { "title": "Step 2 title", "text_content": "What happens in this step" },
-        { "title": "Step 3 title", "text_content": "What happens in this step" }
-      ]
-    },
-    {
-      "heading": "Alternative heading",
-      "steps": [
-        { "title": "Step 1 title", "text_content": "Description" },
-        { "title": "Step 2 title", "text_content": "Description" },
-        { "title": "Step 3 title", "text_content": "Description" }
-      ]
-    }
-  ],
-  "faq": [
-    {
-      "heading": "Frequently Asked Questions",
-      "items": [
-        { "title": "Question?", "content": "Answer to the question." },
-        { "title": "Question?", "content": "Answer." },
-        { "title": "Question?", "content": "Answer." },
-        { "title": "Question?", "content": "Answer." },
-        { "title": "Question?", "content": "Answer." }
-      ]
-    },
-    {
-      "heading": "Alternative FAQ heading",
-      "items": [
-        { "title": "Question?", "content": "Answer." },
-        { "title": "Question?", "content": "Answer." },
-        { "title": "Question?", "content": "Answer." },
-        { "title": "Question?", "content": "Answer." },
-        { "title": "Question?", "content": "Answer." }
-      ]
-    }
-  ],
-  "cta": [
-    {
-      "headline": "Strong call-to-action headline",
-      "subheadline": "Supporting text that encourages action",
-      "cta_text": "Button text (e.g. GET STARTED)"
-    },
-    {
-      "headline": "Alternative CTA headline",
-      "subheadline": "Alternative supporting text",
-      "cta_text": "Alternative button text"
-    }
-  ]
+  "sections": {
+    "intro": [ 2 options of type split or static_banner ],
+    "main_content": [ 2 options of type accordion or steps ],
+    "social_proof": [ 2 options of type testimonials or logo_cloud ],
+    "interaction": [ 2 options of type form or pricing ],
+    "faq": [ 2 options of type accordion ]
+  }
 }
 
-Rules:
-- Write in ${langName}
-- Be specific to this business, not generic
-- Keep text concise and persuasive
-- Use the knowledge provided to create accurate, relevant content`
+IMPORTANT:
+1. Every field MUST be a string or array.
+2. Ensure ALL labels and text are in ${langName}.
+3. If refining, strictly prioritize the user's improvisations.
+4. NO trailing commas.`
 
-    const rawResponse = await callLLM(prompt)
-
-    // Parse JSON - handle both pure JSON and markdown code blocks
-    let sections
-    try {
-      const jsonMatch = rawResponse.match(/```(?:json)?\s*([\s\S]*?)```/)
-      const jsonStr = jsonMatch ? jsonMatch[1] : rawResponse
-      sections = JSON.parse(jsonStr)
-    } catch {
-      return NextResponse.json({ error: 'Failed to parse AI response. Please try again.' }, { status: 500 })
+    // Use JSON mode for Gemini if configured
+    const llmConfig = getLLMConfig()
+    let rawResponse = ''
+    
+    if (llmConfig.provider === 'google') {
+      const genAI = new GoogleGenerativeAI(llmConfig.googleKey!)
+      const model = genAI.getGenerativeModel({ 
+        model: llmConfig.model,
+        generationConfig: { responseMimeType: "application/json" }
+      })
+      const result = await model.generateContent(prompt)
+      rawResponse = result.response.text().trim()
+    } else {
+      rawResponse = await callLLM(prompt)
     }
 
-    return NextResponse.json({ sections })
+    let parsed
+    try {
+      // Find the first { and last } to isolate the JSON block
+      const startIdx = rawResponse.indexOf('{')
+      const endIdx = rawResponse.lastIndexOf('}')
+      
+      if (startIdx === -1 || endIdx === -1) {
+        throw new Error('No JSON object found in AI response')
+      }
+      
+      const jsonStr = rawResponse.substring(startIdx, endIdx + 1)
+      parsed = JSON.parse(jsonStr)
+    } catch (parseError: any) {
+      console.error('❌ AI JSON Parse Error:', parseError)
+      console.error('📋 Raw Response:', rawResponse)
+      return NextResponse.json({ error: `Failed to parse AI response: ${parseError.message}` }, { status: 500 })
+    }
 
-  } catch (err) {
+    const finalSections = parsed.sections || parsed
+    return NextResponse.json({ sections: finalSections })
+
+  } catch (err: any) {
     console.error('Generate landing page error:', err)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 })
   }
 }

@@ -60,7 +60,7 @@ const COLOR_PALETTE = [
 ]
 
 export default function TextEditorControls({
-  label,
+  label = 'Text',
   value,
   onChange,
   textAlign = 'center',
@@ -80,30 +80,31 @@ export default function TextEditorControls({
   rows = 3,
   hideTextInput = false
 }: TextEditorControlsProps) {
+  const safeLabel = label || 'Text'
   const [showSizeMenu, setShowSizeMenu] = useState(false)
   const [showFontMenu, setShowFontMenu] = useState(false)
   const [showColorPicker, setShowColorPicker] = useState(false)
 
   // Determine which font sizes to use based on label
-  const fontSizes = label.toLowerCase().includes('headline')
+  const fontSizes = safeLabel.toLowerCase().includes('headline')
     ? FONT_SIZES.headline
-    : label.toLowerCase().includes('subheadline')
+    : safeLabel.toLowerCase().includes('subheadline')
     ? FONT_SIZES.subheadline
     : FONT_SIZES.content
 
   // Parse current font size to pixels
   const currentFontSizePx = fontSize
     ? Math.round(parseFloat(fontSize) * (fontSize.includes('rem') ? 16 : 1))
-    : label.toLowerCase().includes('headline')
+    : safeLabel.toLowerCase().includes('headline')
     ? 60
-    : label.toLowerCase().includes('subheadline')
+    : safeLabel.toLowerCase().includes('subheadline')
     ? 20
     : 18
 
   return (
     <div>
       <div className="flex flex-wrap items-center gap-2 mb-1">
-        <label className="text-xs text-gray-500">{label}</label>
+        <label className="text-xs text-gray-500">{safeLabel}</label>
 
         {/* Alignment Controls */}
         {onTextAlignChange && (

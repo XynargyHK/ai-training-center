@@ -92,9 +92,16 @@ export async function processImageIngestion(opts: {
     }
 
     // 2. UPLOAD TO SUPABASE STORAGE
-    const cleanName = analysis.name.toLowerCase().replace(/[^a-z0-9]/g, '-')
-    const finalFileName = `${cleanName}-${Date.now()}.${mimeType.split('/')[1]}`
-    const storagePath = `${businessUnitId}/library/${finalFileName}`
+    const cleanName = analysis.name.toLowerCase()
+      .replace(/[^a-z0-9]/g, '-')
+      .split('-')
+      .filter(Boolean)
+      .slice(0, 3) // Strictly 3 words max
+      .join('-')
+    
+    const shortId = Math.random().toString(36).substring(2, 8)
+    const finalFileName = `${cleanName}-${shortId}.${mimeType.split('/')[1]}`
+    const storagePath = `${businessUnitId}/${finalFileName}`
 
     const { error: uploadErr } = await supabase.storage
       .from('media-library')
@@ -121,7 +128,9 @@ export async function processImageIngestion(opts: {
         category: analysis.category,
         embedding: embedding,
         mime_type: mimeType,
-        file_size: buffer.length
+        file_size: buffer.length,
+        width: getImageDimensions(buffer, mimeType).width,
+        height: getImageDimensions(buffer, mimeType).height
       })
       .select()
       .single()
@@ -134,6 +143,31 @@ export async function processImageIngestion(opts: {
     console.error(`❌ Image Ingestion Error (${fileName}):`, error)
     return null
   }
+}
+
+/**
+ * Simple helper to extract image dimensions from common buffer formats
+ */
+function getImageDimensions(buffer: Buffer, mimeType: string): { width: number; height: number } {
+  try {
+    if (mimeType === 'image/jpeg') {
+      let i = 2 // Skip SOI
+      while (i < buffer.length) {
+        if (buffer[i] !== 0xFF) break
+        const marker = buffer[i + 1]
+        const length = buffer.readUInt16BE(i + 2)
+        if (marker >= 0xC0 && marker <= 0xC3) { // SOF0 - SOF3
+          return { height: buffer.readUInt16BE(i + 5), width: buffer.readUInt16BE(i + 7) }
+        }
+        i += 2 + length
+      }
+    } else if (mimeType === 'image/png') {
+      return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) }
+    }
+  } catch (e) {
+    console.warn('Could not parse image dimensions')
+  }
+  return { width: 0, height: 0 }
 }
 
 /**

@@ -117,22 +117,53 @@ async function generateImageName(imageBuffer: Buffer, mimeType: string): Promise
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
-    const file = formData.get('file') as File
+    let file = formData.get('file') as File | null
+    const knowledgeBaseId = formData.get('knowledgeBaseId') as string | null
     const businessUnitId = (formData.get('businessUnitId') as string) || 'default'
 
-    if (!file) {
-      return NextResponse.json({ success: false, error: 'No file provided' }, { status: 400 })
-    }
+    let buffer: Buffer
+    let fileName: string
+    let fileType: string
 
-    const buffer = Buffer.from(await file.arrayBuffer())
-    const fileName = file.name.toLowerCase()
+    if (knowledgeBaseId) {
+      // Fetch from database
+      const { data: kbEntry, error: kbError } = await supabase
+        .from('knowledge_base')
+        .select('*')
+        .eq('id', knowledgeBaseId)
+        .single()
+
+      if (kbError || !kbEntry) {
+        return NextResponse.json({ success: false, error: 'Knowledge base entry not found' }, { status: 404 })
+      }
+
+      fileName = kbEntry.file_name || kbEntry.topic || 'document'
+      fileType = fileName.endsWith('.pdf') ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+
+      // Try to read from local knowledgebase directory
+      const fs = require('fs')
+      const path = require('path')
+      const localPath = path.join(process.cwd(), 'knowledgebase', kbEntry.file_path || fileName)
+      
+      if (fs.existsSync(localPath)) {
+        buffer = fs.readFileSync(localPath)
+      } else {
+        return NextResponse.json({ success: false, error: `File not found on server at ${localPath}` }, { status: 404 })
+      }
+    } else if (file) {
+      buffer = Buffer.from(await file.arrayBuffer())
+      fileName = file.name.toLowerCase()
+      fileType = file.type
+    } else {
+      return NextResponse.json({ success: false, error: 'No file or knowledgeBaseId provided' }, { status: 400 })
+    }
 
     // Extract raw images based on file type
     let rawImages: { data: Buffer; mimeType: string; ext: string }[] = []
 
-    if (fileName.endsWith('.docx') || file.type.includes('wordprocessingml')) {
+    if (fileName.endsWith('.docx') || fileType.includes('wordprocessingml')) {
       rawImages = await extractImagesFromDocx(buffer)
-    } else if (fileName.endsWith('.pdf') || file.type === 'application/pdf') {
+    } else if (fileName.endsWith('.pdf') || fileType === 'application/pdf') {
       const jpegs = extractJpegsFromBuffer(buffer).map(data => ({ data, mimeType: 'image/jpeg', ext: 'jpg' }))
       const pngs = extractPngsFromBuffer(buffer).map(data => ({ data, mimeType: 'image/png', ext: 'png' }))
       rawImages = [...jpegs, ...pngs]
@@ -158,6 +189,9 @@ export async function POST(request: NextRequest) {
     const savedImages: { name: string; url: string }[] = []
     const batchSize = 2
 
+    // Use a clean source name (no extension)
+    const sourceLabel = fileName.replace(/\.[^.]+$/, '').substring(0, 20)
+
     for (let i = 0; i < rawImages.length; i += batchSize) {
       const batch = rawImages.slice(i, i + batchSize)
       const results = await Promise.allSettled(
@@ -166,8 +200,8 @@ export async function POST(request: NextRequest) {
           const dbRecord = await processImageIngestion({
             buffer: img.data,
             mimeType: img.mimeType,
-            fileName: `${fileName}-extracted`,
-            sourceUrl: fileName,
+            fileName: `ext-${i}`, // Short prefix
+            sourceUrl: sourceLabel,
             businessUnitId: businessUnitId
           })
 
