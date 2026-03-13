@@ -37,9 +37,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all landing pages for this business unit
+    // We only want unique country/language pairs for the language switcher
     const { data: locales, error } = await supabase
       .from('landing_pages')
-      .select('id, country, language_code, slug, is_active, updated_at')
+      .select('country, language_code, is_active')
       .eq('business_unit_id', businessUnitId)
       .order('country', { ascending: true })
       .order('language_code', { ascending: true })
@@ -49,9 +50,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch locales' }, { status: 500 })
     }
 
+    // Filter to unique locales (country + language_code)
+    const uniqueLocales = locales?.reduce((acc: any[], current) => {
+      const exists = acc.find(l => l.country === current.country && l.language_code === current.language_code)
+      if (!exists) {
+        acc.push(current)
+      }
+      return acc
+    }, [])
+
     return NextResponse.json({
       success: true,
-      locales: locales || []
+      locales: uniqueLocales || []
     })
 
   } catch (err) {

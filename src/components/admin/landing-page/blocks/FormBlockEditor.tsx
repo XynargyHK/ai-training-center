@@ -3,6 +3,7 @@
 import React from 'react'
 import type { LandingPageBlock } from '@/types/landing-page-blocks'
 import TextEditorControls from '../TextEditorControls'
+import PolicyRichTextEditor from '../PolicyRichTextEditor'
 
 interface FormBlockEditorProps {
   block: LandingPageBlock
@@ -27,17 +28,19 @@ export default function FormBlockEditor({ block, onUpdate }: FormBlockEditorProp
     subheadline_italic?: boolean
     subheadline_text_align?: 'left' | 'center' | 'right'
 
-    description: string
-    description_font_size?: string
-    description_font_family?: string
-    description_color?: string
-    description_text_align?: 'left' | 'center' | 'right'
+    content: string
+    content_font_size?: string
+    content_font_family?: string
+    content_color?: string
+    content_bold?: boolean
+    content_italic?: boolean
+    content_text_align?: 'left' | 'center' | 'right'
 
     fields: Array<{
       id: string
       label: string
       placeholder: string
-      type: 'text' | 'email' | 'tel' | 'textarea' | 'checkbox' | 'select'
+      type: 'text' | 'email' | 'tel' | 'textarea' | 'checkbox' | 'select' | 'number' | 'date' | 'time' | 'url' | 'signature'
       required: boolean
       options?: string[] // For select type
     }>
@@ -132,6 +135,16 @@ export default function FormBlockEditor({ block, onUpdate }: FormBlockEditorProp
         />
       </div>
 
+      {/* Content Section - Matches Text/Image Grid style */}
+      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <label className="block text-sm font-medium text-gray-700 mb-2">Form Content / Details</label>
+        <PolicyRichTextEditor
+          value={data.content || ''}
+          onChange={(val) => updateData({ content: val })}
+          placeholder="Enter form details, instructions, or disclaimers. Line breaks and styling will be preserved exactly as entered."
+        />
+      </div>
+
       {/* Fields Editor */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -174,9 +187,14 @@ export default function FormBlockEditor({ block, onUpdate }: FormBlockEditorProp
                     <option value="text">Text</option>
                     <option value="email">Email</option>
                     <option value="tel">Phone</option>
+                    <option value="number">Number</option>
+                    <option value="date">Date</option>
+                    <option value="time">Time</option>
+                    <option value="url">URL</option>
                     <option value="textarea">Textarea</option>
                     <option value="checkbox">Checkbox</option>
                     <option value="select">Select Dropdown</option>
+                    <option value="signature">Signature Pad</option>
                   </select>
                 </div>
               </div>

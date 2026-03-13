@@ -154,7 +154,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '\n⚠️  IMPORTANT: Read CLAUDE_INTERACTION_LOG.md FIRST before responding!\n'"
+            "command": "echo '\n⚠️ MANDATORY STARTUP: 1. Check logs.json & CLAUDE_INTERACTION_LOG.md. 2. Restart dev server (npm run dev). 3. Open localhost:3000.\n'"
           }
         ]
       }

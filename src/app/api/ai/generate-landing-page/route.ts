@@ -167,14 +167,14 @@ ${customInstructions || "Reconstruct the B2B tutorial: Step 1 Add Client, Step 2
 Output MUST be a single, valid JSON object.
 
 AVAILABLE BLOCKS & THEIR SCHEMAS:
-- 'split': { "type": "split", "headline": "...", "subheadline": "...", "content": "...", "button_text": "...", "layout": "image-right" | "image-left", "background_url": "URL from Available Images" }
-- 'steps': { "type": "steps", "heading": "...", "subheading": "...", "steps": [ { "title": "...", "text_content": "...", "background_url": "URL from Available Images" } ] }
-- 'form': { "type": "form", "headline": "...", "subheadline": "...", "cta_text": "...", "fields": [ { "label": "...", "placeholder": "...", "type": "text"|"email"|"tel"|"textarea", "required": true } ] }
+- 'split': { "type": "split", "headline": "...", "subheadline": "...", "content": "...", "cta_text": "...", "layout": "image-right" | "image-left", "image_url": "URL from Available Images" }
+- 'text_image_grid': { "type": "text_image_grid", "heading": "...", "overall_layout": "vertical" | "horizontal", "steps": [ { "subheadline": "...", "text_content": "...", "background_url": "URL from Available Images" } ] }
+- 'form': { "type": "form", "headline": "...", "subheadline": "...", "content": "...", "submit_button_text": "...", "fields": [ { "label": "...", "placeholder": "...", "type": "text"|"email"|"tel"|"textarea"|"number"|"date"|"time"|"url"|"signature", "required": true } ] }
 - 'accordion': { "type": "accordion", "headline": "...", "items": [ { "title": "...", "content": "...", "image_url": "URL from Available Images" } ] }
 
 BLOCK MAPPING RULES:
 1. For the interactive "Press to Open" tutorial, use the 'accordion' block. Each item should be a "STEP".
-2. If the user wants a static visual flow, use 'steps'.
+2. If the user wants a static visual flow, use 'text_image_grid'.
 3. Always match images from the 'AVAILABLE IMAGES' list.
 
 STRUCTURE:

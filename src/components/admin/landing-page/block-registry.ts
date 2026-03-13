@@ -185,37 +185,6 @@ export const BLOCK_TYPES: Record<string, BlockTypeConfig> = {
     }
   },
 
-  steps: {
-    type: 'steps',
-    label: 'Steps (How-to Guide)',
-    icon: '1️⃣',
-    description: 'Perfect for step-by-step instructions and sequential guides',
-    category: 'content',
-    defaultData: {
-      heading: 'HOW TO USE',
-      heading_font_size: '2.5rem',
-      heading_font_family: 'Josefin Sans',
-      heading_color: '#000000',
-      background_color: '#ffffff',
-      overall_layout: 'vertical',
-      steps: [
-        {
-          background_url: '',
-          background_type: 'image',
-          image_width: '400px',
-          text_content: 'Step 1 instructions go here...',
-          text_position: 'right',
-          text_font_size: '1rem',
-          text_font_family: 'Cormorant Garamond',
-          text_color: '#000000',
-          text_bold: false,
-          text_italic: false,
-          text_align: 'left'
-        }
-      ]
-    }
-  },
-
   static_banner: {
     type: 'static_banner',
     label: 'Static Banner',
@@ -307,7 +276,21 @@ export const BLOCK_TYPES: Record<string, BlockTypeConfig> = {
       headline_font_size: '2rem',
       headline_font_family: 'Josefin Sans',
       headline_color: '#000000',
+      headline_bold: true,
+      headline_text_align: 'center',
+
       subheadline: 'Enter your details below to assign a username and password.',
+      subheadline_font_size: '1.125rem',
+      subheadline_font_family: 'Josefin Sans',
+      subheadline_color: '#4b5563',
+      subheadline_text_align: 'center',
+
+      content: 'Please ensure all information provided is accurate and up-to-date. Fields marked with an asterisk (*) are mandatory.',
+      content_font_size: '0.875rem',
+      content_font_family: 'Cormorant Garamond',
+      content_color: '#6b7280',
+      content_text_align: 'center',
+
       fields: [
         {
           id: 'field-1',
@@ -321,6 +304,13 @@ export const BLOCK_TYPES: Record<string, BlockTypeConfig> = {
           label: 'Contact Email',
           placeholder: 'email@example.com',
           type: 'email',
+          required: true
+        },
+        {
+          id: 'field-3',
+          label: 'Signature',
+          placeholder: 'Please sign here',
+          type: 'signature',
           required: true
         }
       ],

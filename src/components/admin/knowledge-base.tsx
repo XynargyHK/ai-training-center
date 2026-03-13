@@ -2366,12 +2366,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                               className="bg-transparent text-gray-800 text-[10px] font-bold focus:outline-none transition-colors appearance-none pr-5 cursor-pointer"
                             >
                               <option value="home">🏠 Home Page</option>
-                              {allPages
-                                .filter(p => {
-                                  const localeMatch = p.country === selectedCountry && p.language_code === selectedLangCode;
-                                  const isSubPage = p.slug && p.slug !== '' && p.slug !== 'home';
-                                  return localeMatch && isSubPage;
-                                })
+                              {(allPages || [])
+                                .filter(p => p.country === selectedCountry && p.language_code === selectedLangCode && p.slug)
                                 .map(p => (
                                   <option key={p.id} value={p.slug}>📄 /{p.slug}</option>
                                 ))

@@ -1,10 +1,116 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { LandingPageBlock } from '@/types/landing-page-blocks'
 
 interface FormBlockProps {
   block: LandingPageBlock
+}
+
+function SignaturePad({ placeholder }: { placeholder: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [isDrawing, setIsDrawing] = useState(false)
+  const [hasSigned, setHasSigned] = useState(false)
+
+  const getCoordinates = (e: React.MouseEvent | React.TouchEvent) => {
+    const canvas = canvasRef.current
+    if (!canvas) return { x: 0, y: 0 }
+    
+    const rect = canvas.getBoundingClientRect()
+    const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX
+    const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY
+    
+    // Adjust for canvas scaling
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+    
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
+    }
+  }
+
+  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const { x, y } = getCoordinates(e)
+    ctx.beginPath()
+    ctx.moveTo(x, y)
+    setIsDrawing(true)
+    setHasSigned(true)
+  }
+
+  const draw = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDrawing) return
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const { x, y } = getCoordinates(e)
+    ctx.lineTo(x, y)
+    ctx.stroke()
+  }
+
+  const stopDrawing = () => {
+    setIsDrawing(false)
+  }
+
+  const clear = () => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    setHasSigned(false)
+  }
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    
+    ctx.lineWidth = 2
+    ctx.lineCap = 'round'
+    ctx.strokeStyle = '#000000'
+  }, [])
+
+  return (
+    <div className="space-y-2">
+      <div className="relative bg-white border border-gray-300 rounded-md overflow-hidden" style={{ height: '160px' }}>
+        <canvas
+          ref={canvasRef}
+          width={800}
+          height={160}
+          className="w-full h-full cursor-crosshair touch-none"
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing}
+          onTouchStart={startDrawing}
+          onTouchMove={draw}
+          onTouchEnd={stopDrawing}
+        />
+        <button
+          type="button"
+          onClick={clear}
+          className="absolute top-2 right-2 px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-500 text-[10px] rounded border border-gray-200 transition-colors"
+        >
+          Clear
+        </button>
+        {!hasSigned && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <span className="text-gray-300 text-sm italic">{placeholder || 'Please sign here'}</span>
+          </div>
+        )}
+      </div>
+      <p className="text-[10px] text-gray-400 text-center italic">Use your mouse or touch screen to sign</p>
+    </div>
+  )
 }
 
 export default function FormBlock({ block }: FormBlockProps) {
@@ -28,11 +134,19 @@ export default function FormBlock({ block }: FormBlockProps) {
     subheadline_italic?: boolean
     subheadline_text_align?: 'left' | 'center' | 'right'
 
+    content: string
+    content_font_size?: string
+    content_font_family?: string
+    content_color?: string
+    content_bold?: boolean
+    content_italic?: boolean
+    content_text_align?: 'left' | 'center' | 'right'
+
     fields: Array<{
       id: string
       label: string
       placeholder: string
-      type: 'text' | 'email' | 'tel' | 'textarea' | 'checkbox' | 'select'
+      type: 'text' | 'email' | 'tel' | 'textarea' | 'checkbox' | 'select' | 'number' | 'date' | 'time' | 'url' | 'signature'
       required: boolean
       options?: string[]
     }>
@@ -121,6 +235,20 @@ export default function FormBlock({ block }: FormBlockProps) {
             {data.subheadline}
           </p>
         )}
+        {data.content && (
+          <div 
+            className="mt-4 form-rich-content"
+            style={{ 
+              fontSize: data.content_font_size || '0.875rem',
+              fontFamily: data.content_font_family || 'inherit',
+              color: data.content_color || '#6b7280',
+              fontWeight: data.content_bold ? 'bold' : 'normal',
+              fontStyle: data.content_italic ? 'italic' : 'normal',
+              textAlign: data.content_text_align || 'center'
+            }}
+            dangerouslySetInnerHTML={{ __html: data.content }}
+          />
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -156,11 +284,14 @@ export default function FormBlock({ block }: FormBlockProps) {
                 />
                 <span className="text-sm text-gray-600">{field.placeholder}</span>
               </label>
+            ) : field.type === 'signature' ? (
+              <SignaturePad placeholder={field.placeholder} />
             ) : (
               <input
                 type={field.type}
                 required={field.required}
                 placeholder={field.placeholder}
+                defaultValue={field.type === 'date' ? new Date().toISOString().split('T')[0] : undefined}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none transition-all"
               />
             )}
@@ -178,6 +309,32 @@ export default function FormBlock({ block }: FormBlockProps) {
           {isSubmitting ? 'Submitting...' : data.submit_button_text || 'Submit'}
         </button>
       </form>
+
+      {/* Rich text content styles */}
+      <style jsx global>{`
+        .form-rich-content ul {
+          list-style-type: disc;
+          margin-left: 1.5rem;
+          padding-left: 0.5rem;
+          margin-bottom: 0.5rem;
+        }
+        .form-rich-content ol {
+          list-style-type: decimal;
+          margin-left: 1.5rem;
+          padding-left: 0.5rem;
+          margin-bottom: 0.5rem;
+        }
+        .form-rich-content li {
+          margin-bottom: 0.25rem;
+        }
+        .form-rich-content p {
+          margin-bottom: 0.5rem;
+        }
+        /* Preserve text color while allowing bold/italic */
+        .form-rich-content span[style*="color"] {
+          color: inherit !important;
+        }
+      `}</style>
     </div>
   )
 }

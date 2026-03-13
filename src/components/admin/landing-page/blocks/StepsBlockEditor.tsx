@@ -416,7 +416,7 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
               placeholder="e.g., Step 1: Cleanse"
             />
 
-            {/* Text Content - Using Rich Text Editor */}
+            {/* Text Content - Restore Rich Text Editor */}
             <div>
               <label className="block text-[10px] text-gray-500 mb-1">Text Content</label>
               <PolicyRichTextEditor

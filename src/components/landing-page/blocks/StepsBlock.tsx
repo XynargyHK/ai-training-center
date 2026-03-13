@@ -86,8 +86,8 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
       })
       return processed
     }
-    // Plain text - preserve line breaks
-    return text.replace(/\n/g, '<br>')
+    // Plain text - white-space: pre-wrap in style will handle breaks
+    return text
   }
 
   if (!steps || steps.length === 0) {
