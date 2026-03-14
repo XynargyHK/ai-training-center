@@ -84,7 +84,26 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({
 }) => {
   const t = getTranslation(language)
 
-  // ... (lines omitted)
+  // State
+  const [activeSubTab, setActiveSubTab] = useState<ActiveSubTab>('industry')
+  const [viewMode, setViewMode] = useState<ViewMode>('list')
+  const [isLoading, setIsLoading] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  // Data state
+  const [services, setServices] = useState<Service[]>([])
+  const [industryKnowledge, setIndustryKnowledge] = useState<IndustryKnowledge[]>([])
+
+  // UI state
+  const [showUrlModal, setShowUrlModal] = useState(false)
+  const [urlInput, setUrlInput] = useState('')
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [processingMessage, setProcessingMessage] = useState('')
+
+  // Service modal state
+  const [showServiceModal, setShowServiceModal] = useState(false)
+  const [editingService, setEditingService] = useState<Service | null>(null)
+  const [newService, setNewService] = useState({ name: '', description: '', price: '' })
 
   // Landing Page state
   const [landingPageData, setLandingPageData] = useState<any>(null)
