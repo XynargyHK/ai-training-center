@@ -55,6 +55,7 @@ interface KnowledgeBaseProps {
   businessUnitId: string
   language: string
   country: string
+  initialSlug?: string | null
   onLandingPageLocaleChange?: (country: string, language: string) => void
   onLandingPageSlugChange?: (slug: string | null) => void
 }
@@ -73,29 +74,17 @@ interface MediaFile {
 }
 type ViewMode = 'grid' | 'list'
 
-const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language, country: parentCountry, onLandingPageLocaleChange, onLandingPageSlugChange }) => {
+const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ 
+  businessUnitId, 
+  language, 
+  country: parentCountry, 
+  initialSlug = null,
+  onLandingPageLocaleChange, 
+  onLandingPageSlugChange 
+}) => {
   const t = getTranslation(language)
 
-  // State
-  const [activeSubTab, setActiveSubTab] = useState<ActiveSubTab>('industry')
-  const [viewMode, setViewMode] = useState<ViewMode>('list')
-  const [isLoading, setIsLoading] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-
-  // Data state
-  const [services, setServices] = useState<Service[]>([])
-  const [industryKnowledge, setIndustryKnowledge] = useState<IndustryKnowledge[]>([])
-
-  // UI state
-  const [showUrlModal, setShowUrlModal] = useState(false)
-  const [urlInput, setUrlInput] = useState('')
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [processingMessage, setProcessingMessage] = useState('')
-
-  // Service modal state
-  const [showServiceModal, setShowServiceModal] = useState(false)
-  const [editingService, setEditingService] = useState<Service | null>(null)
-  const [newService, setNewService] = useState({ name: '', description: '', price: '' })
+  // ... (lines omitted)
 
   // Landing Page state
   const [landingPageData, setLandingPageData] = useState<any>(null)
@@ -106,7 +95,7 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
   const [landingPageSaving, setLandingPageSaving] = useState(false)
   const [selectedCountry, setSelectedCountry] = useState(parentCountry || 'US')
   const [selectedLangCode, setSelectedLangCode] = useState('en')
-  const [selectedSlug, setSelectedSlug] = useState<string | null>(null)
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(initialSlug)
   const [allPages, setAllPages] = useState<any[]>([])
   const [showAddPageModal, setShowAddPageModal] = useState(false)
   const [newPageSlug, setNewPageSlug] = useState('')
@@ -196,9 +185,11 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
       const localeForCountry = availableLocales.find(l => l.country === parentCountry)
       if (localeForCountry) {
         setSelectedLangCode(localeForCountry.language_code)
+        setSelectedSlug(null) // Reset to home for new locale
         setLandingPageData(null)
-        loadLandingPage(parentCountry, localeForCountry.language_code)
-      } else {
+        loadLandingPage(parentCountry, localeForCountry.language_code, null)
+      }
+ else {
         // Default to 'en' if no locales found yet
         setSelectedLangCode('en')
         setLandingPageData(null)
@@ -2279,8 +2270,8 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                             setTranslationSourceData(null)
                             setSelectedCountry(country)
                             setSelectedLangCode(lang)
-                            // When changing locale, usually we want to stay on the same relative page (slug)
-                            loadLandingPage(country, lang, selectedSlug)
+                            setSelectedSlug(null) // Reset to home for new locale
+                            loadLandingPage(country, lang, null)
                           }}
                           onAddLocale={() => setShowAddLocaleModal(true)}
                           onDeleteLocale={async (country, lang) => {

@@ -2099,6 +2099,7 @@ Format as JSON array:
               businessUnitId={selectedBusinessUnit}
               language={selectedLanguage}
               country={selectedCountry}
+              initialSlug={landingPageActiveSlug}
               onLandingPageLocaleChange={(country, lang) => {
                 setLandingPageActiveCountry(country)
                 setLandingPageActiveLang(lang)
