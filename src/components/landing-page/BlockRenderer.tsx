@@ -15,6 +15,7 @@ import SocialFeedBlock from './blocks/SocialFeedBlock'
 import LogoCloudBlock from './blocks/LogoCloudBlock'
 import ImageGridBlock from './blocks/ImageGridBlock'
 import StatsGridBlock from './blocks/StatsGridBlock'
+import LeadMagnetBlock from './blocks/LeadMagnetBlock'
 
 // Convert block name to URL-friendly anchor slug
 function toAnchorSlug(name: string | undefined): string | undefined {
@@ -30,9 +31,10 @@ function toAnchorSlug(name: string | undefined): string | undefined {
 interface BlockRendererProps {
   blocks: LandingPageBlock[]
   onAddToCart?: (product: any) => void
+  businessUnitId?: string
 }
 
-export default function BlockRenderer({ blocks, onAddToCart }: BlockRendererProps) {
+export default function BlockRenderer({ blocks, onAddToCart, businessUnitId }: BlockRendererProps) {
   console.log('[BlockRenderer] Rendering', blocks.length, 'blocks')
 
   if (!blocks || blocks.length === 0) {
@@ -96,6 +98,9 @@ export default function BlockRenderer({ blocks, onAddToCart }: BlockRendererProp
 
           case 'stats_grid':
             return <StatsGridBlock key={block.id} anchorId={anchorId} block={block} />
+
+          case 'lead_magnet':
+            return <LeadMagnetBlock key={block.id} block={block} businessUnitId={businessUnitId} />
 
           default:
             // Silently skip unknown block types (legacy blocks or removed types)

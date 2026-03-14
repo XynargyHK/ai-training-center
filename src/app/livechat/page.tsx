@@ -1430,7 +1430,11 @@ export function LandingPageContent({
 
       {/* Dynamic Blocks */}
       {!policyParam && landingPage.blocks && landingPage.blocks.length > 0 ? (
-        <BlockRenderer blocks={landingPage.blocks} onAddToCart={addToCart} />
+        <BlockRenderer 
+          blocks={landingPage.blocks} 
+          onAddToCart={addToCart} 
+          businessUnitId={landingPage.business_unit_id}
+        />
       ) : !policyParam && (
         <>
           {/* Fallback: Show old landing page schema content */}

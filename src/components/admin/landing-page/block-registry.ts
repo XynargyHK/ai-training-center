@@ -269,56 +269,25 @@ export const BLOCK_TYPES: Record<string, BlockTypeConfig> = {
     type: 'form',
     label: 'Form',
     icon: '📝',
-    description: 'Custom form for registration, sign-off, or data collection',
+    // ... rest of form config
+  },
+
+  lead_magnet: {
+    type: 'lead_magnet',
+    label: 'Educational Guide (Lead Magnet)',
+    icon: '🎁',
+    description: 'High-converting hook to capture emails via professional guide downloads.',
     category: 'interactive',
     defaultData: {
-      headline: 'Register Your Location',
-      headline_font_size: '2rem',
-      headline_font_family: 'Josefin Sans',
-      headline_color: '#000000',
-      headline_bold: true,
-      headline_text_align: 'center',
-
-      subheadline: 'Enter your details below to assign a username and password.',
-      subheadline_font_size: '1.125rem',
-      subheadline_font_family: 'Josefin Sans',
-      subheadline_color: '#4b5563',
-      subheadline_text_align: 'center',
-
-      content: 'Please ensure all information provided is accurate and up-to-date. Fields marked with an asterisk (*) are mandatory.',
-      content_font_size: '0.875rem',
-      content_font_family: 'Cormorant Garamond',
-      content_color: '#6b7280',
-      content_text_align: 'center',
-
-      fields: [
-        {
-          id: 'field-1',
-          label: 'Physical Address',
-          placeholder: 'Full address of the location',
-          type: 'text',
-          required: true
-        },
-        {
-          id: 'field-2',
-          label: 'Contact Email',
-          placeholder: 'email@example.com',
-          type: 'email',
-          required: true
-        },
-        {
-          id: 'field-3',
-          label: 'Signature',
-          placeholder: 'Please sign here',
-          type: 'signature',
-          required: true
-        }
-      ],
-      submit_button_text: 'Complete Registration',
-      submit_button_color: '#7c3aed',
-      success_message: 'Registration complete! Your credentials will be assigned shortly.',
-      background_color: '#ffffff',
-      border_radius: '0.5rem'
+      headline: '🎁 限時禮遇：專屬「乳房健康與淋巴排毒」精華指南',
+      subheadline: '由專家編撰的 15 分鐘居家護理方案。僅限 BrezCode 會員免費下載，立即領取您的電子版手冊。',
+      content: `<p><b>為什麼您需要這份指南？</b></p><ul><li>掌握獨家 8 步淋巴引流手法</li><li>提升護理乳液的吸收效率達 300%</li><li>建立每日 15 分鐘的健康儀式感</li></ul><p>這份指南原為內部培訓資料，現在特別開放給掃碼用戶。請立即解鎖，確保您掌握正確的居家護理細節。</p>`,
+      cta_text: '立即解鎖並下載 PDF 指南',
+      success_message: '恭喜！您的專屬指南已解鎖。請點擊下方按鈕開始下載，建議將此頁面加入書籤以便每日查看。',
+      button_color: '#7c3aed',
+      background_color: '#f9fafb',
+      text_color: '#111827',
+      pdf_url: ''
     }
   },
 

@@ -21,6 +21,7 @@ import SocialFeedBlockEditor from './blocks/SocialFeedBlockEditor'
 import LogoCloudBlockEditor from './blocks/LogoCloudBlockEditor'
 import ImageGridBlockEditor from './blocks/ImageGridBlockEditor'
 import StatsGridBlockEditor from './blocks/StatsGridBlockEditor'
+import LeadMagnetEditor from './blocks/LeadMagnetEditor'
 
 interface BlockManagerProps {
   blocks: LandingPageBlock[]
@@ -1771,7 +1772,18 @@ export default function BlockManager({
           />
         )
 
+      case 'lead_magnet':
+        return (
+          <LeadMagnetEditor
+            block={block}
+            onChange={(updatedBlock) => handleUpdateBlock(index, updatedBlock)}
+            businessUnitId={businessUnitId}
+            onMediaLibraryOpen={handleOpenMediaLibrary}
+          />
+        )
+
       default:
+
         return (
           <div className="text-gray-500 text-xs">
             <p>Unknown block type: {block.type}</p>

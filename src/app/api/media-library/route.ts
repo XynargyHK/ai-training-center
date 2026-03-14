@@ -130,7 +130,8 @@ export async function POST(request: NextRequest) {
     // Validate file type
     const allowedTypes = [
       'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
-      'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'
+      'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime',
+      'application/pdf'
     ]
 
     if (!allowedTypes.includes(file.type)) {
