@@ -1999,7 +1999,8 @@ Format as JSON array:
                 const activeCountry = activeTab === 'knowledge' ? landingPageActiveCountry : selectedCountry
                 const activeLang = activeTab === 'knowledge' ? landingPageActiveLang : selectedLangCode
                 const pageSlug = activeTab === 'knowledge' ? landingPageActiveSlug : availableLocales.find(l => l.country === activeCountry && l.language_code === activeLang)?.slug
-                return `/livechat?businessUnit=${selectedBusinessUnit}&country=${activeCountry}&lang=${activeLang}${pageSlug ? `&page=${pageSlug}` : ''}&preview=true`
+                return `/livechat?businessUnit=${selectedBusinessUnit}&country=${activeCountry}&lang=${activeLang}${pageSlug ? `&page=${pageSlug}` : ''}`
+
                 })()}
               target="_blank"
               rel="noopener noreferrer"

@@ -83,9 +83,17 @@ export default function LanguageBar({
     return names[code] || code
   }
 
-  const displayedLocales = filterCountry
-    ? locales.filter(l => l.country === filterCountry)
-    : locales
+  const uniqueLocales = locales.reduce((acc: LandingPageLocale[], current) => {
+    const exists = acc.find(l => l.country === current.country && l.language_code === current.language_code)
+    if (!exists) {
+      acc.push(current)
+    }
+    return acc
+  }, [])
+
+  const filteredLocales = filterCountry
+    ? uniqueLocales.filter(l => l.country === filterCountry)
+    : uniqueLocales
 
   const showSync = onSyncRequest && !(currentCountry === 'US' && currentLanguage === 'en')
 
@@ -112,7 +120,7 @@ export default function LanguageBar({
       {open && (
         <div className="absolute left-0 mt-1 w-48 bg-white border border-gray-200 rounded-none shadow-sm z-50 py-1">
           {/* Locale options */}
-          {displayedLocales.map((locale) => {
+          {filteredLocales.map((locale) => {
             const isActive = locale.country === currentCountry && locale.language_code === currentLanguage
             return (
               <div
@@ -131,11 +139,11 @@ export default function LanguageBar({
                   {getFlagEmoji(locale.country)} {locale.country}/{getLanguageName(locale.language_code)}
                   {isActive && ' ✓'}
                 </button>
-                {onDeleteLocale && displayedLocales.length > 1 && (
+                {onDeleteLocale && filteredLocales.length > 1 && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
-                      if (confirm(`Delete ${locale.country}/${locale.language_code} locale?`)) {
+                      if (confirm(`Delete ${locale.country}/${locale.language_code} locale (this will delete all pages for this language)?`)) {
                         onDeleteLocale(locale.country, locale.language_code)
                         setOpen(false)
                       }
