@@ -81,8 +81,10 @@ const AITrainingCenter = () => {
   const [selectedLangCode, setSelectedLangCode] = useState<string>('en')
   const [availableLocales, setAvailableLocales] = useState<{country: string, language_code: string, slug?: string}[]>([])
   // Tracks the active locale inside the landing page editor (may differ from selectedLangCode)
-  const [landingPageActiveCountry, setLandingPageActiveCountry] = useState<string>(selectedCountry)
+  const [landingPageActiveCountry, setLandingPageActiveCountry] = useState<string>('US')
   const [landingPageActiveLang, setLandingPageActiveLang] = useState<string>('en')
+  const [landingPageActiveSlug, setLandingPageActiveSlug] = useState<string | null>(null)
+
   const [showAddLocaleModal, setShowAddLocaleModal] = useState(false)
 
   // Map short lang code to Language type for UI translations
@@ -1996,10 +1998,9 @@ Format as JSON array:
               href={(() => {
                 const activeCountry = activeTab === 'knowledge' ? landingPageActiveCountry : selectedCountry
                 const activeLang = activeTab === 'knowledge' ? landingPageActiveLang : selectedLangCode
-                const currentLocale = availableLocales.find(l => l.country === activeCountry && l.language_code === activeLang)
-                const pageSlug = currentLocale?.slug
-                return `/livechat?businessUnit=${selectedBusinessUnit}&country=${activeCountry}&lang=${activeLang}${pageSlug ? `&page=${pageSlug}` : ''}`
-              })()}
+                const pageSlug = activeTab === 'knowledge' ? landingPageActiveSlug : availableLocales.find(l => l.country === activeCountry && l.language_code === activeLang)?.slug
+                return `/livechat?businessUnit=${selectedBusinessUnit}&country=${activeCountry}&lang=${activeLang}${pageSlug ? `&page=${pageSlug}` : ''}&preview=true`
+                })()}
               target="_blank"
               rel="noopener noreferrer"
               className="bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 hover:from-purple-600 hover:via-pink-600 hover:to-cyan-600 text-gray-900 px-2 py-1.5 rounded-none font-medium flex items-center gap-1 transition-all duration-200 hover:shadow-sm hover:scale-105 text-xs justify-center"
@@ -2101,6 +2102,9 @@ Format as JSON array:
               onLandingPageLocaleChange={(country, lang) => {
                 setLandingPageActiveCountry(country)
                 setLandingPageActiveLang(lang)
+              }}
+              onLandingPageSlugChange={(slug) => {
+                setLandingPageActiveSlug(slug)
               }}
             />
           )}

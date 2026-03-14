@@ -53,10 +53,12 @@ interface IndustryKnowledge {
 
 interface KnowledgeBaseProps {
   businessUnitId: string
-  language: Language
-  country?: string
-  onLandingPageLocaleChange?: (country: string, lang: string) => void
+  language: string
+  country: string
+  onLandingPageLocaleChange?: (country: string, language: string) => void
+  onLandingPageSlugChange?: (slug: string | null) => void
 }
+
 
 type ActiveSubTab = 'industry' | 'products' | 'services' | 'landing' | 'media'
 
@@ -71,7 +73,7 @@ interface MediaFile {
 }
 type ViewMode = 'grid' | 'list'
 
-const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language, country: parentCountry, onLandingPageLocaleChange }) => {
+const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language, country: parentCountry, onLandingPageLocaleChange, onLandingPageSlugChange }) => {
   const t = getTranslation(language)
 
   // State
@@ -180,6 +182,11 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
   const pdfInputRef = useRef<HTMLInputElement>(null)
   const industryDocInputRef = useRef<HTMLInputElement>(null)
   const mediaInputRef = useRef<HTMLInputElement>(null)
+
+  // Sync selectedSlug with parent
+  useEffect(() => {
+    onLandingPageSlugChange?.(selectedSlug)
+  }, [selectedSlug, onLandingPageSlugChange])
 
   // Sync selectedCountry from parent prop when it changes
   useEffect(() => {
@@ -2181,12 +2188,14 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                                 businessUnitId,
                                 country: landingPageData.country || 'US',
                                 language_code: landingPageData.language_code || 'en',
+                                slug: selectedSlug,
                                 is_published: true
                               })
+
                             })
                             const result = await response.json()
                             if (response.ok) {
-                              await loadLandingPage(landingPageData.country || 'US', landingPageData.language_code || 'en')
+                              await loadLandingPage(landingPageData.country || 'US', landingPageData.language_code || 'en', selectedSlug)
                               alert(landingPageData.is_published ? (t.landingPageLiveUpdated || 'Live page updated successfully!') : (t.landingPageNowLive || 'Landing page is now live!'))
                             } else {
                               alert((t.failedToUpdatePublish || 'Failed to update publish status') + ': ' + (result.error || 'Unknown error'))
@@ -2233,12 +2242,14 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                                     businessUnitId,
                                     country: landingPageData.country || 'US',
                                     language_code: landingPageData.language_code || 'en',
+                                    slug: selectedSlug,
                                     is_published: false
                                   })
+
                                 })
                                 const result = await response.json()
                                 if (response.ok) {
-                                  await loadLandingPage(landingPageData.country || 'US', landingPageData.language_code || 'en')
+                                  await loadLandingPage(landingPageData.country || 'US', landingPageData.language_code || 'en', selectedSlug)
                                   alert(t.landingPageUnpublished || 'Landing page unpublished!')
                                 } else {
                                   alert((t.failedToUpdatePublish || 'Failed to update publish status') + ': ' + (result.error || 'Unknown error'))
@@ -2287,11 +2298,12 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({ businessUnitId, language,
                                   if (otherLocale) {
                                     setSelectedCountry(otherLocale.country)
                                     setSelectedLangCode(otherLocale.language_code)
-                                    loadLandingPage(otherLocale.country, otherLocale.language_code)
-                                  }
-                                } else {
-                                  loadLandingPage(selectedCountry, selectedLangCode)
-                                }
+                                    loadLandingPage(otherLocale.country, otherLocale.language_code, selectedSlug)
+                                    }
+                                    } else {
+                                    loadLandingPage(selectedCountry, selectedLangCode, selectedSlug)
+                                    }
+
                               } else {
                                 alert(data.error || 'Failed to delete locale')
                               }
