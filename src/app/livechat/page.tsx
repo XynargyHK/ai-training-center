@@ -754,9 +754,16 @@ export function LandingPageContent({
 
   // Build URL with businessUnit and locale params preserved
   const buildUrl = (path: string) => {
-    // When on a slug page, Home link goes back to the slug URL
+    // If path starts with /, it's a specific sub-page (like /operator)
+    // We convert it to the ?page=slug format
+    if (path.startsWith('/') && path !== '/' && path !== '/livechat') {
+      const slug = path.startsWith('/') ? path.substring(1) : path
+      return `/livechat?businessUnit=${businessUnitParam}&country=${countryParam}&lang=${langParam}&page=${slug}`
+    }
+    
+    // When on a slug page, Home link goes back to the base livechat URL for this unit
     if (pageSlug && (path === '/livechat' || path === '/')) {
-      return `/${pageSlug}`
+      return `/livechat?businessUnit=${businessUnitParam}&country=${countryParam}&lang=${langParam}`
     }
     if (businessUnitParam) {
       return `${path}?businessUnit=${businessUnitParam}&country=${countryParam}&lang=${langParam}`

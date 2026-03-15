@@ -279,9 +279,9 @@ export const BLOCK_TYPES: Record<string, BlockTypeConfig> = {
     description: 'High-converting hook to capture emails via professional guide downloads.',
     category: 'interactive',
     defaultData: {
-      headline: '🎁 限時禮遇：專屬「乳房健康與淋巴排毒」精華指南',
-      subheadline: '由專家編撰的 15 分鐘居家護理方案。僅限 BrezCode 會員免費下載，立即領取您的電子版手冊。',
-      content: `<p><b>為什麼您需要這份指南？</b></p><ul><li>掌握獨家 8 步淋巴引流手法</li><li>提升護理乳液的吸收效率達 300%</li><li>建立每日 15 分鐘的健康儀式感</li></ul><p>這份指南原為內部培訓資料，現在特別開放給掃碼用戶。請立即解鎖，確保您掌握正確的居家護理細節。</p>`,
+      headline: '',
+      subheadline: '',
+      content: '',
       cta_text: '立即解鎖並下載 PDF 指南',
       success_message: '恭喜！您的專屬指南已解鎖。請點擊下方按鈕開始下載，建議將此頁面加入書籤以便每日查看。',
       button_color: '#7c3aed',
