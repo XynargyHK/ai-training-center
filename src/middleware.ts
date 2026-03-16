@@ -18,6 +18,8 @@ const LANDING_DOMAINS: Record<string, string> = {
   'www.brezcode.com': 'brezcode',
   'xynargy.hk': 'xynargy',
   'www.xynargy.hk': 'xynargy',
+  'ai-training-center-production.up.railway.app': 'brezcode',
+  'localhost': 'brezcode',
 }
 
 // Detect if request is from a bot/crawler
@@ -113,7 +115,12 @@ export async function middleware(request: NextRequest) {
     }
 
     // Handle root path: / → redirect to detected country
+    // ONLY if no businessUnit or slug param is already present
     if (pathname === '/' || pathname === '') {
+      if (request.nextUrl.searchParams.has('businessUnit') || request.nextUrl.searchParams.has('_bu')) {
+        return NextResponse.next()
+      }
+
       const savedCountry = request.cookies.get('preferred_country')?.value
       if (savedCountry && COUNTRY_MAP[savedCountry]) {
         const url = request.nextUrl.clone()
