@@ -19,7 +19,6 @@ const LANDING_DOMAINS: Record<string, string> = {
   'xynargy.hk': 'xynargy',
   'www.xynargy.hk': 'xynargy',
   'ai-training-center-production.up.railway.app': 'brezcode',
-  'localhost': 'brezcode',
 }
 
 // Detect if request is from a bot/crawler
@@ -84,6 +83,13 @@ async function detectCountryFromIP(request: NextRequest): Promise<string> {
 export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host')?.split(':')[0] ?? ''
   const { pathname } = request.nextUrl
+
+  // === LOCALHOST BYPASS ===
+  // Do not perform any redirects or rewrites when testing locally.
+  // This ensures the Admin Dashboard (/) is accessible and URLs stay clean.
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return NextResponse.next()
+  }
 
   // === MULTI-TENANT LANDING PAGE ROUTING ===
   // Handles brezcode.com and future business domains

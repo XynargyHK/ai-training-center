@@ -2,6 +2,7 @@
 
 import type { SplitBlockData } from '@/types/landing-page-blocks'
 import { getFontClass } from '@/lib/fonts'
+import { stripHtml } from '@/lib/utils'
 
 interface SplitBlockProps {
   data: SplitBlockData
@@ -20,7 +21,7 @@ export default function SplitBlock({ data, anchorId }: SplitBlockProps) {
             {data.image_url ? (
               <img
                 src={data.image_url}
-                alt={data.headline || 'Block image'}
+                alt={stripHtml(data.headline) || 'Block image'}
                 className="w-full h-auto rounded-lg shadow-2xl"
               />
             ) : (
@@ -34,7 +35,7 @@ export default function SplitBlock({ data, anchorId }: SplitBlockProps) {
           <div className={isImageLeft ? '' : 'md:col-start-1 md:row-start-1'}>
             {data.headline && (
               <h2 className={`text-3xl md:text-4xl font-light tracking-[0.2em] uppercase leading-tight text-white mb-4 ${getFontClass('Josefin Sans')}`}>
-                {data.headline}
+                {stripHtml(data.headline)}
               </h2>
             )}
 

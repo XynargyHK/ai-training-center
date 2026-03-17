@@ -269,25 +269,69 @@ export const BLOCK_TYPES: Record<string, BlockTypeConfig> = {
     type: 'form',
     label: 'Form',
     icon: '📝',
-    // ... rest of form config
+    description: 'Registration or feedback form with customizable fields',
+    category: 'interactive',
+    defaultData: {
+      headline: 'Register Now',
+      subheadline: 'Fill in the details below to get started.',
+      fields: [
+        { label: 'Full Name', type: 'text', required: true, placeholder: 'Enter your name' },
+        { label: 'Email Address', type: 'email', required: true, placeholder: 'Enter your email' }
+      ],
+      cta_text: 'Submit Form',
+      background_color: '#ffffff'
+    }
   },
 
   lead_magnet: {
     type: 'lead_magnet',
-    label: 'Educational Guide (Lead Magnet)',
+    label: 'Lead Magnet (PDF Download)',
     icon: '🎁',
-    description: 'High-converting hook to capture emails via professional guide downloads.',
+    description: 'Offer a valuable PDF guide in exchange for a social login (Google). Perfect for growing your audience.',
     category: 'interactive',
     defaultData: {
-      headline: '',
-      subheadline: '',
-      content: '',
-      cta_text: '立即解鎖並下載 PDF 指南',
-      success_message: '恭喜！您的專屬指南已解鎖。請點擊下方按鈕開始下載，建議將此頁面加入書籤以便每日查看。',
+      headline: 'Unlock Your Professional Guide',
+      headline_font_size: 'clamp(1.5rem, 4vw, 2.5rem)',
+      headline_font_family: 'Josefin Sans',
+      headline_color: '#111827',
+      headline_bold: true,
+      headline_italic: false,
+      headline_text_align: 'center',
+
+      subheadline: 'Join our community to access this exclusive resource.',
+      subheadline_font_size: '1.125rem',
+      subheadline_font_family: 'Josefin Sans',
+      subheadline_color: '#4b5563',
+      subheadline_text_align: 'center',
+
+      content: '<p>Get our expert-vetted guide on skin health and routine optimization. Learn the secrets used by professionals to achieve lasting results.</p>',
+      
+      cta_text: 'Sign in with Google to Download',
       button_color: '#7c3aed',
-      background_color: '#f9fafb',
-      text_color: '#111827',
-      pdf_url: ''
+      
+      success_message: 'Thank you for joining! You can now download your professional guide below.',
+      locked_content: '',
+      pdf_url: '',
+      background_color: '#f9fafb'
+    }
+  },
+
+  pdf_reader: {
+    type: 'pdf_reader',
+    label: 'Digital Library (PDF Reader)',
+    icon: '📖',
+    description: 'Allows users to read multiple PDFs online with a tabbed menu interface.',
+    category: 'content',
+    defaultData: {
+      headline: 'Operator Resource Library',
+      subheadline: 'Select a guide below to read online.',
+      background_color: '#ffffff',
+      primary_color: '#7c3aed',
+      items: [
+        { title: 'SOP Menu', pdf_url: '' },
+        { title: 'Platform Instruction', pdf_url: '' },
+        { title: 'Xynargy Product Menu', pdf_url: '' }
+      ]
     }
   },
 

@@ -74,6 +74,37 @@ export default function UniversalTextEditor({
   const [showFontMenu, setShowFontMenu] = useState<string | null>(null)
   const [showColorPicker, setShowColorPicker] = useState(false)
 
+  const handlePaste = (e: React.ClipboardEvent) => {
+    // ALWAYS intercept paste for plain text editors to strip code
+    e.preventDefault();
+    
+    // Try to get plain text first
+    let text = e.clipboardData.getData('text/plain');
+    
+    // If plain text is empty or contains HTML tags, try cleaning it aggressively
+    // Note: Word often puts HTML into the plain text buffer too.
+    
+    let cleanedText = text
+      .replace(/<!--[\s\S]*?-->/g, '') // Remove HTML comments
+      .replace(/<style[\s\S]*?<\/style>/g, '') // Remove style blocks
+      .replace(/<xml[\s\S]*?<\/xml>/g, '') // Remove XML blocks
+      .replace(/<script[\s\S]*?<\/script>/g, '') // Remove script blocks
+      .replace(/<[^>]*>?/gm, '') // Remove ALL HTML tags
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&[a-z0-9#]+;/gi, '') // Remove HTML entities
+      .replace(/\/\*[\s\S]*?\*\//g, '') // Remove CSS comments
+      .replace(/[ \t]+/g, ' ') // Collapse multiple spaces
+      .replace(/\n\s*\n/g, '\n\n') // Collapse multiple newlines
+      .trim();
+    
+    const target = e.target as HTMLTextAreaElement | HTMLInputElement;
+    const start = target.selectionStart || 0;
+    const end = target.selectionEnd || 0;
+    
+    const newValue = value.substring(0, start) + cleanedText + value.substring(end);
+    onChange(newValue);
+  };
+
   return (
     <div>
       <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -160,7 +191,7 @@ export default function UniversalTextEditor({
                 {Math.round(parseFloat(fontSize) * 16) || 16}
               </button>
               {showFontMenu === 'size' && (
-                <div className="fixed md:absolute left-4 md:left-0 top-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 mt-0 md:mt-1 w-20 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-48 overflow-y-auto">
+                <div className="absolute top-full left-0 mt-1 w-20 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50 max-h-48 overflow-y-auto">
                   {[12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64, 72, 80, 96].map(size => (
                     <button
                       key={size}
@@ -250,6 +281,7 @@ export default function UniversalTextEditor({
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onPaste={handlePaste}
           placeholder={placeholder}
           rows={rows}
           className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500 resize-y"
@@ -259,6 +291,7 @@ export default function UniversalTextEditor({
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onPaste={handlePaste}
           placeholder={placeholder}
           className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500"
         />

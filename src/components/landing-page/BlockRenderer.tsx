@@ -16,6 +16,7 @@ import LogoCloudBlock from './blocks/LogoCloudBlock'
 import ImageGridBlock from './blocks/ImageGridBlock'
 import StatsGridBlock from './blocks/StatsGridBlock'
 import LeadMagnetBlock from './blocks/LeadMagnetBlock'
+import PDFReaderBlock from './blocks/PDFReaderBlock'
 
 // Convert block name to URL-friendly anchor slug
 function toAnchorSlug(name: string | undefined): string | undefined {
@@ -101,6 +102,9 @@ export default function BlockRenderer({ blocks, onAddToCart, businessUnitId }: B
 
           case 'lead_magnet':
             return <LeadMagnetBlock key={block.id} block={block} businessUnitId={businessUnitId} />
+
+          case 'pdf_reader':
+            return <PDFReaderBlock key={block.id} block={block} />
 
           default:
             // Silently skip unknown block types (legacy blocks or removed types)

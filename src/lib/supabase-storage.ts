@@ -292,9 +292,8 @@ export async function saveKnowledge(entry: any, businessUnitSlugOrId?: string | 
     category: entry.category
   })
 
-  const knowledgeEntry = {
+  const knowledgeEntry: any = {
     business_unit_id: businessUnitId,
-    reference_id: entry.reference_id || entry.id || crypto.randomUUID(),
     category: entry.category,
     topic: entry.topic,
     title: entry.topic,
@@ -310,7 +309,19 @@ export async function saveKnowledge(entry: any, businessUnitSlugOrId?: string | 
     embedded_at: new Date().toISOString()
   }
 
-  if (entry.id && entry.id.startsWith('kb-')) {
+  // Handle reference_id and ID logic
+  // If entry.id is a temp ID (starts with kb-), treat as new insert
+  const isTempId = entry.id && entry.id.toString().startsWith('kb-')
+  
+  if (entry.reference_id) {
+    knowledgeEntry.reference_id = entry.reference_id
+  } else if (entry.id && !isTempId) {
+    knowledgeEntry.reference_id = entry.id
+  } else {
+    knowledgeEntry.reference_id = crypto.randomUUID()
+  }
+
+  if (entry.id && !isTempId) {
     // Update existing
     const { data, error } = await supabase
       .from('knowledge_base')
@@ -568,7 +579,7 @@ export async function saveFAQ(faq: any, businessUnitSlugOrId?: string | null) {
 
     if (error) throw error
     return data[0]
-  } else if (faq.id && !faq.id.startsWith('faq-gen-')) {
+  } else if (faq.id && isValidUUID(faq.id)) {
     // Update existing by ID
     const { data, error } = await supabase
       .from('faq_library')
@@ -682,7 +693,7 @@ export async function saveCannedMessage(msg: any, businessUnitSlugOrId?: string 
     embedded_at: new Date().toISOString()
   }
 
-  if (msg.id && !msg.id.startsWith('canned-gen-')) {
+  if (msg.id && isValidUUID(msg.id)) {
     // Update existing
     const { data, error } = await supabase
       .from('canned_messages')
@@ -1205,9 +1216,6 @@ export async function loadAIStaff(businessUnitSlugOrId?: string | null) {
 export async function saveAIStaff(staff: any, businessUnitSlugOrId?: string | null) {
   const businessUnitId = await getBusinessUnitId(businessUnitSlugOrId)
 
-  // Check if id looks like a UUID
-  const isUUID = staff.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(staff.id)
-
   const dataToSave: any = {
     business_unit_id: businessUnitId,
     name: staff.name,
@@ -1219,7 +1227,7 @@ export async function saveAIStaff(staff: any, businessUnitSlugOrId?: string | nu
   }
 
   // Only include id if it's a valid UUID (for updates)
-  if (isUUID) {
+  if (staff.id && isValidUUID(staff.id)) {
     dataToSave.id = staff.id
   }
 
@@ -1296,7 +1304,7 @@ export async function saveTrainingScenario(scenario: any, businessUnitSlugOrId?:
   }
 
   // Only include id if it's a valid UUID (for updates)
-  if (isUUID) {
+  if (scenario.id && isValidUUID(scenario.id)) {
     dataToSave.id = scenario.id
   }
 

@@ -11,6 +11,7 @@ import PolicyContentView from '@/components/landing-page/PolicyContentView'
 import CheckoutModal from '@/components/shop/checkout-modal'
 import AICoach from '@/components/ui/ai-coach'
 import { supabase } from '@/lib/supabase'
+import { stripHtml, cleanHtml } from '@/lib/utils'
 
 interface BusinessUnit {
   id: string
@@ -667,7 +668,7 @@ export function LandingPageContent({
 
   // Load landing page content
   useEffect(() => {
-    async function loadLandingPage() {
+    async function loadLandingPage(retries = 3) {
       if (!businessUnitParam) {
         setLoading(false)
         return
@@ -676,10 +677,16 @@ export function LandingPageContent({
       try {
         const apiUrl = `/api/landing-page?businessUnit=${businessUnitParam}&country=${countryParam}&language=${langParam}${pageSlug ? `&page=${pageSlug}` : ''}${previewParam ? '&preview=true' : ''}&_t=${Date.now()}`
         console.log('[LiveChat Preview] Fetching from:', apiUrl)
+        
         const response = await fetch(apiUrl, {
           cache: 'no-store',
           headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
         })
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
         const data = await response.json()
 
         if (data.businessUnit) {
@@ -690,19 +697,26 @@ export function LandingPageContent({
         }
         if (data.landingPage) {
           console.log('[LiveChat Preview] Loaded landing page data')
-          console.log('[LiveChat Preview] Blocks count:', data.landingPage.blocks?.length || 0)
           setLandingPage(data.landingPage)
           setHasLandingPage(true)
-          // Set initial pricing selection
           if (data.landingPage.pricing_options?.length > 0) {
             const popular = data.landingPage.pricing_options.find((p: { popular: boolean }) => p.popular)
             setSelectedPricing(popular?.id || data.landingPage.pricing_options[0].id)
           }
         }
+        
+        // Success! Stop loading
+        setLoading(false)
+
       } catch (err) {
         console.error('Error loading landing page:', err)
-      } finally {
-        setLoading(false)
+        if (retries > 0) {
+          console.log(`[LiveChat Preview] Retrying... (${retries} attempts left)`)
+          setTimeout(() => loadLandingPage(retries - 1), 1000)
+        } else {
+          // No more retries, stop loading even if it failed
+          setLoading(false)
+        }
       }
     }
     loadLandingPage()
@@ -1096,36 +1110,6 @@ export function LandingPageContent({
                   {authUserName ? `Hi, ${authUserName}` : 'My Account'}
                 </button>
               )}
-              {/* Mobile language selector - only show if multiple languages for this country */}
-              {languagesForCountry.length > 1 && (
-                <div className="border-t border-gray-100 mt-2 pt-2">
-                  <div className="px-4 py-2 text-xs text-gray-500 uppercase tracking-wider">Language</div>
-                  {languagesForCountry.map((locale) => {
-                    const isActive = locale.language_code === langParam
-                    const langName: Record<string, string> = { en: 'English', tw: '繁體中文', cn: '简体中文', ja: '日本語', ko: '한국어' }
-                    return (
-                      <button
-                        key={`mobile-${locale.language_code}`}
-                        onClick={() => {
-                          setMobileMenuOpen(false)
-                          // Check if we're on a country route (/us, /hk, /sg)
-                          const currentPath = window.location.pathname
-                          const isCountryRoute = /^\/(us|hk|sg)$/i.test(currentPath)
-                          router.push(isCountryRoute
-                            ? `${currentPath}?lang=${locale.language_code}`
-                            : pageSlug
-                              ? `/${pageSlug}?lang=${locale.language_code}`
-                              : `/livechat?businessUnit=${businessUnitParam}&country=${countryParam}&lang=${locale.language_code}`)
-                        }}
-                        className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-50 flex items-center gap-2 ${isActive ? 'bg-gray-50 font-medium' : ''}`}
-                      >
-                        <span>{langName[locale.language_code] || locale.language_code}</span>
-                        {isActive && <Check className="w-4 h-4 ml-auto text-green-600" />}
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
             </nav>
           </div>
         )}
@@ -1213,7 +1197,7 @@ export function LandingPageContent({
                             fontStyle: slide.headline_italic ? 'italic' : undefined
                           }}
                         >
-                          {slide.headline}
+                          {stripHtml(slide.headline)}
                         </h1>
                       )}
                       {slide.subheadline && (
@@ -1230,11 +1214,11 @@ export function LandingPageContent({
                             fontStyle: slide.subheadline_italic ? 'italic' : undefined
                           }}
                         >
-                          {slide.subheadline}
+                          {stripHtml(slide.subheadline)}
                         </p>
                       )}
                       {slide.content && (
-                        <p
+                        <div
                           className={`font-light mb-8 drop-shadow max-w-2xl whitespace-pre-wrap ${getFontClass(slide.content_font_family)} ${
                             (slide.content_text_align || 'center') === 'left' ? 'text-left' :
                             (slide.content_text_align || 'center') === 'right' ? 'text-right mr-0 ml-auto' :
@@ -1246,11 +1230,9 @@ export function LandingPageContent({
                             fontWeight: slide.content_bold ? 'bold' : undefined,
                             fontStyle: slide.content_italic ? 'italic' : undefined
                           }}
-                        >
-                          {slide.content}
-                        </p>
-                      )}
-                      {!slide.content && slide.subheadline && (
+                          dangerouslySetInnerHTML={{ __html: cleanHtml(slide.content) }}
+                        />
+                      )}                      {!slide.content && slide.subheadline && (
                         <div className="mb-4" />
                       )}
                       {slide.cta_text && (
@@ -1372,7 +1354,7 @@ export function LandingPageContent({
                               fontStyle: slide.headline_italic ? 'italic' : undefined
                             }}
                           >
-                            {slide.headline}
+                            {stripHtml(slide.headline)}
                           </h2>
                         )}
                         {slide.subheadline && (
@@ -1389,11 +1371,11 @@ export function LandingPageContent({
                               fontStyle: slide.subheadline_italic ? 'italic' : undefined
                             }}
                           >
-                            {slide.subheadline}
+                            {stripHtml(slide.subheadline)}
                           </p>
                         )}
                         {slide.content && (
-                          <p
+                          <div
                             className={`font-light mb-8 drop-shadow max-w-2xl whitespace-pre-wrap ${getFontClass(slide.content_font_family)} ${
                               (slide.content_text_align || 'center') === 'left' ? 'text-left' :
                               (slide.content_text_align || 'center') === 'right' ? 'text-right mr-0 ml-auto' :
@@ -1405,9 +1387,8 @@ export function LandingPageContent({
                               fontWeight: slide.content_bold ? 'bold' : undefined,
                               fontStyle: slide.content_italic ? 'italic' : undefined
                             }}
-                          >
-                            {slide.content}
-                          </p>
+                            dangerouslySetInnerHTML={{ __html: cleanHtml(slide.content) }}
+                          />
                         )}
                         {!slide.content && slide.subheadline && (
                           <div className="mb-4" />

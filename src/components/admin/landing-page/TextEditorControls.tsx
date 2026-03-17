@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { AlignLeft, AlignCenter, AlignRight, Bold, Italic } from 'lucide-react'
 
 interface TextEditorControlsProps {
@@ -93,13 +93,56 @@ export default function TextEditorControls({
     : FONT_SIZES.content
 
   // Parse current font size to pixels
-  const currentFontSizePx = fontSize
-    ? Math.round(parseFloat(fontSize) * (fontSize.includes('rem') ? 16 : 1))
-    : safeLabel.toLowerCase().includes('headline')
-    ? 60
-    : safeLabel.toLowerCase().includes('subheadline')
-    ? 20
-    : 18
+  const parseFontSize = (size?: string) => {
+    if (!size) return null
+    // If it's a numeric string with units
+    if (/^\d+(\.\d+)?(px|rem|em|vh|vw)$/.test(size)) {
+      const value = parseFloat(size)
+      return Math.round(value * (size.includes('rem') ? 16 : 1))
+    }
+    // If it's a complex string like clamp(), try to extract the first number as a fallback
+    const match = size.match(/(\d+(\.\d+)?)(rem|px)/)
+    if (match) {
+      const value = parseFloat(match[1])
+      return Math.round(value * (match[3] === 'rem' ? 16 : 1))
+    }
+    return null
+  }
+
+  const currentFontSizePx = parseFontSize(fontSize) || (
+    safeLabel.toLowerCase().includes('headline') ? 60 :
+    safeLabel.toLowerCase().includes('subheadline') ? 20 : 18
+  )
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    // Force plain text paste and strip ALL code
+    e.preventDefault();
+    
+    // Use clipboard plain text if available
+    let text = e.clipboardData.getData('text/plain');
+    
+    // Aggressive cleaning
+    let cleanedText = text
+      .replace(/<!--[\s\S]*?-->/g, '') // Remove HTML comments
+      .replace(/<style[\s\S]*?<\/style>/g, '') // Remove style blocks
+      .replace(/<xml[\s\S]*?<\/xml>/g, '') // Remove XML blocks
+      .replace(/<script[\s\S]*?<\/script>/g, '') // Remove script blocks
+      .replace(/<[^>]*>?/gm, '') // Remove ALL remaining HTML tags
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&[a-z0-9#]+;/gi, '') // Remove HTML entities
+      .replace(/\/\*[\s\S]*?\*\//g, '') // Remove CSS comments
+      .replace(/[ \t]+/g, ' ') // Collapse multiple spaces
+      .replace(/\n\s*\n/g, '\n\n') // Collapse multiple newlines
+      .trim();
+    
+    // Insert at cursor if possible, or just append
+    const target = e.target as HTMLTextAreaElement | HTMLInputElement;
+    const start = target.selectionStart || 0;
+    const end = target.selectionEnd || 0;
+    
+    const newValue = value.substring(0, start) + cleanedText + value.substring(end);
+    onChange(newValue);
+  };
 
   return (
     <div>
@@ -279,6 +322,7 @@ export default function TextEditorControls({
           <textarea
             value={value}
             onChange={(e) => onChange(e.target.value)}
+            onPaste={handlePaste}
             placeholder={placeholder}
             rows={rows}
             className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500 resize-y break-words whitespace-pre-wrap"
@@ -288,6 +332,7 @@ export default function TextEditorControls({
             type="text"
             value={value}
             onChange={(e) => onChange(e.target.value)}
+            onPaste={handlePaste}
             placeholder={placeholder}
             className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500"
           />

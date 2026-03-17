@@ -853,6 +853,21 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({
   }
 
   // Media Library functions
+  const handlePlainPaste = (e: React.ClipboardEvent, onCleanPaste: (cleaned: string) => void) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    const cleanedText = text
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/<[^>]*>?/gm, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&[a-z0-9#]+;/gi, '')
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n\s*\n/g, '\n\n')
+      .trim();
+    
+    onCleanPaste(cleanedText);
+  };
+
   const loadMediaFiles = async () => {
     if (!businessUnitId) return
     setMediaLoading(true)
@@ -3432,6 +3447,11 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({
                                     slides[index] = { ...slide, headline: e.target.value }
                                     setLandingPageData({...landingPageData, hero_slides: slides})
                                   }}
+                                  onPaste={(e) => handlePlainPaste(e, (val) => {
+                                    const slides = [...(landingPageData.hero_slides || [])]
+                                    slides[index] = { ...slide, headline: val }
+                                    setLandingPageData({...landingPageData, hero_slides: slides})
+                                  })}
                                   placeholder="e.g., Transform Your Skin"
                                   className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500"
                                 />

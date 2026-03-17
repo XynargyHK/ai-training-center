@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { getFontClass } from '@/lib/fonts'
 import { useSearchParams } from 'next/navigation'
+import { stripHtml } from '@/lib/utils'
 
 interface StaticBannerBlockData {
   // Background
@@ -114,7 +115,7 @@ export default function StaticBannerBlock({ data, anchorId }: StaticBannerBlockP
                 fontStyle: data.headline_italic ? 'italic' : undefined
               }}
             >
-              {data.headline}
+              {stripHtml(data.headline)}
             </h2>
           )}
           {data.subheadline && (
@@ -131,7 +132,7 @@ export default function StaticBannerBlock({ data, anchorId }: StaticBannerBlockP
                 fontStyle: data.subheadline_italic ? 'italic' : undefined
               }}
             >
-              {data.subheadline}
+              {stripHtml(data.subheadline)}
             </p>
           )}
           {data.content && (
@@ -148,7 +149,7 @@ export default function StaticBannerBlock({ data, anchorId }: StaticBannerBlockP
                 fontStyle: data.content_italic ? 'italic' : undefined
               }}
             >
-              {data.content}
+              {stripHtml(data.content)}
             </p>
           )}
           {!data.content && data.subheadline && (

@@ -227,6 +227,30 @@ const BlockPreview = ({ type }: { type: string }) => {
           </div>
         </div>
       )
+    case 'lead_magnet':
+      return (
+        <div className={commonBase + " items-center justify-center text-center p-4 bg-violet-50/30"}>
+          <div className="w-6 h-6 bg-violet-100 rounded-md flex items-center justify-center text-violet-600 mb-1.5 mx-auto">
+            <div className="text-[10px]">🎁</div>
+          </div>
+          <div className="text-[6px] font-black text-gray-800">EXCLUSIVE GIFT</div>
+          <div className="text-[4px] text-gray-500 mb-2">Get our expert guide for free.</div>
+          <div className="h-3 w-16 bg-violet-600 rounded-[2px] mx-auto flex items-center justify-center text-[4px] text-white font-bold shadow-sm">UNLOCK PDF</div>
+        </div>
+      )
+    case 'pdf_reader':
+      return (
+        <div className={commonBase + " flex p-2 gap-2"}>
+          <div className="w-8 h-full bg-gray-50 rounded border border-gray-100 flex flex-col gap-1 p-1">
+            <div className="h-1 w-full bg-violet-400 rounded-full" />
+            <div className="h-1 w-full bg-gray-200 rounded-full" />
+            <div className="h-1 w-full bg-gray-200 rounded-full" />
+          </div>
+          <div className="flex-1 bg-white rounded border border-gray-100 flex items-center justify-center">
+            <div className="text-[10px] text-violet-200">📖</div>
+          </div>
+        </div>
+      )
     default:
       return <div className={commonBase} />
   }
@@ -315,7 +339,7 @@ export default function BlockPicker({ onSelect, onClose }: BlockPickerProps) {
         {/* Footer */}
         <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 text-center">
           <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">
-            14 Professional Blocks Available
+            16 Professional Blocks Available
           </p>
         </div>
       </div>

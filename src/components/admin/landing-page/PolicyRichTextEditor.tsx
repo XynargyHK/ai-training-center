@@ -345,6 +345,52 @@ export default function PolicyRichTextEditor({
     setShowColorPicker(false)
   }
 
+  // Handle paste to clean Word junk
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const html = e.clipboardData.getData('text/html');
+    const text = e.clipboardData.getData('text/plain');
+
+    // If it's Word junk or contains complex HTML
+    if (html.includes('MsoNormal') || html.includes('<!--') || html.includes('<xml') || text.includes('/* Font Definitions */')) {
+      e.preventDefault();
+      
+      let contentToInsert = '';
+
+      if (html) {
+        // 1. Try to extract content between StartFragment and EndFragment
+        const fragmentMatch = html.match(/<!--StartFragment-->([\s\S]*?)<!--EndFragment-->/);
+        let rawContent = fragmentMatch ? fragmentMatch[1] : html;
+
+        // 2. Clean and convert blocks to line breaks for tight spacing
+        contentToInsert = rawContent
+          .replace(/<!--[\s\S]*?-->/g, '')
+          .replace(/<style[\s\S]*?<\/style>/gi, '')
+          .replace(/<xml[\s\S]*?<\/xml>/gi, '')
+          .replace(/class="MsoNormal"/gi, '')
+          .replace(/style="[\s\S]*?"/gi, '') // Strip styles
+          .replace(/<p[\s\S]*?>([\s\S]*?)<\/p>/gi, '$1<br/>') // Convert P to BR
+          .replace(/<div[\s\S]*?>([\s\S]*?)<\/div>/gi, '$1<br/>') // Convert DIV to BR
+          .replace(/<o:p>[\s\S]*?<\/o:p>/gi, '')
+          .replace(/<span[\s\S]*?>([\s\S]*?)<\/span>/gi, '$1')
+          .replace(/&nbsp;/g, ' ')
+          .replace(/(<br\s*\/?>){3,}/gi, '<br/><br/>')
+          .trim();
+
+        // If after cleaning we have almost nothing, fallback to text
+        if (contentToInsert.replace(/<[^>]*>/g, '').trim().length === 0) {
+          contentToInsert = text.trim().replace(/\n/g, '<br>');
+        }
+      } else {
+        // Fallback to plain text with basic line break support
+        contentToInsert = text.trim().replace(/\n/g, '<br>');
+      }
+      
+      // Insert the cleaned content
+      document.execCommand('insertHTML', false, contentToInsert);
+      handleInput();
+    }
+  };
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -589,6 +635,7 @@ export default function PolicyRichTextEditor({
         ref={editorRef}
         contentEditable
         onInput={handleInput}
+        onPaste={handlePaste}
         onMouseUp={saveSelection}
         onKeyUp={saveSelection}
         onSelect={saveSelection}

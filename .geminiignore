@@ -1,0 +1,28 @@
+# .geminiignore - Exclude large non-code files and noise
+
+# Large assets and data dumps
+knowledgebase/
+api-response.json
+UsersDennyai-training-centerdatabase-backup-2026-01-31.json
+UsersDennyai-training-centertmp_lp.json
+
+# Build and temporary files
+.next/
+node_modules/
+.temp_pptx/
+log/
+build/
+dist/
+
+# System and environment
+.env*
+.DS_Store
+*.pem
+*.docx
+*.pdf
+*.xlsx
+*.pptx
+*.bat
+
+# Documentation & plans (optional, but keeps search clean if only looking for code)
+# *.md

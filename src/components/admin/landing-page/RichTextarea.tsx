@@ -31,22 +31,44 @@ export default function RichTextarea({ value, onChange, placeholder, className }
     const html = e.clipboardData.getData('text/html')
     
     // If there is HTML, we try to sanitize it a bit but keep bold/italic
-    if (html) {
-      // Use a temporary div to sanitize
+    if (html && (html.includes('MsoNormal') || html.includes('<!--') || html.includes('<xml'))) {
+      // 1. Try to extract content between StartFragment and EndFragment
+      const fragmentMatch = html.match(/<!--StartFragment-->([\s\S]*?)<!--EndFragment-->/);
+      let rawContent = fragmentMatch ? fragmentMatch[1] : html;
+
+      // 2. Clean and convert blocks to line breaks for tight spacing
+      let contentToInsert = rawContent
+        .replace(/<!--[\s\S]*?-->/g, '')
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<xml[\s\S]*?<\/xml>/gi, '')
+        .replace(/class="MsoNormal"/gi, '')
+        .replace(/style="[\s\S]*?"/gi, '') // Strip styles
+        .replace(/<p[\s\S]*?>([\s\S]*?)<\/p>/gi, '$1<br/>') // Convert P to BR
+        .replace(/<div[\s\S]*?>([\s\S]*?)<\/div>/gi, '$1<br/>') // Convert DIV to BR
+        .replace(/<o:p>[\s\S]*?<\/o:p>/gi, '')
+        .replace(/<span[\s\S]*?>([\s\S]*?)<\/span>/gi, '$1')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/(<br\s*\/?>){3,}/gi, '<br/><br/>')
+        .trim();
+
+      // If after cleaning we have almost nothing, fallback to text
+      if (contentToInsert.replace(/<[^>]*>/g, '').trim().length === 0) {
+        contentToInsert = text.trim().replace(/\n/g, '<br>');
+      }
+      
+      document.execCommand('insertHTML', false, contentToInsert);
+    } else if (html) {
+      // Basic sanitization for normal HTML
       const div = document.createElement('div')
       div.innerHTML = html
-      
-      // Basic sanitization - only keep b, i, strong, em, span, p, br
       const allowedTags = ['B', 'I', 'STRONG', 'EM', 'SPAN', 'P', 'BR', 'DIV']
       const walk = (node: Node) => {
         if (node.nodeType === 1) { // Element
           const el = node as HTMLElement
           if (!allowedTags.includes(el.tagName)) {
-            // Replace with text content or nothing
             const textNode = document.createTextNode(el.innerText)
             el.parentNode?.replaceChild(textNode, el)
           } else {
-            // Remove attributes except maybe style if we want to keep some
             while (el.attributes.length > 0) {
               el.removeAttribute(el.attributes[0].name)
             }
@@ -54,12 +76,12 @@ export default function RichTextarea({ value, onChange, placeholder, className }
           }
         }
       }
-      
       walk(div)
       document.execCommand('insertHTML', false, div.innerHTML)
     } else {
       document.execCommand('insertText', false, text)
     }
+    handleInput()
   }
 
   return (

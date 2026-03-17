@@ -1,6 +1,7 @@
 'use client'
 
 import { getFontClass } from '@/lib/fonts'
+import { stripHtml } from '@/lib/utils'
 
 interface Step {
   background_url?: string
@@ -74,6 +75,15 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
   // If plain text, preserve line breaks
   const processTextContent = (text: string) => {
     if (!text) return ''
+    
+    // Check if it's Word junk wrapped in HTML
+    if (text.includes('<!--') || text.includes('MsoNormal') || text.includes('/* Font Definitions */')) {
+      // If it looks like it was meant to be plain text but has Word junk, strip it all
+      if (text.includes('EndFragment')) {
+        return stripHtml(text)
+      }
+    }
+
     // Check if content appears to be HTML
     if (text.includes('<') && text.includes('>')) {
       // Fix white/invisible colors in font tags and inline styles
@@ -84,6 +94,10 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
       processed = processed.replace(/style=["'][^"']*color:\s*(#fff|#ffffff|white|rgb\(255,\s*255,\s*255\))/gi, (match) => {
         return match.replace(/(#fff|#ffffff|white|rgb\(255,\s*255,\s*255\))/gi, '#000000')
       })
+      
+      // Remove Word markers even from rich text
+      processed = processed.replace(/<!--[\s\S]*?-->/g, '')
+      
       return processed
     }
     // Plain text - white-space: pre-wrap in style will handle breaks
@@ -93,15 +107,6 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
   if (!steps || steps.length === 0) {
     return null
   }
-
-  // Debug logging
-  console.log('[StepsBlock] Rendering with steps:', steps.length)
-  steps.forEach((step, i) => {
-    console.log(`[StepsBlock] Step ${i}: text_position=${step.text_position}, text_content length=${step.text_content?.length || 0}`)
-    if (step.text_content) {
-      console.log(`[StepsBlock] Step ${i} text_content preview:`, step.text_content.substring(0, 100))
-    }
-  })
 
   return (
     <section
@@ -122,7 +127,7 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
               fontStyle: heading_italic ? 'italic' : undefined
             }}
           >
-            {heading}
+            {stripHtml(heading)}
           </h2>
         )}
 
@@ -138,7 +143,7 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
               fontStyle: subheadline_italic ? 'italic' : undefined
             }}
           >
-            {subheadline}
+            {stripHtml(subheadline)}
           </p>
         )}
 
@@ -192,7 +197,7 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
                             className={subheadlineClassName}
                             style={subheadlineStyle}
                           >
-                            {step.subheadline}
+                            {stripHtml(step.subheadline)}
                           </h3>
                         )}
                         {/* Text Content */}
@@ -238,7 +243,7 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
                             className={subheadlineClassName}
                             style={subheadlineStyle}
                           >
-                            {step.subheadline}
+                            {stripHtml(step.subheadline)}
                           </h3>
                         )}
                         {/* Text Content */}
@@ -262,7 +267,7 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
                             className={subheadlineClassName}
                             style={subheadlineStyle}
                           >
-                            {step.subheadline}
+                            {stripHtml(step.subheadline)}
                           </h3>
                         )}
                         {/* Text Content */}
@@ -308,7 +313,7 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
                             className={subheadlineClassName}
                             style={subheadlineStyle}
                           >
-                            {step.subheadline}
+                            {stripHtml(step.subheadline)}
                           </h3>
                         )}
                         {/* Text Content */}
@@ -356,13 +361,6 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
                 textAlign: step.text_align || 'left'
               }
 
-              // Debug: log what we're rendering
-              const processedContent = processTextContent(step.text_content)
-              console.log(`[StepsBlock] Step ${index} text_content RAW:`, step.text_content)
-              console.log(`[StepsBlock] Step ${index} text_content PROCESSED:`, processedContent)
-              console.log(`[StepsBlock] Step ${index} text_color:`, step.text_color)
-              console.log(`[StepsBlock] Step ${index} text_content length:`, step.text_content?.length, 'processed length:', processedContent?.length)
-
               return (
                 <div key={index} className="w-full p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
                   {/* Vertical text above/below OR Horizontal text left/right */}
@@ -378,7 +376,7 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
                               className={subheadlineClassName}
                               style={subheadlineStyle}
                             >
-                              {step.subheadline}
+                              {stripHtml(step.subheadline)}
                             </h3>
                           )}
                           {/* Text Content */}
@@ -424,7 +422,7 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
                               className={subheadlineClassName}
                               style={subheadlineStyle}
                             >
-                              {step.subheadline}
+                              {stripHtml(step.subheadline)}
                             </h3>
                           )}
                           {/* Text Content */}
@@ -448,7 +446,7 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
                               className={subheadlineClassName}
                               style={subheadlineStyle}
                             >
-                              {step.subheadline}
+                              {stripHtml(step.subheadline)}
                             </h3>
                           )}
                           {/* Text Content */}
@@ -494,7 +492,7 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
                               className={subheadlineClassName}
                               style={subheadlineStyle}
                             >
-                              {step.subheadline}
+                              {stripHtml(step.subheadline)}
                             </h3>
                           )}
                           {/* Text Content */}
@@ -547,7 +545,7 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
           margin: 0.25rem 0;
         }
         .steps-block-content .step-text-content p {
-          margin-bottom: 0.5rem;
+          margin-bottom: 0;
         }
         /* Force text visibility - override any inline white/light colors */
         .steps-block-content .step-text-content,

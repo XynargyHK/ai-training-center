@@ -22,6 +22,7 @@ import LogoCloudBlockEditor from './blocks/LogoCloudBlockEditor'
 import ImageGridBlockEditor from './blocks/ImageGridBlockEditor'
 import StatsGridBlockEditor from './blocks/StatsGridBlockEditor'
 import LeadMagnetEditor from './blocks/LeadMagnetEditor'
+import PDFReaderEditor from './blocks/PDFReaderEditor'
 
 interface BlockManagerProps {
   blocks: LandingPageBlock[]
@@ -1779,6 +1780,15 @@ export default function BlockManager({
             onChange={(updatedBlock) => handleUpdateBlock(index, updatedBlock)}
             businessUnitId={businessUnitId}
             onMediaLibraryOpen={handleOpenMediaLibrary}
+          />
+        )
+
+      case 'pdf_reader':
+        return (
+          <PDFReaderEditor
+            block={block}
+            onChange={(updatedBlock) => handleUpdateBlock(index, updatedBlock)}
+            businessUnitId={businessUnitId}
           />
         )
 
