@@ -18,7 +18,6 @@ const LANDING_DOMAINS: Record<string, string> = {
   'www.brezcode.com': 'brezcode',
   'xynargy.hk': 'xynargy',
   'www.xynargy.hk': 'xynargy',
-  'ai-training-center-production.up.railway.app': 'brezcode',
 }
 
 // Detect if request is from a bot/crawler
