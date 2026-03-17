@@ -3651,6 +3651,11 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({
                                     slides[index] = { ...slide, subheadline: e.target.value }
                                     setLandingPageData({...landingPageData, hero_slides: slides})
                                   }}
+                                  onPaste={(e) => handlePlainPaste(e, (val) => {
+                                    const slides = [...(landingPageData.hero_slides || [])]
+                                    slides[index] = { ...slide, subheadline: val }
+                                    setLandingPageData({...landingPageData, hero_slides: slides})
+                                  })}
                                   placeholder="e.g., Discover the secret"
                                   className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500"
                                 />
@@ -3857,6 +3862,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({
                                             slides[index] = { ...slide, features }
                                             setLandingPageData({...landingPageData, hero_slides: slides})
                                           }}
+                                          onPaste={(e) => handlePlainPaste(e, (val) => {
+                                            const slides = [...(landingPageData.hero_slides || [])]
+                                            const features = [...(slide.features || [])]
+                                            features[fIndex] = val
+                                            slides[index] = { ...slide, features }
+                                            setLandingPageData({...landingPageData, hero_slides: slides})
+                                          })}
                                           placeholder="Feature description"
                                           className="flex-1 px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500"
                                         />
