@@ -10,6 +10,8 @@ interface PDFItem {
   pdf_url: string
   media_type?: 'image' | 'video'
   media_url?: string
+  original_filename?: string
+  image_width?: string
   text_position?: 'left' | 'right' | 'above' | 'below'
 }
 
@@ -42,10 +44,11 @@ export default function PDFReaderEditor({ block, onChange, onMediaLibraryOpen, b
 
   const addItem = () => {
     const newItems = [...(data.items || []), { 
-      title: 'New Guide', 
+      title: '', 
       pdf_url: '', 
       media_type: 'image', 
       media_url: '',
+      image_width: '400px',
       text_position: 'above'
     }]
     updateData({ items: newItems })
@@ -90,7 +93,8 @@ export default function PDFReaderEditor({ block, onChange, onMediaLibraryOpen, b
       if (result.url) {
         updateItem(index, { 
           media_url: result.url,
-          media_type: isVideo ? 'video' : 'image'
+          media_type: isVideo ? 'video' : 'image',
+          original_filename: file.name
         })
       }
     } catch (error) {
@@ -98,6 +102,7 @@ export default function PDFReaderEditor({ block, onChange, onMediaLibraryOpen, b
       alert('Failed to upload media')
     } finally {
       setUploadingMediaIndex(null)
+      if (mediaInputRefs.current[index]) mediaInputRefs.current[index]!.value = ''
     }
   }
 
@@ -140,30 +145,88 @@ export default function PDFReaderEditor({ block, onChange, onMediaLibraryOpen, b
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Headline</label>
-          <TextEditorControls
-            label="Headline"
-            value={data.headline}
-            onChange={(val) => updateData({ headline: val })}
-            fontSize={data.headline_font_size}
-            onFontSizeChange={(val) => updateData({ headline_font_size: val })}
-            color={data.headline_color}
-            onColorChange={(val) => updateData({ headline_color: val })}
-            bold={true}
-          />
+        <div className="space-y-4">
+          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Headline</label>
+            <TextEditorControls
+              label="Headline"
+              value={data.headline}
+              onChange={(val) => updateData({ headline: val })}
+              fontSize={data.headline_font_size}
+              onFontSizeChange={(val) => updateData({ headline_font_size: val })}
+              color={data.headline_color}
+              onColorChange={(val) => updateData({ headline_color: val })}
+              bold={true}
+            />
+          </div>
+          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Subheadline</label>
+            <TextEditorControls
+              label="Subheadline"
+              value={data.subheadline}
+              onChange={(val) => updateData({ subheadline: val })}
+              fontSize={data.subheadline_font_size}
+              onFontSizeChange={(val) => updateData({ subheadline_font_size: val })}
+              color={data.subheadline_color}
+              onColorChange={(val) => updateData({ subheadline_color: val })}
+            />
+          </div>
         </div>
         <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Appearance</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Appearance & Main Labels</label>
           <div className="space-y-3">
-            <div>
-              <span className="text-[10px] text-gray-400 uppercase font-bold">Theme Color</span>
-              <input
-                type="color"
-                value={data.primary_color || '#7c3aed'}
-                onChange={(e) => updateData({ primary_color: e.target.value })}
-                className="w-full h-8 cursor-pointer mt-1"
-              />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <span className="text-[10px] text-gray-400 uppercase font-bold">Theme Color</span>
+                <input
+                  type="color"
+                  value={data.primary_color || '#7c3aed'}
+                  onChange={(e) => updateData({ primary_color: e.target.value })}
+                  className="w-full h-8 cursor-pointer mt-1"
+                />
+              </div>
+              <div>
+                <span className="text-[10px] text-gray-400 uppercase font-bold">Background Color</span>
+                <input
+                  type="color"
+                  value={data.background_color || '#ffffff'}
+                  onChange={(e) => updateData({ background_color: e.target.value })}
+                  className="w-full h-8 cursor-pointer mt-1"
+                />
+              </div>
+            </div>
+            
+            <div className="pt-2 border-t border-gray-200 space-y-3">
+              <div>
+                <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">Sidebar Label</label>
+                <input
+                  type="text"
+                  value={data.resources_label || ''}
+                  onChange={(e) => updateData({ resources_label: e.target.value })}
+                  placeholder="e.g., Resources"
+                  className="w-full px-2 py-1.5 border border-gray-200 text-xs rounded"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">Empty State Title</label>
+                <input
+                  type="text"
+                  value={data.select_guide_title || ''}
+                  onChange={(e) => updateData({ select_guide_title: e.target.value })}
+                  placeholder="e.g., No Document Selected"
+                  className="w-full px-2 py-1.5 border border-gray-200 text-xs rounded"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">Empty State Text</label>
+                <input
+                  type="text"
+                  value={data.select_guide_placeholder || ''}
+                  onChange={(e) => updateData({ select_guide_placeholder: e.target.value })}
+                  placeholder="e.g., Please select a guide..."
+                  className="w-full px-2 py-1.5 border border-gray-200 text-xs rounded"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -209,17 +272,17 @@ export default function PDFReaderEditor({ block, onChange, onMediaLibraryOpen, b
                     {item.media_url ? (
                       <div className="relative">
                         {item.media_type === 'video' ? (
-                          <video src={item.media_url} className="h-20 w-32 object-cover rounded-lg border border-gray-200" muted />
+                          <video src={item.media_url} className="h-20 w-32 object-cover rounded-none border border-gray-200" muted />
                         ) : (
                           <img src={item.media_url} alt="Preview" className="h-20 w-32 object-cover rounded-lg border border-gray-200" />
                         )}
                         <button
-                          onClick={() => updateItem(index, { media_url: '', media_type: 'image' })}
+                          onClick={() => updateItem(index, { media_url: '', media_type: 'image', original_filename: '' })}
                           className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm"
                         >
                           <X className="w-3 h-3" />
                         </button>
-                        <span className="absolute bottom-1 right-1 text-[7px] bg-black/60 text-white px-1 py-0.5 rounded font-bold uppercase">
+                        <span className="absolute bottom-1 right-1 text-[7px] bg-black/60 text-white px-1 py-0.5 rounded-none font-bold uppercase">
                           {item.media_type === 'video' ? 'VIDEO' : 'IMAGE'}
                         </span>
                       </div>
@@ -230,12 +293,19 @@ export default function PDFReaderEditor({ block, onChange, onMediaLibraryOpen, b
                       </div>
                     )}
 
+                    {/* Filename display */}
+                    {item.media_url && (
+                      <div className="text-[9px] font-mono max-w-[120px] truncate text-green-600">
+                        📄 {item.original_filename || item.media_url.split('/').pop()}
+                      </div>
+                    )}
+
                     <div className="flex flex-col gap-1.5">
                       <div className="flex gap-1.5">
                         <button
                           onClick={() => mediaInputRefs.current[index]?.click()}
                           disabled={uploadingMediaIndex === index}
-                          className="px-2 py-1 bg-violet-600 text-white text-[10px] font-bold rounded hover:bg-violet-700 disabled:opacity-50 flex items-center gap-1 shadow-sm"
+                          className="px-2 py-1 bg-violet-50 border border-violet-200 text-gray-800 text-[10px] font-bold rounded-none hover:bg-violet-100 disabled:opacity-50 flex items-center gap-1 shadow-sm"
                         >
                           {uploadingMediaIndex === index ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
                           Upload
@@ -243,7 +313,7 @@ export default function PDFReaderEditor({ block, onChange, onMediaLibraryOpen, b
                         {onMediaLibraryOpen && (
                           <button
                             onClick={() => onMediaLibraryOpen((url) => updateItem(index, { media_url: url, media_type: 'image' }))}
-                            className="px-2 py-1 bg-white border border-gray-200 text-gray-700 text-[10px] font-bold rounded hover:bg-gray-50 flex items-center gap-1 shadow-sm"
+                            className="px-2 py-1 bg-gray-100 border border-gray-200 text-gray-700 text-[10px] font-bold rounded-none hover:bg-gray-200 flex items-center gap-1 shadow-sm"
                           >
                             <ImageIcon className="w-3 h-3" />
                             Library
@@ -260,12 +330,12 @@ export default function PDFReaderEditor({ block, onChange, onMediaLibraryOpen, b
 
                       <div className="flex items-center gap-2">
                         <span className="text-[8px] font-bold text-gray-400 uppercase">Side</span>
-                        <div className="flex bg-gray-50 p-0.5 rounded border border-gray-200">
+                        <div className="flex bg-gray-50 p-0.5 rounded-none border border-gray-200">
                           {(['left', 'right', 'above', 'below'] as const).map((pos) => (
                             <button
                               key={pos}
                               onClick={() => updateItem(index, { text_position: pos })}
-                              className={`px-1.5 py-0.5 text-[8px] font-bold rounded transition-all capitalize ${
+                              className={`px-1.5 py-0.5 text-[8px] font-bold rounded-none transition-all capitalize ${
                                 (item.text_position || 'above') === pos ? 'bg-white text-violet-600 shadow-sm' : 'text-gray-400'
                               }`}
                             >
@@ -274,6 +344,33 @@ export default function PDFReaderEditor({ block, onChange, onMediaLibraryOpen, b
                           ))}
                         </div>
                       </div>
+
+                      {/* Image Size Controls */}
+                      {item.media_url && (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => {
+                              const currentWidth = parseInt((item.image_width || '400px').replace('px', ''))
+                              const newWidth = Math.max(100, currentWidth - 20)
+                              updateItem(index, { image_width: `${newWidth}px` })
+                            }}
+                            className="px-1.5 py-0.5 bg-gray-50 border border-gray-200 text-gray-600 text-[8px]"
+                          >
+                            -
+                          </button>
+                          <span className="text-[8px] text-gray-400 font-mono">{item.image_width || '400px'}</span>
+                          <button
+                            onClick={() => {
+                              const currentWidth = parseInt((item.image_width || '400px').replace('px', ''))
+                              const newWidth = currentWidth + 20
+                              updateItem(index, { image_width: `${newWidth}px` })
+                            }}
+                            className="px-1.5 py-0.5 bg-gray-50 border border-gray-200 text-gray-600 text-[8px]"
+                          >
+                            +
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

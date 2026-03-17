@@ -4,12 +4,15 @@ import React, { useState } from 'react'
 import { LandingPageBlock } from '@/types/landing-page-blocks'
 import { getFontClass } from '@/lib/fonts'
 import { FileText, Maximize2, Download, ChevronRight, BookOpen } from 'lucide-react'
+import { stripHtml } from '@/lib/utils'
 
 interface PDFItem {
   title: string
   pdf_url: string
   media_type?: 'image' | 'video'
   media_url?: string
+  original_filename?: string
+  image_width?: string
   text_position?: 'left' | 'right' | 'above' | 'below'
 }
 
@@ -25,41 +28,44 @@ export default function PDFReaderBlock({ block }: PDFReaderBlockProps) {
 
   if (items.length === 0) return null
 
+  // Media Rendering - Patterned after StepsBlock
   const renderActiveMedia = () => {
     if (!activeItem?.media_url) return null
+    const isMediaVideo = activeItem.media_type === 'video'
+    const imageWidth = activeItem.image_width || '400px'
 
-    if (activeItem.media_type === 'video') {
-      let embedUrl = activeItem.media_url
-      if (activeItem.media_url.includes('youtube.com/watch?v=')) {
-        embedUrl = activeItem.media_url.replace('watch?v=', 'embed/')
-      } else if (activeItem.media_url.includes('youtu.be/')) {
-        embedUrl = activeItem.media_url.replace('youtu.be/', 'youtube.com/embed/')
-      }
-
-      return (
-        <div className="rounded-2xl overflow-hidden shadow-lg aspect-video bg-black">
-          <iframe
-            src={embedUrl}
-            className="w-full h-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        </div>
-      )
-    }
+    const mediaElement = isMediaVideo ? (
+      <video
+        src={activeItem.media_url}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        className="h-auto rounded mb-6"
+        style={{ width: imageWidth, maxWidth: '100%' }}
+      />
+    ) : (
+      <img
+        src={activeItem.media_url}
+        alt={activeItem.title}
+        className="h-auto rounded mb-6"
+        style={{ width: imageWidth, maxWidth: '100%' }}
+      />
+    )
 
     return (
-      <div className="rounded-2xl overflow-hidden shadow-lg">
-        <img
-          src={activeItem.media_url}
-          alt={activeItem.title}
-          className="w-full h-full object-cover max-h-[500px]"
-        />
+      <div className="flex justify-center w-full md:w-auto flex-shrink-0">
+        {mediaElement}
       </div>
     )
   }
 
   const textPosition = activeItem?.text_position || 'above'
+  const isTextAbove = textPosition === 'above'
+  const isTextBelow = textPosition === 'below'
+  const isTextLeft = textPosition === 'left'
+  const isTextRight = textPosition === 'right'
 
   return (
     <section 
@@ -67,23 +73,36 @@ export default function PDFReaderBlock({ block }: PDFReaderBlockProps) {
       style={{ backgroundColor: data.background_color || '#ffffff' }}
     >
       <div className="max-w-6xl mx-auto w-full flex-1 flex flex-col">
-        {/* Header */}
+        {/* Header - Fixed font sizing */}
         <div className="mb-8">
           <h2 
-            className={`text-2xl md:text-3xl font-bold mb-2 ${getFontClass(data.headline_font_family)}`}
-            style={{ color: data.headline_color || '#111827' }}
+            className={`font-bold mb-2 ${getFontClass(data.headline_font_family)}`}
+            style={{ 
+              color: data.headline_color || '#111827',
+              fontSize: data.headline_font_size || 'clamp(1.5rem, 4vw, 2.5rem)',
+              fontWeight: data.headline_bold ? 'bold' : 'normal',
+              fontStyle: data.headline_italic ? 'italic' : 'normal'
+            }}
           >
-            {data.headline}
+            {stripHtml(data.headline)}
           </h2>
-          <p className="text-gray-500 text-sm">
-            {data.subheadline}
+          <p 
+            className="opacity-80"
+            style={{ 
+              color: data.subheadline_color || '#4b5563',
+              fontSize: data.subheadline_font_size || '1rem'
+            }}
+          >
+            {stripHtml(data.subheadline)}
           </p>
         </div>
 
         <div className="flex flex-col md:flex-row gap-6 flex-1">
           {/* Sidebar Menu */}
           <div className="md:w-64 space-y-2">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2 mb-3">Resources</p>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2 mb-3">
+              {stripHtml(data.resources_label) || 'Resources'}
+            </p>
             {items.map((item: PDFItem, idx: number) => (
               <button
                 key={idx}
@@ -101,7 +120,7 @@ export default function PDFReaderBlock({ block }: PDFReaderBlockProps) {
                     <FileText className="w-4 h-4" />
                   </div>
                   <span className={`text-sm font-bold ${activeIndex === idx ? 'text-violet-700' : ''}`}>
-                    {item.title}
+                    {stripHtml(item.title)}
                   </span>
                 </div>
                 {activeIndex === idx && <ChevronRight className="w-4 h-4 text-violet-400" />}
@@ -117,7 +136,7 @@ export default function PDFReaderBlock({ block }: PDFReaderBlockProps) {
                 <div className="bg-white px-4 py-3 border-b border-gray-200 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <BookOpen className="w-4 h-4 text-violet-500" />
-                    <span className="text-xs font-bold text-gray-700 uppercase tracking-tight">{activeItem.title}</span>
+                    <span className="text-xs font-bold text-gray-700 uppercase tracking-tight">{stripHtml(activeItem.title)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <a 
@@ -140,32 +159,33 @@ export default function PDFReaderBlock({ block }: PDFReaderBlockProps) {
                 </div>
                 
                 <div className="flex-1 flex flex-col p-6 overflow-y-auto">
-                  <div className={`flex flex-col gap-8 ${
-                    textPosition === 'left' ? 'md:flex-row' : 
-                    textPosition === 'right' ? 'md:flex-row-reverse' : 
-                    textPosition === 'below' ? 'flex-col-reverse' : 'flex-col'
-                  }`}>
-                    
-                    {/* Media Component */}
-                    {activeItem.media_url && (
-                      <div className={`w-full ${
-                        (textPosition === 'left' || textPosition === 'right') ? 'md:w-1/2' : ''
-                      }`}>
-                        {renderActiveMedia()}
+                  {/* Layout - Logic matching StepsBlock */}
+                  {isTextAbove || isTextBelow ? (
+                    // Stacked
+                    <div className="flex flex-col items-center">
+                      {isTextAbove && activeItem.media_url && renderActiveMedia()}
+                      <div className="flex-1 w-full min-h-[600px] relative bg-gray-200 rounded-xl overflow-hidden shadow-inner border border-gray-300">
+                        <iframe
+                          src={`${activeItem.pdf_url}#toolbar=0`}
+                          className="w-full h-full absolute inset-0 border-none"
+                          title={stripHtml(activeItem.title)}
+                        />
                       </div>
-                    )}
-
-                    {/* PDF Component */}
-                    <div className={`flex-1 min-h-[600px] relative bg-gray-200 rounded-xl overflow-hidden shadow-inner border border-gray-300 ${
-                      (textPosition === 'left' || textPosition === 'right') && !activeItem.media_url ? 'w-full' : ''
-                    }`}>
-                      <iframe
-                        src={`${activeItem.pdf_url}#toolbar=0`}
-                        className="w-full h-full absolute inset-0 border-none"
-                        title={activeItem.title}
-                      />
+                      {isTextBelow && activeItem.media_url && renderActiveMedia()}
                     </div>
-                  </div>
+                  ) : (
+                    // Side-by-side
+                    <div className={`flex flex-col ${isTextLeft ? 'md:flex-row' : 'md:flex-row-reverse'} gap-8 items-start`}>
+                      <div className="flex-1 w-full min-h-[600px] relative bg-gray-200 rounded-xl overflow-hidden shadow-inner border border-gray-300">
+                        <iframe
+                          src={`${activeItem.pdf_url}#toolbar=0`}
+                          className="w-full h-full absolute inset-0 border-none"
+                          title={stripHtml(activeItem.title)}
+                        />
+                      </div>
+                      {activeItem.media_url && renderActiveMedia()}
+                    </div>
+                  )}
                 </div>
               </>
             ) : (
@@ -174,8 +194,12 @@ export default function PDFReaderBlock({ block }: PDFReaderBlockProps) {
                   <FileText className="w-10 h-10" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-700">No Document Selected</h3>
-                  <p className="text-gray-400 text-sm max-w-xs mx-auto">Please select a guide from the menu on the left to start reading.</p>
+                  <h3 className="text-lg font-bold text-gray-700">
+                    {stripHtml(data.select_guide_title) || 'No Document Selected'}
+                  </h3>
+                  <p className="text-gray-400 text-sm max-w-xs mx-auto">
+                    {stripHtml(data.select_guide_placeholder) || 'Please select a guide from the menu on the left to start reading.'}
+                  </p>
                 </div>
               </div>
             )}

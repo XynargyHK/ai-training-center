@@ -768,20 +768,29 @@ export function LandingPageContent({
 
   // Build URL with businessUnit and locale params preserved
   const buildUrl = (path: string) => {
-    // If path starts with /, it's a specific sub-page (like /operator)
-    // We convert it to the ?page=slug format
-    if (path.startsWith('/') && path !== '/' && path !== '/livechat') {
-      const slug = path.startsWith('/') ? path.substring(1) : path
+    const cleanPath = path.trim().toLowerCase()
+    const isHome = cleanPath === 'home' || cleanPath === '/home' || cleanPath === '/' || cleanPath === '/livechat' || cleanPath === '#'
+
+    // If we are on a sub-page (like 'user'), all "Home" links should stay on that sub-page
+    if (pageSlug && isHome) {
+      return `/livechat?businessUnit=${businessUnitParam}&country=${countryParam}&lang=${langParam}&page=${pageSlug}`
+    }
+
+    // Handle other sub-page links (e.g., /operator -> page=operator)
+    if (path.startsWith('/') && path !== '/' && path !== '/livechat' && !path.includes('?')) {
+      const slug = path.substring(1)
       return `/livechat?businessUnit=${businessUnitParam}&country=${countryParam}&lang=${langParam}&page=${slug}`
     }
     
-    // When on a slug page, Home link goes back to the base livechat URL for this unit
-    if (pageSlug && (path === '/livechat' || path === '/')) {
-      return `/livechat?businessUnit=${businessUnitParam}&country=${countryParam}&lang=${langParam}`
-    }
+    // Default: append context params to whatever the path is
     if (businessUnitParam) {
-      return `${path}?businessUnit=${businessUnitParam}&country=${countryParam}&lang=${langParam}`
+      const baseUrl = path === '#' || path === '/' ? '/livechat' : path
+      const separator = baseUrl.includes('?') ? '&' : '?'
+      let url = `${baseUrl}${separator}businessUnit=${businessUnitParam}&country=${countryParam}&lang=${langParam}`
+      if (pageSlug) url += `&page=${pageSlug}`
+      return url
     }
+    
     return path
   }
 
@@ -1126,9 +1135,13 @@ export function LandingPageContent({
 
       {/* Hero Section - Carousel */}
       {!policyParam && (landingPage.hero_slides && landingPage.hero_slides.length > 0) && (() => {
-          // Separate slides into carousel and static
-          const carouselSlides = landingPage.hero_slides.filter(slide => slide.is_carousel !== false)
-          const staticSlides = landingPage.hero_slides.filter(slide => slide.is_carousel === false)
+          // Separate slides into carousel and static, filtering out "empty" slides
+          const validSlides = landingPage.hero_slides.filter(slide => 
+            (slide.headline && stripHtml(slide.headline).length > 0) || 
+            slide.background_url
+          )
+          
+          const carouselSlides = validSlides.filter(slide => slide.is_carousel !== false)
 
           // Only show carousel section if there are carousel slides
           if (carouselSlides.length === 0) return null

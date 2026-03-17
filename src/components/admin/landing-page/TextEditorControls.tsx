@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { AlignLeft, AlignCenter, AlignRight, Bold, Italic } from 'lucide-react'
+import { cleanHtml } from '@/lib/utils'
 
 interface TextEditorControlsProps {
   label: string
@@ -115,32 +116,23 @@ export default function TextEditorControls({
   )
 
   const handlePaste = (e: React.ClipboardEvent) => {
-    // Force plain text paste and strip ALL code
     e.preventDefault();
     
-    // Use clipboard plain text if available
-    let text = e.clipboardData.getData('text/plain');
+    // Get HTML version from clipboard if available (contains bold/italic)
+    const html = e.clipboardData.getData('text/html');
+    const text = e.clipboardData.getData('text/plain');
     
-    // Aggressive cleaning
-    let cleanedText = text
-      .replace(/<!--[\s\S]*?-->/g, '') // Remove HTML comments
-      .replace(/<style[\s\S]*?<\/style>/g, '') // Remove style blocks
-      .replace(/<xml[\s\S]*?<\/xml>/g, '') // Remove XML blocks
-      .replace(/<script[\s\S]*?<\/script>/g, '') // Remove script blocks
-      .replace(/<[^>]*>?/gm, '') // Remove ALL remaining HTML tags
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&[a-z0-9#]+;/gi, '') // Remove HTML entities
-      .replace(/\/\*[\s\S]*?\*\//g, '') // Remove CSS comments
-      .replace(/[ \t]+/g, ' ') // Collapse multiple spaces
-      .replace(/\n\s*\n/g, '\n\n') // Collapse multiple newlines
-      .trim();
+    // Use cleanHtml to strip Junk but keep formatting
+    let cleanedValue = cleanHtml(html || text);
     
-    // Insert at cursor if possible, or just append
+    // Strip ALL tags if this is a strict headline field (no rich text allowed)
+    // But since the user wants Bold in headlines, we use cleanHtml instead of stripHtml
+    
     const target = e.target as HTMLTextAreaElement | HTMLInputElement;
     const start = target.selectionStart || 0;
     const end = target.selectionEnd || 0;
     
-    const newValue = value.substring(0, start) + cleanedText + value.substring(end);
+    const newValue = value.substring(0, start) + cleanedValue + value.substring(end);
     onChange(newValue);
   };
 

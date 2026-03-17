@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import React, { useState, useRef } from 'react'
 import { Upload, FileText, Loader2, X, Link as LinkIcon, Image as ImageIcon } from 'lucide-react'
@@ -58,7 +58,8 @@ export default function LeadMagnetEditor({ block, onChange, onMediaLibraryOpen, 
       if (responseData.url) {
         updateData({ 
           media_url: responseData.url,
-          media_type: isVideo ? 'video' : 'image'
+          media_type: isVideo ? 'video' : 'image',
+          original_filename: file.name
         })
       }
     } catch (error: any) {
@@ -66,6 +67,7 @@ export default function LeadMagnetEditor({ block, onChange, onMediaLibraryOpen, 
       alert(`Failed to upload: ${error.message}`)
     } finally {
       setUploading(false)
+      if (mediaInputRef.current) mediaInputRef.current.value = ''
     }
   }
 
@@ -97,6 +99,7 @@ export default function LeadMagnetEditor({ block, onChange, onMediaLibraryOpen, 
       alert('Failed to upload PDF')
     } finally {
       setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
@@ -104,31 +107,38 @@ export default function LeadMagnetEditor({ block, onChange, onMediaLibraryOpen, 
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-4">
-          {/* Background Image/Video - Pattern from StepsBlockEditor */}
+          {/* Background Image/Video - EXACT pattern from StepsBlockEditor */}
           <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
             <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Background Image/Video</label>
             <div className="flex items-center gap-3 flex-wrap">
               {data.media_url ? (
                 <div className="relative">
                   {data.media_type === 'video' ? (
-                    <video src={data.media_url} className="h-20 w-32 object-cover rounded-lg border border-gray-200" muted />
+                    <video src={data.media_url} className="h-20 w-32 object-cover rounded-none border border-gray-200" muted />
                   ) : (
-                    <img src={data.media_url} alt="Background" className="h-20 w-32 object-cover rounded-lg border border-gray-200" />
+                    <img src={data.media_url} alt="Background" className="h-20 w-32 object-cover rounded-none border border-gray-200" />
                   )}
                   <button
-                    onClick={() => updateData({ media_url: '', media_type: 'image' })}
+                    onClick={() => updateData({ media_url: '', media_type: 'image', original_filename: '' })}
                     className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
-                  <span className="absolute bottom-1 right-1 text-[8px] bg-black/60 text-white px-1 py-0.5 rounded font-bold">
+                  <span className="absolute bottom-1 right-1 text-[8px] bg-black/60 text-white px-1 py-0.5 rounded-none font-bold uppercase">
                     {data.media_type === 'video' ? 'VIDEO' : 'IMAGE'}
                   </span>
                 </div>
               ) : (
-                <div className="h-20 w-32 bg-white border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center gap-1">
+                <div className="h-20 w-32 bg-white border-2 border-dashed border-gray-300 rounded-none flex flex-col items-center justify-center gap-1">
                   <ImageIcon className="w-6 h-6 text-gray-300" />
                   <span className="text-[8px] text-gray-400 font-bold">NO MEDIA</span>
+                </div>
+              )}
+
+              {/* Filename display */}
+              {data.media_url && (
+                <div className="text-[10px] font-mono max-w-[150px] truncate text-green-600">
+                  📄 {data.original_filename || data.media_url.split('/').pop()}
                 </div>
               )}
 
@@ -137,7 +147,7 @@ export default function LeadMagnetEditor({ block, onChange, onMediaLibraryOpen, 
                   <button
                     onClick={() => mediaInputRef.current?.click()}
                     disabled={uploading}
-                    className="px-3 py-1.5 bg-violet-600 text-white text-xs font-bold rounded-lg hover:bg-violet-700 disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
+                    className="px-3 py-1.5 bg-violet-50 border border-violet-200 text-gray-800 text-xs font-bold rounded-none hover:bg-violet-100 disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
                   >
                     {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
                     Upload
@@ -145,7 +155,7 @@ export default function LeadMagnetEditor({ block, onChange, onMediaLibraryOpen, 
                   {onMediaLibraryOpen && (
                     <button
                       onClick={() => onMediaLibraryOpen((url) => updateData({ media_url: url, media_type: 'image' }))}
-                      className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-bold rounded-lg hover:bg-gray-50 flex items-center gap-1.5 shadow-sm"
+                      className="px-3 py-1.5 bg-gray-100 border border-gray-200 text-gray-700 text-xs font-bold rounded-none hover:bg-gray-200 flex items-center gap-1.5 shadow-sm"
                     >
                       <ImageIcon className="w-3 h-3" />
                       Library
@@ -163,12 +173,12 @@ export default function LeadMagnetEditor({ block, onChange, onMediaLibraryOpen, 
                 {/* Text Position Controls */}
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-[10px] font-bold text-gray-400 uppercase">Text Side</span>
-                  <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200">
+                  <div className="flex bg-gray-100 p-0.5 rounded-none border border-gray-200">
                     {(['left', 'right', 'above', 'below'] as const).map((pos) => (
                       <button
                         key={pos}
                         onClick={() => updateData({ text_position: pos })}
-                        className={`px-2 py-1 text-[9px] font-bold rounded-md transition-all capitalize ${
+                        className={`px-2 py-1 text-[9px] font-bold rounded-none transition-all capitalize ${
                           (data.text_position || 'left') === pos ? 'bg-white text-violet-600 shadow-sm' : 'text-gray-400'
                         }`}
                       >
@@ -177,6 +187,33 @@ export default function LeadMagnetEditor({ block, onChange, onMediaLibraryOpen, 
                     ))}
                   </div>
                 </div>
+
+                {/* Image Size Controls */}
+                {data.media_url && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        const currentWidth = parseInt((data.image_width || '400px').replace('px', ''))
+                        const newWidth = Math.max(100, currentWidth - 20)
+                        updateData({ image_width: `${newWidth}px` })
+                      }}
+                      className="px-2 py-0.5 bg-gray-100 border border-gray-200 text-gray-700 text-[10px]"
+                    >
+                      -
+                    </button>
+                    <span className="text-[10px] text-gray-500 font-mono">{data.image_width || '400px'}</span>
+                    <button
+                      onClick={() => {
+                        const currentWidth = parseInt((data.image_width || '400px').replace('px', ''))
+                        const newWidth = currentWidth + 20
+                        updateData({ image_width: `${newWidth}px` })
+                      }}
+                      className="px-2 py-0.5 bg-gray-100 border border-gray-200 text-gray-700 text-[10px]"
+                    >
+                      +
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
