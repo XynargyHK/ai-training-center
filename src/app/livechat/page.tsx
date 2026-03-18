@@ -771,18 +771,23 @@ export function LandingPageContent({
     const cleanPath = path.trim().toLowerCase()
     const isHome = cleanPath === 'home' || cleanPath === '/home' || cleanPath === '/' || cleanPath === '/livechat' || cleanPath === '#'
 
-    // If we are on a sub-page (like 'user'), all "Home" links should stay on that sub-page
+    // 1. If it's an external link or already has a businessUnit, don't touch it
+    if (path.startsWith('http') || path.includes('businessUnit=')) {
+      return path
+    }
+
+    // 2. If we are on a sub-page (like 'user'), all "Home" links should stay on that sub-page
     if (pageSlug && isHome) {
       return `/livechat?businessUnit=${businessUnitParam}&country=${countryParam}&lang=${langParam}&page=${pageSlug}`
     }
 
-    // Handle other sub-page links (e.g., /operator -> page=operator)
+    // 3. Handle other sub-page links (e.g., /operator -> page=operator)
     if (path.startsWith('/') && path !== '/' && path !== '/livechat' && !path.includes('?')) {
       const slug = path.substring(1)
       return `/livechat?businessUnit=${businessUnitParam}&country=${countryParam}&lang=${langParam}&page=${slug}`
     }
     
-    // Default: append context params to whatever the path is
+    // 4. Default: append current context params
     if (businessUnitParam) {
       const baseUrl = path === '#' || path === '/' ? '/livechat' : path
       const separator = baseUrl.includes('?') ? '&' : '?'
@@ -1430,7 +1435,7 @@ export function LandingPageContent({
         })()}
 
       {/* Dynamic Blocks */}
-      {!policyParam && landingPage.blocks && landingPage.blocks.length > 0 ? (
+      {!policyParam && landingPage.blocks ? (
         <BlockRenderer 
           blocks={landingPage.blocks} 
           onAddToCart={addToCart} 
@@ -1440,229 +1445,228 @@ export function LandingPageContent({
         <>
           {/* Fallback: Show old landing page schema content */}
           {/* Clinical Results */}
-      {landingPage.clinical_results && landingPage.clinical_results.length > 0 && (
-        <section className="py-16 px-4 text-white" style={{ backgroundColor: secondaryColor }}>
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-2xl md:text-3xl font-serif text-center mb-12">Clinical Results</h2>
-            <div className="grid grid-cols-3 gap-4 md:gap-8 text-center">
-              {landingPage.clinical_results.map((result, idx) => (
-                <div key={idx}>
-                  <div className="text-4xl md:text-6xl font-bold" style={{ color: primaryColor }}>{result.value}</div>
-                  <div className="text-sm md:text-base mt-2 text-black/60" dangerouslySetInnerHTML={{ __html: result.label.replace('\n', '<br />') }}></div>
+          {landingPage.clinical_results && landingPage.clinical_results.length > 0 && (
+            <section className="py-16 px-4 text-white" style={{ backgroundColor: secondaryColor }}>
+              <div className="max-w-4xl mx-auto">
+                <h2 className="text-2xl md:text-3xl font-serif text-center mb-12">Clinical Results</h2>
+                <div className="grid grid-cols-3 gap-4 md:gap-8 text-center">
+                  {landingPage.clinical_results.map((result, idx) => (
+                    <div key={idx}>
+                      <div className="text-4xl md:text-6xl font-bold" style={{ color: primaryColor }}>{result.value}</div>
+                      <div className="text-sm md:text-base mt-2 text-black/60" dangerouslySetInnerHTML={{ __html: result.label.replace('\n', '<br />') }}></div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Technology Features */}
-      {landingPage.tech_features && landingPage.tech_features.length > 0 && (
-        <section className="py-16 px-4">
-          <div className="max-w-6xl mx-auto">
-            {landingPage.tech_headline && (
-              <h2 className="text-2xl md:text-3xl font-serif text-center mb-4">{landingPage.tech_headline}</h2>
-            )}
-            {landingPage.tech_subheadline && (
-              <p className="text-black text-center mb-12 max-w-2xl mx-auto">{landingPage.tech_subheadline}</p>
-            )}
-
-            <div className="grid md:grid-cols-2 gap-8">
-              {landingPage.tech_features.map((feature, idx) => (
-                <div key={idx} className="bg-gray-50 rounded-2xl p-8">
-                  <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: `linear-gradient(to bottom right, ${primaryColor}, ${primaryColor}dd)` }}>
-                    <span className="text-4xl">{feature.icon}</span>
-                  </div>
-                  <h3 className="text-xl font-bold text-center mb-4">{feature.title}</h3>
-                  <ul className="space-y-3">
-                    {feature.items.map((item, i) => (
-                      <li key={i} className="flex items-center gap-3">
-                        <Check className="w-5 h-5 text-green-500" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Performance Metrics */}
-      {landingPage.performance_metrics && landingPage.performance_metrics.length > 0 && (
-        <section className="py-12 px-4 bg-gray-50">
-          <div className="max-w-4xl mx-auto">
-            <div className="grid grid-cols-3 gap-4 text-center">
-              {landingPage.performance_metrics.map((metric, idx) => (
-                <div key={idx} className="bg-white rounded-xl p-6 shadow-sm">
-                  <div className="text-3xl md:text-4xl font-bold" style={{ color: primaryColor }}>{metric.value}</div>
-                  <div className="text-sm text-black mt-2" dangerouslySetInnerHTML={{ __html: metric.label.replace('\n', '<br />') }}></div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* How To Use */}
-      {landingPage.how_to_use_steps && landingPage.how_to_use_steps.length > 0 && (
-        <section className="py-16 px-4 text-white" style={{ backgroundColor: secondaryColor }}>
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-2xl md:text-3xl font-serif text-center mb-12">{landingPage.how_to_use_headline || 'How To Use'}</h2>
-            <div className={`grid grid-cols-2 md:grid-cols-${Math.min(landingPage.how_to_use_steps.length, 4)} gap-6 text-center`}>
-              {landingPage.how_to_use_steps.map((step, idx) => (
-                <div key={idx}>
-                  <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: `${primaryColor}33` }}>
-                    <span className="text-2xl">{step.icon}</span>
-                  </div>
-                  <p className="text-sm">{step.text}</p>
-                </div>
-              ))}
-            </div>
-            {landingPage.how_to_use_footer && (
-              <div className="flex justify-center gap-6 mt-8 text-sm text-black/60">
-                {landingPage.how_to_use_footer.split('|').map((item, idx) => (
-                  <span key={idx}>{item.trim()}</span>
-                ))}
               </div>
-            )}
-          </div>
-        </section>
-      )}
+            </section>
+          )}
 
-      {/* Ingredients */}
-      {landingPage.ingredients && landingPage.ingredients.length > 0 && (
-        <section className="py-16 px-4">
-          <div className="max-w-4xl mx-auto">
-            {landingPage.ingredients_headline && (
-              <h2 className="text-2xl md:text-3xl font-serif text-center mb-4">{landingPage.ingredients_headline}</h2>
-            )}
-            {landingPage.ingredients_subheadline && (
-              <p className="text-center text-black mb-12">{landingPage.ingredients_subheadline}</p>
-            )}
+          {/* Technology Features */}
+          {landingPage.tech_features && landingPage.tech_features.length > 0 && (
+            <section className="py-16 px-4">
+              <div className="max-w-6xl mx-auto">
+                {landingPage.tech_headline && (
+                  <h2 className="text-2xl md:text-3xl font-serif text-center mb-4">{landingPage.tech_headline}</h2>
+                )}
+                {landingPage.tech_subheadline && (
+                  <p className="text-black text-center mb-12 max-w-2xl mx-auto">{landingPage.tech_subheadline}</p>
+                )}
 
-            <div className="space-y-6">
-              {landingPage.ingredients.map((ingredient, idx) => (
-                <div key={idx} className="bg-gradient-to-r from-blue-50 to-white rounded-2xl p-6 border border-blue-100">
-                  <div className="flex items-start gap-4">
-                    <div className="text-3xl">{ingredient.icon}</div>
-                    <div>
-                      <h3 className="font-bold text-lg mb-2">{ingredient.name}</h3>
-                      <p className="text-black text-sm mb-3">{ingredient.description}</p>
-                      <ul className="text-sm text-black space-y-1">
-                        {ingredient.benefits.map((benefit, i) => (
-                          <li key={i}>&#8226; {benefit}</li>
+                <div className="grid md:grid-cols-2 gap-8">
+                  {landingPage.tech_features.map((feature, idx) => (
+                    <div key={idx} className="bg-gray-50 rounded-2xl p-8">
+                      <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: `linear-gradient(to bottom right, ${primaryColor}, ${primaryColor}dd)` }}>
+                        <span className="text-4xl">{feature.icon}</span>
+                      </div>
+                      <h3 className="text-xl font-bold text-center mb-4">{feature.title}</h3>
+                      <ul className="space-y-3">
+                        {feature.items.map((item, i) => (
+                          <li key={i} className="flex items-center gap-3">
+                            <Check className="w-5 h-5 text-green-500" />
+                            <span>{item}</span>
+                          </li>
                         ))}
                       </ul>
-                      {ingredient.badge && (
-                        <div className="mt-3 bg-blue-100 text-blue-800 text-xs px-3 py-1.5 rounded-full inline-block">
-                          {ingredient.badge}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Performance Metrics */}
+          {landingPage.performance_metrics && landingPage.performance_metrics.length > 0 && (
+            <section className="py-12 px-4 bg-gray-50">
+              <div className="max-w-4xl mx-auto">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  {landingPage.performance_metrics.map((metric, idx) => (
+                    <div key={idx} className="bg-white rounded-xl p-6 shadow-sm">
+                      <div className="text-3xl md:text-4xl font-bold" style={{ color: primaryColor }}>{metric.value}</div>
+                      <div className="text-sm text-black mt-2" dangerouslySetInnerHTML={{ __html: metric.label.replace('\n', '<br />') }}></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* How To Use */}
+          {landingPage.how_to_use_steps && landingPage.how_to_use_steps.length > 0 && (
+            <section className="py-16 px-4 text-white" style={{ backgroundColor: secondaryColor }}>
+              <div className="max-w-4xl mx-auto">
+                <h2 className="text-2xl md:text-3xl font-serif text-center mb-12">{landingPage.how_to_use_headline || 'How To Use'}</h2>
+                <div className={`grid grid-cols-2 md:grid-cols-${Math.min(landingPage.how_to_use_steps.length, 4)} gap-6 text-center`}>
+                  {landingPage.how_to_use_steps.map((step, idx) => (
+                    <div key={idx}>
+                      <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: `${primaryColor}33` }}>
+                        <span className="text-2xl">{step.icon}</span>
+                      </div>
+                      <p className="text-sm">{step.text}</p>
+                    </div>
+                  ))}
+                </div>
+                {landingPage.how_to_use_footer && (
+                  <div className="flex justify-center gap-6 mt-8 text-sm text-black/60">
+                    {landingPage.how_to_use_footer.split('|').map((item, idx) => (
+                      <span key={idx}>{item.trim()}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* Ingredients */}
+          {landingPage.ingredients && landingPage.ingredients.length > 0 && (
+            <section className="py-16 px-4">
+              <div className="max-w-4xl mx-auto">
+                {landingPage.ingredients_headline && (
+                  <h2 className="text-2xl md:text-3xl font-serif text-center mb-4">{landingPage.ingredients_headline}</h2>
+                )}
+                {landingPage.ingredients_subheadline && (
+                  <p className="text-center text-black mb-12">{landingPage.ingredients_subheadline}</p>
+                )}
+
+                <div className="space-y-6">
+                  {landingPage.ingredients.map((ingredient, idx) => (
+                    <div key={idx} className="bg-gradient-to-r from-blue-50 to-white rounded-2xl p-6 border border-blue-100">
+                      <div className="flex items-start gap-4">
+                        <div className="text-3xl">{ingredient.icon}</div>
+                        <div>
+                          <h3 className="font-bold text-lg mb-2">{ingredient.name}</h3>
+                          <p className="text-black text-sm mb-3">{ingredient.description}</p>
+                          <ul className="text-sm text-black space-y-1">
+                            {ingredient.benefits.map((benefit, i) => (
+                              <li key={i}>&#8226; {benefit}</li>
+                            ))}
+                          </ul>
+                          {ingredient.badge && (
+                            <div className="mt-3 bg-blue-100 text-blue-800 text-xs px-3 py-1.5 rounded-full inline-block">
+                              {ingredient.badge}
+                            </div>
+                          )}
                         </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Testimonials */}
+          {landingPage.testimonials && landingPage.testimonials.length > 0 && (
+            <section className="py-16 px-4">
+              <div className="max-w-4xl mx-auto">
+                <h2 className="text-2xl md:text-3xl font-serif text-center mb-4">{landingPage.testimonials_headline || 'Customer Reviews'}</h2>
+                <div className="flex items-center justify-center gap-2 mb-8">
+                  <div className="flex">
+                    {[1,2,3,4,5].map(i => (
+                      <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                    ))}
+                  </div>
+                  <span className="text-black">4.89 average</span>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  {landingPage.testimonials.map((testimonial, i) => (
+                    <div key={i} className="bg-gray-50 rounded-2xl p-6">
+                      <div className="flex mb-3">
+                        {[1,2,3,4,5].map(j => (
+                          <Star key={j} className={`w-4 h-4 ${j <= testimonial.rating ? 'fill-yellow-400 text-yellow-400' : 'text-black/60'}`} />
+                        ))}
+                      </div>
+                      <p className="text-black mb-4">&quot;{testimonial.text}&quot;</p>
+                      <p className="text-sm text-black/70">&mdash; {testimonial.name}, {testimonial.age}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {landingPage.testimonials_stats && (
+                  <div className="mt-8 text-center">
+                    <div className="inline-flex gap-8 text-sm text-black">
+                      {landingPage.testimonials_stats.recommend_pct && (
+                        <span><strong>{landingPage.testimonials_stats.recommend_pct}%</strong> Recommend</span>
+                      )}
+                      {landingPage.testimonials_stats.five_star_pct && (
+                        <span><strong>{landingPage.testimonials_stats.five_star_pct}%</strong> 5-Star Reviews</span>
                       )}
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Testimonials */}
-      {landingPage.testimonials && landingPage.testimonials.length > 0 && (
-        <section className="py-16 px-4">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-2xl md:text-3xl font-serif text-center mb-4">{landingPage.testimonials_headline || 'Customer Reviews'}</h2>
-            <div className="flex items-center justify-center gap-2 mb-8">
-              <div className="flex">
-                {[1,2,3,4,5].map(i => (
-                  <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                ))}
+                )}
               </div>
-              <span className="text-black">4.89 average</span>
-            </div>
+            </section>
+          )}
 
-            <div className="grid md:grid-cols-2 gap-6">
-              {landingPage.testimonials.map((testimonial, i) => (
-                <div key={i} className="bg-gray-50 rounded-2xl p-6">
-                  <div className="flex mb-3">
-                    {[1,2,3,4,5].map(j => (
-                      <Star key={j} className={`w-4 h-4 ${j <= testimonial.rating ? 'fill-yellow-400 text-yellow-400' : 'text-black/60'}`} />
-                    ))}
-                  </div>
-                  <p className="text-black mb-4">&quot;{testimonial.text}&quot;</p>
-                  <p className="text-sm text-black/70">&mdash; {testimonial.name}, {testimonial.age}</p>
-                </div>
-              ))}
-            </div>
+          {/* FAQ */}
+          {landingPage.landing_faqs && landingPage.landing_faqs.length > 0 && (
+            <section className="py-16 px-4 bg-gray-50">
+              <div className="max-w-3xl mx-auto">
+                <h2 className="text-2xl md:text-3xl font-serif text-center mb-12">Frequently Asked Questions</h2>
 
-            {landingPage.testimonials_stats && (
-              <div className="mt-8 text-center">
-                <div className="inline-flex gap-8 text-sm text-black">
-                  {landingPage.testimonials_stats.recommend_pct && (
-                    <span><strong>{landingPage.testimonials_stats.recommend_pct}%</strong> Recommend</span>
-                  )}
-                  {landingPage.testimonials_stats.five_star_pct && (
-                    <span><strong>{landingPage.testimonials_stats.five_star_pct}%</strong> 5-Star Reviews</span>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* FAQ */}
-      {landingPage.landing_faqs && landingPage.landing_faqs.length > 0 && (
-        <section className="py-16 px-4 bg-gray-50">
-          <div className="max-w-3xl mx-auto">
-            <h2 className="text-2xl md:text-3xl font-serif text-center mb-12">Frequently Asked Questions</h2>
-
-            <div className="space-y-4">
-              {landingPage.landing_faqs.map((faq, i) => (
-                <div key={i} className="bg-white rounded-xl overflow-hidden">
-                  <button
-                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                    className="w-full px-6 py-4 flex items-center justify-between text-left"
-                  >
-                    <span className="font-medium">{faq.question}</span>
-                    {openFaq === i ? (
-                      <ChevronUp className="w-5 h-5 text-black/50" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 text-black/50" />
-                    )}
-                  </button>
-                  {openFaq === i && (
-                    <div className="px-6 pb-4 text-black text-sm">
-                      {faq.answer}
+                <div className="space-y-4">
+                  {landingPage.landing_faqs.map((faq, i) => (
+                    <div key={i} className="bg-white rounded-xl overflow-hidden">
+                      <button
+                        onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                        className="w-full px-6 py-4 flex items-center justify-between text-left"
+                      >
+                        <span className="font-medium">{faq.question}</span>
+                        {openFaq === i ? (
+                          <ChevronUp className="w-5 h-5 text-black/50" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-black/50" />
+                        )}
+                      </button>
+                      {openFaq === i && (
+                        <div className="px-6 pb-4 text-black text-sm">
+                          {faq.answer}
+                        </div>
+                      )}
                     </div>
-                  )}
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+              </div>
+            </section>
+          )}
 
-      {/* Trust Badges */}
-      {landingPage.trust_badges && landingPage.trust_badges.length > 0 && (
-        <section className="py-8 px-4 border-t">
-          <div className="max-w-4xl mx-auto">
-            <div className={`grid grid-cols-2 md:grid-cols-${Math.min(landingPage.trust_badges.length, 4)} gap-4 text-center text-sm`}>
-              {landingPage.trust_badges.map((badge, idx) => (
-                <div key={idx} className="flex flex-col items-center gap-2">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                    <span className="text-xl">{badge.icon}</span>
-                  </div>
-                  <span className="text-black">{badge.label}</span>
+          {/* Trust Badges */}
+          {landingPage.trust_badges && landingPage.trust_badges.length > 0 && (
+            <section className="py-8 px-4 border-t">
+              <div className="max-w-4xl mx-auto">
+                <div className={`grid grid-cols-2 md:grid-cols-${Math.min(landingPage.trust_badges.length, 4)} gap-4 text-center text-sm`}>
+                  {landingPage.trust_badges.map((badge, idx) => (
+                    <div key={idx} className="flex flex-col items-center gap-2">
+                      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                        <span className="text-xl">{badge.icon}</span>
+                      </div>
+                      <span className="text-black">{badge.label}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
+              </div>
+            </section>
+          )}
         </>
       )}
 
