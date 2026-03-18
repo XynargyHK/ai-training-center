@@ -436,6 +436,21 @@ export default function LeadMagnetEditor({ block, onChange, onMediaLibraryOpen, 
           placeholder="This text is visible before login..."
         />
       </div>
+
+      {/* Success State Settings */}
+      <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200 space-y-4">
+        <label className="block text-xs font-bold text-emerald-700 uppercase tracking-wider">Success State (After Login)</label>
+        
+        <div>
+          <label className="block text-[10px] text-emerald-600 font-bold uppercase mb-1">Success Message</label>
+          <textarea
+            value={data.success_message || ''}
+            onChange={(e) => updateData({ success_message: e.target.value })}
+            placeholder="e.g., Thank you! Your guide has been unlocked."
+            className="w-full px-3 py-2 bg-white border border-emerald-100 rounded-none text-sm focus:ring-1 focus:ring-emerald-500 outline-none h-20"
+          />
+        </div>
+      </div>
     </div>
   )
 }
