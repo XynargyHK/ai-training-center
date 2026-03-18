@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Upload, Loader2, X, Image } from 'lucide-react'
+import { Upload, Loader2, X, Image as ImageIcon } from 'lucide-react'
 import type { LandingPageBlock } from '@/types/landing-page-blocks'
 import UniversalTextEditor from '../UniversalTextEditor'
 
@@ -12,11 +12,37 @@ interface StaticBannerBlockEditorProps {
   onMediaLibraryOpen?: (callback: (url: string) => void) => void
 }
 
+const COLOR_PALETTE = [
+  { name: 'White', value: '#ffffff' },
+  { name: 'Black', value: '#000000' },
+  { name: 'Dark Gray', value: '#374151' },
+  { name: 'Gray', value: '#6b7280' },
+  { name: 'Light Gray', value: '#d1d5db' },
+  { name: 'Slate', value: '#1e293b' },
+  { name: 'Red', value: '#ef4444' },
+  { name: 'Orange', value: '#f97316' },
+  { name: 'Amber', value: '#f59e0b' },
+  { name: 'Yellow', value: '#eab308' },
+  { name: 'Lime', value: '#84cc16' },
+  { name: 'Green', value: '#22c55e' },
+  { name: 'Emerald', value: '#10b981' },
+  { name: 'Teal', value: '#14b8a6' },
+  { name: 'Cyan', value: '#06b6d4' },
+  { name: 'Sky', value: '#0ea5e9' },
+  { name: 'Blue', value: '#3b82f6' },
+  { name: 'Indigo', value: '#6366f1' },
+  { name: 'Violet', value: '#8b5cf6' },
+  { name: 'Purple', value: '#a855f7' },
+  { name: 'Fuchsia', value: '#d946ef' },
+  { name: 'Pink', value: '#ec4899' },
+  { name: 'Rose', value: '#f43f5e' },
+]
+
 export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitId, onMediaLibraryOpen }: StaticBannerBlockEditorProps) {
   const [uploading, setUploading] = useState(false)
-  const [uploadingPoster, setUploadingPoster] = useState(false)
+  const [showButtonColorPicker, setShowButtonColorPicker] = useState(false)
+  const [showBgColorPicker, setShowBgColorPicker] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const posterInputRef = useRef<HTMLInputElement>(null)
 
   // Get block data with defaults
   const data = block.data || {}
@@ -28,19 +54,11 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Validate file type - allow images and videos
     const isImage = file.type.startsWith('image/')
     const isVideo = file.type.startsWith('video/')
 
     if (!isImage && !isVideo) {
       alert('Please select an image or video file')
-      return
-    }
-
-    // Validate file size (max 10MB for images, 50MB for videos)
-    const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024
-    if (file.size > maxSize) {
-      alert(`File must be less than ${isVideo ? '50MB' : '10MB'}`)
       return
     }
 
@@ -55,15 +73,11 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
         body: formData
       })
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Upload failed')
-      }
+      if (!response.ok) throw new Error('Upload failed')
 
       const responseData = await response.json()
       if (responseData.url) {
-        // Update block with new background - exactly like hero banner does
-        const updatedBlock = {
+        onUpdate({
           ...block,
           data: {
             ...data,
@@ -71,376 +85,205 @@ export default function StaticBannerBlockEditor({ block, onUpdate, businessUnitI
             background_type: isVideo ? 'video' : 'image',
             original_filename: file.name
           }
-        }
-        onUpdate(updatedBlock)
+        })
       }
     } catch (error: any) {
       console.error('Error uploading background:', error)
       alert(`Failed to upload: ${error.message}`)
     } finally {
       setUploading(false)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
-    }
-  }
-
-  const removeBackground = () => {
-    const updatedBlock = {
-      ...block,
-      data: {
-        ...data,
-        background_url: '',
-        background_type: 'image'
-      }
-    }
-    onUpdate(updatedBlock)
-  }
-
-  const handlePosterUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    // Only allow images for poster
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file for the poster')
-      return
-    }
-
-    // Validate file size (max 5MB for poster)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Poster image must be less than 5MB')
-      return
-    }
-
-    setUploadingPoster(true)
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('businessUnitId', businessUnitId || '')
-
-      const response = await fetch('/api/ecommerce/upload-image', {
-        method: 'POST',
-        body: formData
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Upload failed')
-      }
-
-      const responseData = await response.json()
-      if (responseData.url) {
-        updateField('video_poster', responseData.url)
-      }
-    } catch (error: any) {
-      console.error('Error uploading poster:', error)
-      alert(`Failed to upload poster: ${error.message}`)
-    } finally {
-      setUploadingPoster(false)
-      if (posterInputRef.current) {
-        posterInputRef.current.value = ''
-      }
+      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
   const updateField = (key: string, value: any) => {
-    const updatedBlock = {
+    onUpdate({
       ...block,
-      data: {
-        ...data,
-        [key]: value
-      }
-    }
-    onUpdate(updatedBlock)
+      data: { ...data, [key]: value }
+    })
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Background Media */}
-      <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Background Image/Video</label>
+      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Background Image/Video</label>
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Preview thumbnail or placeholder */}
           {background_url ? (
             <div className="relative">
               {background_type === 'video' ? (
-                <video
-                  src={background_url}
-                  poster={data.video_poster}
-                  className="h-16 w-28 object-cover rounded-none bg-white"
-                  muted
-                  playsInline
-                  preload="metadata"
-                />
+                <video src={background_url} className="h-16 w-28 object-cover rounded-none" muted />
               ) : (
                 <img src={background_url} alt="Background" className="h-16 w-28 object-cover rounded-none" />
               )}
               <button
-                onClick={removeBackground}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-50 text-gray-800 rounded-full flex items-center justify-center hover:bg-red-50 border border-red-200"
+                onClick={() => updateField('background_url', '')}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
               >
                 <X className="w-3 h-3" />
               </button>
-              <span className="absolute bottom-0.5 right-0.5 text-[10px] bg-black/60 text-gray-800 px-1 rounded-none">
-                {background_type === 'video' ? 'VIDEO' : 'IMAGE'}
-              </span>
             </div>
           ) : (
             <div className="h-16 w-28 bg-white border border-dashed border-gray-300 rounded-none flex items-center justify-center">
-              <Image className="w-6 h-6 text-gray-400" />
+              <ImageIcon className="w-6 h-6 text-gray-400" />
             </div>
           )}
 
-          {/* Filename display */}
-          {background_url && (
-            <div className="text-xs font-mono max-w-xs">
-              {(() => {
-                // Use original_filename if set
-                if (data.original_filename) {
-                  return (
-                    <span className="text-green-600" title={data.original_filename}>
-                      📄 {data.original_filename}
-                    </span>
-                  )
-                }
-                // Try to extract from URL (works for media-library uploads with format: timestamp_filename.ext)
-                try {
-                  const urlPath = new URL(background_url).pathname
-                  const fullName = urlPath.split('/').pop() || ''
-                  // Check if it's media-library format (timestamp_filename) vs product-images format (timestamp-random)
-                  if (fullName.includes('_') && !fullName.match(/^\d+-[a-z0-9]+\./i)) {
-                    const filename = fullName.replace(/^\d+_/, '')
-                    if (filename && filename !== fullName) {
-                      return (
-                        <span className="text-green-600" title={filename}>
-                          📄 {filename}
-                        </span>
-                      )
-                    }
-                  }
-                } catch {}
-                // Can't determine filename - show truncated URL
-                try {
-                  const urlPath = new URL(background_url).pathname
-                  const shortName = urlPath.split('/').pop() || ''
-                  return (
-                    <span className="text-gray-500 text-[10px]" title={shortName}>
-                      📎 {shortName.length > 20 ? shortName.substring(0, 17) + '...' : shortName}
-                    </span>
-                  )
-                } catch {
-                  return null
-                }
-              })()}
-            </div>
-          )}
-
-          {/* Upload button */}
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="px-3 py-1.5 bg-violet-50 border border-violet-200 text-gray-800 text-sm rounded-none hover:bg-violet-100 transition-colors disabled:opacity-50 flex items-center gap-1.5"
-          >
-            {uploading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Uploading...
-              </>
-            ) : (
-              <>
-                <Upload className="w-4 h-4" />
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="px-3 py-1.5 bg-violet-50 border border-violet-200 text-gray-800 text-xs font-bold rounded-none hover:bg-violet-100 disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
+              >
+                {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
                 Upload
-              </>
-            )}
-          </button>
-
-          {onMediaLibraryOpen && (
-            <button
-              onClick={() => onMediaLibraryOpen((url) => updateField('background_url', url))}
-              className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm rounded-none transition-colors flex items-center gap-1.5"
-            >
-              <Image className="w-4 h-4" />
-              Library
-            </button>
-          )}
-
-          {/* Hidden file input */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"
-            onChange={handleUpload}
-            className="hidden"
-          />
-
-          {/* Background Color */}
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-gray-500">BG Color:</label>
-            <input
-              type="color"
-              value={background_color}
-              onChange={(e) => updateField('background_color', e.target.value)}
-              className="w-10 h-10 rounded-none border border-gray-200 cursor-pointer"
-            />
+              </button>
+              {onMediaLibraryOpen && (
+                <button
+                  onClick={() => onMediaLibraryOpen((url) => updateField('background_url', url))}
+                  className="px-3 py-1.5 bg-gray-100 border border-gray-200 text-gray-700 text-xs font-bold rounded-none hover:bg-gray-200 flex items-center gap-1.5 shadow-sm"
+                >
+                  <ImageIcon className="w-3 h-3" />
+                  Library
+                </button>
+              )}
+            </div>
+            <input ref={fileInputRef} type="file" accept="image/*,video/*" onChange={handleUpload} className="hidden" />
+            
+            <div className="relative">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] text-gray-400 uppercase font-bold">BG Color</span>
+                <button
+                  onClick={() => setShowBgColorPicker(!showBgColorPicker)}
+                  className="w-7 h-7 rounded-none border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
+                  style={{ backgroundColor: background_color }}
+                />
+              </div>
+              {showBgColorPicker && (
+                <div className="absolute top-full left-0 mt-1 p-2 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50">
+                  <div className="grid grid-cols-7 gap-2">
+                    {COLOR_PALETTE.map((c) => (
+                      <button
+                        key={c.value}
+                        onClick={() => {
+                          updateField('background_color', c.value)
+                          setShowBgColorPicker(false)
+                        }}
+                        className="w-7 h-7 rounded-none border-2 hover:scale-110 transition-transform"
+                        style={{
+                          backgroundColor: c.value,
+                          borderColor: background_color === c.value ? '#a855f7' : '#475569'
+                        }}
+                        title={c.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Video Poster Image - Only show when background is video */}
-      {background_type === 'video' && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-none p-4">
-          <label className="block text-sm font-medium text-amber-600 mb-2 flex items-center gap-2">
-            <Image className="w-4 h-4" />
-            Video Poster Image (Optional - Shows while loading)
-          </label>
-          <p className="text-xs text-amber-200/70 mb-3">
-            A poster image displays while the video loads, improving perceived performance. Recommended for videos over 1MB.
-          </p>
-          <div className="flex items-center gap-3 flex-wrap">
-            {/* Preview poster thumbnail */}
-            {data.video_poster ? (
-              <div className="relative">
-                <img src={data.video_poster} alt="Poster" className="h-16 w-28 object-cover rounded-none border border-amber-500/30" />
-                <button
-                  onClick={() => updateField('video_poster', '')}
-                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-50 text-gray-800 rounded-full flex items-center justify-center hover:bg-red-50 border border-red-200"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            ) : (
-              <div className="h-16 w-28 bg-white border border-dashed border-amber-600/50 rounded-none flex items-center justify-center">
-                <Image className="w-6 h-6 text-amber-500/50" />
-              </div>
-            )}
-
-            {/* Upload poster button */}
-            <button
-              onClick={() => posterInputRef.current?.click()}
-              disabled={uploadingPoster}
-              className="px-3 py-1.5 bg-amber-50 text-gray-800 text-sm rounded-none hover:bg-amber-700 transition-colors disabled:opacity-50 flex items-center gap-1.5"
-            >
-              {uploadingPoster ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Uploading...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4" />
-                  {data.video_poster ? 'Change Poster' : 'Add Poster'}
-                </>
-              )}
-            </button>
-
-            {/* Hidden file input for poster */}
-            <input
-              ref={posterInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              onChange={handlePosterUpload}
-              className="hidden"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Headline */}
-      <div>
+      {/* Headline, Subheadline, Content */}
+      <div className="space-y-4">
         <UniversalTextEditor
           label="Headline"
           value={data.headline || ''}
           onChange={(value) => updateField('headline', value)}
           textAlign={data.headline_text_align || 'center'}
           onTextAlignChange={(align) => updateField('headline_text_align', align)}
-          bold={data.headline_bold || false}
-          onBoldChange={(bold) => updateField('headline_bold', bold)}
-          italic={data.headline_italic || false}
-          onItalicChange={(italic) => updateField('headline_italic', italic)}
-          fontSize={data.headline_font_size || 'clamp(1.875rem, 5vw, 3.75rem)'}
-          onFontSizeChange={(size) => updateField('headline_font_size', size)}
-          fontFamily={data.headline_font_family || 'Josefin Sans'}
-          onFontFamilyChange={(family) => updateField('headline_font_family', family)}
+          bold={data.headline_bold}
+          fontSize={data.headline_font_size || '2.5rem'}
           color={data.headline_color || '#ffffff'}
-          onColorChange={(color) => updateField('headline_color', color)}
-          placeholder="Enter headline"
         />
-      </div>
-
-      {/* Subheadline */}
-      <div>
         <UniversalTextEditor
           label="Subheadline"
           value={data.subheadline || ''}
           onChange={(value) => updateField('subheadline', value)}
           textAlign={data.subheadline_text_align || 'center'}
           onTextAlignChange={(align) => updateField('subheadline_text_align', align)}
-          bold={data.subheadline_bold || false}
-          onBoldChange={(bold) => updateField('subheadline_bold', bold)}
-          italic={data.subheadline_italic || false}
-          onItalicChange={(italic) => updateField('subheadline_italic', italic)}
-          fontSize={data.subheadline_font_size || 'clamp(1.125rem, 2.5vw, 1.25rem)'}
-          onFontSizeChange={(size) => updateField('subheadline_font_size', size)}
-          fontFamily={data.subheadline_font_family || 'Josefin Sans'}
-          onFontFamilyChange={(family) => updateField('subheadline_font_family', family)}
+          fontSize={data.subheadline_font_size || '1.25rem'}
           color={data.subheadline_color || '#ffffff'}
-          onColorChange={(color) => updateField('subheadline_color', color)}
-          placeholder="Enter subheadline"
         />
-      </div>
-
-      {/* Content/Description */}
-      <div>
         <UniversalTextEditor
           label="Description"
           value={data.content || ''}
           onChange={(value) => updateField('content', value)}
+          multiline
           textAlign={data.content_text_align || 'center'}
           onTextAlignChange={(align) => updateField('content_text_align', align)}
-          bold={data.content_bold || false}
-          onBoldChange={(bold) => updateField('content_bold', bold)}
-          italic={data.content_italic || false}
-          onItalicChange={(italic) => updateField('content_italic', italic)}
-          fontSize={data.content_font_size || 'clamp(1rem, 2vw, 1.125rem)'}
-          onFontSizeChange={(size) => updateField('content_font_size', size)}
-          fontFamily={data.content_font_family || 'Josefin Sans'}
-          onFontFamilyChange={(family) => updateField('content_font_family', family)}
+          fontSize={data.content_font_size || '1rem'}
           color={data.content_color || '#ffffff'}
-          onColorChange={(color) => updateField('content_color', color)}
-          placeholder="Enter description (optional)"
-          multiline
-          rows={3}
         />
       </div>
 
-      {/* CTA Button */}
-      <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-sm text-gray-600 mb-2">CTA Button Text</label>
-            <input
-              type="text"
-              value={data.cta_text || ''}
-              onChange={(e) => updateField('cta_text', e.target.value)}
-              placeholder="SHOP NOW"
-              className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-xs"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-600 mb-2">CTA Button URL</label>
-            <input
-              type="text"
-              value={data.cta_url || ''}
-              onChange={(e) => updateField('cta_url', e.target.value)}
-              placeholder="#micro-infusion-system"
-              className="w-full px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-none text-gray-800 text-xs"
-            />
+      {/* CTA Button - Standardized Design */}
+      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="flex items-center justify-between mb-2">
+          <label className="block text-sm font-medium text-gray-700">Button Text & Style</label>
+          <div className="flex bg-gray-100 p-0.5 rounded-none border border-gray-200">
+            {(['left', 'center', 'right'] as const).map((align) => (
+              <button
+                key={align}
+                onClick={() => updateField('button_align', align)}
+                className={`px-2 py-1 text-[8px] font-bold rounded-none transition-all uppercase ${
+                  (data.button_align || 'center') === align ? 'bg-white text-violet-600 shadow-sm' : 'text-gray-400'
+                }`}
+              >
+                {align}
+              </button>
+            ))}
           </div>
         </div>
-        <p className="text-xs text-gray-500">
-          To scroll to another block, use <span className="text-violet-600">#headline-in-lowercase</span> (e.g., #micro-infusion-system, #faq, #pricing-plans)
-        </p>
+        <div className="space-y-3">
+          <input
+            type="text"
+            value={data.cta_text || ''}
+            onChange={(e) => updateField('cta_text', e.target.value)}
+            className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500"
+            placeholder="CTA Button Text"
+          />
+          <input
+            type="text"
+            value={data.cta_url || ''}
+            onChange={(e) => updateField('cta_url', e.target.value)}
+            className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500"
+            placeholder="CTA Button URL (#faq)"
+          />
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] text-gray-400 uppercase font-bold">Button Color</span>
+              <button
+                onClick={() => setShowButtonColorPicker(!showButtonColorPicker)}
+                className="w-7 h-7 rounded-none border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
+                style={{ backgroundColor: data.button_color || '#000000' }}
+              />
+            </div>
+            {showButtonColorPicker && (
+              <div className="absolute top-full left-0 mt-1 p-2 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50">
+                <div className="grid grid-cols-7 gap-2">
+                  {COLOR_PALETTE.map((c) => (
+                    <button
+                      key={c.value}
+                      onClick={() => {
+                        updateField('button_color', c.value)
+                        setShowButtonColorPicker(false)
+                      }}
+                      className="w-7 h-7 rounded-none border-2 hover:scale-110 transition-transform"
+                      style={{
+                        backgroundColor: c.value,
+                        borderColor: (data.button_color || '#000000') === c.value ? '#a855f7' : '#475569'
+                      }}
+                      title={c.name}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )

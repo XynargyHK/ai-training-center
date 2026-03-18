@@ -1,7 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import { getFontClass } from '@/lib/fonts'
-import { stripHtml } from '@/lib/utils'
+import { stripHtml, cleanHtml } from '@/lib/utils'
 
 interface Step {
   background_url?: string
@@ -31,7 +32,6 @@ interface StepsBlockData {
   heading_align?: 'left' | 'center' | 'right'
   heading_bold?: boolean
   heading_italic?: boolean
-  // Block-level subheadline (after headline)
   subheadline?: string
   subheadline_font_size?: string
   subheadline_font_family?: string
@@ -42,6 +42,10 @@ interface StepsBlockData {
   background_color?: string
   overall_layout?: 'vertical' | 'horizontal'
   steps: Step[]
+  cta_text?: string
+  cta_url?: string
+  button_align?: 'left' | 'center' | 'right'
+  button_color?: string
 }
 
 interface StepsBlockProps {
@@ -67,54 +71,35 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
     subheadline_align = 'center',
     background_color = '#ffffff',
     overall_layout = 'vertical',
-    steps = []
+    steps = [],
+    cta_text,
+    cta_url,
+    button_align = 'center',
+    button_color = '#7c3aed'
   } = data
 
-  // Helper function to handle text content
-  // If content is HTML (from rich editor), process and fix colors
-  // If plain text, preserve line breaks
   const processTextContent = (text: string) => {
     if (!text) return ''
-    
-    // Check if it's Word junk wrapped in HTML
     if (text.includes('<!--') || text.includes('MsoNormal') || text.includes('/* Font Definitions */')) {
-      // If it looks like it was meant to be plain text but has Word junk, strip it all
-      if (text.includes('EndFragment')) {
-        return stripHtml(text)
-      }
+      if (text.includes('EndFragment')) return stripHtml(text)
     }
-
-    // Check if content appears to be HTML
     if (text.includes('<') && text.includes('>')) {
-      // Fix white/invisible colors in font tags and inline styles
       let processed = text
-      // Replace white colors in font tags
       processed = processed.replace(/<font\s+color=["']?(#fff|#ffffff|white|rgb\(255,\s*255,\s*255\))["']?>/gi, '<font color="#000000">')
-      // Replace white colors in inline styles
       processed = processed.replace(/style=["'][^"']*color:\s*(#fff|#ffffff|white|rgb\(255,\s*255,\s*255\))/gi, (match) => {
         return match.replace(/(#fff|#ffffff|white|rgb\(255,\s*255,\s*255\))/gi, '#000000')
       })
-      
-      // Remove Word markers even from rich text
       processed = processed.replace(/<!--[\s\S]*?-->/g, '')
-      
       return processed
     }
-    // Plain text - white-space: pre-wrap in style will handle breaks
     return text
   }
 
-  if (!steps || steps.length === 0) {
-    return null
-  }
+  if (!steps || steps.length === 0) return null
 
   return (
-    <section
-      id={anchorId}
-      className="py-4 px-2 steps-block-content"
-      style={{ backgroundColor: background_color }}
-    >
-      <div className="max-w-4xl mx-auto">
+    <section id={anchorId} className="py-12 px-4 steps-block-content" style={{ backgroundColor: background_color }}>
+      <div className="max-w-6xl mx-auto">
         {/* Heading */}
         {heading && (
           <h2
@@ -131,10 +116,10 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
           </h2>
         )}
 
-        {/* Block Subheadline - same style as hero banner */}
+        {/* Block Subheadline */}
         {subheadline && (
           <p
-            className={`font-light tracking-[0.15em] uppercase mb-4 drop-shadow ${getFontClass(subheadline_font_family)}`}
+            className={`font-light tracking-[0.15em] uppercase mb-12 drop-shadow ${getFontClass(subheadline_font_family)}`}
             style={{
               fontSize: subheadline_font_size,
               color: subheadline_color,
@@ -147,420 +132,70 @@ export default function StepsBlock({ data, heading = '', anchorId }: StepsBlockP
           </p>
         )}
 
-        {/* Steps Container */}
-        {overall_layout === 'horizontal' ? (
-          <div className="overflow-x-auto snap-x snap-mandatory pb-4" style={{ WebkitOverflowScrolling: 'touch' }}>
-            <div className="flex gap-4">
-              {steps.map((step, index) => {
-            const isTextLeft = step.text_position === 'left'
-            const isTextRight = step.text_position === 'right'
-            const isTextAbove = step.text_position === 'above'
-            const isTextBelow = step.text_position === 'below'
-            const isMediaVideo = step.background_type === 'video'
-
-            // Subheadline styling
-            const subheadlineClassName = `font-light tracking-[0.15em] uppercase drop-shadow ${getFontClass(step.subheadline_font_family)}`
-            const subheadlineStyle: React.CSSProperties = {
-              fontSize: step.subheadline_font_size || '1.5rem',
-              color: step.subheadline_color || '#000000',
-              fontWeight: step.subheadline_bold ? 'bold' : undefined,
-              fontStyle: step.subheadline_italic ? 'italic' : undefined,
-              textAlign: step.subheadline_align || 'left'
-            }
-
-            // Text styling - same as Features
-            const textClassName = `font-light step-text-content ${getFontClass(step.text_font_family)}`
-            const textStyle: React.CSSProperties = {
-              fontSize: step.text_font_size || 'clamp(1rem, 2vw, 1.125rem)',
-              color: step.text_color || '#374151',
-              fontWeight: step.text_bold ? 'bold' : undefined,
-              fontStyle: step.text_italic ? 'italic' : undefined,
-              textAlign: step.text_align || 'left'
-            }
-
-            return (
-              <div
-                key={index}
-                className="flex-shrink-0 snap-center p-6 border border-gray-200 rounded-lg bg-white shadow-sm"
-                style={{ width: `calc(${step.image_width || '400px'} + 3rem)` }}
-              >
-                {/* Vertical text above/below OR Horizontal text left/right */}
-                {(isTextAbove || isTextBelow) ? (
-                  // Stacked layout
-                  <div className="flex flex-col gap-1">
-                    {/* Text Above */}
-                    {isTextAbove && (
-                      <div className="space-y-2">
-                        {/* Subheadline */}
-                        {step.subheadline && (
-                          <h3
-                            className={subheadlineClassName}
-                            style={subheadlineStyle}
-                          >
-                            {stripHtml(step.subheadline)}
-                          </h3>
-                        )}
-                        {/* Text Content */}
-                        <div
-                          className={textClassName}
-                          style={textStyle}
-                          dangerouslySetInnerHTML={{ __html: processTextContent(step.text_content) }}
-                        />
-                      </div>
-                    )}
-
-                    {/* Media */}
-                    <div className="flex justify-center">
-                      {step.background_url ? (
-                        isMediaVideo ? (
-                          <video
-                            src={step.background_url}
-                            autoPlay
-                            muted
-                            loop
-                            playsInline
-                            preload="auto"
-                            className="h-auto rounded"
-                            style={{ width: step.image_width || '400px' }}
-                          />
-                        ) : (
-                          <img
-                            src={step.background_url}
-                            alt={`Step ${index + 1}`}
-                            className="h-auto rounded"
-                            style={{ width: step.image_width || '400px' }}
-                          />
-                        )
-                      ) : null}
-                    </div>
-
-                    {/* Text Below */}
-                    {isTextBelow && (
-                      <div className="space-y-2">
-                        {/* Subheadline */}
-                        {step.subheadline && (
-                          <h3
-                            className={subheadlineClassName}
-                            style={subheadlineStyle}
-                          >
-                            {stripHtml(step.subheadline)}
-                          </h3>
-                        )}
-                        {/* Text Content */}
-                        <div
-                          className={textClassName}
-                          style={textStyle}
-                          dangerouslySetInnerHTML={{ __html: processTextContent(step.text_content) }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  // Side-by-side layout - wraps to stack only when text would be <40% width
-                  <div className="flex flex-row flex-wrap gap-4 items-start">
-                    {/* Text Left */}
-                    {isTextLeft && (
-                      <div className="flex-1 space-y-2" style={{ minWidth: '40%' }}>
-                        {/* Subheadline */}
-                        {step.subheadline && (
-                          <h3
-                            className={subheadlineClassName}
-                            style={subheadlineStyle}
-                          >
-                            {stripHtml(step.subheadline)}
-                          </h3>
-                        )}
-                        {/* Text Content */}
-                        <div
-                          className={textClassName}
-                          style={textStyle}
-                          dangerouslySetInnerHTML={{ __html: processTextContent(step.text_content) }}
-                        />
-                      </div>
-                    )}
-
-                    {/* Media - fixed width, flex-shrink-0 to maintain size */}
-                    <div className="flex-shrink-0">
-                      {step.background_url ? (
-                        isMediaVideo ? (
-                          <video
-                            src={step.background_url}
-                            autoPlay
-                            muted
-                            loop
-                            playsInline
-                            preload="auto"
-                            className="h-auto rounded"
-                            style={{ width: step.image_width || '400px', maxWidth: '100%' }}
-                          />
-                        ) : (
-                          <img
-                            src={step.background_url}
-                            alt={`Step ${index + 1}`}
-                            className="h-auto rounded"
-                            style={{ width: step.image_width || '400px', maxWidth: '100%' }}
-                          />
-                        )
-                      ) : null}
-                    </div>
-
-                    {/* Text Right - wraps below when text would be <40% width */}
-                    {isTextRight && (
-                      <div className="flex-1 space-y-2" style={{ minWidth: '40%' }}>
-                        {/* Subheadline */}
-                        {step.subheadline && (
-                          <h3
-                            className={subheadlineClassName}
-                            style={subheadlineStyle}
-                          >
-                            {stripHtml(step.subheadline)}
-                          </h3>
-                        )}
-                        {/* Text Content */}
-                        <div
-                          className={textClassName}
-                          style={textStyle}
-                          dangerouslySetInnerHTML={{ __html: processTextContent(step.text_content) }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-            </div>
-          </div>
-        ) : (
-          // Vertical Layout
-          <div className="space-y-4">
-            {steps.map((step, index) => {
-              const isTextLeft = step.text_position === 'left'
-              const isTextRight = step.text_position === 'right'
-              const isTextAbove = step.text_position === 'above'
-              const isTextBelow = step.text_position === 'below'
-              const isMediaVideo = step.background_type === 'video'
-
-              // Subheadline styling
-              const subheadlineClassName = `font-light tracking-[0.15em] uppercase drop-shadow ${getFontClass(step.subheadline_font_family)}`
-              const subheadlineStyle: React.CSSProperties = {
-                fontSize: step.subheadline_font_size || '1.5rem',
-                color: step.subheadline_color || '#000000',
-                fontWeight: step.subheadline_bold ? 'bold' : undefined,
-                fontStyle: step.subheadline_italic ? 'italic' : undefined,
-                textAlign: step.subheadline_align || 'left'
-              }
-
-              // Text styling - same as Features
-              const textClassName = `font-light step-text-content ${getFontClass(step.text_font_family)}`
-              const textStyle: React.CSSProperties = {
-                fontSize: step.text_font_size || 'clamp(1rem, 2vw, 1.125rem)',
-                color: step.text_color || '#374151',
-                fontWeight: step.text_bold ? 'bold' : undefined,
-                fontStyle: step.text_italic ? 'italic' : undefined,
-                textAlign: step.text_align || 'left'
-              }
-
-              return (
-                <div key={index} className="w-full p-6 border border-gray-200 rounded-lg bg-white shadow-sm">
-                  {/* Vertical text above/below OR Horizontal text left/right */}
-                  {(isTextAbove || isTextBelow) ? (
-                    // Stacked layout
-                    <div className="flex flex-col gap-1">
-                      {/* Text Above */}
-                      {isTextAbove && (
-                        <div className="space-y-2">
-                          {/* Subheadline */}
-                          {step.subheadline && (
-                            <h3
-                              className={subheadlineClassName}
-                              style={subheadlineStyle}
-                            >
-                              {stripHtml(step.subheadline)}
-                            </h3>
-                          )}
-                          {/* Text Content */}
-                          <div
-                            className={textClassName}
-                            style={textStyle}
-                            dangerouslySetInnerHTML={{ __html: processTextContent(step.text_content) }}
-                          />
-                        </div>
-                      )}
-
-                      {/* Media */}
-                      <div className="flex justify-center">
-                        {step.background_url ? (
-                          isMediaVideo ? (
-                            <video
-                              src={step.background_url}
-                              autoPlay
-                              muted
-                              loop
-                              playsInline
-                              preload="auto"
-                              className="h-auto rounded"
-                              style={{ width: step.image_width || '400px' }}
-                            />
-                          ) : (
-                            <img
-                              src={step.background_url}
-                              alt={`Step ${index + 1}`}
-                              className="h-auto rounded"
-                              style={{ width: step.image_width || '400px' }}
-                            />
-                          )
-                        ) : null}
-                      </div>
-
-                      {/* Text Below */}
-                      {isTextBelow && (
-                        <div className="space-y-2">
-                          {/* Subheadline */}
-                          {step.subheadline && (
-                            <h3
-                              className={subheadlineClassName}
-                              style={subheadlineStyle}
-                            >
-                              {stripHtml(step.subheadline)}
-                            </h3>
-                          )}
-                          {/* Text Content */}
-                          <div
-                            className={textClassName}
-                            style={textStyle}
-                            dangerouslySetInnerHTML={{ __html: processTextContent(step.text_content) }}
-                          />
-                        </div>
-                      )}
-                    </div>
+        {/* Steps Content */}
+        <div className={overall_layout === 'horizontal' ? "flex flex-row overflow-x-auto gap-8 pb-8 snap-x" : "flex flex-col gap-16"}>
+          {steps.map((step, index) => (
+            <div key={index} className={`flex flex-col ${
+              step.text_position === 'left' ? 'md:flex-row' : 
+              step.text_position === 'right' ? 'md:flex-row-reverse' : 
+              step.text_position === 'below' ? 'flex-col-reverse' : 'flex-col'
+            } gap-8 items-center ${overall_layout === 'horizontal' ? 'min-w-[300px] snap-center' : ''}`}>
+              
+              {/* Media */}
+              {step.background_url && (
+                <div className="flex-shrink-0">
+                  {step.background_type === 'video' ? (
+                    <video src={step.background_url} autoPlay muted loop playsInline className="h-auto rounded shadow-lg" style={{ width: step.image_width || '400px', maxWidth: '100%' }} />
                   ) : (
-                    // Side-by-side layout - wraps to stack only when text would be <40% width
-                    <div className="flex flex-row flex-wrap gap-4 items-start">
-                      {/* Text Left */}
-                      {isTextLeft && (
-                        <div className="flex-1 space-y-2" style={{ minWidth: '40%' }}>
-                          {/* Subheadline */}
-                          {step.subheadline && (
-                            <h3
-                              className={subheadlineClassName}
-                              style={subheadlineStyle}
-                            >
-                              {stripHtml(step.subheadline)}
-                            </h3>
-                          )}
-                          {/* Text Content */}
-                          <div
-                            className={textClassName}
-                            style={textStyle}
-                            dangerouslySetInnerHTML={{ __html: processTextContent(step.text_content) }}
-                          />
-                        </div>
-                      )}
-
-                      {/* Media - fixed width, flex-shrink-0 to maintain size */}
-                      <div className="flex-shrink-0">
-                        {step.background_url ? (
-                          isMediaVideo ? (
-                            <video
-                              src={step.background_url}
-                              autoPlay
-                              muted
-                              loop
-                              playsInline
-                              preload="auto"
-                              className="h-auto rounded"
-                              style={{ width: step.image_width || '400px', maxWidth: '100%' }}
-                            />
-                          ) : (
-                            <img
-                              src={step.background_url}
-                              alt={`Step ${index + 1}`}
-                              className="h-auto rounded"
-                              style={{ width: step.image_width || '400px', maxWidth: '100%' }}
-                            />
-                          )
-                        ) : null}
-                      </div>
-
-                      {/* Text Right - wraps below when text would be <40% width */}
-                      {isTextRight && (
-                        <div className="flex-1 space-y-2" style={{ minWidth: '40%' }}>
-                          {/* Subheadline */}
-                          {step.subheadline && (
-                            <h3
-                              className={subheadlineClassName}
-                              style={subheadlineStyle}
-                            >
-                              {stripHtml(step.subheadline)}
-                            </h3>
-                          )}
-                          {/* Text Content */}
-                          <div
-                            className={textClassName}
-                            style={textStyle}
-                            dangerouslySetInnerHTML={{ __html: processTextContent(step.text_content) }}
-                          />
-                        </div>
-                      )}
-                    </div>
+                    <img src={step.background_url} alt={step.subheadline || ''} className="h-auto rounded shadow-lg" style={{ width: step.image_width || '400px', maxWidth: '100%' }} />
                   )}
                 </div>
-              )
-            })}
+              )}
+
+              {/* Text */}
+              <div className="flex-1 w-full">
+                {step.subheadline && (
+                  <h3 className={`mb-4 ${getFontClass(step.subheadline_font_family)}`} style={{ 
+                    fontSize: step.subheadline_font_size || '1.5rem',
+                    color: step.subheadline_color || '#000000',
+                    textAlign: step.subheadline_align || 'left',
+                    fontWeight: step.subheadline_bold ? 'bold' : 'normal',
+                    fontStyle: step.subheadline_italic ? 'italic' : 'normal'
+                  }}>
+                    {stripHtml(step.subheadline)}
+                  </h3>
+                )}
+                <div 
+                  className={`prose prose-sm md:prose-base max-w-none step-text-content ${getFontClass(step.text_font_family)}`}
+                  style={{ 
+                    color: step.text_color || '#374151',
+                    fontSize: step.text_font_size || '1rem',
+                    textAlign: step.text_align || 'left'
+                  }}
+                  dangerouslySetInnerHTML={{ __html: processTextContent(step.text_content) }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Block-level CTA Button */}
+        {cta_text && (
+          <div className="mt-12" style={{ textAlign: button_align }}>
+            <Link
+              href={cta_url || '#'}
+              className="inline-block px-8 py-4 text-white font-bold rounded-none transition-all shadow-lg hover:scale-105"
+              style={{ backgroundColor: button_color }}
+            >
+              {cta_text}
+            </Link>
           </div>
         )}
       </div>
 
-      {/* Rich text content styles - only for text content areas, NOT main heading */}
       <style jsx global>{`
-        .steps-block-content .step-text-content ul {
-          list-style-type: disc;
-          margin-left: 1.5rem;
-          padding-left: 0.5rem;
-          margin-bottom: 0.5rem;
-        }
-        .steps-block-content .step-text-content ol {
-          list-style-type: decimal;
-          margin-left: 1.5rem;
-          padding-left: 0.5rem;
-          margin-bottom: 0.5rem;
-        }
-        .steps-block-content .step-text-content li {
-          margin-bottom: 0.25rem;
-        }
-        .steps-block-content .step-text-content h1 {
-          font-size: 1.75rem;
-          font-weight: bold;
-          margin: 0.5rem 0;
-        }
-        .steps-block-content .step-text-content h2 {
-          font-size: 1.5rem;
-          font-weight: 600;
-          margin: 0.5rem 0;
-        }
-        .steps-block-content .step-text-content h3 {
-          font-size: 1.25rem;
-          font-weight: 500;
-          margin: 0.25rem 0;
-        }
-        .steps-block-content .step-text-content p {
-          margin-bottom: 0;
-        }
-        /* Force text visibility - override any inline white/light colors */
-        .steps-block-content .step-text-content,
-        .steps-block-content .step-text-content *,
-        .steps-block-content .step-text-content font,
-        .steps-block-content .step-text-content font[color],
-        .steps-block-content .step-text-content span[style*="color"] {
-          color: inherit !important;
-        }
-        /* Remove font color attribute effect */
-        .steps-block-content .step-text-content font[color="#ffffff"],
-        .steps-block-content .step-text-content font[color="white"],
-        .steps-block-content .step-text-content font[color="#fff"] {
-          color: #000000 !important;
-        }
+        .steps-block-content .step-text-content p { margin-bottom: 0; }
+        .steps-block-content .step-text-content ul { list-style-type: disc; margin-left: 1.5rem; }
       `}</style>
     </section>
   )

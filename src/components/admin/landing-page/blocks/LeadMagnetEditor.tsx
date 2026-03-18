@@ -13,9 +13,37 @@ interface LeadMagnetEditorProps {
   businessUnitId?: string
 }
 
+const COLOR_PALETTE = [
+  { name: 'White', value: '#ffffff' },
+  { name: 'Black', value: '#000000' },
+  { name: 'Dark Gray', value: '#374151' },
+  { name: 'Gray', value: '#6b7280' },
+  { name: 'Light Gray', value: '#d1d5db' },
+  { name: 'Slate', value: '#1e293b' },
+  { name: 'Red', value: '#ef4444' },
+  { name: 'Orange', value: '#f97316' },
+  { name: 'Amber', value: '#f59e0b' },
+  { name: 'Yellow', value: '#eab308' },
+  { name: 'Lime', value: '#84cc16' },
+  { name: 'Green', value: '#22c55e' },
+  { name: 'Emerald', value: '#10b981' },
+  { name: 'Teal', value: '#14b8a6' },
+  { name: 'Cyan', value: '#06b6d4' },
+  { name: 'Sky', value: '#0ea5e9' },
+  { name: 'Blue', value: '#3b82f6' },
+  { name: 'Indigo', value: '#6366f1' },
+  { name: 'Violet', value: '#8b5cf6' },
+  { name: 'Purple', value: '#a855f7' },
+  { name: 'Fuchsia', value: '#d946ef' },
+  { name: 'Pink', value: '#ec4899' },
+  { name: 'Rose', value: '#f43f5e' },
+]
+
 export default function LeadMagnetEditor({ block, onChange, onMediaLibraryOpen, businessUnitId }: LeadMagnetEditorProps) {
   const data = block.data
   const [uploading, setUploading] = useState(false)
+  const [showButtonColorPicker, setShowButtonColorPicker] = useState(false)
+  const [showBgColorPicker, setShowBgColorPicker] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const mediaInputRef = useRef<HTMLInputElement>(null)
 
@@ -94,7 +122,7 @@ export default function LeadMagnetEditor({ block, onChange, onMediaLibraryOpen, 
       if (fileUrl) {
         updateData({ pdf_url: fileUrl })
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('PDF upload error:', error)
       alert('Failed to upload PDF')
     } finally {
@@ -107,7 +135,7 @@ export default function LeadMagnetEditor({ block, onChange, onMediaLibraryOpen, 
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-4">
-          {/* Background Image/Video - EXACT pattern from StepsBlockEditor */}
+          {/* Background Image/Video */}
           <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
             <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Background Image/Video</label>
             <div className="flex items-center gap-3 flex-wrap">
@@ -307,35 +335,95 @@ export default function LeadMagnetEditor({ block, onChange, onMediaLibraryOpen, 
           </div>
 
           <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Button Text & Color</label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">Button Text & Style</label>
+              <div className="flex bg-gray-100 p-0.5 rounded-none border border-gray-200">
+                {(['left', 'center', 'right'] as const).map((align) => (
+                  <button
+                    key={align}
+                    onClick={() => updateData({ button_align: align })}
+                    className={`px-2 py-1 text-[8px] font-bold rounded-none transition-all uppercase ${
+                      (data.button_align || 'center') === align ? 'bg-white text-violet-600 shadow-sm' : 'text-gray-400'
+                    }`}
+                  >
+                    {align}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="space-y-3">
               <input
                 type="text"
                 value={data.cta_text}
                 onChange={(e) => updateData({ cta_text: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 rounded-lg"
+                className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500"
                 placeholder="CTA Button Text"
               />
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={data.button_color || '#7c3aed'}
-                  onChange={(e) => updateData({ button_color: e.target.value })}
-                  className="w-12 h-10 cursor-pointer p-0.5 border border-gray-200 rounded-lg"
-                />
-                <span className="text-xs text-gray-500 font-mono">{data.button_color || '#7c3aed'}</span>
+              
+              <div className="relative">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] text-gray-400 uppercase font-bold">Button Color</span>
+                  <button
+                    onClick={() => setShowButtonColorPicker(!showButtonColorPicker)}
+                    className="w-7 h-7 rounded-none border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
+                    style={{ backgroundColor: data.button_color || '#7c3aed' }}
+                  />
+                </div>
+                {showButtonColorPicker && (
+                  <div className="absolute top-full left-0 mt-1 p-2 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50">
+                    <div className="grid grid-cols-7 gap-2">
+                      {COLOR_PALETTE.map((c) => (
+                        <button
+                          key={c.value}
+                          onClick={() => {
+                            updateData({ button_color: c.value })
+                            setShowButtonColorPicker(false)
+                          }}
+                          className="w-7 h-7 rounded-none border-2 hover:scale-110 transition-transform"
+                          style={{
+                            backgroundColor: c.value,
+                            borderColor: (data.button_color || '#7c3aed') === c.value ? '#a855f7' : '#475569'
+                          }}
+                          title={c.name}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
           <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Background Color</label>
-            <input
-              type="color"
-              value={data.background_color || '#f9fafb'}
-              onChange={(e) => updateData({ background_color: e.target.value })}
-              className="w-full h-8 cursor-pointer"
-            />
+            <div className="flex items-center gap-2 mb-1">
+              <label className="text-sm font-medium text-gray-700">Background Color</label>
+              <button
+                onClick={() => setShowBgColorPicker(!showBgColorPicker)}
+                className="w-7 h-7 rounded-none border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
+                style={{ backgroundColor: data.background_color || '#f9fafb' }}
+              />
+            </div>
+            {showBgColorPicker && (
+              <div className="absolute mt-1 p-2 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50">
+                <div className="grid grid-cols-7 gap-2">
+                  {COLOR_PALETTE.map((c) => (
+                    <button
+                      key={c.value}
+                      onClick={() => {
+                        updateData({ background_color: c.value })
+                        setShowBgColorPicker(false)
+                      }}
+                      className="w-7 h-7 rounded-none border-2 hover:scale-110 transition-transform"
+                      style={{
+                        backgroundColor: c.value,
+                        borderColor: (data.background_color || '#f9fafb') === c.value ? '#a855f7' : '#475569'
+                      }}
+                      title={c.name}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

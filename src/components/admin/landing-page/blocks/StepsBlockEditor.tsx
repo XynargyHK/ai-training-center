@@ -46,6 +46,11 @@ interface StepsBlockData {
   background_color?: string
   overall_layout?: 'vertical' | 'horizontal'
   steps: Step[]
+  // CTA Button fields
+  cta_text?: string
+  cta_url?: string
+  button_align?: 'left' | 'center' | 'right'
+  button_color?: string
 }
 
 interface StepsBlockEditorProps {
@@ -55,9 +60,36 @@ interface StepsBlockEditorProps {
   businessUnitId?: string
 }
 
+const COLOR_PALETTE = [
+  { name: 'White', value: '#ffffff' },
+  { name: 'Black', value: '#000000' },
+  { name: 'Dark Gray', value: '#374151' },
+  { name: 'Gray', value: '#6b7280' },
+  { name: 'Light Gray', value: '#d1d5db' },
+  { name: 'Slate', value: '#1e293b' },
+  { name: 'Red', value: '#ef4444' },
+  { name: 'Orange', value: '#f97316' },
+  { name: 'Amber', value: '#f59e0b' },
+  { name: 'Yellow', value: '#eab308' },
+  { name: 'Lime', value: '#84cc16' },
+  { name: 'Green', value: '#22c55e' },
+  { name: 'Emerald', value: '#10b981' },
+  { name: 'Teal', value: '#14b8a6' },
+  { name: 'Cyan', value: '#06b6d4' },
+  { name: 'Sky', value: '#0ea5e9' },
+  { name: 'Blue', value: '#3b82f6' },
+  { name: 'Indigo', value: '#6366f1' },
+  { name: 'Violet', value: '#8b5cf6' },
+  { name: 'Purple', value: '#a855f7' },
+  { name: 'Fuchsia', value: '#d946ef' },
+  { name: 'Pink', value: '#ec4899' },
+  { name: 'Rose', value: '#f43f5e' },
+]
+
 export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, businessUnitId }: StepsBlockEditorProps) {
   const data = (block.data as StepsBlockData) || { steps: [] }
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null)
+  const [showButtonColorPicker, setShowButtonColorPicker] = useState(false)
   const stepInputRefs = useRef<(HTMLInputElement | null)[]>([])
 
   const updateData = (updates: Partial<StepsBlockData>) => {
@@ -111,12 +143,10 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
     updateData({ steps: newSteps })
   }
 
-  // Upload handler - EXACT copy from hero banner
   const handleStepUpload = async (e: React.ChangeEvent<HTMLInputElement>, stepIndex: number) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Validate file type - allow images and videos
     const isImage = file.type.startsWith('image/')
     const isVideo = file.type.startsWith('video/')
 
@@ -125,7 +155,6 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
       return
     }
 
-    // Validate file size (max 10MB for images, 50MB for videos)
     const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024
     if (file.size > maxSize) {
       alert(`File must be less than ${isVideo ? '50MB' : '10MB'}`)
@@ -173,7 +202,7 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
   return (
     <div className="space-y-3">
       {/* Block-level Subheadline (after headline) */}
-      <div>
+      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
         <UniversalTextEditor
           label="Block Subheadline"
           value={data.subheadline || ''}
@@ -194,55 +223,102 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
         />
       </div>
 
+      {/* CTA Button - Unified Design */}
+      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="flex items-center justify-between mb-2">
+          <label className="block text-sm font-medium text-gray-700">Button Text & Style</label>
+          <div className="flex bg-gray-100 p-0.5 rounded-none border border-gray-200">
+            {(['left', 'center', 'right'] as const).map((align) => (
+              <button
+                key={align}
+                onClick={() => updateData({ button_align: align })}
+                className={`px-2 py-1 text-[8px] font-bold rounded-none transition-all uppercase ${
+                  (data.button_align || 'center') === align ? 'bg-white text-violet-600 shadow-sm' : 'text-gray-400'
+                }`}
+              >
+                {align}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="space-y-3">
+          <input
+            type="text"
+            value={data.cta_text || ''}
+            onChange={(e) => updateData({ cta_text: e.target.value })}
+            className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500"
+            placeholder="CTA Button Text"
+          />
+          <input
+            type="text"
+            value={data.cta_url || ''}
+            onChange={(e) => updateData({ cta_url: e.target.value })}
+            className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-500"
+            placeholder="CTA Button URL (#faq)"
+          />
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] text-gray-400 uppercase font-bold">Button Color</span>
+              <button
+                onClick={() => setShowButtonColorPicker(!showButtonColorPicker)}
+                className="w-7 h-7 rounded-none border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
+                style={{ backgroundColor: data.button_color || '#7c3aed' }}
+              />
+            </div>
+            {showButtonColorPicker && (
+              <div className="absolute top-full left-0 mt-1 p-2 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50">
+                <div className="grid grid-cols-7 gap-2">
+                  {COLOR_PALETTE.map((c) => (
+                    <button
+                      key={c.value}
+                      onClick={() => {
+                        updateData({ button_color: c.value })
+                        setShowButtonColorPicker(false)
+                      }}
+                      className="w-7 h-7 rounded-none border-2 hover:scale-110 transition-transform"
+                      style={{
+                        backgroundColor: c.value,
+                        borderColor: (data.button_color || '#7c3aed') === c.value ? '#a855f7' : '#475569'
+                      }}
+                      title={c.name}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Steps */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <label className="block text-xs font-medium text-gray-600">Steps</label>
+          <label className="block text-xs font-bold text-gray-700">Steps / Features</label>
           <button
             onClick={addStep}
-            className="px-2 py-0.5 bg-violet-50 border border-violet-200 hover:bg-violet-50 text-gray-800 rounded-none text-xs font-medium flex items-center gap-1"
+            className="px-3 py-1.5 bg-violet-600 text-white rounded-none text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-violet-700 transition-colors"
           >
-            <Plus className="w-3 h-3" />
+            <Plus className="w-3.5 h-3.5" />
             Add Step
           </button>
         </div>
 
         {data.steps?.map((step, index) => (
-          <div key={index} className="p-2.5 bg-white rounded-none border border-gray-200/50 space-y-2">
+          <div key={index} className="p-4 bg-white rounded-none border border-gray-200 space-y-4 shadow-sm">
             {/* Step Header */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-gray-800">Step {index + 1}</span>
+            <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Step {index + 1}</span>
               <div className="flex items-center gap-1">
-                <button
-                  onClick={() => moveStep(index, 'up')}
-                  disabled={index === 0}
-                  className="p-1 text-gray-500 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed"
-                  title="Move up"
-                >
-                  <ChevronUp className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => moveStep(index, 'down')}
-                  disabled={index === data.steps.length - 1}
-                  className="p-1 text-gray-500 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed"
-                  title="Move down"
-                >
-                  <ChevronDown className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => removeStep(index)}
-                  className="p-1 text-red-600 hover:text-red-600"
-                  title="Delete step"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <button onClick={() => moveStep(index, 'up')} disabled={index === 0} className="p-1 text-gray-400 hover:text-gray-800 disabled:opacity-30"><ChevronUp className="w-4 h-4" /></button>
+                <button onClick={() => moveStep(index, 'down')} disabled={index === data.steps.length - 1} className="p-1 text-gray-400 hover:text-gray-800 disabled:opacity-30"><ChevronDown className="w-4 h-4" /></button>
+                <button onClick={() => removeStep(index)} className="p-1 text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
               </div>
             </div>
 
-            {/* Background Upload - EXACT copy from hero banner */}
-            <div className="mb-2">
-              <label className="block text-[10px] text-gray-500 mb-0.5">Background Image/Video</label>
-              <div className="flex items-center gap-2 flex-wrap">
+            {/* Background Upload */}
+            <div className="p-3 bg-gray-50 border border-gray-200 rounded-none">
+              <label className="block text-[10px] text-gray-500 font-bold uppercase mb-2">Media (Image/Video)</label>
+              <div className="flex items-center gap-3 flex-wrap">
                 {step.background_url ? (
                   <div className="relative">
                     {step.background_type === 'video' ? (
@@ -252,142 +328,74 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
                     )}
                     <button
                       onClick={() => updateStep(index, { background_url: '', background_type: 'image' })}
-                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-50 text-gray-800 rounded-full flex items-center justify-center hover:bg-red-50 border border-red-200"
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
                     >
                       <X className="w-3 h-3" />
                     </button>
-                    <span className="absolute bottom-0.5 right-0.5 text-[10px] bg-black/60 text-gray-800 px-1 rounded-none">
-                      {step.background_type === 'video' ? 'VIDEO' : 'IMAGE'}
-                    </span>
                   </div>
                 ) : (
                   <div className="h-16 w-28 bg-white border border-dashed border-gray-300 rounded-none flex items-center justify-center">
-                    <Image className="w-6 h-6 text-gray-400" />
+                    <Image className="w-6 h-6 text-gray-300" />
                   </div>
                 )}
 
-                {/* Filename display */}
-                {step.background_url && (
-                  <div className="text-xs font-mono max-w-xs">
-                    {(() => {
-                      // Use original_filename if set
-                      if (step.original_filename) {
-                        return (
-                          <span className="text-green-600" title={step.original_filename}>
-                            📄 {step.original_filename}
-                          </span>
-                        )
-                      }
-                      // Try to extract from URL (works for media-library uploads with format: timestamp_filename.ext)
-                      try {
-                        const urlPath = new URL(step.background_url).pathname
-                        const fullName = urlPath.split('/').pop() || ''
-                        // Check if it's media-library format (timestamp_filename) vs product-images format (timestamp-random)
-                        if (fullName.includes('_') && !fullName.match(/^\d+-[a-z0-9]+\./i)) {
-                          const filename = fullName.replace(/^\d+_/, '')
-                          if (filename && filename !== fullName) {
-                            return (
-                              <span className="text-green-600" title={filename}>
-                                📄 {filename}
-                              </span>
-                            )
-                          }
-                        }
-                      } catch {}
-                      // Can't determine filename - show truncated URL
-                      try {
-                        const urlPath = new URL(step.background_url).pathname
-                        const shortName = urlPath.split('/').pop() || ''
-                        return (
-                          <span className="text-gray-500 text-[10px]" title={shortName}>
-                            📎 {shortName.length > 20 ? shortName.substring(0, 17) + '...' : shortName}
-                          </span>
-                        )
-                      } catch {
-                        return null
-                      }
-                    })()}
-                  </div>
-                )}
-
-                <button
-                  onClick={() => stepInputRefs.current[index]?.click()}
-                  disabled={uploadingIndex === index}
-                  className="px-3 py-1.5 bg-violet-50 border border-violet-200 text-gray-800 text-sm rounded-none hover:bg-violet-100 transition-colors disabled:opacity-50 flex items-center gap-1.5"
-                >
-                  {uploadingIndex === index ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-4 h-4" />
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => stepInputRefs.current[index]?.click()}
+                      disabled={uploadingIndex === index}
+                      className="px-2 py-1 bg-violet-50 border border-violet-200 text-gray-800 text-[10px] font-bold rounded-none hover:bg-violet-100 disabled:opacity-50 flex items-center gap-1 shadow-sm"
+                    >
+                      {uploadingIndex === index ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
                       Upload
-                    </>
+                    </button>
+                    {onMediaLibraryOpen && (
+                      <button
+                        onClick={() => onMediaLibraryOpen((url) => updateStep(index, { background_url: url }))}
+                        className="px-2 py-1 bg-gray-100 border border-gray-200 text-gray-700 text-[10px] font-bold rounded-none hover:bg-gray-200 flex items-center gap-1 shadow-sm"
+                      >
+                        <Image className="w-3 h-3" />
+                        Library
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    ref={(el) => { stepInputRefs.current[index] = el }}
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={(e) => handleStepUpload(e, index)}
+                    className="hidden"
+                  />
+                  {/* Image Size Controls */}
+                  {step.background_url && (
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => {
+                        const w = parseInt((step.image_width || '400px').replace('px',''))
+                        updateStep(index, { image_width: `${Math.max(100, w-20)}px` })
+                      }} className="px-1.5 py-0.5 bg-gray-100 text-[10px] border border-gray-200">-</button>
+                      <span className="text-[10px] font-mono">{step.image_width || '400px'}</span>
+                      <button onClick={() => {
+                        const w = parseInt((step.image_width || '400px').replace('px',''))
+                        updateStep(index, { image_width: `${w+20}px` })
+                      }} className="px-1.5 py-0.5 bg-gray-100 text-[10px] border border-gray-200">+</button>
+                    </div>
                   )}
-                </button>
-                {onMediaLibraryOpen && (
-                  <button
-                    onClick={() => onMediaLibraryOpen((url) => updateStep(index, { background_url: url }))}
-                    className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm rounded-none transition-colors flex items-center gap-1.5"
-                  >
-                    <Image className="w-4 h-4" />
-                    Library
-                  </button>
-                )}
-                <input
-                  ref={(el) => { stepInputRefs.current[index] = el }}
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"
-                  onChange={(e) => handleStepUpload(e, index)}
-                  className="hidden"
-                />
-                {/* Image Size Controls */}
-                {step.background_url && (
-                  <>
-                    <button
-                      onClick={() => {
-                        const currentWidth = parseInt((step.image_width || '400px').replace('px', ''))
-                        const newWidth = currentWidth - 20
-                        updateStep(index, { image_width: `${newWidth}px` })
-                      }}
-                      className="px-2 py-1 bg-gray-100 hover:bg-gray-100 text-gray-700 rounded-none text-sm"
-                      title="Smaller"
-                    >
-                      -
-                    </button>
-                    <span className="text-xs text-gray-600">
-                      {parseInt((step.image_width || '400px').replace('px', ''))}px
-                    </span>
-                    <button
-                      onClick={() => {
-                        const currentWidth = parseInt((step.image_width || '400px').replace('px', ''))
-                        const newWidth = currentWidth + 20
-                        updateStep(index, { image_width: `${newWidth}px` })
-                      }}
-                      className="px-2 py-1 bg-gray-100 hover:bg-gray-100 text-gray-700 rounded-none text-sm"
-                      title="Bigger"
-                    >
-                      +
-                    </button>
-                  </>
-                )}
+                </div>
               </div>
             </div>
 
             {/* Text Position */}
-            <div>
-              <label className="block text-[10px] text-gray-500 mb-1">Text Position</label>
+            <div className="p-3 bg-gray-50 border border-gray-200 rounded-none">
+              <label className="block text-[10px] text-gray-500 font-bold uppercase mb-2">Text Position</label>
               <div className="grid grid-cols-4 gap-1">
                 {(['left', 'right', 'above', 'below'] as const).map((pos) => (
                   <button
                     key={pos}
                     onClick={() => updateStep(index, { text_position: pos })}
-                    className={`px-2 py-1 rounded-none text-[10px] font-medium capitalize transition-all ${
+                    className={`px-2 py-1 rounded-none text-[10px] font-bold capitalize transition-all ${
                       step.text_position === pos
-                        ? 'bg-violet-50 border border-violet-200 text-gray-800'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        ? 'bg-violet-600 text-white shadow-sm'
+                        : 'bg-white text-gray-400 border border-gray-200 hover:bg-gray-50'
                     }`}
                   >
                     {pos}
@@ -396,41 +404,41 @@ export default function StepsBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
               </div>
             </div>
 
-            {/* Subheadline */}
-            <UniversalTextEditor
-              label="Subheadline"
-              value={step.subheadline || ''}
-              onChange={(value) => updateStep(index, { subheadline: value })}
-              fontSize={step.subheadline_font_size || '1.5rem'}
-              onFontSizeChange={(value) => updateStep(index, { subheadline_font_size: value })}
-              fontFamily={step.subheadline_font_family || 'Josefin Sans'}
-              onFontFamilyChange={(value) => updateStep(index, { subheadline_font_family: value })}
-              color={step.subheadline_color || '#000000'}
-              onColorChange={(value) => updateStep(index, { subheadline_color: value })}
-              bold={step.subheadline_bold}
-              onBoldChange={(value) => updateStep(index, { subheadline_bold: value })}
-              italic={step.subheadline_italic}
-              onItalicChange={(value) => updateStep(index, { subheadline_italic: value })}
-              textAlign={step.subheadline_align || 'left'}
-              onTextAlignChange={(value) => updateStep(index, { subheadline_align: value })}
-              placeholder="e.g., Step 1: Cleanse"
-            />
-
-            {/* Text Content - Restore Rich Text Editor */}
-            <div>
-              <label className="block text-[10px] text-gray-500 mb-1">Text Content</label>
-              <PolicyRichTextEditor
-                value={step.text_content || ''}
-                onChange={(value) => updateStep(index, { text_content: value })}
-                placeholder="Enter step instructions... Use toolbar for formatting, lists, etc."
+            <div className="space-y-4">
+              <UniversalTextEditor
+                label="Step Headline"
+                value={step.subheadline || ''}
+                onChange={(value) => updateStep(index, { subheadline: value })}
+                fontSize={step.subheadline_font_size || '1.5rem'}
+                onFontSizeChange={(value) => updateStep(index, { subheadline_font_size: value })}
+                fontFamily={step.subheadline_font_family || 'Josefin Sans'}
+                onFontFamilyChange={(value) => updateStep(index, { subheadline_font_family: value })}
+                color={step.subheadline_color || '#000000'}
+                onColorChange={(value) => updateStep(index, { subheadline_color: value })}
+                bold={step.subheadline_bold}
+                onBoldChange={(value) => updateStep(index, { subheadline_bold: value })}
+                italic={step.subheadline_italic}
+                onItalicChange={(value) => updateStep(index, { subheadline_italic: value })}
+                textAlign={step.subheadline_align || 'left'}
+                onTextAlignChange={(value) => updateStep(index, { subheadline_align: value })}
+                placeholder="e.g., Step 1: Cleanse"
               />
+
+              <div>
+                <label className="block text-[10px] text-gray-500 font-bold uppercase mb-1">Text Content</label>
+                <PolicyRichTextEditor
+                  value={step.text_content || ''}
+                  onChange={(value) => updateStep(index, { text_content: value })}
+                  placeholder="Enter step instructions..."
+                />
+              </div>
             </div>
           </div>
         ))}
 
         {data.steps?.length === 0 && (
-          <div className="text-center py-4 text-gray-400 text-xs">
-            No steps yet. Click "Add Step" to begin.
+          <div className="text-center py-8 bg-gray-50 border-2 border-dashed border-gray-200 text-gray-400 text-xs">
+            No steps yet. Click "Add Step" to begin building your grid.
           </div>
         )}
       </div>

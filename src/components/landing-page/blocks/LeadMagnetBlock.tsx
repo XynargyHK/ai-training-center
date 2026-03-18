@@ -91,14 +91,14 @@ export default function LeadMagnetBlock({ block, businessUnitId }: LeadMagnetBlo
     }
   }, [user, success, businessUnitId])
 
-  // Media Rendering - Patterned after StepsBlock
+  // Media Rendering - Patterned exactly after StepsBlock
   const renderMedia = () => {
     if (!data.media_url) return null
     const isMediaVideo = data.media_type === 'video'
     const imageWidth = data.image_width || '400px'
 
     return (
-      <div className="flex-shrink-0 flex justify-center w-full md:w-auto">
+      <div className="flex-shrink-0 flex justify-center">
         {isMediaVideo ? (
           <video
             src={data.media_url}
@@ -107,14 +107,14 @@ export default function LeadMagnetBlock({ block, businessUnitId }: LeadMagnetBlo
             loop
             playsInline
             preload="auto"
-            className="h-auto rounded"
+            className="h-auto rounded shadow-lg"
             style={{ width: imageWidth, maxWidth: '100%' }}
           />
         ) : (
           <img
             src={data.media_url}
             alt={stripHtml(data.headline)}
-            className="h-auto rounded"
+            className="h-auto rounded shadow-lg"
             style={{ width: imageWidth, maxWidth: '100%' }}
           />
         )}
@@ -139,24 +139,30 @@ export default function LeadMagnetBlock({ block, businessUnitId }: LeadMagnetBlo
       style={{ backgroundColor: data.background_color || '#f9fafb' }}
     >
       <div className="max-w-6xl mx-auto">
-        {/* Layout Switcher */}
+        {/* EXPLICIT LAYOUT LOGIC - Identical to StepsBlock */}
         {isTextAbove || isTextBelow || !hasMedia ? (
-          // STACKED LAYOUT (Always vertical)
+          // VERTICAL STACK
           <div className="flex flex-col gap-12 items-center text-center">
-            {isTextAbove && renderTextContent(false)}
+            {isTextAbove && renderTextContent()}
             {hasMedia && renderMedia()}
-            {isTextBelow && renderTextContent(false)}
+            {isTextBelow && renderTextContent()}
           </div>
         ) : (
-          // SIDE-BY-SIDE LAYOUT (Horizontal on Desktop)
-          <div className={`flex flex-col ${isTextLeft ? 'md:flex-row' : 'md:flex-row-reverse'} gap-12 lg:gap-20 items-center`}>
-            {/* Text Column */}
-            <div className="flex-1 w-full text-left">
-              {renderTextContent(true)}
-            </div>
+          // HORIZONTAL SIDE-BY-SIDE
+          <div className="flex flex-col md:flex-row gap-12 lg:gap-20 items-center justify-center">
+            {isTextLeft && (
+              <div className="flex-1 w-full text-left" style={{ minWidth: '40%' }}>
+                {renderTextContent(true)}
+              </div>
+            )}
+            
+            {hasMedia && renderMedia()}
 
-            {/* Media Column */}
-            {renderMedia()}
+            {isTextRight && (
+              <div className="flex-1 w-full text-left" style={{ minWidth: '40%' }}>
+                {renderTextContent(true)}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -167,7 +173,7 @@ export default function LeadMagnetBlock({ block, businessUnitId }: LeadMagnetBlo
     </section>
   )
 
-  function renderTextContent(isSide: boolean) {
+  function renderTextContent(isSide: boolean = false) {
     return (
       <div className="w-full">
         <div className="mb-8">
@@ -182,16 +188,18 @@ export default function LeadMagnetBlock({ block, businessUnitId }: LeadMagnetBlo
           >
             {stripHtml(data.headline)}
           </h2>
-          <p 
-            className="opacity-80"
-            style={{ 
-              color: data.subheadline_color || '#4b5563',
-              fontSize: data.subheadline_font_size || '1.25rem',
-              textAlign: data.subheadline_text_align || (isSide ? 'left' : 'center')
-            }}
-          >
-            {stripHtml(data.subheadline)}
-          </p>
+          {data.subheadline && (
+            <p 
+              className="opacity-80"
+              style={{ 
+                color: data.subheadline_color || '#4b5563',
+                fontSize: data.subheadline_font_size || '1.25rem',
+                textAlign: data.subheadline_text_align || (isSide ? 'left' : 'center')
+              }}
+            >
+              {stripHtml(data.subheadline)}
+            </p>
+          )}
         </div>
 
         <div className="space-y-8">
@@ -199,16 +207,16 @@ export default function LeadMagnetBlock({ block, businessUnitId }: LeadMagnetBlo
             <div className="space-y-8">
               {data.content && (
                 <div 
-                  className={`prose prose-sm md:prose-base text-gray-600 max-w-none ${!isSide ? 'text-center' : 'text-left'}`}
+                  className={`prose prose-sm md:prose-base text-gray-600 max-w-none ${!isSide ? 'text-center mx-auto' : 'text-left'}`}
                   dangerouslySetInnerHTML={{ __html: cleanHtml(data.content) }}
                 />
               )}
               
-              <div className={`pt-8 border-t border-gray-100 ${!isSide ? 'text-center' : 'text-left'}`}>
+              <div className={`pt-8 border-t border-gray-100 ${!isSide ? 'text-center' : 'text-left'}`} style={{ textAlign: data.button_align || (isSide ? 'left' : 'center') }}>
                 <button
                   onClick={handleLogin}
                   disabled={submitting}
-                  className={`w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-5 text-white font-bold rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-violet-200`}
+                  className={`inline-flex items-center justify-center gap-3 px-10 py-5 text-white font-bold rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-violet-200`}
                   style={{ backgroundColor: data.button_color || '#7c3aed' }}
                 >
                   {submitting ? (
@@ -233,12 +241,13 @@ export default function LeadMagnetBlock({ block, businessUnitId }: LeadMagnetBlo
                 </div>
                 <h3 className="text-xl font-bold text-gray-900">{isTW ? '解鎖成功！' : 'Success! Guide Unlocked'}</h3>
               </div>
-
+              
               <p className={`text-sm text-gray-600 max-w-lg ${!isSide ? 'mx-auto' : ''}`}>
                 {data.success_message || (isTW ? '感謝您的支持！您現在可以下載專屬指南。' : 'Thank you! You can now download your professional guide below.')}
               </p>
+
               {data.pdf_url ? (
-                <div className={`p-8 bg-white rounded-3xl border border-gray-100 shadow-xl shadow-violet-100/50 ${!isSide ? 'text-center' : 'text-left'}`}>
+                <div className={`p-8 bg-white rounded-3xl border border-gray-100 shadow-xl shadow-violet-100/50 ${!isSide ? 'text-center' : 'text-left'}`} style={{ textAlign: data.button_align || (isSide ? 'left' : 'center') }}>
                   <div className={`flex items-center ${!isSide ? 'justify-center' : 'justify-start'} gap-4 mb-6`}>
                     <div className="w-12 h-12 bg-violet-100 rounded-xl flex items-center justify-center text-violet-600">
                       <FileText className="w-6 h-6" />

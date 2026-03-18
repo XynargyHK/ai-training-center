@@ -12,9 +12,36 @@ interface SplitBlockEditorProps {
   businessUnitId?: string
 }
 
+const COLOR_PALETTE = [
+  { name: 'White', value: '#ffffff' },
+  { name: 'Black', value: '#000000' },
+  { name: 'Dark Gray', value: '#374151' },
+  { name: 'Gray', value: '#6b7280' },
+  { name: 'Light Gray', value: '#d1d5db' },
+  { name: 'Slate', value: '#1e293b' },
+  { name: 'Red', value: '#ef4444' },
+  { name: 'Orange', value: '#f97316' },
+  { name: 'Amber', value: '#f59e0b' },
+  { name: 'Yellow', value: '#eab308' },
+  { name: 'Lime', value: '#84cc16' },
+  { name: 'Green', value: '#22c55e' },
+  { name: 'Emerald', value: '#10b981' },
+  { name: 'Teal', value: '#14b8a6' },
+  { name: 'Cyan', value: '#06b6d4' },
+  { name: 'Sky', value: '#0ea5e9' },
+  { name: 'Blue', value: '#3b82f6' },
+  { name: 'Indigo', value: '#6366f1' },
+  { name: 'Violet', value: '#8b5cf6' },
+  { name: 'Purple', value: '#a855f7' },
+  { name: 'Fuchsia', value: '#d946ef' },
+  { name: 'Pink', value: '#ec4899' },
+  { name: 'Rose', value: '#f43f5e' },
+]
+
 export default function SplitBlockEditor({ block, onUpdate, onMediaLibraryOpen, businessUnitId }: SplitBlockEditorProps) {
   const data = block.data as SplitBlockData
   const [uploading, setUploading] = useState(false)
+  const [showButtonColorPicker, setShowButtonColorPicker] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const updateData = (updates: Partial<SplitBlockData>) => {
@@ -62,7 +89,7 @@ export default function SplitBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
   return (
     <div className="space-y-4">
       {/* Layout Selector */}
-      <div>
+      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
         <label className="block text-sm font-medium text-gray-600 mb-2">Layout</label>
         <div className="flex gap-2">
           <button
@@ -91,17 +118,15 @@ export default function SplitBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
       </div>
 
       {/* Image/Video Upload */}
-      <div>
+      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
         <label className="block text-sm font-medium text-gray-600 mb-2">Image or Video</label>
         <div className="flex flex-col gap-3">
           {/* Media Preview */}
           {data.image_url ? (
             <div className="relative inline-block">
-              {/* Check if it's a video */}
               {data.image_url.match(/\.(mp4|webm|ogg|mov)$/i) ? (
                 <video
                   src={data.image_url}
-                  controls
                   className="h-32 w-48 object-cover rounded-none border border-gray-200"
                 />
               ) : (
@@ -113,7 +138,7 @@ export default function SplitBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
               )}
               <button
                 onClick={() => updateData({ image_url: '' })}
-                className="absolute -top-2 -right-2 w-6 h-6 bg-red-50 text-gray-800 rounded-full flex items-center justify-center hover:bg-red-50 border border-red-200 transition-colors"
+                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -139,7 +164,7 @@ export default function SplitBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
               ) : (
                 <>
                   <Upload className="w-4 h-4" />
-                  Upload Image/Video
+                  Upload
                 </>
               )}
             </button>
@@ -150,7 +175,7 @@ export default function SplitBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
                 className="px-4 py-2 bg-gray-200 hover:bg-gray-100 text-gray-800 rounded-none text-sm font-medium transition-colors flex items-center gap-2"
               >
                 <ImageIcon className="w-4 h-4" />
-                Media Library
+                Library
               </button>
             )}
           </div>
@@ -162,12 +187,11 @@ export default function SplitBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
             onChange={handleMediaUpload}
             className="hidden"
           />
-          <p className="text-xs text-gray-400">Supports: Images (JPG, PNG, GIF, WebP) and Videos (MP4, WebM, MOV)</p>
         </div>
       </div>
 
       {/* Headline */}
-      <div>
+      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
         <label className="block text-sm font-medium text-gray-600 mb-2">Headline</label>
         <input
           type="text"
@@ -179,7 +203,7 @@ export default function SplitBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
       </div>
 
       {/* Content */}
-      <div>
+      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
         <label className="block text-sm font-medium text-gray-600 mb-2">Content</label>
         <textarea
           value={data.content || ''}
@@ -190,34 +214,81 @@ export default function SplitBlockEditor({ block, onUpdate, onMediaLibraryOpen, 
         />
       </div>
 
-      {/* Optional CTA Button */}
-      <div className="border-t border-gray-200 pt-4">
-        <label className="block text-sm font-medium text-gray-600 mb-3">Call-to-Action Button (Optional)</label>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Button Text</label>
-            <input
-              type="text"
-              value={data.cta_text || ''}
-              onChange={(e) => updateData({ cta_text: e.target.value })}
-              placeholder="e.g., Learn More"
-              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-none text-gray-800 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Button URL</label>
-            <input
-              type="text"
-              value={data.cta_url || ''}
-              onChange={(e) => updateData({ cta_url: e.target.value })}
-              placeholder="#micro-infusion-system"
-              className="w-full px-3 py-2 bg-white border border-gray-200 rounded-none text-gray-800 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-            />
+      {/* Optional CTA Button - Standardized Design */}
+      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="flex items-center justify-between mb-3">
+          <label className="block text-sm font-medium text-gray-700">Button Text & Style</label>
+          <div className="flex bg-gray-100 p-0.5 rounded-none border border-gray-200">
+            {(['left', 'center', 'right'] as const).map((align) => (
+              <button
+                key={align}
+                onClick={() => updateData({ button_align: align })}
+                className={`px-2 py-1 text-[8px] font-bold rounded-none transition-all uppercase ${
+                  (data.button_align || 'left') === align ? 'bg-white text-violet-600 shadow-sm' : 'text-gray-400'
+                }`}
+              >
+                {align}
+              </button>
+            ))}
           </div>
         </div>
-        <p className="text-xs text-gray-500 mt-2">
-          To scroll to another block, use <span className="text-violet-600">#headline-in-lowercase</span> (e.g., #micro-infusion-system, #faq)
-        </p>
+        
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">Button Text</label>
+              <input
+                type="text"
+                value={data.cta_text || ''}
+                onChange={(e) => updateData({ cta_text: e.target.value })}
+                placeholder="e.g., Learn More"
+                className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs focus:ring-1 focus:ring-violet-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">Button URL</label>
+              <input
+                type="text"
+                value={data.cta_url || ''}
+                onChange={(e) => updateData({ cta_url: e.target.value })}
+                placeholder="#faq"
+                className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-none text-gray-800 text-xs focus:ring-1 focus:ring-violet-500 outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] text-gray-400 uppercase font-bold">Button Color</span>
+              <button
+                onClick={() => setShowButtonColorPicker(!showButtonColorPicker)}
+                className="w-7 h-7 rounded-none border border-gray-200 cursor-pointer hover:scale-110 transition-transform"
+                style={{ backgroundColor: data.button_color || '#000000' }}
+              />
+            </div>
+            {showButtonColorPicker && (
+              <div className="absolute top-full left-0 mt-1 p-2 bg-gray-100 border border-gray-200 rounded-none shadow-sm z-50">
+                <div className="grid grid-cols-7 gap-2">
+                  {COLOR_PALETTE.map((c) => (
+                    <button
+                      key={c.value}
+                      onClick={() => {
+                        updateData({ button_color: c.value })
+                        setShowButtonColorPicker(false)
+                      }}
+                      className="w-7 h-7 rounded-none border-2 hover:scale-110 transition-transform"
+                      style={{
+                        backgroundColor: c.value,
+                        borderColor: (data.button_color || '#000000') === c.value ? '#a855f7' : '#475569'
+                      }}
+                      title={c.name}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )

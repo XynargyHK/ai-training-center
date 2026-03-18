@@ -28,35 +28,33 @@ export default function PDFReaderBlock({ block }: PDFReaderBlockProps) {
 
   if (items.length === 0) return null
 
-  // Media Rendering - Patterned after StepsBlock
+  // Media Rendering - Patterned exactly after StepsBlock
   const renderActiveMedia = () => {
     if (!activeItem?.media_url) return null
     const isMediaVideo = activeItem.media_type === 'video'
     const imageWidth = activeItem.image_width || '400px'
 
-    const mediaElement = isMediaVideo ? (
-      <video
-        src={activeItem.media_url}
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="auto"
-        className="h-auto rounded mb-6"
-        style={{ width: imageWidth, maxWidth: '100%' }}
-      />
-    ) : (
-      <img
-        src={activeItem.media_url}
-        alt={activeItem.title}
-        className="h-auto rounded mb-6"
-        style={{ width: imageWidth, maxWidth: '100%' }}
-      />
-    )
-
     return (
-      <div className="flex justify-center w-full md:w-auto flex-shrink-0">
-        {mediaElement}
+      <div className="flex-shrink-0 flex justify-center mb-8">
+        {isMediaVideo ? (
+          <video
+            src={activeItem.media_url}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            className="h-auto rounded shadow-lg"
+            style={{ width: imageWidth, maxWidth: '100%' }}
+          />
+        ) : (
+          <img
+            src={activeItem.media_url}
+            alt={activeItem.title}
+            className="h-auto rounded shadow-lg"
+            style={{ width: imageWidth, maxWidth: '100%' }}
+          />
+        )}
       </div>
     )
   }
@@ -73,7 +71,7 @@ export default function PDFReaderBlock({ block }: PDFReaderBlockProps) {
       style={{ backgroundColor: data.background_color || '#ffffff' }}
     >
       <div className="max-w-6xl mx-auto w-full flex-1 flex flex-col">
-        {/* Header - Fixed font sizing */}
+        {/* Header */}
         <div className="mb-8">
           <h2 
             className={`font-bold mb-2 ${getFontClass(data.headline_font_family)}`}
@@ -86,46 +84,50 @@ export default function PDFReaderBlock({ block }: PDFReaderBlockProps) {
           >
             {stripHtml(data.headline)}
           </h2>
-          <p 
-            className="opacity-80"
-            style={{ 
-              color: data.subheadline_color || '#4b5563',
-              fontSize: data.subheadline_font_size || '1rem'
-            }}
-          >
-            {stripHtml(data.subheadline)}
-          </p>
+          {data.subheadline && (
+            <p 
+              className="opacity-80"
+              style={{ 
+                color: data.subheadline_color || '#4b5563',
+                fontSize: data.subheadline_font_size || '1rem'
+              }}
+            >
+              {stripHtml(data.subheadline)}
+            </p>
+          )}
         </div>
 
-        <div className="flex flex-col md:flex-row gap-6 flex-1">
+        <div className="flex flex-col md:flex-row gap-12 lg:gap-16 flex-1">
           {/* Sidebar Menu */}
-          <div className="md:w-64 space-y-2">
+          <div className="md:w-64 space-y-2 flex-shrink-0">
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2 mb-3">
               {stripHtml(data.resources_label) || 'Resources'}
             </p>
-            {items.map((item: PDFItem, idx: number) => (
-              <button
-                key={idx}
-                onClick={() => setActiveIndex(idx)}
-                className={`w-full flex items-center justify-between p-4 rounded-xl text-left transition-all border ${
-                  activeIndex === idx 
-                    ? 'bg-white border-violet-200 shadow-md translate-x-1' 
-                    : 'bg-gray-50 border-transparent text-gray-500 hover:bg-gray-100'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                    activeIndex === idx ? 'bg-violet-100 text-violet-600' : 'bg-gray-200 text-gray-400'
-                  }`}>
-                    <FileText className="w-4 h-4" />
+            <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2">
+              {items.map((item: PDFItem, idx: number) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveIndex(idx)}
+                  className={`w-full flex items-center justify-between p-4 rounded-xl text-left transition-all border ${
+                    activeIndex === idx 
+                      ? 'bg-white border-violet-200 shadow-md translate-x-1' 
+                      : 'bg-gray-50 border-transparent text-gray-500 hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      activeIndex === idx ? 'bg-violet-100 text-violet-600' : 'bg-gray-200 text-gray-400'
+                    }`}>
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <span className={`text-sm font-bold ${activeIndex === idx ? 'text-violet-700' : ''}`}>
+                      {stripHtml(item.title)}
+                    </span>
                   </div>
-                  <span className={`text-sm font-bold ${activeIndex === idx ? 'text-violet-700' : ''}`}>
-                    {stripHtml(item.title)}
-                  </span>
-                </div>
-                {activeIndex === idx && <ChevronRight className="w-4 h-4 text-violet-400" />}
-              </button>
-            ))}
+                  {activeIndex === idx && <ChevronRight className="w-4 h-4 text-violet-400" />}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Reader Area */}
@@ -158,13 +160,13 @@ export default function PDFReaderBlock({ block }: PDFReaderBlockProps) {
                   </div>
                 </div>
                 
-                <div className="flex-1 flex flex-col p-6 overflow-y-auto">
-                  {/* Layout - Logic matching StepsBlock */}
-                  {isTextAbove || isTextBelow ? (
-                    // Stacked
-                    <div className="flex flex-col items-center">
+                <div className="flex-1 flex flex-col p-6 overflow-y-auto bg-white">
+                  {/* EXPLICIT LAYOUT LOGIC - Identical to StepsBlock */}
+                  {(isTextAbove || isTextBelow) ? (
+                    // VERTICAL
+                    <div className="flex flex-col items-center gap-8">
                       {isTextAbove && activeItem.media_url && renderActiveMedia()}
-                      <div className="flex-1 w-full min-h-[600px] relative bg-gray-200 rounded-xl overflow-hidden shadow-inner border border-gray-300">
+                      <div className="w-full min-h-[600px] relative bg-gray-200 rounded-xl overflow-hidden shadow-inner border border-gray-300">
                         <iframe
                           src={`${activeItem.pdf_url}#toolbar=0`}
                           className="w-full h-full absolute inset-0 border-none"
@@ -174,7 +176,7 @@ export default function PDFReaderBlock({ block }: PDFReaderBlockProps) {
                       {isTextBelow && activeItem.media_url && renderActiveMedia()}
                     </div>
                   ) : (
-                    // Side-by-side
+                    // HORIZONTAL
                     <div className={`flex flex-col ${isTextLeft ? 'md:flex-row' : 'md:flex-row-reverse'} gap-8 items-start`}>
                       <div className="flex-1 w-full min-h-[600px] relative bg-gray-200 rounded-xl overflow-hidden shadow-inner border border-gray-300">
                         <iframe
