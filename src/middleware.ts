@@ -1,140 +1,76 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 
 /**
- * AI TRAINING CENTER - Master Middleware
- * Handles multi-tenant routing, custom domains, and dynamic homepage assignment.
+ * AI TRAINING CENTER - Master Middleware (Fail-Safe Version)
+ * This version uses a whitelist approach to respect SSR country folders
+ * and strictly prevents the 'Salmon DNA' fallback trap.
  */
-
-const MASTER_PLATFORM_DOMAIN = 'aistaffs.app'
-
-// Static/API paths — always bypass on ALL domains (no HTML, no landing logic needed)
-const STATIC_PATHS = [
-  '/api',
-  '/_next',
-  '/favicon.ico',
-  '/images',
-  '/fonts',
-]
-
-// Admin paths — only bypass on system domains (localhost, railway.app)
-// On production custom domains (skincoach.ai etc.) these should NOT be reachable
-const ADMIN_PATHS = [
-  '/admin',
-  '/auth',
-  '/operator',
-  '/livechat',
-]
-
-const LANDING_DOMAINS: Record<string, string> = {
-  'brezcode.com': 'brezcode',
-  'www.brezcode.com': 'brezcode',
-  'skincoach.ai': 'skincoach',
-  'www.skincoach.ai': 'skincoach',
-  'xynargy.hk': 'xynargy',
-  'www.xynargy.hk': 'xynargy',
-}
-
 
 export async function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl
   const hostname = request.headers.get('host') || ''
 
-  // 1. STATIC PATHS — always bypass on every domain
-  if (STATIC_PATHS.some(path => pathname.startsWith(path))) {
-    return NextResponse.next()
-  }
-
-  // 2. SYSTEM/ADMIN DOMAINS — bypass everything (local dev + Railway internal)
+  // 1. TOP-LEVEL GUARD: Bypass for all system domains and critical paths
   if (
+    hostname.includes('localhost') || 
     hostname.includes('railway.app') ||
-    hostname.includes('localhost') ||
-    hostname.includes('127.0.0.1') ||
-    hostname.includes('github.dev')
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/auth') ||
+    pathname.startsWith('/operator') ||
+    pathname.includes('favicon.ico')
   ) {
     return NextResponse.next()
   }
 
-  // 3. IDENTIFY BUSINESS UNIT
-  let businessUnitSlug = LANDING_DOMAINS[hostname]
-
-  if (!businessUnitSlug && hostname.endsWith(MASTER_PLATFORM_DOMAIN)) {
+  // 2. IDENTIFY BRAND (Custom Domain Mapping)
+  const domainMap: Record<string, string> = {
+    'skincoach.ai': 'skincoach',
+    'www.skincoach.ai': 'skincoach',
+    'xynargy.hk': 'xynargy',
+    'www.xynargy.hk': 'xynargy',
+    'brezcode.com': 'brezcode',
+    'www.brezcode.com': 'brezcode'
+  }
+  
+  // Handle aistaffs.app subdomains (e.g., skincoach.aistaffs.app)
+  let businessUnit = domainMap[hostname]
+  if (!businessUnit && hostname.endsWith('aistaffs.app')) {
     const hostParts = hostname.split('.')
     if (hostParts.length >= 3) {
-      const potentialSlug = hostParts[0]
-      if (!['www', 'admin', 'api', 'app'].includes(potentialSlug)) {
-        businessUnitSlug = potentialSlug
+      const slug = hostParts[0]
+      if (!['www', 'admin', 'app', 'api'].includes(slug)) {
+        businessUnit = slug
       }
     }
   }
 
-  if (!businessUnitSlug) {
+  // If no brand is identified, let the request proceed normally
+  if (!businessUnit) return NextResponse.next()
+
+  // 3. PRIORITY BYPASS: If businessUnit is already in query, don't re-process
+  if (searchParams.has('businessUnit')) {
     return NextResponse.next()
   }
 
-  // 4. COUNTRY-BASED ROUTING
-  const pathParts = pathname.split('/').filter(Boolean)
-  const firstPart = pathParts[0]?.toLowerCase()
-  const countryCodes = ['us', 'hk', 'sg', 'tw', 'cn', 'vi', 'ja', 'ko']
-
-  if (firstPart && countryCodes.includes(firstPart)) {
-    const country = firstPart.toUpperCase()
-    let pageSlug = pathParts[1] || ''
-
-    // Map country to default language
-    const langMap: Record<string, string> = { 
-      'HK': 'tw', 'TW': 'tw', 'CN': 'cn', 'US': 'en', 'SG': 'en', 'VI': 'vi' 
-    }
-    const lang = langMap[country] || 'en'
-
-    // DYNAMIC HOMEPAGE RESOLUTION
-    // If the user is requesting the country root (e.g., /hk), check if a specific page is assigned as the home page
-    if (!pageSlug) {
-      try {
-        const supabase = createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        )
-        const { data: bu } = await supabase
-          .from('business_units')
-          .select('homepage_config')
-          .eq('slug', businessUnitSlug)
-          .single()
-
-        const config = bu?.homepage_config as Record<string, string> || {}
-        const localeKey = `${country}/${lang}`
-        if (config[localeKey]) {
-          pageSlug = config[localeKey]
-        }
-      } catch (err) {
-        console.error('Middleware: Error resolving homepage config', err)
-      }
-    }
-
+  // 4. HANDLE ROOT REDIRECT (e.g., skincoach.ai/ -> skincoach.ai/hk)
+  if (pathname === '/') {
+    const country = (request.headers.get('x-vercel-ip-country') || 'HK').toLowerCase()
     const url = request.nextUrl.clone()
-    url.pathname = '/livechat'
-    url.searchParams.set('businessUnit', businessUnitSlug)
-    url.searchParams.set('country', country)
-    url.searchParams.set('lang', lang)
-    
-    if (pageSlug) {
-      url.searchParams.set('page', pageSlug)
-    }
-
-    return NextResponse.rewrite(url)
+    url.pathname = `/${country}`
+    return NextResponse.redirect(url, 302)
   }
 
-  // 5. ROOT REDIRECTION
-  if (pathname === '/') {
-    const detectedCountry = (
-      request.headers.get('x-vercel-ip-country') || 
-      request.headers.get('cf-ipcountry') || 
-      'HK'
-    ).toLowerCase()
-
+  // 5. SSR FOLDER ROUTING (Respect the country folders)
+  // Instead of rewriting to /livechat (the trap), we rewrite to the real /hk or /us folder
+  // and simply inject the businessUnit param internally.
+  const countryFolders = ['/hk', '/us', '/sg', '/vi']
+  if (countryFolders.some(folder => pathname.startsWith(folder))) {
     const url = request.nextUrl.clone()
-    url.pathname = `/${detectedCountry}`
-    return NextResponse.redirect(url, 302)
+    url.searchParams.set('businessUnit', businessUnit)
+    // Internal rewrite hides the BU param from the user but gives it to the page
+    return NextResponse.rewrite(url)
   }
 
   return NextResponse.next()

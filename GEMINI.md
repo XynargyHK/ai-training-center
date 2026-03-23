@@ -30,6 +30,7 @@
 2. **Vision Support**: Only Gemini supports image/PDF analysis in this codebase.
 3. **Multi-tenancy**: Always filter queries by `business_unit_id` to respect RLS.
 4. **Environment**: `.env.local` contains all active keys. Check it before assuming config.
+5. **GIT CONTROL (STRICT)**: NEVER use git commands (`git add`, `git commit`, `git push`) without an explicit Directive from the user. Only modify local files. Do not assume a task is finished until the user explicitly says to deploy.
 
 ## 📂 Key File Locations
 - `/src/lib/supabase-storage.ts`: Database CRUD functions.

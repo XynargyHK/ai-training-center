@@ -5,31 +5,41 @@
 ## LLM Configuration - DO NOT QUESTION THESE
 
 1. **Gemini Model Name**: `gemini-2.5-flash`
-   - This is the CORRECT model name
+   - This is the MANDATORY model for all generation tasks
    - It is configured in `.env.local` as `GEMINI_MODEL=gemini-2.5-flash`
    - NEVER suggest changing this to gemini-1.5-flash or any other model
-   - The user has confirmed this multiple times
 
-2. **LLM Provider**: Can be `anthropic`, `ollama`, or `openai`
-   - Currently set to: `openai` (see `.env.local`)
-   - Model: `gpt-5-mini`
+2. **LLM Provider**: `google`
+   - Model: `gemini-2.5-flash`
 
 ## Common Mistakes to AVOID
 
 ### ❌ MISTAKE #1: Questioning the Gemini Model Name
-- **WRONG**: Suggesting `gemini-1.5-flash` or saying `gemini-2.5-flash` doesn't exist
-- **RIGHT**: Always use `gemini-2.5-flash` as configured
-- **User Frustration**: "you stupid, tell me how you will be able to remember and learn?"
+- **WRONG**: Suggesting `gemini-1.5-flash` or saying `gemini-2.5-flash` doesn't exist.
+- **RIGHT**: Always use `gemini-2.5-flash` as confirmed by the user.
 
-### ❌ MISTAKE #2: Forgetting Previous Context
-- **WRONG**: Asking the same questions repeatedly
-- **RIGHT**: Check this file and `.env.local` before questioning configuration
-- **User Quote**: "i told you more than 10 times, the LLM model is gemini-2.5-flash, you keep on saying this is wrong... you are wrong..."
+### ❌ MISTAKE #2: Guessing Data or Tool Outputs
+- **WRONG**: Trusting old logs or history for page counts or slug names.
+- **RIGHT**: ALWAYS query Supabase directly (`landing_pages` table).
+
+### ❌ MISTAKE #3: Assuming Routing Architecture
+- **WRONG**: Rewriting to `/livechat` and ignoring country folders (`/hk`, `/us`).
+- **RIGHT**: Respect the established country-path SSR architecture.
+
+## Architectural & Rigor Mandates
+
+1. **Sandwich UI**: The Landing Page Editor is organized as:
+   - **TOP**: Announcement & Header (Brand settings)
+   - **MIDDLE**: Page URL Slug + Product Blocks
+   - **BOTTOM**: Footer (Brand settings)
+2. **Dynamic Routing**: 
+   - Root paths (`skincoach.ai/hk`) are resolved using the `business_units.homepage_config` column.
+3. **Environment**:
+   - Dev: GitHub Codespaces (`.devcontainer`). Port 3000 must be **Public** for AI analysis.
+   - Master Domain: `aistaffs.app` (Dashboards and Tenant Subdomains).
 
 ## API Keys (from .env.local)
 
-- **Anthropic**: `sk-ant-api03-OhDz...`
-- **OpenAI**: `sk-proj-3eVl...`
 - **Google Gemini**: `AIzaSyDB1-P3YhXYdisyA11gLcPwlDeMwQwwFKM`
 - **Supabase URL**: `https://utqxzbnbqwuxwonxhryn.supabase.co`
 
