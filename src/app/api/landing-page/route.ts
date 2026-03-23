@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
       // Fetch business unit info
       supabase
         .from('business_units')
-        .select('id, name, slug')
+        .select('id, name, slug, homepage_config, global_announcement, global_navigation, global_footer')
         .eq('id', businessUnitId)
         .single(),
       // Fetch all available locales for this business unit

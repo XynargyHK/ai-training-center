@@ -12,7 +12,14 @@ import { BrezCodeHowItWorks, BrezCodeTestimonials, BrezCodeFAQ, BrezCodePromise,
 
 interface LandingPageSSRProps {
   landingPage: any
-  businessUnit: { id: string; name: string; slug: string } | null
+  businessUnit: { 
+    id: string; 
+    name: string; 
+    slug: string;
+    global_announcement?: string[];
+    global_navigation?: any;
+    global_footer?: any;
+  } | null
   country: string
   lang: string
   availableLocales: { country: string; language_code: string }[]
@@ -233,20 +240,33 @@ export default function LandingPageSSR({
 
   const secondaryColor = landingPage.secondary_color || '#0D1B2A'
   const primaryColor = landingPage.primary_color || '#4A90D9'
-  const logoUrl = landingPage.logo_url || ''
-  const logoText = landingPage.logo_text || businessUnit?.name || 'Shop'
-  const logoPosition = landingPage.logo_position || 'center'
-  const menuItems = (landingPage.menu_items || []).filter((item: any) => item.enabled)
-  const showSearch = landingPage.show_search !== false
-  const showAccount = landingPage.show_account !== false
-  const showCart = landingPage.show_cart !== false
+  
+  // GLOBAL VS LOCAL LOGIC
+  const globalNav = businessUnit?.global_navigation
+  const logoUrl = globalNav?.logo_url || landingPage.logo_url || ''
+  const logoText = globalNav?.logo_text || landingPage.logo_text || businessUnit?.name || 'Shop'
+  const logoPosition = globalNav?.logo_position || landingPage.logo_position || 'center'
+  
+  const rawMenuItems = (globalNav?.menu_items || landingPage.menu_items || [])
+  const menuItems = rawMenuItems.filter((item: any) => item.enabled !== false)
+  
+  const showSearch = globalNav?.show_search ?? (landingPage.show_search !== false)
+  const showAccount = globalNav?.show_account ?? (landingPage.show_account !== false)
+  const showCart = globalNav?.show_cart ?? (landingPage.show_cart !== false)
 
   // Announcements
-  const announcements = landingPage.announcements?.length
+  const announcements = businessUnit?.global_announcement?.length
+    ? businessUnit.global_announcement
+    : landingPage.announcements?.length
     ? landingPage.announcements
     : landingPage.announcement_text
     ? [landingPage.announcement_text]
     : []
+
+  // Footer
+  const footerData = businessUnit?.global_footer?.copyright 
+    ? businessUnit.global_footer 
+    : landingPage.footer
 
   // Hero slides
   const heroSlides = landingPage.hero_slides || []
@@ -314,7 +334,7 @@ export default function LandingPageSSR({
           languages={languagesForCountry}
           bodyFont={bodyFontFamily}
           headingFont={headingFontFamily}
-          accountUrl={landingPage.account_url || '/account'}
+          accountUrl={globalNav?.account_url || landingPage.account_url || '/account'}
           country={country}
         />
 
@@ -362,7 +382,7 @@ export default function LandingPageSSR({
 
         {/* Footer */}
         <LandingPageFooterSSR
-          data={landingPage.footer}
+          data={footerData}
           businessUnitName={businessUnit?.name}
           country={country}
           language={lang}

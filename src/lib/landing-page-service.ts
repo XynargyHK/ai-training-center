@@ -61,7 +61,7 @@ export const fetchLandingPageData = cache(async (
       .maybeSingle(),
     supabase
       .from('business_units')
-      .select('id, name, slug')
+      .select('id, name, slug, global_announcement, global_navigation, global_footer')
       .eq('id', businessUnitId)
       .single(),
     supabase

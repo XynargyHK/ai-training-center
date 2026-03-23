@@ -781,8 +781,10 @@ export function LandingPageContent({
       return `/livechat?businessUnit=${businessUnitParam}&country=${countryParam}&lang=${langParam}&page=${pageSlug}`
     }
 
-    // 3. Handle other sub-page links (e.g., /operator -> page=operator)
-    if (path.startsWith('/') && path !== '/' && path !== '/livechat' && !path.includes('?')) {
+    // 3. Handle other sub-page links (e.g., /some-page -> page=some-page)
+    // Exclude admin/system paths — those are never landing page slugs
+    const SYSTEM_PATHS = ['/operator', '/admin', '/auth', '/api', '/_next', '/images', '/fonts']
+    if (path.startsWith('/') && path !== '/' && path !== '/livechat' && !path.includes('?') && !SYSTEM_PATHS.some(p => path.startsWith(p))) {
       const slug = path.substring(1)
       return `/livechat?businessUnit=${businessUnitParam}&country=${countryParam}&lang=${langParam}&page=${slug}`
     }
