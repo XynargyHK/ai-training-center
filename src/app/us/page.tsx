@@ -11,7 +11,7 @@ export default async function USPage({
   const params = await searchParams
   const lang = params.lang || 'en'
   const bu = params._bu || 'skincoach'
-  const { landingPage, businessUnit, availableLocales, aiStaffList } = await fetchLandingPageData(bu, 'US', lang)
+  const { landingPage, businessUnit, availableLocales, aiStaffList, pageSlug } = await fetchLandingPageData(bu, 'US', lang)
 
   return (
     <LandingPageSSR
@@ -21,7 +21,7 @@ export default async function USPage({
       lang={lang}
       availableLocales={availableLocales}
       aiStaffList={aiStaffList}
-      pageSlug="micro-infusion-system-face"
+      pageSlug={pageSlug}
     />
   )
 }

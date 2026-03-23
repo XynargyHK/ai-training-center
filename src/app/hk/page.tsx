@@ -11,8 +11,7 @@ export default async function HKPage({
   const params = await searchParams
   const lang = params.lang || 'tw'
   const bu = params._bu || 'skincoach'
-  const pageSlug = "micro-infusion-system-face"
-  const { landingPage, businessUnit, availableLocales, aiStaffList } = await fetchLandingPageData(bu, 'HK', lang, pageSlug)
+  const { landingPage, businessUnit, availableLocales, aiStaffList, pageSlug } = await fetchLandingPageData(bu, 'HK', lang)
 
   return (
     <LandingPageSSR

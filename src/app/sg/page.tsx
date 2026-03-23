@@ -11,8 +11,7 @@ export default async function SGPage({
   const params = await searchParams
   const lang = params.lang || 'en'
   const bu = params._bu || 'skincoach'
-  const pageSlug = "micro-infusion-system-face"
-  const { landingPage, businessUnit, availableLocales, aiStaffList } = await fetchLandingPageData(bu, 'SG', lang, pageSlug)
+  const { landingPage, businessUnit, availableLocales, aiStaffList, pageSlug } = await fetchLandingPageData(bu, 'SG', lang)
 
   return (
     <LandingPageSSR

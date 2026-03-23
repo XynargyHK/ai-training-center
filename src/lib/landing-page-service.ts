@@ -28,6 +28,7 @@ export interface LandingPageResult {
   availableLocales: { country: string; language_code: string }[]
   currentLocale: { country: string; language: string }
   aiStaffList: { id: string; name: string; role: string }[]
+  pageSlug: string | null
 }
 
 export const fetchLandingPageData = cache(async (
@@ -45,25 +46,37 @@ export const fetchLandingPageData = cache(async (
       hasLandingPage: false,
       availableLocales: [],
       currentLocale: { country, language: languageCode },
-      aiStaffList: []
+      aiStaffList: [],
+      pageSlug: null
     }
   }
 
-  const [landingPageResult, businessUnitResult, availableLocalesResult, aiStaffResult] = await Promise.all([
+  // Step 1: Get business unit with homepage_config to resolve slug dynamically
+  const { data: businessUnit } = await supabase
+    .from('business_units')
+    .select('id, name, slug, homepage_config, global_announcement, global_navigation, global_footer')
+    .eq('id', businessUnitId)
+    .single()
+
+  // Resolve slug from homepage_config when not explicitly provided
+  let resolvedSlug = slug
+  if (resolvedSlug === null && businessUnit?.homepage_config) {
+    const config = businessUnit.homepage_config as Record<string, string>
+    const localeKey = `${country}/${languageCode}`
+    resolvedSlug = config[localeKey] || null
+  }
+
+  // Step 2: Run remaining queries in parallel
+  const [landingPageResult, availableLocalesResult, aiStaffResult] = await Promise.all([
     supabase
       .from('landing_pages')
       .select('*')
       .eq('business_unit_id', businessUnitId)
       .eq('country', country)
       .eq('language_code', languageCode)
-      .eq('slug', slug)
+      .eq('slug', resolvedSlug)
       .eq('is_active', true)
       .maybeSingle(),
-    supabase
-      .from('business_units')
-      .select('id, name, slug, global_announcement, global_navigation, global_footer')
-      .eq('id', businessUnitId)
-      .single(),
     supabase
       .from('landing_pages')
       .select('country, language_code')
@@ -78,7 +91,6 @@ export const fetchLandingPageData = cache(async (
   ])
 
   const { data: landingPage, error } = landingPageResult
-  const { data: businessUnit } = businessUnitResult
   const { data: availableLocales } = availableLocalesResult
   const { data: aiStaff } = aiStaffResult
 
@@ -107,6 +119,7 @@ export const fetchLandingPageData = cache(async (
       id: s.id,
       name: s.name,
       role: s.role,
-    }))
+    })),
+    pageSlug: resolvedSlug
   }
 })
