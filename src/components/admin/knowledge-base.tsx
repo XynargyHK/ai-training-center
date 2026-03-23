@@ -406,6 +406,13 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({
       }
 
       if (data.landingPage) {
+        // Sync selectedSlug with the actual returned page slug
+        // (API may have resolved null slug → assigned homepage slug via homepage_config)
+        const returnedSlug = data.landingPage.slug || null
+        if (loadSlug === null && returnedSlug !== null) {
+          setSelectedSlug(returnedSlug)
+        }
+
         // Verify the response matches what we requested
         if (data.landingPage.country !== loadCountry || data.landingPage.language_code !== loadLang || (data.landingPage.slug || null) !== (loadSlug || null)) {
           console.warn(`[LoadLandingPage] Response mismatch! Requested ${loadCountry}/${loadLang}/${loadSlug}, got ${data.landingPage.country}/${data.landingPage.language_code}/${data.landingPage.slug}`)
