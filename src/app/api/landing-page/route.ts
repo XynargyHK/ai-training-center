@@ -48,8 +48,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Business unit not found' }, { status: 404 })
     }
 
-    // Run all queries in PARALLEL for faster response
-    const [landingPageResult, businessUnitResult, availableLocalesResult, allPagesResult] = await Promise.all([
+    // Step 1: Fetch business unit to resolve homepage slug if not provided
+    const { data: businessUnit } = await supabase
+      .from('business_units')
+      .select('id, name, slug, homepage_config, global_announcement, global_navigation, global_footer')
+      .eq('id', businessUnitId)
+      .single()
+
+    // Resolve slug from homepage_config when not explicitly provided
+    let resolvedSlug = slug
+    if (!resolvedSlug && businessUnit?.homepage_config) {
+      const config = businessUnit.homepage_config as Record<string, string>
+      const localeKey = `${country}/${languageCode}`
+      resolvedSlug = config[localeKey] || null
+    }
+
+    // Step 2: Run remaining queries in parallel
+    const [landingPageResult, availableLocalesResult, allPagesResult] = await Promise.all([
       // Fetch the landing page for this business unit + country + language + slug
       supabase
         .from('landing_pages')
@@ -57,15 +72,9 @@ export async function GET(request: NextRequest) {
         .eq('business_unit_id', businessUnitId)
         .eq('country', country)
         .eq('language_code', languageCode)
-        .eq('slug', slug)
+        .eq('slug', resolvedSlug)
         .eq('is_active', true)
         .maybeSingle(),
-      // Fetch business unit info
-      supabase
-        .from('business_units')
-        .select('id, name, slug, homepage_config, global_announcement, global_navigation, global_footer')
-        .eq('id', businessUnitId)
-        .single(),
       // Fetch all available locales for this business unit
       supabase
         .from('landing_pages')
@@ -81,7 +90,6 @@ export async function GET(request: NextRequest) {
     ])
 
     const { data: landingPage, error } = landingPageResult
-    const { data: businessUnit } = businessUnitResult
     const { data: availableLocales } = availableLocalesResult
     const { data: allPages } = allPagesResult
 
@@ -104,7 +112,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log('[LandingPage API GET] isPreview:', isPreview, 'Slug:', slug, 'Has footer:', !!resolvedPage?.footer)
+    console.log('[LandingPage API GET] isPreview:', isPreview, 'Slug:', resolvedSlug, 'Has footer:', !!resolvedPage?.footer)
 
     return NextResponse.json({
       landingPage: resolvedPage || null,
