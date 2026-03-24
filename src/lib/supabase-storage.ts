@@ -24,13 +24,8 @@ export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   }
 })
 
-// Default business unit (skincoach) - used as fallback
-const DEFAULT_BUSINESS_UNIT_ID = '77313e61-2a19-4f3e-823b-80390dde8bd2' // skincoach
-const BUSINESS_UNIT_ID = DEFAULT_BUSINESS_UNIT_ID // Alias for vector search functions
-
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
+// Business unit identification logic
+// Removed hardcoded SkinCoach fallback to ensure strict multi-tenancy
 
 /**
  * Check if a string is a valid UUID
@@ -41,41 +36,30 @@ function isValidUUID(str: string): boolean {
 }
 
 /**
- * Get business unit ID from slug or UUID, with fallback to default
+ * Get business unit ID from slug or UUID
  */
 export async function getBusinessUnitId(slugOrId: string | null | undefined): Promise<string> {
   if (!slugOrId) {
-    console.log('⚠️ No business unit ID provided, using default (skincoach)')
-    return DEFAULT_BUSINESS_UNIT_ID
+    throw new Error('No business unit ID or slug provided')
   }
 
   // If it's already a UUID, return it
   if (isValidUUID(slugOrId)) {
-    console.log(`✓ Using UUID directly: ${slugOrId}`)
     return slugOrId
   }
 
   // Otherwise, it's a slug - look up the UUID from database
-  console.log(`🔍 Looking up business unit by slug: "${slugOrId}"`)
   const { data, error } = await supabase
     .from('business_units')
     .select('id, slug, name')
     .eq('slug', slugOrId)
     .single()
 
-  if (error) {
-    console.warn(`⚠️ Error looking up business unit '${slugOrId}':`, error.message)
-    console.warn('⚠️ Falling back to default business unit (skincoach)')
-    return DEFAULT_BUSINESS_UNIT_ID
+  if (error || !data) {
+    throw new Error(`Business unit '${slugOrId}' not found in database.`)
   }
 
-  if (!data) {
-    console.warn(`⚠️ Business unit '${slugOrId}' not found in database`)
-    console.warn('⚠️ Falling back to default business unit (skincoach)')
-    return DEFAULT_BUSINESS_UNIT_ID
-  }
-
-  console.log(`✓ Found business unit: ${data.name} (${data.slug}) -> ID: ${data.id}`)
+  console.log(`✓ Resolved business unit: ${data.name} (${data.slug}) -> ID: ${data.id}`)
   return data.id
 }
 

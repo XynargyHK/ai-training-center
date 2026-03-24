@@ -67,7 +67,8 @@ export default function LandingPageFooterSSR({
     const localeParams = `&country=${country}&lang=${language}`
     if (url.startsWith('?policy=')) {
       const policyName = url.replace('?policy=', '')
-      return `/livechat?businessUnit=skincoach&policy=${policyName}${localeParams}`
+      // Use clean relative path instead of long technical /livechat URL
+      return `/${country.toLowerCase()}?policy=${policyName}`
     }
     return url
   }

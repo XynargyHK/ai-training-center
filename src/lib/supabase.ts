@@ -27,14 +27,8 @@ export const supabaseAdmin = createClient(
   }
 )
 
-// Currently hardcoded to skincoach business unit
-// TODO: Make this dynamic when multi-tenancy is fully implemented
-export const BUSINESS_UNIT_ID = '77313e61-2a19-4f3e-823b-80390dde8bd2' // skincoach
-
-// ============================================
-// CLIENT-SAFE DATA LOADING FUNCTIONS
-// These use the anon key and respect RLS policies
-// ============================================
+// Business unit identification logic
+// Removed hardcoded SkinCoach ID to ensure strict multi-tenancy
 
 function handleSupabaseError(error: any, context: string): void {
   if (!error) return
@@ -42,12 +36,12 @@ function handleSupabaseError(error: any, context: string): void {
 }
 
 // FAQ Functions
-export async function loadFAQCategories() {
+export async function loadFAQCategories(businessUnitId: string) {
   const faqCategoryNames = ['pricing', 'products', 'shipping', 'returns', 'product results', 'ingredients', 'general']
   const { data, error } = await supabase
     .from('categories')
     .select('name')
-    .eq('business_unit_id', BUSINESS_UNIT_ID)
+    .eq('business_unit_id', businessUnitId)
     .in('name', faqCategoryNames)
     .order('sort_order')
 
@@ -58,7 +52,7 @@ export async function loadFAQCategories() {
   return data.map(c => c.name)
 }
 
-export async function loadFAQs() {
+export async function loadFAQs(businessUnitId: string) {
   const { data, error } = await supabase
     .from('faq_library')
     .select(`
@@ -70,7 +64,7 @@ export async function loadFAQs() {
         color
       )
     `)
-    .eq('business_unit_id', BUSINESS_UNIT_ID)
+    .eq('business_unit_id', businessUnitId)
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -90,12 +84,12 @@ export async function loadFAQs() {
 }
 
 // AI Staff Functions
-export async function loadAIStaff() {
+export async function loadAIStaff(businessUnitId: string) {
   // Use admin client to bypass RLS policies
   const { data, error } = await supabaseAdmin
     .from('ai_staff')
     .select('*')
-    .eq('business_unit_id', BUSINESS_UNIT_ID)
+    .eq('business_unit_id', businessUnitId)
     .eq('is_active', true)
     .order('created_at', { ascending: true })
 
@@ -114,12 +108,12 @@ export async function loadAIStaff() {
   }))
 }
 
-export async function saveAIStaff(staff: any) {
+export async function saveAIStaff(staff: any, businessUnitId: string) {
   const { error } = await supabase
     .from('ai_staff')
     .upsert({
       id: staff.id,
-      business_unit_id: BUSINESS_UNIT_ID,
+      business_unit_id: businessUnitId,
       name: staff.name,
       role: staff.role,
       training_memory: staff.trainingMemory || {},
@@ -149,11 +143,11 @@ export async function deleteAIStaff(id: string) {
 }
 
 // Training Scenarios Functions
-export async function loadTrainingScenarios() {
+export async function loadTrainingScenarios(businessUnitId: string) {
   const { data, error } = await supabase
     .from('training_scenarios')
     .select('*')
-    .eq('business_unit_id', BUSINESS_UNIT_ID)
+    .eq('business_unit_id', businessUnitId)
     .eq('is_active', true)
     .order('created_at', { ascending: true })
 
@@ -173,12 +167,12 @@ export async function loadTrainingScenarios() {
   }))
 }
 
-export async function saveTrainingScenario(scenario: any) {
+export async function saveTrainingScenario(scenario: any, businessUnitId: string) {
   const { error } = await supabase
     .from('training_scenarios')
     .upsert({
       id: scenario.id,
-      business_unit_id: BUSINESS_UNIT_ID,
+      business_unit_id: businessUnitId,
       name: scenario.name,
       description: scenario.description,
       customer_type: scenario.customerType,
@@ -210,11 +204,11 @@ export async function deleteTrainingScenario(id: string) {
 }
 
 // Training Sessions Functions
-export async function loadTrainingSessions() {
+export async function loadTrainingSessions(businessUnitId: string) {
   const { data, error } = await supabase
     .from('training_sessions')
     .select('*, training_scenarios(name), ai_staff(name)')
-    .eq('business_unit_id', BUSINESS_UNIT_ID)
+    .eq('business_unit_id', businessUnitId)
     .order('completed_at', { ascending: false })
 
   if (error) {
@@ -239,11 +233,11 @@ export async function loadTrainingSessions() {
   }))
 }
 
-export async function saveTrainingSession(session: any) {
+export async function saveTrainingSession(session: any, businessUnitId: string) {
   const { error } = await supabase
     .from('training_sessions')
     .insert({
-      business_unit_id: BUSINESS_UNIT_ID,
+      business_unit_id: businessUnitId,
       scenario_id: session.scenarioId,
       ai_staff_id: session.aiStaffId,
       conversation: session.conversation,

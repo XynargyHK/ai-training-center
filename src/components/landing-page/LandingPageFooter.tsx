@@ -109,9 +109,8 @@ export default function LandingPageFooter({
     const previewParam = preview ? '&preview=true' : ''
     if (url.startsWith('?policy=')) {
       const policyName = url.replace('?policy=', '')
-      return businessUnitParam
-        ? `/livechat?businessUnit=${businessUnitParam}&policy=${policyName}${localeParams}${previewParam}`
-        : `/livechat?policy=${policyName}${localeParams}${previewParam}`
+      // Use clean relative path instead of long technical /livechat URL
+      return `/${country.toLowerCase()}?policy=${policyName}${previewParam}`
     }
     return businessUnitParam ? `${url}?businessUnit=${businessUnitParam}${localeParams}${previewParam}` : url
   }
