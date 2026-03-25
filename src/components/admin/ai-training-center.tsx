@@ -2001,7 +2001,9 @@ Format as JSON array:
                 const pageSlug = activeTab === 'knowledge' ? landingPageActiveSlug : availableLocales.find(l => l.country === activeCountry && l.language_code === activeLang)?.slug
                 
                 // Construct the base URL
-                const isProduction = typeof window !== 'undefined' && window.location.hostname.endsWith('aistaffs.app')
+                const hostname = typeof window !== 'undefined' ? window.location.hostname : ''
+                const isProduction = hostname.includes('aistaffs.app')
+                
                 if (isProduction) {
                   // Direct to subdomain: skincoach.aistaffs.app/us
                   return `https://${selectedBusinessUnit}.aistaffs.app/${activeCountry.toLowerCase()}${activeLang !== 'en' ? `?lang=${activeLang}` : ''}${pageSlug ? (activeLang !== 'en' ? `&page=${pageSlug}` : `?page=${pageSlug}`) : ''}`
