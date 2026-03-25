@@ -390,19 +390,6 @@ const KnowledgeBase: React.FC<KnowledgeBaseProps> = ({
         if (data.businessUnit.global_announcement) setGlobalAnnouncement(data.businessUnit.global_announcement)
         if (data.businessUnit.global_navigation) setGlobalNavigation(data.businessUnit.global_navigation)
         if (data.businessUnit.global_footer) setGlobalFooter(data.businessUnit.global_footer)
-        
-        // AUTO-SELECT LOGIC: 
-        // If we are currently on the 'home' slug (null) and it's empty, 
-        // check if another slug is assigned as home for this locale.
-        const localeKey = `${loadCountry}/${loadLang}`
-        const assignedSlug = config[localeKey]
-        
-        if (assignedSlug && !data.landingPage && loadSlug === null) {
-          console.log(`[LoadLandingPage] Redirecting to assigned home: ${assignedSlug}`)
-          setSelectedSlug(assignedSlug)
-          loadLandingPage(loadCountry, loadLang, assignedSlug)
-          return
-        }
       }
 
       if (data.landingPage) {
