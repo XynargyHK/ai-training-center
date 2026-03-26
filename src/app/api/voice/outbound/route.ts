@@ -5,19 +5,20 @@ import { NextRequest, NextResponse } from 'next/server'
 // Triggers Twilio to call `toNumber`, AI greets and converses
 export async function POST(request: NextRequest) {
   try {
-    const { toNumber, businessUnitId, greeting } = await request.json()
+    const { toNumber, fromNumber, businessUnitId, greeting } = await request.json()
 
-    if (!toNumber) {
-      return NextResponse.json({ error: 'toNumber is required' }, { status: 400 })
+    if (!toNumber || !fromNumber) {
+      return NextResponse.json({ error: 'toNumber and fromNumber are required' }, { status: 400 })
     }
 
     const accountSid = process.env.TWILIO_ACCOUNT_SID
     const authToken = process.env.TWILIO_AUTH_TOKEN
-    const twilioFrom = process.env.TWILIO_PHONE_NUMBER
 
-    if (!accountSid || !authToken || !twilioFrom) {
-      return NextResponse.json({ error: 'Twilio not configured' }, { status: 500 })
+    if (!accountSid || !authToken) {
+      return NextResponse.json({ error: 'Twilio credentials not configured' }, { status: 500 })
     }
+
+    const twilioFrom = fromNumber
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ai-training-center-production.up.railway.app'
 
