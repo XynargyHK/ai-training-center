@@ -54,7 +54,6 @@ export async function POST(request: NextRequest) {
       .single()
     businessName = buData?.name || 'our service'
   }
-  const businessName = voiceConfig?.name || 'our service'
 
   // Call Gemini via our existing AI engine
   let aiReply = `Thank you for contacting ${businessName}. How can I assist you further?`
