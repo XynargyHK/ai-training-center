@@ -34,10 +34,25 @@ This project is a multi-tenant AI-powered customer service training and live cha
 ---
 
 ## **PART 3: COLLABORATION PROTOCOL (GEMINI & CLAUDE)**
+
+### **Rules**
 *   **Log-First Rule**: Both agents MUST read this log at the start of every session.
-*   **Log-Last Rule**: Both agents MUST summarize their work here at the end of every task.
-*   **Siloed Work**: Gemini is focusing on **WhatsApp/OpenClaw/Backend**. Claude is focusing on **UI/CSS/Bug Fixing**.
-*   **Communication**: Use this log to "hand off" tasks or warn about breaking changes in shared files like `ai-engine.ts`.
+*   **Log-Last Rule**: Both agents MUST update the Task Board here after completing work.
+*   **Parallel Work is SAFE** if tasks touch different files. Check "Files Touched" column before starting.
+*   **Push Order**: Claude pushes first → Gemini does `git pull` then pushes. Never simultaneously.
+*   **Conflict Check**: Before coding, declare which files you'll touch. If overlap with other agent's active task → stop and report to user.
+*   **Dockerfile Rule**: If you add a new SDK initialized at module level, add a dummy `ARG`/`ENV` for its API key in `Dockerfile`. Real values come from Railway at runtime.
+
+### **MASTER TASK BOARD**
+| # | Task | Owner | Status | Files Touched |
+|---|------|-------|--------|---------------|
+| 1 | Voice Call System (Twilio) | Claude | ✅ Done | `api/voice/*`, `scripts/test-voice-call.js` |
+| 2 | WhatsApp Webhook (Whapi) | Gemini | ✅ Done | `api/whatsapp/webhook/route.ts`, `lib/whatsapp.ts` |
+| 3 | Railway Dockerfile Fix | Claude | ✅ Done | `Dockerfile` |
+| 4 | WhatsApp UI (BU Settings) | Claude | 🔄 Next | `components/admin/business-unit-settings.tsx` |
+| 5 | WhatsApp DB Migration | Gemini | ⏳ Pending | `sql-migrations/028_add_whatsapp_config.sql` |
+| 6 | Voice Call UI (trigger from aistaffs) | Claude | ⏳ Pending | TBD |
+| 7 | Test Voice Call end-to-end | Both | ⏳ Pending | `scripts/test-voice-call.js` |
 
 ---
 
