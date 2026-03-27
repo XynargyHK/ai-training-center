@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
   let aiReply = `Thank you for contacting ${businessName}. How can I assist you further?`
 
   try {
-    const aiResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/ai/chat`, {
+    const aiResponse = await fetch(`${(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').trim()}/api/ai/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
