@@ -76,6 +76,17 @@ export default function VoiceDemoPage() {
       setMessages([])
       setLiveTranscript('')
 
+      // Unlock audio playback on user gesture — required by browser autoplay policy
+      // Playing a silent snippet inside the click handler marks the <audio> element as user-activated
+      const audio = audioElRef.current
+      if (audio) {
+        // Tiny silent MP3 (1 frame) encoded as base64
+        audio.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwVHAAAAAAD/+1DEAAAHAAGf9AAAIgAANIAAAARMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/7UMQbAAADSAAAAAAAAANIAAAABFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV'
+        try { await audio.play() } catch {}
+        audio.pause()
+        audio.src = ''
+      }
+
       // Get mic access
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } })
       streamRef.current = stream
@@ -244,8 +255,8 @@ export default function VoiceDemoPage() {
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center p-6">
-      {/* Hidden audio element — must be in DOM for Edge autoplay to work */}
-      <audio ref={audioElRef} style={{ display: 'none' }} />
+      {/* Hidden audio element — must be in DOM for autoplay unlock to work */}
+      <audio ref={audioElRef} playsInline preload="none" style={{ display: 'none' }} />
       <div className="w-full max-w-lg flex flex-col gap-6">
 
         {/* Header */}
