@@ -109,9 +109,8 @@ export async function POST(request: NextRequest) {
   // Respond and keep the conversation going
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="Polly.Joanna">${escapeXml(aiReply)}</Say>
   <Gather input="speech" action="${gatherAction}" method="POST" speechTimeout="auto" timeout="10" language="en-US">
-    <Say voice="Polly.Joanna">Is there anything else I can help you with?</Say>
+    <Say voice="Polly.Joanna">${escapeXml(aiReply)}</Say>
   </Gather>
   <Say voice="Polly.Joanna">Thank you for calling. Goodbye!</Say>
 </Response>`
