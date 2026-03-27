@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Joanna">Sorry, I couldn't understand that. Please try again.</Say>
-  <Gather input="speech" action="/api/voice/gather" method="POST" speechTimeout="3" language="en-US">
+  <Gather input="speech" action="/api/voice/gather" method="POST" speechTimeout="auto" timeout="10" language="en-US">
     <Say voice="Polly.Joanna">Please go ahead and speak.</Say>
   </Gather>
 </Response>`
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Joanna">${escapeXml(aiReply)}</Say>
-  <Gather input="speech" action="${gatherAction}" method="POST" speechTimeout="3" language="en-US">
+  <Gather input="speech" action="${gatherAction}" method="POST" speechTimeout="auto" timeout="10" language="en-US">
     <Say voice="Polly.Joanna">Is there anything else I can help you with?</Say>
   </Gather>
   <Say voice="Polly.Joanna">Thank you for calling. Goodbye!</Say>
