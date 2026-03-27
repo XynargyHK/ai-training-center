@@ -18,57 +18,81 @@ export default function VoiceDemoPage() {
   const wsRef = useRef<WebSocket | null>(null)
   const processorRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
-  const audioQueueRef = useRef<ArrayBuffer[]>([])
   const audioElRef = useRef<HTMLAudioElement | null>(null)
-  const audioBlobUrlRef = useRef<string | null>(null)
-  const audioSessionRef = useRef(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Audio queue system: each sentence becomes one blob, played sequentially
+  const sentenceChunksRef = useRef<Uint8Array[]>([])  // chunks for current sentence
+  const audioQueueRef = useRef<Blob[]>([])             // queue of sentence blobs
+  const isPlayingRef = useRef(false)
+  const currentUrlRef = useRef<string | null>(null)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
   const stopAudio = useCallback(() => {
-    // Stop and clean up current audio element
     if (audioElRef.current) {
       audioElRef.current.pause()
-      audioElRef.current.src = ''
+      audioElRef.current.removeAttribute('src')
+      audioElRef.current.load()
     }
-    if (audioBlobUrlRef.current) {
-      URL.revokeObjectURL(audioBlobUrlRef.current)
-      audioBlobUrlRef.current = null
+    if (currentUrlRef.current) {
+      URL.revokeObjectURL(currentUrlRef.current)
+      currentUrlRef.current = null
     }
+    sentenceChunksRef.current = []
     audioQueueRef.current = []
+    isPlayingRef.current = false
   }, [])
 
-  // Play audio using the DOM <audio> element + Blob URL
-  const playAudioBuffer = useCallback(async (chunks: ArrayBuffer[]) => {
-    if (chunks.length === 0) return
+  // Play next blob in the queue, then recurse
+  const playNextInQueue = useCallback(async () => {
+    if (isPlayingRef.current) return
+    const blob = audioQueueRef.current.shift()
+    if (!blob) return
 
     const audio = audioElRef.current
     if (!audio) return
 
+    isPlayingRef.current = true
     try {
-      // Concatenate all chunks into one blob
-      const blob = new Blob(chunks, { type: 'audio/mpeg' })
+      if (currentUrlRef.current) URL.revokeObjectURL(currentUrlRef.current)
       const url = URL.createObjectURL(blob)
-
-      // Clean up previous blob URL
-      if (audioBlobUrlRef.current) URL.revokeObjectURL(audioBlobUrlRef.current)
-      audioBlobUrlRef.current = url
-
+      currentUrlRef.current = url
       audio.src = url
       audio.volume = 1.0
-
+      console.log(`[VoiceDemo] Playing sentence blob: ${blob.size} bytes, queue remaining: ${audioQueueRef.current.length}`)
       await audio.play()
       await new Promise<void>((resolve) => {
         audio.onended = () => resolve()
-        audio.onerror = () => resolve()
+        audio.onerror = (e) => { console.error('[VoiceDemo] Audio error:', e); resolve() }
       })
     } catch (e) {
       console.error('[VoiceDemo] Audio play error:', e)
+    } finally {
+      isPlayingRef.current = false
+      // Play next sentence if queued
+      if (audioQueueRef.current.length > 0) {
+        playNextInQueue()
+      } else {
+        setStatus(prev => prev === 'speaking' ? 'listening' : prev)
+      }
     }
   }, [])
+
+  // Enqueue a complete sentence blob and start playing if idle
+  const enqueueSentenceAudio = useCallback(() => {
+    const chunks = sentenceChunksRef.current
+    if (chunks.length === 0) return
+    const blob = new Blob(chunks, { type: 'audio/mpeg' })
+    sentenceChunksRef.current = []
+    console.log(`[VoiceDemo] Sentence complete: ${chunks.length} chunks, ${blob.size} bytes`)
+    audioQueueRef.current.push(blob)
+    if (!isPlayingRef.current) {
+      playNextInQueue()
+    }
+  }, [playNextInQueue])
 
   const startConversation = useCallback(async () => {
     try {
@@ -103,25 +127,16 @@ export default function VoiceDemoPage() {
       }
 
       ws.onmessage = async (event) => {
-        if (event.data instanceof ArrayBuffer) {
-          // Accumulate audio chunks — play all at once on audio_end
-          audioQueueRef.current.push(event.data)
-          return
-        }
-
         let msg: any
         try {
-          msg = JSON.parse(event.data)
+          msg = JSON.parse(typeof event.data === 'string' ? event.data : '')
         } catch {
           return
         }
 
-        console.log('[VoiceDemo] msg:', msg.type)
-
         if (msg.type === 'ready') {
           setStatus('listening')
           setIsActive(true)
-          // Send greeting request
           ws.send(JSON.stringify({ type: 'greeting', text: GREETING }))
           try {
             startMicStream(stream, ws)
@@ -135,33 +150,28 @@ export default function VoiceDemoPage() {
             setLiveTranscript('')
           }
         } else if (msg.type === 'processing') {
-          // Server picked up utterance — mute mic immediately while AI thinks
           setStatus('thinking')
-          streamRef.current?.getAudioTracks().forEach(t => { t.enabled = false })
         } else if (msg.type === 'ai_text') {
           setMessages(prev => [...prev, { role: 'ai', text: msg.text }])
           setStatus('speaking')
-        } else if (msg.type === 'audio_start') {
-          audioQueueRef.current = []
-          setStatus('speaking')
-          // Mute mic track while AI speaks (sends silence to Deepgram — keeps connection alive, prevents echo)
-          streamRef.current?.getAudioTracks().forEach(t => { t.enabled = false })
-        } else if (msg.type === 'audio_end') {
-          const sessionId = ++audioSessionRef.current
-          stopAudio() // stop any previous audio
-          const chunks = [...audioQueueRef.current]
-          audioQueueRef.current = []
-          await playAudioBuffer(chunks)
-          // Only unmute if this is still the latest audio session
-          // 200ms cooldown prevents echo/feedback from AI voice tail
-          if (sessionId === audioSessionRef.current) {
-            await new Promise(r => setTimeout(r, 200))
-            streamRef.current?.getAudioTracks().forEach(t => { t.enabled = true })
-            setStatus('listening')
+        } else if (msg.type === 'audio_chunk') {
+          // Accumulate chunks for current sentence
+          try {
+            const binary = atob(msg.data)
+            const bytes = new Uint8Array(binary.length)
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+            sentenceChunksRef.current.push(bytes)
+          } catch (e) {
+            console.error('[VoiceDemo] Audio chunk error:', e)
           }
+        } else if (msg.type === 'audio_chunk_end') {
+          // Sentence complete — enqueue blob and start playing if idle
+          enqueueSentenceAudio()
+        } else if (msg.type === 'audio_done') {
+          // Flush any remaining chunks and let the queue finish naturally
+          enqueueSentenceAudio()
         } else if (msg.type === 'barge_in') {
           stopAudio()
-          streamRef.current?.getAudioTracks().forEach(t => { t.enabled = true })
           setStatus('listening')
         } else if (msg.type === 'error') {
           console.error('[VoiceDemo]', msg.message)
@@ -182,7 +192,7 @@ export default function VoiceDemoPage() {
       console.error('[VoiceDemo] Start error:', err)
       setStatus('error')
     }
-  }, [playAudioBuffer, stopAudio])
+  }, [enqueueSentenceAudio, stopAudio])
 
   const startMicStream = (stream: MediaStream, ws: WebSocket) => {
     const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
@@ -198,7 +208,7 @@ export default function VoiceDemoPage() {
       }
     }
 
-    recorder.start(250)
+    recorder.start(100) // Send mic audio every 100ms for faster transcription
     processorRef.current = recorder
 
     // Barge-in: monitor mic volume even while muted

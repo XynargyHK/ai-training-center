@@ -28,10 +28,9 @@ app.prepare().then(() => {
     }
   })
 
-  wss.on('connection', async (ws, req) => {
+  wss.on('connection', (ws, req) => {
     console.log('[VoiceWS] Client connected')
 
-    // Parse businessUnitId from query
     const { query } = parse(req.url, true)
     const businessUnitId = query.businessUnitId || null
 
@@ -39,35 +38,28 @@ app.prepare().then(() => {
     let fullTranscript = ''
     let silenceTimer = null
     let isAISpeaking = false
-    let currentAudioChunks = []
+    let abortController = null
     let keepAliveInterval = null
     let hasConnectedOnce = false
-    const conversationHistory = [] // [{role:'user'|'model', parts:[{text}]}]
+    let setupDone = false
+    const pendingMessages = [] // queue messages until async setup is done
+    const conversationHistory = []
 
-    // Safe send — never throws even if connection is closing
+    // Refs that get set after async init
+    let deepgram = null
+    let model = null
+
     const safeSend = (data) => {
       try { if (ws.readyState === 1) ws.send(data) } catch {}
     }
 
-    // ESM-only packages must use dynamic import
-    const { createClient } = await import('@deepgram/sdk')
-    const { ElevenLabsClient } = await import('elevenlabs')
-    const deepgram = createClient(process.env.DEEPGRAM_API_KEY)
-    const elevenlabs = new ElevenLabsClient({ apiKey: process.env.ELEVENLABS_API_KEY })
-
-    async function getAIResponse(transcript) {
-      if (!transcript.trim()) return null
-
-      console.log(`[VoiceWS] Getting AI response for: "${transcript}"`)
-
-      let aiText = 'Sorry, I could not process that. Please try again.'
-
+    // Async init — runs in background, message handler is registered IMMEDIATELY below
+    let systemPrompt = ''
+    ;(async () => {
       try {
-        // Call Gemini directly — no HTTP hop, thinking disabled for speed
-        const { GoogleGenerativeAI } = await import('@google/generative-ai')
-        const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY)
+        const OpenAI = (await import('openai')).default
+        model = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-        // Get business name from Supabase
         let businessContext = 'a helpful AI assistant'
         if (businessUnitId) {
           try {
@@ -78,85 +70,176 @@ app.prepare().then(() => {
           } catch {}
         }
 
-        const systemInstruction = `You are a voice AI assistant for ${businessContext}. Reply in 1-2 short spoken sentences only. No markdown, no lists, no asterisks. Sound natural and conversational. If you don't know something like real-time weather, say so briefly.`
+        systemPrompt = `You are a voice AI assistant for ${businessContext}. Reply in 1-2 short spoken sentences only. No markdown, no lists, no asterisks. Sound natural and conversational. If you don't know something like real-time weather, say so briefly.`
 
-        // Rebuild model with system instruction + conversation history
-        const modelWithContext = genAI.getGenerativeModel({
-          model: 'gemini-2.0-flash',
-          generationConfig: { maxOutputTokens: 150, temperature: 0.7 },
-          systemInstruction
-        })
-        const chat = modelWithContext.startChat({
-          history: conversationHistory.slice(-10) // keep last 10 turns
-        })
-
-        const result = await chat.sendMessage(transcript)
-        const raw = result.response.text()
-        if (raw) {
-          aiText = raw.replace(/\*\*/g, '').replace(/\*/g, '').replace(/#{1,6}\s/g, '').replace(/\n+/g, ' ').trim().substring(0, 300)
-          // Save to history so next turn has context
-          conversationHistory.push({ role: 'user', parts: [{ text: transcript }] })
-          conversationHistory.push({ role: 'model', parts: [{ text: aiText }] })
-        }
+        console.log('[VoiceWS] OpenAI init done, processing queued messages:', pendingMessages.length)
+        setupDone = true
+        for (const m of pendingMessages) handleMessage(m.data, m.isBinary)
+        pendingMessages.length = 0
       } catch (err) {
-        console.error('[VoiceWS] AI error:', err)
+        console.error('[VoiceWS] Init error:', err)
+        safeSend(JSON.stringify({ type: 'error', message: 'Server init failed' }))
       }
+    })()
 
-      console.log(`[VoiceWS] AI reply: "${aiText}"`)
-      return aiText
-    }
+    // Streaming AI → streaming TTS → streaming audio to client
+    // Instead of waiting for full AI text then full TTS audio, we:
+    // 1. Stream Gemini text token-by-token, accumulate into sentences
+    // 2. As each sentence completes, fire TTS immediately
+    // 3. Stream TTS audio chunks to client as they arrive
+    async function processUserInput(transcript, signal) {
+      if (!transcript.trim()) return
 
-    async function speakText(text) {
-      if (!text || ws.readyState !== 1) return
-      isAISpeaking = true
-      let audioStarted = false
+      console.log(`[VoiceWS] Processing: "${transcript}"`)
+      safeSend(JSON.stringify({ type: 'processing' }))
 
       try {
-        safeSend(JSON.stringify({ type: 'ai_text', text }))
-        console.log('[VoiceWS] Starting ElevenLabs TTS...')
+        // Build messages: system + conversation history + user input
+        const messages = [
+          { role: 'system', content: systemPrompt },
+          ...conversationHistory.slice(-10),
+          { role: 'user', content: transcript }
+        ]
 
-        // ElevenLabs streaming TTS
-        const audioStream = await elevenlabs.textToSpeech.convertAsStream(
-          'EXAVITQu4vr4xnSDxMaL', // Sarah voice ID
-          {
-            text,
-            model_id: 'eleven_turbo_v2_5',
-            output_format: 'mp3_44100_128',
-            voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+        // Stream GPT-4o-mini response
+        const stream = await model.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages,
+          max_tokens: 150,
+          temperature: 0.7,
+          stream: true,
+        })
+
+        let fullText = ''
+        let pendingText = ''
+
+        for await (const chunk of stream) {
+          if (signal?.aborted) {
+            console.log('[VoiceWS] Aborted during OpenAI stream')
+            return
           }
-        )
+          const text = chunk.choices[0]?.delta?.content
+          if (!text) continue
+          fullText += text
+          pendingText += text
 
-        console.log('[VoiceWS] ElevenLabs stream ready, sending audio...')
-        safeSend(JSON.stringify({ type: 'audio_start' }))
-        audioStarted = true
-        let chunkCount = 0
+          // Check for sentence boundary — flush to TTS as soon as we have a sentence
+          const sentenceMatch = pendingText.match(/^(.*?[.!?])\s*(.*)$/s)
+          if (sentenceMatch) {
+            const sentence = sentenceMatch[1].replace(/\*\*/g, '').replace(/\*/g, '').replace(/#{1,6}\s/g, '').replace(/\n+/g, ' ').trim()
+            pendingText = sentenceMatch[2]
 
-        for await (const chunk of audioStream) {
-          if (ws.readyState !== 1 || !isAISpeaking) break
-          safeSend(chunk)
-          chunkCount++
+            if (sentence) {
+              safeSend(JSON.stringify({ type: 'ai_text', text: sentence }))
+              isAISpeaking = true
+              await streamTTS(sentence, signal)
+              if (signal?.aborted) return
+            }
+          }
         }
 
-        console.log(`[VoiceWS] Audio done, sent ${chunkCount} chunks`)
+        // Flush any remaining text that didn't end with punctuation
+        const remaining = pendingText.replace(/\*\*/g, '').replace(/\*/g, '').replace(/#{1,6}\s/g, '').replace(/\n+/g, ' ').trim()
+        if (remaining && !signal?.aborted) {
+          safeSend(JSON.stringify({ type: 'ai_text', text: remaining }))
+          isAISpeaking = true
+          await streamTTS(remaining, signal)
+        }
+
+        // Save to history (OpenAI format)
+        const cleanText = fullText.replace(/\*\*/g, '').replace(/\*/g, '').replace(/#{1,6}\s/g, '').replace(/\n+/g, ' ').trim().substring(0, 300)
+        if (cleanText) {
+          conversationHistory.push({ role: 'user', content: transcript })
+          conversationHistory.push({ role: 'assistant', content: cleanText })
+        }
+
+        console.log(`[VoiceWS] AI reply: "${cleanText}"`)
       } catch (err) {
-        console.error('[VoiceWS] TTS error:', err.message || err)
-        safeSend(JSON.stringify({ type: 'error', message: 'TTS failed' }))
+        if (signal?.aborted) return
+        console.error('[VoiceWS] AI error:', err)
       } finally {
         isAISpeaking = false
-        safeSend(JSON.stringify({ type: 'audio_end' }))
+        safeSend(JSON.stringify({ type: 'audio_done' }))
+        // Reconnect Deepgram if it closed during AI speech
+        if (!deepgramLive || deepgramLive.readyState !== 1) {
+          console.log('[VoiceWS] Deepgram needs reconnect after AI response')
+          startDeepgram()
+        }
       }
     }
 
-    // Start Deepgram live connection
+    // Stream TTS: fetch Deepgram Aura and pipe audio chunks to client in real-time
+    async function streamTTS(text, signal) {
+      try {
+        console.log(`[VoiceWS] TTS streaming: "${text.substring(0, 50)}..."`)
+
+        const ttsResponse = await fetch('https://api.deepgram.com/v1/speak?model=aura-asteria-en&encoding=mp3', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Token ${process.env.DEEPGRAM_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ text }),
+          signal,
+        })
+
+        if (!ttsResponse.ok) {
+          throw new Error(`Deepgram TTS ${ttsResponse.status}`)
+        }
+
+        // Stream the response body — send chunks as they arrive
+        const reader = ttsResponse.body.getReader()
+        let chunkIndex = 0
+        while (true) {
+          if (signal?.aborted) break
+          const { done, value } = await reader.read()
+          if (done) break
+          if (value && value.length > 0 && ws.readyState === 1) {
+            const base64 = Buffer.from(value).toString('base64')
+            safeSend(JSON.stringify({ type: 'audio_chunk', data: base64, index: chunkIndex++ }))
+          }
+        }
+        // Signal end of this sentence's audio
+        safeSend(JSON.stringify({ type: 'audio_chunk_end' }))
+        console.log(`[VoiceWS] TTS done: ${chunkIndex} chunks sent`)
+      } catch (err) {
+        if (signal?.aborted) return
+        console.error('[VoiceWS] TTS error:', err.message || err)
+      }
+    }
+
+    // Speak a greeting (non-streaming, simpler path)
+    async function speakGreeting(text) {
+      if (!text || ws.readyState !== 1) return
+      isAISpeaking = true
+      safeSend(JSON.stringify({ type: 'ai_text', text }))
+      await streamTTS(text, null)
+      isAISpeaking = false
+      safeSend(JSON.stringify({ type: 'audio_done' }))
+    }
+
+    function cancelCurrentResponse() {
+      if (abortController) {
+        abortController.abort()
+        abortController = null
+      }
+      isAISpeaking = false
+    }
+
+    // Start Deepgram live STT connection — uses raw WebSocket (SDK v3 has connection bugs)
     function startDeepgram() {
-      deepgramLive = deepgram.listen.live({
+      console.log('[VoiceWS] Starting Deepgram with key:', process.env.DEEPGRAM_API_KEY ? 'present' : 'MISSING')
+      const WebSocketClient = require('ws')
+      const dgParams = new URLSearchParams({
         model: 'nova-2',
         language: 'en-US',
-        smart_format: true,
-        interim_results: true,
-        utterance_end_ms: 1200,
-        vad_events: true,
-        // Let Deepgram auto-detect format (browser sends WebM/Opus via MediaRecorder)
+        smart_format: 'true',
+        interim_results: 'true',
+        endpointing: '700',
+        vad_events: 'true',
+      })
+      deepgramLive = new WebSocketClient(`wss://api.deepgram.com/v1/listen?${dgParams}`, {
+        headers: { 'Authorization': `Token ${process.env.DEEPGRAM_API_KEY}` }
       })
 
       deepgramLive.on('open', () => {
@@ -169,42 +252,52 @@ app.prepare().then(() => {
         }
       })
 
-      // v3 SDK uses 'Results' not 'transcript'
-      deepgramLive.on('Results', async (data) => {
-        const transcript = data.channel?.alternatives?.[0]?.transcript
-        if (!transcript) return
+      deepgramLive.on('message', async (raw) => {
+        try {
+          const data = JSON.parse(raw.toString())
 
-        console.log(`[VoiceWS] Transcript (final=${data.is_final}): "${transcript}"`)
+          if (data.type === 'Results') {
+            const transcript = data.channel?.alternatives?.[0]?.transcript
+            if (!transcript) return
 
-        if (data.is_final) {
-          fullTranscript += ' ' + transcript
-          safeSend(JSON.stringify({ type: 'transcript', text: fullTranscript.trim(), final: true }))
-        } else {
-          safeSend(JSON.stringify({ type: 'transcript', text: (fullTranscript + ' ' + transcript).trim(), final: false }))
+            if (data.is_final) {
+              fullTranscript += ' ' + transcript
+              safeSend(JSON.stringify({ type: 'transcript', text: fullTranscript.trim(), final: true }))
+              console.log(`[VoiceWS] Final: "${fullTranscript.trim()}"`)
+
+              // 1s silence timer — reset on every is_final with text
+              // If user keeps talking, new is_final resets the timer
+              // If user stops for 1s, timer fires and we process
+              clearTimeout(silenceTimer)
+              silenceTimer = setTimeout(async () => {
+                const text = fullTranscript.trim()
+                fullTranscript = ''
+                if (!text) return
+
+                if (isAISpeaking) {
+                  console.log('[VoiceWS] Barge-in:', text)
+                  cancelCurrentResponse()
+                  safeSend(JSON.stringify({ type: 'barge_in' }))
+                }
+
+                console.log('[VoiceWS] Processing:', text)
+                abortController = new AbortController()
+                await processUserInput(text, abortController.signal)
+                abortController = null
+              }, 1000)
+            } else {
+              // Interim result — user is still speaking, cancel timer
+              clearTimeout(silenceTimer)
+              safeSend(JSON.stringify({ type: 'transcript', text: (fullTranscript + ' ' + transcript).trim(), final: false }))
+            }
+          }
+        } catch (err) {
+          console.error('[VoiceWS] Deepgram parse error:', err.message)
         }
-      })
-
-      // v3 SDK uses 'UtteranceEnd'
-      deepgramLive.on('UtteranceEnd', async (data) => {
-        if (data?.last_word_end === -1) return // ignore stale/duplicate signals
-        clearTimeout(silenceTimer)
-        const text = fullTranscript.trim()
-        fullTranscript = ''
-        if (!text) return
-        if (isAISpeaking) {
-          console.log('[VoiceWS] Utterance end ignored — AI still speaking')
-          return
-        }
-
-        console.log('[VoiceWS] Utterance end, processing:', text)
-        // Immediately tell client to mute mic — prevents double-utterances during 2-3s thinking window
-        safeSend(JSON.stringify({ type: 'processing' }))
-        const aiReply = await getAIResponse(text)
-        if (aiReply) await speakText(aiReply)
       })
 
       deepgramLive.on('error', (err) => {
-        console.error('[VoiceWS] Deepgram error:', err)
+        console.error('[VoiceWS] Deepgram error:', err?.message || err)
         safeSend(JSON.stringify({ type: 'error', message: 'STT error' }))
       })
 
@@ -212,7 +305,6 @@ app.prepare().then(() => {
         console.log('[VoiceWS] Deepgram closed')
         clearInterval(keepAliveInterval)
         keepAliveInterval = null
-        // Auto-reconnect if the WebSocket is still open
         if (ws.readyState === 1 && !isAISpeaking) {
           console.log('[VoiceWS] Deepgram reconnecting...')
           setTimeout(() => {
@@ -221,57 +313,68 @@ app.prepare().then(() => {
         }
       })
 
-      // Keep Deepgram connection alive during silence (e.g. while AI is speaking)
       keepAliveInterval = setInterval(() => {
-        if (deepgramLive?.getReadyState() === 1) {
-          deepgramLive.keepAlive()
+        if (deepgramLive?.readyState === 1) {
+          deepgramLive.send(JSON.stringify({ type: 'KeepAlive' }))
         }
       }, 5000)
     }
 
-    // WebSocket-level ping to keep connection alive
     const pingInterval = setInterval(() => {
       try { if (ws.readyState === 1) ws.ping() } catch {}
     }, 10000)
 
-    // Handle messages from browser
-    ws.on('message', (data, isBinary) => {
+    // Message handler — extracted so it can be called from queue replay too
+    function handleMessage(data, isBinary) {
       try {
         if (isBinary) {
-          // Raw audio from browser mic — forward to Deepgram
-          if (deepgramLive?.getReadyState() === 1) {
+          const dgState = deepgramLive?.readyState
+          if (dgState === 1) {
             deepgramLive.send(data)
+          } else {
+            console.log('[VoiceWS] Binary received but Deepgram not ready, state:', dgState)
           }
         } else {
           const msg = JSON.parse(data.toString())
           if (msg.type === 'start') {
             startDeepgram()
           } else if (msg.type === 'stop') {
-            deepgramLive?.finish()
+            cancelCurrentResponse()
+            try { deepgramLive?.close() } catch {}
           } else if (msg.type === 'greeting') {
-            speakText(msg.text || 'Hello! How can I help you today?')
+            speakGreeting(msg.text || 'Hello! How can I help you today?')
           } else if (msg.type === 'barge_in') {
             console.log('[VoiceWS] Barge-in from client')
-            isAISpeaking = false
+            cancelCurrentResponse()
+            safeSend(JSON.stringify({ type: 'barge_in' }))
           }
         }
       } catch (err) {
         console.error('[VoiceWS] Message handler error:', err.message)
       }
+    }
+
+    // Register IMMEDIATELY so no messages are lost during async init
+    ws.on('message', (data, isBinary) => {
+      if (!setupDone) {
+        pendingMessages.push({ data, isBinary })
+        return
+      }
+      handleMessage(data, isBinary)
     })
 
     ws.on('error', (err) => {
       console.error('[VoiceWS] WebSocket error:', err.message)
-      // Don't crash — just log. Connection will close on its own.
     })
 
     ws.on('close', (code, reason) => {
       console.log(`[VoiceWS] Client disconnected (code=${code})`)
+      cancelCurrentResponse()
       clearTimeout(silenceTimer)
       clearInterval(keepAliveInterval)
       clearInterval(pingInterval)
       keepAliveInterval = null
-      deepgramLive?.finish()
+      try { deepgramLive?.close() } catch {}
     })
   })
 
