@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { generateSiloedResponse } from '@/lib/ai-engine'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Joanna">Sorry, I couldn't understand that. Please try again.</Say>
-  <Gather input="speech" action="/api/voice/gather" method="POST" speechTimeout="auto" timeout="10" language="en-US">
+  <Gather input="speech" action="/api/voice/gather" method="POST" speechTimeout="2" timeout="10" language="en-US">
     <Say voice="Polly.Joanna">Please go ahead and speak.</Say>
   </Gather>
 </Response>`
@@ -55,37 +56,31 @@ export async function POST(request: NextRequest) {
     businessName = buData?.name || 'our service'
   }
 
-  // Call Gemini via our existing AI engine
+  // Call AI engine directly (no HTTP hop) for lower latency
   let aiReply = `Thank you for contacting ${businessName}. How can I assist you further?`
 
-  try {
-    const aiResponse = await fetch(`${(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').trim()}/api/ai/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: speechResult,
-        businessUnitId: businessUnitId || null,
+  if (businessUnitId) {
+    try {
+      const result = await generateSiloedResponse({
+        businessUnitId,
+        message: `[VOICE CALL - reply in 1-2 short sentences only, no markdown] ${speechResult}`,
+        conversationHistory: [],
         staffRole: 'cs',
         language: 'en',
         country: 'HK',
-        conversationHistory: []
+        isTraining: false
       })
-    })
-
-    if (aiResponse.ok) {
-      const data = await aiResponse.json()
-      if (data.response) {
-        // Strip markdown formatting — TTS can't handle it
-        aiReply = data.response
+      if (result.response) {
+        aiReply = result.response
           .replace(/\*\*/g, '')
           .replace(/\*/g, '')
           .replace(/#{1,6}\s/g, '')
           .replace(/\n+/g, ' ')
-          .substring(0, 500) // Twilio TTS limit
+          .substring(0, 400)
       }
+    } catch (err) {
+      console.error('[Voice] AI engine error:', err)
     }
-  } catch (err) {
-    console.error('[Voice] AI engine error:', err)
   }
 
   // Log the call turn to Supabase
@@ -109,7 +104,7 @@ export async function POST(request: NextRequest) {
   // Respond and keep the conversation going
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Gather input="speech" action="${gatherAction}" method="POST" speechTimeout="auto" timeout="10" language="en-US">
+  <Gather input="speech" action="${gatherAction}" method="POST" speechTimeout="2" timeout="10" language="en-US">
     <Say voice="Polly.Joanna">${escapeXml(aiReply)}</Say>
   </Gather>
   <Say voice="Polly.Joanna">Thank you for calling. Goodbye!</Say>

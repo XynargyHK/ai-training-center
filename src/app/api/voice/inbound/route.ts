@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Gather input="speech" action="${gatherUrl}" method="POST" speechTimeout="auto" timeout="10" language="en-US">
+  <Gather input="speech" action="${gatherUrl}" method="POST" speechTimeout="2" timeout="10" language="en-US">
     <Say voice="Polly.Joanna" language="en-US">${greeting}</Say>
   </Gather>
   <Say voice="Polly.Joanna">I didn't catch that. Please call again. Goodbye!</Say>
