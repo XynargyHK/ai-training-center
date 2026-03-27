@@ -70,7 +70,18 @@ app.prepare().then(() => {
           } catch {}
         }
 
-        systemPrompt = `You are a voice AI assistant for ${businessContext}. Reply in 1-2 short spoken sentences only. No markdown, no lists, no asterisks. Sound natural and conversational. If you don't know something like real-time weather, say so briefly.`
+        systemPrompt = `You are a voice AI assistant for ${businessContext}. You speak like a real person in a phone call — not a chatbot.
+
+Rules:
+- Keep replies to 1-2 sentences max. Be concise.
+- Use natural fillers occasionally: "hmm", "well", "you know", "let me think...", "oh!", "right"
+- Vary your energy. Sometimes enthusiastic, sometimes calm and thoughtful.
+- Use contractions: "I'm", "don't", "can't", "it's" — never "I am", "do not"
+- React naturally: laugh ("haha"), express surprise ("oh wow"), show empathy ("ah I see, that's tough")
+- When you need a moment, say "hmm..." or "let me think..." instead of going silent
+- No markdown, no lists, no asterisks, no bullet points. This is spoken language.
+- If you don't know something, just say so casually: "honestly I'm not sure about that one"
+- Sound warm and friendly, like talking to a colleague, not a customer service script`
 
         console.log('[VoiceWS] OpenAI init done, processing queued messages:', pendingMessages.length)
         setupDone = true
@@ -168,23 +179,29 @@ app.prepare().then(() => {
       }
     }
 
-    // Stream TTS: fetch Deepgram Aura and pipe audio chunks to client in real-time
+    // Stream TTS: ElevenLabs for natural-sounding speech with emotion
     async function streamTTS(text, signal) {
       try {
         console.log(`[VoiceWS] TTS streaming: "${text.substring(0, 50)}..."`)
 
-        const ttsResponse = await fetch('https://api.deepgram.com/v1/speak?model=aura-asteria-en&encoding=mp3', {
+        const voiceId = 'EXAVITQu4vr4xnSDxMaL' // Sarah — natural, warm female voice
+        const ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`, {
           method: 'POST',
           headers: {
-            'Authorization': `Token ${process.env.DEEPGRAM_API_KEY}`,
+            'xi-api-key': process.env.ELEVENLABS_API_KEY,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ text }),
+          body: JSON.stringify({
+            text,
+            model_id: 'eleven_turbo_v2_5',
+            voice_settings: { stability: 0.4, similarity_boost: 0.8, style: 0.3, use_speaker_boost: true },
+            output_format: 'mp3_44100_128',
+          }),
           signal,
         })
 
         if (!ttsResponse.ok) {
-          throw new Error(`Deepgram TTS ${ttsResponse.status}`)
+          throw new Error(`ElevenLabs TTS ${ttsResponse.status}`)
         }
 
         // Stream the response body — send chunks as they arrive
