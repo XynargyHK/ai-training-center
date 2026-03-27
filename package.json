@@ -6,13 +6,15 @@
     "node": ">=20.9.0"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "node server.js",
+    "dev:next": "next dev",
     "build": "next build --webpack",
-    "start": "next start",
+    "start": "node server.js",
     "lint": "next lint"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",
+    "@deepgram/sdk": "^3.13.0",
     "@google/generative-ai": "^0.24.1",
     "@hello-pangea/dnd": "^18.0.1",
     "@medusajs/cart": "^2.11.3",
@@ -25,6 +27,7 @@
     "@supabase/supabase-js": "^2.80.0",
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
+    "elevenlabs": "^1.59.0",
     "formidable": "^3.5.4",
     "jszip": "^3.10.1",
     "lucide-react": "^0.542.0",
@@ -40,6 +43,7 @@
     "react-dom": "^19.2.0",
     "resend": "^6.9.1",
     "stripe": "^20.1.0",
+    "ws": "^8.20.0",
     "xlsx": "^0.18.5",
     "youtube-transcript": "^1.2.1"
   },
