@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Twilio requires absolute URLs — keep businessUnitId in the loop
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ai-training-center-production.up.railway.app'
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://ai-training-center-production.up.railway.app').trim()
   const gatherAction = businessUnitId
     ? `${appUrl}/api/voice/gather?businessUnitId=${businessUnitId}`
     : `${appUrl}/api/voice/gather`
