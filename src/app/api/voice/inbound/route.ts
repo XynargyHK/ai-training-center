@@ -18,10 +18,13 @@ export async function POST(request: NextRequest) {
 
   const greeting = customGreeting || 'Hello! Thank you for calling. I\'m your AI assistant. How can I help you today?'
 
+  // Twilio requires absolute URLs for action attributes
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ai-training-center-production.up.railway.app'
+
   // Pass businessUnitId to gather route via query param
   const gatherUrl = businessUnitId
-    ? `/api/voice/gather?businessUnitId=${businessUnitId}`
-    : '/api/voice/gather'
+    ? `${appUrl}/api/voice/gather?businessUnitId=${businessUnitId}`
+    : `${appUrl}/api/voice/gather`
 
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>

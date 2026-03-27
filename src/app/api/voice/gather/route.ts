@@ -100,10 +100,11 @@ export async function POST(request: NextRequest) {
     }).then(() => {}).catch(console.error)
   }
 
-  // Keep businessUnitId in the loop
+  // Twilio requires absolute URLs — keep businessUnitId in the loop
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ai-training-center-production.up.railway.app'
   const gatherAction = businessUnitId
-    ? `/api/voice/gather?businessUnitId=${businessUnitId}`
-    : '/api/voice/gather'
+    ? `${appUrl}/api/voice/gather?businessUnitId=${businessUnitId}`
+    : `${appUrl}/api/voice/gather`
 
   // Respond and keep the conversation going
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
