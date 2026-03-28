@@ -33,6 +33,11 @@ app.prepare().then(() => {
 
     const { query } = parse(req.url, true)
     const businessUnitId = query.businessUnitId || null
+    const lang = query.lang || 'en'
+    const ttsProvider = query.tts || 'elevenlabs-turbo'
+    const sttProvider = query.stt || 'deepgram'
+    const llmProvider = query.llm || 'gpt-4o-mini'
+    console.log(`[VoiceWS] Config: lang=${lang} stt=${sttProvider} llm=${llmProvider} tts=${ttsProvider}`)
 
     let deepgramLive = null
     let fullTranscript = ''
@@ -70,7 +75,18 @@ app.prepare().then(() => {
           } catch {}
         }
 
-        systemPrompt = `You are a voice AI assistant for ${businessContext}. You speak like a real person in a phone call — not a chatbot.
+        if (lang === 'yue') {
+          systemPrompt = `你係${businessContext}嘅語音AI助手。你講嘢要好似真人打電話咁，唔好似機械人。用戶會用廣東話同你傾計，你一定要用廣東話口語回覆。
+
+規則：
+- 每次回覆最多1-2句，要簡潔
+- 一定要用廣東話口語：用「係」唔好用「是」，用「嘅」唔好用「的」，用「咁」唔好用「這樣」
+- 自然啲回應：「嗯...」「哦！」「明白」「係喎」「哈哈」
+- 唔好用markdown、列表、星號。呢個係講嘢，唔係打字
+- 語氣要親切友善，好似同朋友傾計咁
+- 如果用戶講英文，你都可以用廣東話夾英文回覆`
+        } else {
+          systemPrompt = `You are a voice AI assistant for ${businessContext}. You speak like a real person in a phone call — not a chatbot.
 
 Rules:
 - Keep replies to 1-2 sentences max. Be concise.
@@ -82,6 +98,7 @@ Rules:
 - No markdown, no lists, no asterisks, no bullet points. This is spoken language.
 - If you don't know something, just say so casually: "honestly I'm not sure about that one"
 - Sound warm and friendly, like talking to a colleague, not a customer service script`
+        }
 
         console.log('[VoiceWS] OpenAI init done, processing queued messages:', pendingMessages.length)
         setupDone = true
@@ -173,35 +190,88 @@ Rules:
         safeSend(JSON.stringify({ type: 'audio_done' }))
         // Reconnect Deepgram if it closed during AI speech
         if (!deepgramLive || deepgramLive.readyState !== 1) {
-          console.log('[VoiceWS] Deepgram needs reconnect after AI response')
-          startDeepgram()
+          console.log('[VoiceWS] STT needs reconnect after AI response')
+          startSTT()
         }
       }
     }
 
-    // Stream TTS: ElevenLabs for natural-sounding speech with emotion
+    // Stream TTS — routes to the selected provider
     async function streamTTS(text, signal) {
       try {
-        console.log(`[VoiceWS] TTS streaming: "${text.substring(0, 50)}..."`)
+        console.log(`[VoiceWS] TTS [${ttsProvider}]: "${text.substring(0, 50)}..."`)
+        let ttsResponse
 
-        const voiceId = 'EXAVITQu4vr4xnSDxMaL' // Sarah — natural, warm female voice
-        const ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`, {
-          method: 'POST',
-          headers: {
-            'xi-api-key': process.env.ELEVENLABS_API_KEY,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            text,
-            model_id: 'eleven_turbo_v2_5',
-            voice_settings: { stability: 0.4, similarity_boost: 0.8, style: 0.3, use_speaker_boost: true },
-            output_format: 'mp3_44100_128',
-          }),
-          signal,
-        })
+        if (ttsProvider === 'azure') {
+          // Azure Speech TTS — Cantonese or English
+          const voiceName = lang === 'yue' ? 'zh-HK-HiuMaanNeural' : 'en-US-JennyNeural'
+          const xmlLang = lang === 'yue' ? 'zh-HK' : 'en-US'
+          const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${xmlLang}"><voice name="${voiceName}">${text.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</voice></speak>`
+          ttsResponse = await fetch(`https://${process.env.AZURE_SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`, {
+            method: 'POST',
+            headers: {
+              'Ocp-Apim-Subscription-Key': process.env.AZURE_SPEECH_KEY,
+              'Content-Type': 'application/ssml+xml',
+              'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3',
+            },
+            body: ssml,
+            signal,
+          })
+          if (!ttsResponse.ok) throw new Error(`Azure TTS ${ttsResponse.status}`)
 
-        if (!ttsResponse.ok) {
-          throw new Error(`ElevenLabs TTS ${ttsResponse.status}`)
+        } else if (ttsProvider === 'cartesia') {
+          // Cartesia Sonic TTS
+          const voiceId = lang === 'yue' ? 'e90c6678-f0d3-4767-9883-5d0ecf5894a8' : 'a0e99841-438c-4a64-b679-ae501e7d6091' // Yue (zh) / Barbershop Man (en)
+          ttsResponse = await fetch('https://api.cartesia.ai/tts/bytes', {
+            method: 'POST',
+            headers: {
+              'X-API-Key': process.env.CARTESIA_API_KEY,
+              'Cartesia-Version': '2024-06-10',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model_id: 'sonic',
+              transcript: text,
+              voice: { mode: 'id', id: voiceId },
+              output_format: { container: 'mp3', bit_rate: 128000, sample_rate: 44100 },
+              language: lang === 'yue' ? 'zh' : 'en',
+            }),
+            signal,
+          })
+          if (!ttsResponse.ok) throw new Error(`Cartesia TTS ${ttsResponse.status}`)
+
+        } else if (ttsProvider === 'deepgram-aura') {
+          // Deepgram Aura TTS
+          ttsResponse = await fetch('https://api.deepgram.com/v1/speak?model=aura-asteria-en&encoding=mp3', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Token ${process.env.DEEPGRAM_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ text }),
+            signal,
+          })
+          if (!ttsResponse.ok) throw new Error(`Deepgram TTS ${ttsResponse.status}`)
+
+        } else {
+          // Default: ElevenLabs TTS
+          const voiceId = 'EXAVITQu4vr4xnSDxMaL' // Sarah
+          const modelId = ttsProvider === 'elevenlabs-v3' ? 'eleven_v3' : 'eleven_turbo_v2_5'
+          ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`, {
+            method: 'POST',
+            headers: {
+              'xi-api-key': process.env.ELEVENLABS_API_KEY,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              text,
+              model_id: modelId,
+              voice_settings: { stability: 0.4, similarity_boost: 0.8, style: 0.3, use_speaker_boost: true },
+              output_format: 'mp3_44100_128',
+            }),
+            signal,
+          })
+          if (!ttsResponse.ok) throw new Error(`ElevenLabs TTS ${ttsResponse.status}`)
         }
 
         // Stream the response body — send chunks as they arrive
@@ -216,7 +286,6 @@ Rules:
             safeSend(JSON.stringify({ type: 'audio_chunk', data: base64, index: chunkIndex++ }))
           }
         }
-        // Signal end of this sentence's audio
         safeSend(JSON.stringify({ type: 'audio_chunk_end' }))
         console.log(`[VoiceWS] TTS done: ${chunkIndex} chunks sent`)
       } catch (err) {
@@ -249,7 +318,7 @@ Rules:
       const WebSocketClient = require('ws')
       const dgParams = new URLSearchParams({
         model: 'nova-2',
-        language: 'en-US',
+        language: lang === 'yue' ? 'zh' : 'en-US',
         smart_format: 'true',
         interim_results: 'true',
         endpointing: '700',
@@ -337,6 +406,97 @@ Rules:
       }, 5000)
     }
 
+    // Azure Speech SDK STT — supports Cantonese zh-HK natively
+    let azurePushStream = null
+    let azureRecognizer = null
+
+    function startAzureSTT() {
+      console.log('[VoiceWS] Starting Azure STT with key:', process.env.AZURE_SPEECH_KEY ? 'present' : 'MISSING')
+      const sdk = require('microsoft-cognitiveservices-speech-sdk')
+      const speechConfig = sdk.SpeechConfig.fromSubscription(process.env.AZURE_SPEECH_KEY, process.env.AZURE_SPEECH_REGION)
+      speechConfig.speechRecognitionLanguage = lang === 'yue' ? 'zh-HK' : 'en-US'
+
+      // Create push stream — we'll push audio data from the browser into this
+      const audioFormat = sdk.AudioStreamFormat.getWaveFormatPCM(16000, 16, 1)
+      azurePushStream = sdk.AudioInputStream.createPushStream(audioFormat)
+      const audioConfig = sdk.AudioConfig.fromStreamInput(azurePushStream)
+
+      azureRecognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig)
+
+      // Interim results
+      azureRecognizer.recognizing = (s, e) => {
+        const transcript = e.result.text
+        if (!transcript) return
+        clearTimeout(silenceTimer)
+        safeSend(JSON.stringify({ type: 'transcript', text: (fullTranscript + ' ' + transcript).trim(), final: false }))
+      }
+
+      // Final results
+      azureRecognizer.recognized = (s, e) => {
+        if (e.result.reason === sdk.ResultReason.RecognizedSpeech) {
+          const transcript = e.result.text
+          if (!transcript) return
+          fullTranscript += ' ' + transcript
+          safeSend(JSON.stringify({ type: 'transcript', text: fullTranscript.trim(), final: true }))
+          console.log(`[VoiceWS] Final: "${fullTranscript.trim()}"`)
+
+          clearTimeout(silenceTimer)
+          silenceTimer = setTimeout(async () => {
+            const text = fullTranscript.trim()
+            fullTranscript = ''
+            if (!text) return
+
+            if (isAISpeaking) {
+              console.log('[VoiceWS] Barge-in:', text)
+              cancelCurrentResponse()
+              safeSend(JSON.stringify({ type: 'barge_in' }))
+            }
+
+            console.log('[VoiceWS] Processing:', text)
+            abortController = new AbortController()
+            await processUserInput(text, abortController.signal)
+            abortController = null
+          }, 1000)
+        }
+      }
+
+      azureRecognizer.sessionStarted = () => {
+        console.log('[VoiceWS] Azure STT session started')
+        if (!hasConnectedOnce) {
+          hasConnectedOnce = true
+          safeSend(JSON.stringify({ type: 'ready' }))
+        }
+      }
+
+      azureRecognizer.canceled = (s, e) => {
+        console.error('[VoiceWS] Azure STT canceled:', e.errorDetails)
+      }
+
+      // Start continuous recognition
+      azureRecognizer.startContinuousRecognitionAsync(
+        () => console.log('[VoiceWS] Azure STT listening'),
+        (err) => console.error('[VoiceWS] Azure STT start error:', err)
+      )
+    }
+
+    function stopAzureSTT() {
+      try {
+        azureRecognizer?.stopContinuousRecognitionAsync()
+        azurePushStream?.close()
+      } catch {}
+      azureRecognizer = null
+      azurePushStream = null
+    }
+
+    // Route to correct STT provider
+    function startSTT() {
+      if (sttProvider === 'azure') {
+        startAzureSTT()
+      } else {
+        startDeepgram()
+      }
+    }
+
     const pingInterval = setInterval(() => {
       try { if (ws.readyState === 1) ws.ping() } catch {}
     }, 10000)
@@ -345,19 +505,24 @@ Rules:
     function handleMessage(data, isBinary) {
       try {
         if (isBinary) {
-          const dgState = deepgramLive?.readyState
-          if (dgState === 1) {
-            deepgramLive.send(data)
+          if (sttProvider === 'azure' && azurePushStream) {
+            // Azure SDK needs raw PCM — browser sends WebM so we need PCM from client
+            // For now, push the raw data and let Azure handle it
+            azurePushStream.write(Buffer.from(data))
           } else {
-            console.log('[VoiceWS] Binary received but Deepgram not ready, state:', dgState)
+            const dgState = deepgramLive?.readyState
+            if (dgState === 1) {
+              deepgramLive.send(data)
+            }
           }
         } else {
           const msg = JSON.parse(data.toString())
           if (msg.type === 'start') {
-            startDeepgram()
+            startSTT()
           } else if (msg.type === 'stop') {
             cancelCurrentResponse()
             try { deepgramLive?.close() } catch {}
+            stopAzureSTT()
           } else if (msg.type === 'greeting') {
             speakGreeting(msg.text || 'Hello! How can I help you today?')
           } else if (msg.type === 'barge_in') {
@@ -392,6 +557,7 @@ Rules:
       clearInterval(pingInterval)
       keepAliveInterval = null
       try { deepgramLive?.close() } catch {}
+      stopAzureSTT()
     })
   })
 
