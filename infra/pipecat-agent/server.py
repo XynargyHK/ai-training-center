@@ -5,6 +5,7 @@ Browser calls POST /start → gets room URL → joins via Daily JS SDK.
 import os
 import subprocess
 import asyncio
+import time
 
 import aiohttp
 from aiohttp import web
@@ -22,7 +23,7 @@ async def create_daily_room():
             headers=headers,
             json={
                 "properties": {
-                    "exp": int(asyncio.get_event_loop().time()) + 3600,  # 1 hour
+                    "exp": int(time.time()) + 3600,  # 1 hour from now (Unix timestamp)
                     "enable_chat": False,
                     "enable_screenshare": False,
                     "max_participants": 2,
@@ -30,6 +31,9 @@ async def create_daily_room():
             },
         ) as resp:
             data = await resp.json()
+            print(f"Daily API response: {resp.status} {data}")
+            if resp.status != 200:
+                return None, None
             return data.get("url"), data.get("name")
 
 
