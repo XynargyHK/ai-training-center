@@ -18,6 +18,7 @@ const STT_OPTIONS = [
 ]
 
 const LLM_OPTIONS = [
+  { value: 'gemini-live', label: 'Gemini Live (full-duplex speech-to-speech)' },
   { value: 'cerebras', label: 'Cerebras LLaMA 3.1 8B (fastest)' },
   { value: 'gpt-4o-mini', label: 'GPT-4o-mini' },
   { value: 'gpt-4o', label: 'GPT-4o' },

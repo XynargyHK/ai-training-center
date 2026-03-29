@@ -118,6 +118,73 @@ Rules:
       }
     })()
 
+    // ============================================================
+    // GEMINI LIVE MODE — Full-duplex speech-to-speech
+    // Bypasses entire STT→LLM→TTS pipeline. Gemini handles everything.
+    // ============================================================
+    let geminiLiveSession = null
+
+    async function startGeminiLive() {
+      const { GoogleGenAI, Modality } = await import('@google/genai')
+      const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_GEMINI_API_KEY })
+
+      console.log('[VoiceWS] Starting Gemini Live session...')
+      geminiLiveSession = await ai.live.connect({
+        model: 'gemini-2.5-flash-native-audio-latest',
+        config: {
+          responseModalities: [Modality.AUDIO],
+          systemInstruction: {
+            parts: [{ text: systemPrompt }],
+          },
+        },
+        callbacks: {
+          onmessage: (msg) => {
+            if (ws.readyState !== 1) return
+            if (msg.setupComplete) {
+              console.log('[VoiceWS] Gemini Live: setup complete')
+              safeSend(JSON.stringify({ type: 'ready', mode: 'gemini-live' }))
+            }
+            if (msg.serverContent?.modelTurn?.parts) {
+              for (const part of msg.serverContent.modelTurn.parts) {
+                if (part.inlineData) {
+                  safeSend(JSON.stringify({ type: 'audio_chunk', data: part.inlineData.data, index: 0 }))
+                }
+                if (part.text) {
+                  safeSend(JSON.stringify({ type: 'ai_text', text: part.text }))
+                  console.log(`[VoiceWS] Gemini Live text: "${part.text}"`)
+                }
+              }
+            }
+            if (msg.serverContent?.turnComplete) {
+              safeSend(JSON.stringify({ type: 'audio_chunk_end' }))
+              safeSend(JSON.stringify({ type: 'audio_done' }))
+              console.log('[VoiceWS] Gemini Live: turn complete')
+            }
+            if (msg.serverContent?.interrupted) {
+              console.log('[VoiceWS] Gemini Live: barge-in detected')
+              safeSend(JSON.stringify({ type: 'barge_in' }))
+            }
+          },
+          onerror: (e) => console.error('[VoiceWS] Gemini Live WS error:', e),
+          onclose: (e) => console.log('[VoiceWS] Gemini Live WS closed:', e?.code),
+        },
+      })
+
+      console.log('[VoiceWS] Gemini Live session created')
+    }
+
+    // Send audio to Gemini Live session
+    function sendAudioToGeminiLive(audioBuffer) {
+      if (geminiLiveSession) {
+        try {
+          const base64Audio = audioBuffer.toString('base64')
+          geminiLiveSession.sendRealtimeInput({ media: { data: base64Audio, mimeType: 'audio/webm;codecs=opus' } })
+        } catch (e) {
+          console.error('[VoiceWS] Gemini Live send error:', e.message)
+        }
+      }
+    }
+
     // Streaming AI → streaming TTS → streaming audio to client
     // Instead of waiting for full AI text then full TTS audio, we:
     // 1. Stream Gemini text token-by-token, accumulate into sentences
@@ -700,9 +767,13 @@ Rules:
     function handleMessage(data, isBinary) {
       try {
         if (isBinary) {
+          // GEMINI LIVE MODE: send audio directly to Gemini
+          if (llmProvider === 'gemini-live' && geminiLiveSession) {
+            sendAudioToGeminiLive(Buffer.from(data))
+            return
+          }
+
           if (sttProvider === 'azure' && azurePushStream) {
-            // Azure SDK needs raw PCM — browser sends WebM so we need PCM from client
-            // For now, push the raw data and let Azure handle it
             azurePushStream.write(Buffer.from(data))
           } else {
             const dgState = deepgramLive?.readyState
@@ -713,13 +784,25 @@ Rules:
         } else {
           const msg = JSON.parse(data.toString())
           if (msg.type === 'start') {
-            startSTT()
+            if (llmProvider === 'gemini-live') {
+              // Gemini Live mode: start live session instead of STT
+              startGeminiLive()
+            } else {
+              startSTT()
+            }
           } else if (msg.type === 'stop') {
             cancelCurrentResponse()
+            if (geminiLiveSession) {
+              try { geminiLiveSession.close() } catch {}
+              geminiLiveSession = null
+            }
             try { deepgramLive?.close() } catch {}
             stopAzureSTT()
           } else if (msg.type === 'greeting') {
-            speakGreeting(msg.text || 'Hello! How can I help you today?')
+            if (llmProvider !== 'gemini-live') {
+              speakGreeting(msg.text || 'Hello! How can I help you today?')
+            }
+            // Gemini Live generates its own greeting
           } else if (msg.type === 'barge_in') {
             console.log('[VoiceWS] Barge-in from client')
             cancelCurrentResponse()
