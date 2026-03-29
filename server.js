@@ -37,7 +37,10 @@ app.prepare().then(() => {
     const ttsProvider = query.tts || 'elevenlabs-turbo'
     const sttProvider = query.stt || 'deepgram'
     const llmProvider = query.llm || 'gpt-4o-mini'
-    console.log(`[VoiceWS] Config: lang=${lang} stt=${sttProvider} llm=${llmProvider} tts=${ttsProvider}`)
+    const voiceId = query.voice || ''
+    const enableFillers = query.fillers === 'true'
+    const enableAmbience = query.ambience === 'true'
+    console.log(`[VoiceWS] Config: lang=${lang} stt=${sttProvider} llm=${llmProvider} tts=${ttsProvider} voice=${voiceId || 'default'} fillers=${enableFillers} ambience=${enableAmbience}`)
 
     let deepgramLive = null
     let fullTranscript = ''
@@ -117,9 +120,21 @@ Rules:
     // 3. Stream TTS audio chunks to client as they arrive
     async function processUserInput(transcript, signal) {
       if (!transcript.trim()) return
+      const t0 = Date.now()
 
       console.log(`[VoiceWS] Processing: "${transcript}"`)
       safeSend(JSON.stringify({ type: 'processing' }))
+
+      // Thinking filler: if LLM takes >400ms, generate a filler using the SAME voice/TTS
+      let fillerTimer = null
+      if (enableFillers) {
+        fillerTimer = setTimeout(() => {
+          const fillerPhrases = ['hmm...', 'let me think...', 'well...', 'so...']
+          const phrase = fillerPhrases[Math.floor(Math.random() * fillerPhrases.length)]
+          // Reuse the backchannel function — same voice, same TTS provider
+          playBackchannel(phrase)
+        }, 400)
+      }
 
       try {
         // Build messages: system + conversation history + user input
@@ -148,11 +163,15 @@ Rules:
           }
           const text = chunk.choices[0]?.delta?.content
           if (!text) continue
+          if (!fullText) {
+            console.log(`[VoiceWS] LLM first token: ${Date.now() - t0}ms`)
+            if (fillerTimer) { clearTimeout(fillerTimer); fillerTimer = null }
+          }
           fullText += text
           pendingText += text
 
           // Check for sentence boundary — flush to TTS as soon as we have a sentence
-          const sentenceMatch = pendingText.match(/^(.*?[.!?])\s*(.*)$/s)
+          const sentenceMatch = pendingText.match(/^(.*?[.!?。！？，])\s*(.*)$/s)
           if (sentenceMatch) {
             const sentence = sentenceMatch[1].replace(/\*\*/g, '').replace(/\*/g, '').replace(/#{1,6}\s/g, '').replace(/\n+/g, ' ').trim()
             pendingText = sentenceMatch[2]
@@ -199,29 +218,51 @@ Rules:
     // Stream TTS — routes to the selected provider
     async function streamTTS(text, signal) {
       try {
+        const ttsStart = Date.now()
         console.log(`[VoiceWS] TTS [${ttsProvider}]: "${text.substring(0, 50)}..."`)
         let ttsResponse
 
         if (ttsProvider === 'azure') {
-          // Azure Speech TTS — Cantonese or English
-          const voiceName = lang === 'yue' ? 'zh-HK-HiuMaanNeural' : 'en-US-JennyNeural'
-          const xmlLang = lang === 'yue' ? 'zh-HK' : 'en-US'
-          const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${xmlLang}"><voice name="${voiceName}">${text.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</voice></speak>`
-          ttsResponse = await fetch(`https://${process.env.AZURE_SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`, {
-            method: 'POST',
-            headers: {
-              'Ocp-Apim-Subscription-Key': process.env.AZURE_SPEECH_KEY,
-              'Content-Type': 'application/ssml+xml',
-              'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3',
-            },
-            body: ssml,
-            signal,
+          // Azure Speech SDK streaming TTS — sends audio chunks progressively
+          const sdk = require('microsoft-cognitiveservices-speech-sdk')
+          const speechConfig = sdk.SpeechConfig.fromSubscription(process.env.AZURE_SPEECH_KEY, process.env.AZURE_SPEECH_REGION)
+          speechConfig.speechSynthesisOutputFormat = sdk.SpeechSynthesisOutputFormat.Audio16Khz128KBitRateMonoMp3
+          const azureVoiceName = voiceId || (lang === 'yue' ? 'zh-HK-HiuMaanNeural' : 'en-US-JennyNeural')
+          speechConfig.speechSynthesisVoiceName = azureVoiceName
+
+          const synthesizer = new sdk.SpeechSynthesizer(speechConfig, null) // null = no audio output, we handle it
+          let chunkIndex = 0
+
+          await new Promise((resolve, reject) => {
+            // Stream audio chunks as they arrive
+            synthesizer.synthesizing = (s, e) => {
+              if (signal?.aborted) return
+              const audioData = e.result.audioData
+              if (audioData && audioData.byteLength > 0 && ws.readyState === 1) {
+                const base64 = Buffer.from(audioData).toString('base64')
+                safeSend(JSON.stringify({ type: 'audio_chunk', data: base64, index: chunkIndex++ }))
+              }
+            }
+
+            synthesizer.speakTextAsync(text,
+              (result) => {
+                synthesizer.close()
+                if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
+                  safeSend(JSON.stringify({ type: 'audio_chunk_end' }))
+                  console.log(`[VoiceWS] TTS done: ${chunkIndex} chunks, ${Date.now() - ttsStart}ms`)
+                  resolve()
+                } else {
+                  reject(new Error(`Azure TTS failed: ${result.errorDetails}`))
+                }
+              },
+              (err) => { synthesizer.close(); reject(err) }
+            )
           })
-          if (!ttsResponse.ok) throw new Error(`Azure TTS ${ttsResponse.status}`)
+          return // Azure handles its own streaming, skip the generic reader below
 
         } else if (ttsProvider === 'cartesia') {
           // Cartesia Sonic TTS
-          const voiceId = lang === 'yue' ? 'e90c6678-f0d3-4767-9883-5d0ecf5894a8' : 'a0e99841-438c-4a64-b679-ae501e7d6091' // Yue (zh) / Barbershop Man (en)
+          const cartesiaVoiceId = voiceId || (lang === 'yue' ? 'e90c6678-f0d3-4767-9883-5d0ecf5894a8' : 'a0e99841-438c-4a64-b679-ae501e7d6091')
           ttsResponse = await fetch('https://api.cartesia.ai/tts/bytes', {
             method: 'POST',
             headers: {
@@ -232,7 +273,7 @@ Rules:
             body: JSON.stringify({
               model_id: 'sonic',
               transcript: text,
-              voice: { mode: 'id', id: voiceId },
+              voice: { mode: 'id', id: cartesiaVoiceId },
               output_format: { container: 'mp3', bit_rate: 128000, sample_rate: 44100 },
               language: lang === 'yue' ? 'zh' : 'en',
             }),
@@ -242,7 +283,8 @@ Rules:
 
         } else if (ttsProvider === 'deepgram-aura') {
           // Deepgram Aura TTS
-          ttsResponse = await fetch('https://api.deepgram.com/v1/speak?model=aura-asteria-en&encoding=mp3', {
+          const dgModel = voiceId || 'aura-asteria-en'
+          ttsResponse = await fetch(`https://api.deepgram.com/v1/speak?model=${dgModel}&encoding=mp3`, {
             method: 'POST',
             headers: {
               'Authorization': `Token ${process.env.DEEPGRAM_API_KEY}`,
@@ -255,18 +297,32 @@ Rules:
 
         } else {
           // Default: ElevenLabs TTS
-          const voiceId = 'EXAVITQu4vr4xnSDxMaL' // Sarah
+          const elVoiceId = voiceId || 'EXAVITQu4vr4xnSDxMaL' // Selected voice or Sarah default
           const modelId = ttsProvider === 'elevenlabs-v3' ? 'eleven_v3' : 'eleven_turbo_v2_5'
-          ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`, {
+          // Add micro-pauses via text preprocessing for more natural speech
+          let ttsText = text
+          if (lang === 'en') {
+            // Add slight pauses at clause boundaries for breathing feel
+            ttsText = ttsText
+              .replace(/,\s+/g, ', ... ')  // breath after commas
+              .replace(/\.\s+/g, '. ... ') // breath between sentences
+              .replace(/\?\s+/g, '? ... ') // breath after questions
+          }
+          ttsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${elVoiceId}/stream`, {
             method: 'POST',
             headers: {
               'xi-api-key': process.env.ELEVENLABS_API_KEY,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              text,
+              text: ttsText,
               model_id: modelId,
-              voice_settings: { stability: 0.4, similarity_boost: 0.8, style: 0.3, use_speaker_boost: true },
+              voice_settings: {
+                stability: 0.5,          // was 0.4 — slightly more consistent
+                similarity_boost: 0.8,
+                style: 0.05,             // was 0.3 — reduces latency, more consistent
+                use_speaker_boost: true,
+              },
               output_format: 'mp3_44100_128',
             }),
             signal,
@@ -312,6 +368,109 @@ Rules:
       isAISpeaking = false
     }
 
+    // ============================================================
+    // BACKCHANNEL ENGINE — plays "mhm", "right", "I see" via Cartesia
+    // while user is speaking. Runs independently of main LLM pipeline.
+    // ============================================================
+    let lastBackchannelTime = 0
+    let userSpeechStart = 0
+    let isUserSpeaking = false
+    const BACKCHANNEL_PHRASES = ['mhm', 'right', 'I see', 'yeah', 'okay', 'uh-huh', 'got it', 'mm-hmm']
+    const BACKCHANNEL_COOLDOWN_MIN = 4000 // min ms between backchannels
+    const BACKCHANNEL_COOLDOWN_MAX = 8000 // max ms between backchannels
+    const BACKCHANNEL_MIN_SPEECH = 3000   // user must talk 3s before first backchannel
+
+    function getBackchannelCooldown() {
+      return BACKCHANNEL_COOLDOWN_MIN + Math.random() * (BACKCHANNEL_COOLDOWN_MAX - BACKCHANNEL_COOLDOWN_MIN)
+    }
+
+    async function playBackchannel(customPhrase) {
+      if (!enableFillers) return
+      const now = Date.now()
+      // Skip cooldown/timing checks if a custom phrase is passed (thinking filler)
+      if (!customPhrase) {
+        if (isAISpeaking) return
+        if (now - lastBackchannelTime < BACKCHANNEL_COOLDOWN_MIN) return
+        if (now - userSpeechStart < BACKCHANNEL_MIN_SPEECH) return
+      }
+
+      lastBackchannelTime = now
+      const phrase = customPhrase || BACKCHANNEL_PHRASES[Math.floor(Math.random() * BACKCHANNEL_PHRASES.length)]
+
+      // Use the SAME TTS provider + voice the user selected
+      try {
+        let res
+        if (ttsProvider === 'cartesia') {
+          const cVoice = voiceId || 'a0e99841-438c-4a64-b679-ae501e7d6091'
+          res = await fetch('https://api.cartesia.ai/tts/bytes', {
+            method: 'POST',
+            headers: {
+              'X-API-Key': process.env.CARTESIA_API_KEY,
+              'Cartesia-Version': '2024-06-10',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model_id: 'sonic',
+              transcript: phrase,
+              voice: { mode: 'id', id: cVoice },
+              output_format: { container: 'mp3', bit_rate: 128000, sample_rate: 44100 },
+              language: lang === 'yue' ? 'zh' : 'en',
+            }),
+          })
+        } else if (ttsProvider === 'deepgram-aura') {
+          const dgModel = voiceId || 'aura-asteria-en'
+          res = await fetch(`https://api.deepgram.com/v1/speak?model=${dgModel}&encoding=mp3`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Token ${process.env.DEEPGRAM_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ text: phrase }),
+          })
+        } else {
+          // ElevenLabs (turbo or v3) — use selected voice
+          const elVoice = voiceId || 'EXAVITQu4vr4xnSDxMaL'
+          const modelId = ttsProvider === 'elevenlabs-v3' ? 'eleven_v3' : 'eleven_turbo_v2_5'
+          res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${elVoice}`, {
+            method: 'POST',
+            headers: {
+              'xi-api-key': process.env.ELEVENLABS_API_KEY,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              text: phrase,
+              model_id: modelId,
+              voice_settings: { stability: 0.5, similarity_boost: 0.8, style: 0.05, use_speaker_boost: true },
+              output_format: 'mp3_44100_128',
+            }),
+          })
+        }
+
+        if (res?.ok) {
+          const buffer = Buffer.from(await res.arrayBuffer())
+          const base64 = buffer.toString('base64')
+          safeSend(JSON.stringify({ type: 'backchannel_audio', data: base64, phrase }))
+          console.log(`[VoiceWS] Backchannel [${ttsProvider}]: "${phrase}" (${buffer.length} bytes)`)
+        }
+      } catch (err) {
+        console.log(`[VoiceWS] Backchannel error: ${err.message}`)
+      }
+    }
+
+    // Backchannel timer — fires periodically while user is speaking
+    let backchannelTimer = null
+    function startBackchannelLoop() {
+      if (!enableFillers || backchannelTimer) return
+      backchannelTimer = setInterval(() => {
+        if (isUserSpeaking && !isAISpeaking) {
+          playBackchannel()
+        }
+      }, 2000) // check every 2s
+    }
+    function stopBackchannelLoop() {
+      if (backchannelTimer) { clearInterval(backchannelTimer); backchannelTimer = null }
+    }
+
     // Start Deepgram live STT connection — uses raw WebSocket (SDK v3 has connection bugs)
     function startDeepgram() {
       console.log('[VoiceWS] Starting Deepgram with key:', process.env.DEEPGRAM_API_KEY ? 'present' : 'MISSING')
@@ -332,7 +491,7 @@ Rules:
         console.log('[VoiceWS] Deepgram connected')
         if (!hasConnectedOnce) {
           hasConnectedOnce = true
-          safeSend(JSON.stringify({ type: 'ready' }))
+          safeSend(JSON.stringify({ type: 'ready', ambience: enableAmbience }))
         } else {
           console.log('[VoiceWS] Deepgram reconnected silently')
         }
@@ -351,10 +510,36 @@ Rules:
               safeSend(JSON.stringify({ type: 'transcript', text: fullTranscript.trim(), final: true }))
               console.log(`[VoiceWS] Final: "${fullTranscript.trim()}"`)
 
-              // 1s silence timer — reset on every is_final with text
-              // If user keeps talking, new is_final resets the timer
-              // If user stops for 1s, timer fires and we process
+              // Track user speaking for backchannel engine
+              if (!isUserSpeaking) {
+                isUserSpeaking = true
+                userSpeechStart = Date.now()
+                startBackchannelLoop()
+              }
+
+              // Dynamic turn-taking: adjust silence threshold based on context
               clearTimeout(silenceTimer)
+              const currentText = (fullTranscript + ' ' + transcript).trim()
+              let silenceMs = 800 // default
+
+              // If AI just asked a question, wait longer (user is thinking)
+              const lastAI = conversationHistory[conversationHistory.length - 1]
+              if (lastAI?.role === 'assistant' && /\?$/.test(lastAI.content.trim())) {
+                silenceMs = 1500
+              }
+              // If user said very few words, wait longer (still forming thought)
+              else if (currentText.split(/\s+/).length <= 2) {
+                silenceMs = 1200
+              }
+              // If text ends with continuation words, wait longer
+              else if (/\b(and|but|so|because|um|uh|like|well)\s*$/i.test(currentText)) {
+                silenceMs = 1200
+              }
+              // Complete sentence ending with punctuation — shorter wait
+              else if (/[.!?]$/.test(currentText) && currentText.split(/\s+/).length >= 5) {
+                silenceMs = 600
+              }
+
               silenceTimer = setTimeout(async () => {
                 const text = fullTranscript.trim()
                 fullTranscript = ''
@@ -362,15 +547,19 @@ Rules:
 
                 if (isAISpeaking) {
                   console.log('[VoiceWS] Barge-in:', text)
+                  // Send fade_out first so client can smooth-fade audio (150ms)
+                  safeSend(JSON.stringify({ type: 'fade_out' }))
                   cancelCurrentResponse()
                   safeSend(JSON.stringify({ type: 'barge_in' }))
                 }
 
-                console.log('[VoiceWS] Processing:', text)
+                isUserSpeaking = false
+                stopBackchannelLoop()
+                console.log(`[VoiceWS] Processing (silence=${silenceMs}ms): "${text}"`)
                 abortController = new AbortController()
                 await processUserInput(text, abortController.signal)
                 abortController = null
-              }, 1000)
+              }, silenceMs)
             } else {
               // Interim result — user is still speaking, cancel timer
               clearTimeout(silenceTimer)
@@ -391,8 +580,9 @@ Rules:
         console.log('[VoiceWS] Deepgram closed')
         clearInterval(keepAliveInterval)
         keepAliveInterval = null
-        if (ws.readyState === 1 && !isAISpeaking) {
-          console.log('[VoiceWS] Deepgram reconnecting...')
+        // Full-duplex: ALWAYS reconnect STT, even during AI speech
+        if (ws.readyState === 1) {
+          console.log('[VoiceWS] Deepgram reconnecting (full-duplex)...')
           setTimeout(() => {
             if (ws.readyState === 1) startDeepgram()
           }, 500)
@@ -431,32 +621,26 @@ Rules:
         safeSend(JSON.stringify({ type: 'transcript', text: (fullTranscript + ' ' + transcript).trim(), final: false }))
       }
 
-      // Final results
-      azureRecognizer.recognized = (s, e) => {
+      // Final results — Azure recognized = utterance complete, process immediately
+      azureRecognizer.recognized = async (s, e) => {
         if (e.result.reason === sdk.ResultReason.RecognizedSpeech) {
           const transcript = e.result.text
           if (!transcript) return
           fullTranscript += ' ' + transcript
-          safeSend(JSON.stringify({ type: 'transcript', text: fullTranscript.trim(), final: true }))
-          console.log(`[VoiceWS] Final: "${fullTranscript.trim()}"`)
+          const text = fullTranscript.trim()
+          fullTranscript = ''
+          safeSend(JSON.stringify({ type: 'transcript', text, final: true }))
+          console.log(`[VoiceWS] Final: "${text}" — processing immediately`)
 
-          clearTimeout(silenceTimer)
-          silenceTimer = setTimeout(async () => {
-            const text = fullTranscript.trim()
-            fullTranscript = ''
-            if (!text) return
+          if (isAISpeaking) {
+            console.log('[VoiceWS] Barge-in:', text)
+            cancelCurrentResponse()
+            safeSend(JSON.stringify({ type: 'barge_in' }))
+          }
 
-            if (isAISpeaking) {
-              console.log('[VoiceWS] Barge-in:', text)
-              cancelCurrentResponse()
-              safeSend(JSON.stringify({ type: 'barge_in' }))
-            }
-
-            console.log('[VoiceWS] Processing:', text)
-            abortController = new AbortController()
-            await processUserInput(text, abortController.signal)
-            abortController = null
-          }, 1000)
+          abortController = new AbortController()
+          await processUserInput(text, abortController.signal)
+          abortController = null
         }
       }
 
@@ -555,6 +739,7 @@ Rules:
       clearTimeout(silenceTimer)
       clearInterval(keepAliveInterval)
       clearInterval(pingInterval)
+      stopBackchannelLoop()
       keepAliveInterval = null
       try { deepgramLive?.close() } catch {}
       stopAzureSTT()

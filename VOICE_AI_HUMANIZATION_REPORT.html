@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Voice AI Humanization — Complete Implementation Guide</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 20px;
+    color: #222;
+    line-height: 1.6;
+    font-size: 11pt;
+  }
+  h1 { font-size: 22pt; color: #1a1a2e; border-bottom: 3px solid #16213e; padding-bottom: 10px; }
+  h2 { font-size: 16pt; color: #16213e; margin-top: 40px; border-bottom: 2px solid #0f3460; padding-bottom: 6px; page-break-before: auto; }
+  h3 { font-size: 13pt; color: #0f3460; margin-top: 25px; }
+  h4 { font-size: 11pt; color: #533483; margin-top: 15px; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 15px 0;
+    font-size: 10pt;
+  }
+  th {
+    background-color: #16213e;
+    color: white;
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 600;
+  }
+  td {
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    vertical-align: top;
+  }
+  tr:nth-child(even) { background-color: #f2f4f8; }
+  tr:nth-child(odd) { background-color: #ffffff; }
+  .tag-yes { color: #27ae60; font-weight: bold; }
+  .tag-no { color: #e74c3c; font-weight: bold; }
+  .tag-partial { color: #f39c12; font-weight: bold; }
+  .tag-rec { background-color: #d4edda; font-weight: bold; }
+  .tag-consider { background-color: #fff3cd; }
+  .tag-later { background-color: #f8d7da; }
+  .meta { color: #666; font-size: 10pt; margin-bottom: 30px; }
+  .summary-box {
+    background: #e8eaf6;
+    border-left: 4px solid #16213e;
+    padding: 12px 16px;
+    margin: 15px 0;
+    font-size: 10pt;
+  }
+  code {
+    background: #f0f0f0;
+    padding: 2px 5px;
+    font-family: Consolas, monospace;
+    font-size: 9.5pt;
+  }
+  .phase-header {
+    background: #16213e;
+    color: white;
+    padding: 8px 14px;
+    font-size: 13pt;
+    font-weight: bold;
+    margin-top: 20px;
+  }
+  ul { margin: 5px 0; padding-left: 22px; }
+  li { margin-bottom: 3px; }
+  .page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<h1>Voice AI Humanization — Complete Implementation Guide</h1>
+
+<div class="meta">
+  <strong>Date:</strong> March 29, 2026 &nbsp;|&nbsp;
+  <strong>Project:</strong> AI Training Center — Voice AI Lab<br>
+  <strong>Current Stack:</strong> Deepgram STT &nbsp;|&nbsp; Gemini 2.0 Flash LLM &nbsp;|&nbsp; ElevenLabs TTS (English) &nbsp;|&nbsp; Azure TTS (Cantonese) &nbsp;|&nbsp; Node.js WebSocket<br>
+  <strong>Author:</strong> Claude (AI Assistant)
+</div>
+
+<div class="summary-box">
+  <strong>Executive Summary:</strong> This report evaluates <strong>10 core humanization components</strong> and <strong>3 architectural alternatives</strong> that can make AI voice conversations sound indistinguishable from human conversations. Each component is rated by implementation effort, impact, cost, and Cantonese language support. A prioritized implementation roadmap is included at the end.
+</div>
+
+<!-- ============================================================ -->
+<h2>Component Overview</h2>
+<!-- ============================================================ -->
+
+<table>
+  <tr>
+    <th style="width:30px">#</th>
+    <th style="width:200px">Component</th>
+    <th>What It Does</th>
+    <th style="width:180px">Current Status</th>
+  </tr>
+  <tr><td>1</td><td><strong>Prosody Control</strong></td><td>Pitch, rate, volume, emphasis — avoid monotone robot voice</td><td class="tag-partial">Partial (ElevenLabs defaults)</td></tr>
+  <tr><td>2</td><td><strong>Backchanneling</strong></td><td>AI says "mhm", "right", "I see" while user is still talking</td><td class="tag-no">Not implemented</td></tr>
+  <tr><td>3</td><td><strong>Background Ambience</strong></td><td>Subtle coffee shop / office sounds — AI feels like it's in a real place</td><td class="tag-no">Not implemented</td></tr>
+  <tr><td>4</td><td><strong>Turn-Taking</strong></td><td>Know when user is DONE speaking vs just pausing to think</td><td class="tag-partial">Basic (fixed silence timer)</td></tr>
+  <tr><td>5</td><td><strong>Emotion Detection</strong></td><td>Detect user mood from voice → adjust AI tone accordingly</td><td class="tag-no">Not implemented</td></tr>
+  <tr><td>6</td><td><strong>Filler Sounds</strong></td><td>"Hmm...", "Let me think..." during LLM thinking time — masks latency</td><td class="tag-no">Not implemented</td></tr>
+  <tr><td>7</td><td><strong>Voice Personality Consistency</strong></td><td>Same character across all turns — never breaks persona</td><td class="tag-partial">Partial (system prompt only)</td></tr>
+  <tr><td>8</td><td><strong>Breathing &amp; Micro-Pauses</strong></td><td>Natural breaths between phrases — avoids machine gun delivery</td><td class="tag-no">Not implemented</td></tr>
+  <tr><td>9</td><td><strong>Speaking Rate Matching</strong></td><td>Mirror user speed — fast user gets faster AI, slow user gets slower AI</td><td class="tag-no">Not implemented</td></tr>
+  <tr><td>10</td><td><strong>Interruption Handling</strong></td><td>Graceful barge-in with fade out instead of hard cut</td><td class="tag-partial">Partial (hard cut only)</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 class="page-break">1. Prosody Control</h2>
+<!-- ============================================================ -->
+
+<p><strong>What it is:</strong> Making voice output sound natural — controlling pitch, rate, volume, emphasis, and emotional tone so the AI does not sound monotone.</p>
+
+<h3>Option A: ElevenLabs Text Formatting (Current Stack — Easy Win)</h3>
+<p>ElevenLabs does not support full SSML. Prosody is controlled through text formatting:</p>
+<ul>
+  <li><code>&lt;break time="1.5s"/&gt;</code> — pauses up to 3 seconds</li>
+  <li>Commas for short pauses, em-dashes (--) for medium, ellipsis (...) for trailing pauses</li>
+  <li>Exclamation marks increase emotional intensity</li>
+  <li>ALL CAPS on short words adds emphasis</li>
+  <li><code>previous_text</code> / <code>next_text</code> API params for cross-chunk prosody</li>
+  <li><code>speed</code> parameter: 0.7 to 1.3</li>
+</ul>
+
+<h3>Option B: ElevenLabs v3 Audio Tags (Upgrade — High Impact)</h3>
+<p>1,806+ documented tags in square brackets:</p>
+<table>
+  <tr><th>Category</th><th>Example Tags</th></tr>
+  <tr><td>Emotional / Delivery</td><td><code>[excited]</code> <code>[nervous]</code> <code>[frustrated]</code> <code>[calm]</code> <code>[sorrowful]</code></td></tr>
+  <tr><td>Vocal Effects</td><td><code>[whispers]</code> <code>[laughs]</code> <code>[sigh]</code> <code>[gasps]</code> <code>[gulps]</code></td></tr>
+  <tr><td>Pacing</td><td><code>[rushed]</code> <code>[stammers]</code> <code>[drawn out]</code> <code>[hesitates]</code></td></tr>
+  <tr><td>Pauses</td><td><code>[pause]</code> <code>[short pause]</code> <code>[long pause]</code></td></tr>
+  <tr><td>Character / Accent</td><td><code>[British accent]</code> <code>[sarcastically]</code> <code>[dramatic]</code></td></tr>
+</table>
+
+<h3>Option C: Azure SSML for Cantonese</h3>
+<p>Azure zh-HK voices support <code>&lt;prosody&gt;</code> tags (rate, pitch, volume) but NOT <code>mstts:express-as</code> emotion styles.</p>
+<table>
+  <tr><th>Voice Name</th><th>Gender</th><th>Prosody Tags</th><th>Emotion Styles</th></tr>
+  <tr><td>zh-HK-HiuMaanNeural</td><td>Female</td><td class="tag-yes">Yes</td><td class="tag-no">No</td></tr>
+  <tr><td>zh-HK-WanLungNeural</td><td>Male</td><td class="tag-yes">Yes</td><td class="tag-no">No</td></tr>
+  <tr><td>zh-HK-HiuGaaiNeural</td><td>Female</td><td class="tag-yes">Yes</td><td class="tag-no">No</td></tr>
+</table>
+<p>Pricing: Free tier 500K chars/month. Standard: $16 per 1M characters.</p>
+
+<h3>Option D: Cartesia Sonic-3 (Alternative TTS)</h3>
+<p>Parametric emotion control with 60+ emotions. Latency ~90ms (among fastest).</p>
+<table>
+  <tr><th>Feature</th><th>Detail</th></tr>
+  <tr><td>Speed</td><td>0.6 to 1.5 multiplier</td></tr>
+  <tr><td>Volume</td><td>0.5 to 2.0 multiplier</td></tr>
+  <tr><td>Emotions (60+)</td><td>happy, excited, calm, frustrated, sarcastic, contemplative, determined, etc.</td></tr>
+  <tr><td>Emotion Level</td><td>lowest, low, high, highest</td></tr>
+  <tr><td>Pricing</td><td>$0.03/minute</td></tr>
+  <tr><td>Cantonese</td><td class="tag-no">Mandarin only</td></tr>
+</table>
+
+<h3>Option E: Open-Source Prosody Models</h3>
+<table>
+  <tr><th>Model</th><th>Type</th><th>Notes</th><th>Cantonese</th></tr>
+  <tr><td>Qwen3-TTS</td><td>Open source</td><td>Natural language prosody instructions. Released 2026.</td><td class="tag-partial">Chinese (unclear)</td></tr>
+  <tr><td>CosyVoice 3.0</td><td>Open source</td><td>150ms first-packet latency, streaming</td><td class="tag-yes">Yes (Guangdong)</td></tr>
+  <tr><td>FishAudio</td><td>Open source</td><td>Fine-grained emotion/tone control</td><td class="tag-partial">Multiple</td></tr>
+  <tr><td>StyleTTS2</td><td>Open source</td><td>Best prosody quality via style diffusion</td><td class="tag-no">English only</td></tr>
+</table>
+<p>All require Python inference server with GPU.</p>
+
+<h3>Prosody Control — Recommendation</h3>
+<table>
+  <tr><th>Approach</th><th>Effort</th><th>Impact</th><th>Cost</th><th>Recommendation</th></tr>
+  <tr><td>ElevenLabs text formatting (English)</td><td>Easy</td><td>Medium</td><td>Free</td><td class="tag-rec">YES — do now</td></tr>
+  <tr><td>Upgrade to ElevenLabs v3 Audio Tags</td><td>Easy</td><td>High</td><td>Same plan</td><td class="tag-rec">YES — major gain</td></tr>
+  <tr><td>Azure SSML prosody for Cantonese</td><td>Easy</td><td>Medium</td><td>$16/1M chars</td><td class="tag-rec">YES — already on Azure</td></tr>
+  <tr><td>Cartesia Sonic-3 as alternative</td><td>Medium</td><td>High</td><td>$0.03/min</td><td class="tag-consider">CONSIDER later</td></tr>
+  <tr><td>Self-host open-source model</td><td>Hard</td><td>Variable</td><td>Free</td><td class="tag-later">NOT YET</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 class="page-break">2. Backchanneling</h2>
+<!-- ============================================================ -->
+
+<p><strong>What it is:</strong> The AI produces small acknowledgment sounds ("mhm", "right", "I see") while the user is still speaking, signaling active listening. One of the strongest human conversation cues.</p>
+
+<h3>Option A: DIY Implementation (Recommended)</h3>
+<div class="summary-box">
+  <strong>Architecture:</strong> User speaking → Deepgram interim results → Timing logic on server → Detect 200-400ms pause after 3+ seconds of speech → Send pre-recorded clip at 30-50% volume → Cooldown 4-8 seconds
+</div>
+
+<p><strong>Pre-recorded clips needed:</strong></p>
+<table>
+  <tr><th>Language</th><th>Clips (3 variants each)</th><th>Duration</th></tr>
+  <tr><td>English</td><td>"mhm", "right", "I see", "yeah", "okay"</td><td>200-500ms each</td></tr>
+  <tr><td>Cantonese</td><td>"係啊" (hai6 aa3), "嗯" (ng2), "明白" (ming4 baak6)</td><td>200-500ms each</td></tr>
+</table>
+
+<p><strong>Key timing parameters:</strong></p>
+<table>
+  <tr><th>Parameter</th><th>Value</th></tr>
+  <tr><td>Min user speech before first backchannel</td><td>3 seconds</td></tr>
+  <tr><td>Pause detection from interim results</td><td>200-400ms</td></tr>
+  <tr><td>Cooldown between backchannels</td><td>4-8 seconds (randomized)</td></tr>
+  <tr><td>Volume relative to main TTS</td><td>30-50%</td></tr>
+  <tr><td>Frequency during user speech</td><td>Every 6-10 seconds</td></tr>
+</table>
+
+<h3>Option B &amp; C: Retell AI / Vapi (Full Platforms)</h3>
+<table>
+  <tr><th>Platform</th><th>Effort</th><th>Impact</th><th>Cost</th><th>Cantonese</th><th>Note</th></tr>
+  <tr><td>Retell AI</td><td>Hard</td><td>High</td><td>$0.07-0.08/min</td><td class="tag-no">No</td><td>Requires full platform</td></tr>
+  <tr><td>Vapi</td><td>Hard</td><td>High</td><td>$0.05-0.15/min</td><td class="tag-no">No</td><td>Requires full platform</td></tr>
+</table>
+
+<h3>Backchanneling — Recommendation</h3>
+<div class="summary-box">
+  <strong>Winner: DIY.</strong> We already own the WebSocket pipeline. Record 15-20 short audio clips, add timing logic to server.js, play at low volume. Free, works for both English and Cantonese.
+</div>
+
+<!-- ============================================================ -->
+<h2 class="page-break">3. Background Ambience</h2>
+<!-- ============================================================ -->
+
+<p><strong>What it is:</strong> Adding subtle environmental sounds (coffee shop, office, street) to make the AI feel like it is in a physical space.</p>
+
+<h3>Free Sound Libraries</h3>
+<table>
+  <tr><th>Library</th><th>License</th><th>Sounds Available</th></tr>
+  <tr><td>Freesound</td><td>CC0 / CC-BY</td><td>685,000+ sounds — coffee shops, offices, nature</td></tr>
+  <tr><td>Mixkit</td><td>Free</td><td>36+ ambience tracks</td></tr>
+  <tr><td>Pixabay Sound Effects</td><td>Free commercial</td><td>Ambient backgrounds, office, rain</td></tr>
+  <tr><td>BBC Sound Effects</td><td>Personal/educational</td><td>33,000+ sounds, high quality</td></tr>
+</table>
+
+<h3>Audio Mixing Options</h3>
+<table>
+  <tr><th>Library</th><th>Size</th><th>Best For</th><th>Spatial Audio</th><th>Difficulty</th></tr>
+  <tr><td><strong>Howler.js</strong></td><td>10 KB</td><td>Simple loop playback</td><td>Yes (plugin)</td><td>Easy — 3 lines of code</td></tr>
+  <tr><td><strong>Web Audio API</strong></td><td>0 KB (native)</td><td>Full mixing control + ducking</td><td>Yes (PannerNode)</td><td>Medium</td></tr>
+  <tr><td><strong>Tone.js</strong></td><td>150 KB</td><td>Dynamic soundscapes</td><td>Yes</td><td>Overkill for this use case</td></tr>
+</table>
+
+<h3>Preventing Microphone Feedback</h3>
+<table>
+  <tr><th>Solution</th><th>How</th></tr>
+  <tr><td>Echo cancellation</td><td><code>getUserMedia({ audio: { echoCancellation: true } })</code></td></tr>
+  <tr><td>Headphones</td><td>Eliminates problem entirely</td></tr>
+  <tr><td>Volume ducking</td><td>Lower ambient when user speaks, raise when AI speaks</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 class="page-break">4. Turn-Taking</h2>
+<!-- ============================================================ -->
+
+<p><strong>What it is:</strong> Determining when the user has finished speaking versus just pausing mid-thought. Widely considered the <strong>hardest problem</strong> in voice AI.</p>
+
+<h3>Option A: Improve Current Silence Timer (Quick Win)</h3>
+<table>
+  <tr><th>Context</th><th>Wait Duration</th><th>Reason</th></tr>
+  <tr><td>After AI asks a question</td><td>1500-2000ms</td><td>User is thinking</td></tr>
+  <tr><td>After user says "um" or "uh"</td><td>1200ms</td><td>User is formulating</td></tr>
+  <tr><td>Mid-sentence (no punctuation)</td><td>1000ms</td><td>Sentence not complete</td></tr>
+  <tr><td>After complete sentence</td><td>600ms</td><td>Likely done speaking</td></tr>
+  <tr><td>Trailing "and", "but", "so", "because"</td><td>1200ms</td><td>User is continuing</td></tr>
+  <tr><td>Only 1-2 words spoken</td><td>1200ms</td><td>Just starting</td></tr>
+  <tr><td>10+ words with punctuation</td><td>600ms</td><td>Complete thought</td></tr>
+</table>
+
+<h3>All Turn-Taking Options Compared</h3>
+<table>
+  <tr><th>Approach</th><th>How It Works</th><th>Effort</th><th>Impact</th><th>Cost</th><th>Cantonese</th></tr>
+  <tr><td><strong>Improve silence timer</strong></td><td>Dynamic thresholds based on context</td><td>Easy</td><td>Medium</td><td>Free</td><td class="tag-partial">Partial</td></tr>
+  <tr><td><strong>Deepgram utterance_end_ms</strong></td><td>Set to 1200ms in connection params</td><td>Easy</td><td>Low-Med</td><td>Free</td><td class="tag-yes">Yes</td></tr>
+  <tr><td><strong>AssemblyAI Semantic Endpointing</strong></td><td>Neural network: semantic + acoustic cues</td><td>Medium</td><td>High</td><td>$0.15/hr</td><td class="tag-no">English only</td></tr>
+  <tr><td><strong>LiveKit EOU Model</strong></td><td>500M param transformer, 14 languages</td><td>Hard</td><td>High</td><td>Free</td><td class="tag-yes">Yes (Chinese)</td></tr>
+  <tr><td><strong>Pipecat Smart Turn v3</strong></td><td>8M param audio model, 99% accuracy</td><td>Med-Hard</td><td>High</td><td>Free / fal.ai</td><td class="tag-yes">Yes</td></tr>
+  <tr><td><strong>Krisp VIVA v2</strong></td><td>6M param audio-only, C SDK</td><td>Hard</td><td>High</td><td>Commercial</td><td class="tag-no">No</td></tr>
+</table>
+
+<h3>Turn-Taking — Recommendation</h3>
+<table>
+  <tr><th>Approach</th><th>Recommendation</th></tr>
+  <tr><td>Improve silence timer logic</td><td class="tag-rec">YES — do first (free, easy)</td></tr>
+  <tr><td>Tune Deepgram utterance_end_ms</td><td class="tag-rec">YES — one parameter change</td></tr>
+  <tr><td>AssemblyAI</td><td class="tag-consider">CONSIDER as STT replacement</td></tr>
+  <tr><td>LiveKit EOU</td><td class="tag-consider">CONSIDER for v2</td></tr>
+  <tr><td>Pipecat Smart Turn</td><td class="tag-consider">CONSIDER</td></tr>
+  <tr><td>Krisp VIVA</td><td class="tag-later">NOT NOW</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 class="page-break">5. Emotion Detection</h2>
+<!-- ============================================================ -->
+
+<p><strong>What it is:</strong> Detecting the user's emotional state from their voice to dynamically adjust AI response tone, word choice, and TTS delivery.</p>
+
+<h3>All Options Compared</h3>
+<table>
+  <tr><th>Approach</th><th>How It Works</th><th>Effort</th><th>Impact</th><th>Cost</th><th>Cantonese</th></tr>
+  <tr><td><strong>Text sentiment via LLM prompt</strong></td><td>Add emotion-awareness to system prompt</td><td>Easy</td><td>Low</td><td>Free</td><td class="tag-yes">Yes</td></tr>
+  <tr><td><strong>Hume AI Expression API</strong></td><td>48 emotion dimensions, real-time WebSocket</td><td>Medium</td><td>High</td><td>$3+/mo</td><td class="tag-no">No</td></tr>
+  <tr><td><strong>SenseVoice (Alibaba)</strong></td><td>ASR + emotion + audio events in one model</td><td>Hard</td><td>High</td><td>Free</td><td class="tag-yes">YES (native)</td></tr>
+  <tr><td><strong>Azure Text Analytics</strong></td><td>Sentiment from transcript text</td><td>Easy</td><td>Low-Med</td><td>Free tier</td><td class="tag-partial">Partial</td></tr>
+</table>
+
+<h3>How Detected Emotion Adjusts the AI</h3>
+<table>
+  <tr><th>Detected Emotion</th><th>LLM Prompt Adjustment</th><th>TTS Adjustment</th></tr>
+  <tr><td>Frustrated</td><td>"Respond with extra patience and empathy. Keep it short."</td><td>Azure: <code>style="empathetic"</code><br>ElevenLabs v3: <code>[gentle] [calm]</code><br>Cartesia: <code>"sympathetic:high"</code></td></tr>
+  <tr><td>Happy/Excited</td><td>"Match their energy. Be enthusiastic."</td><td>Azure: <code>style="cheerful"</code><br>ElevenLabs v3: <code>[excited]</code><br>Cartesia: <code>"excited:high"</code></td></tr>
+  <tr><td>Confused</td><td>"Explain more simply. Use analogies."</td><td>Azure: <code>style="friendly"</code><br>ElevenLabs v3: <code>[calm]</code><br>Cartesia: <code>"calm:high"</code></td></tr>
+</table>
+
+<h3>Emotion Detection — Recommendation</h3>
+<table>
+  <tr><th>Approach</th><th>Recommendation</th></tr>
+  <tr><td>Text sentiment via LLM</td><td class="tag-rec">YES — add to prompt (free)</td></tr>
+  <tr><td>Hume AI</td><td class="tag-consider">CONSIDER for English</td></tr>
+  <tr><td>SenseVoice</td><td class="tag-consider">BEST for Cantonese (free, open source)</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 class="page-break">6. Filler Sounds During Thinking</h2>
+<!-- ============================================================ -->
+
+<p><strong>What it is:</strong> Masking LLM inference latency (300-1000ms) with natural-sounding filler audio so the user does not experience dead silence.</p>
+
+<h3>Pre-Recorded Filler Clips (Recommended)</h3>
+<table>
+  <tr><th>Language</th><th>Filler</th><th>Duration</th><th>Meaning</th></tr>
+  <tr><td>English</td><td>"Hmm..."</td><td>500ms</td><td>Thinking</td></tr>
+  <tr><td>English</td><td>"Let me think..."</td><td>800ms</td><td>Processing</td></tr>
+  <tr><td>English</td><td>"That's a great question..."</td><td>1200ms</td><td>Buying time</td></tr>
+  <tr><td>English</td><td>"So..."</td><td>400ms</td><td>Transitioning</td></tr>
+  <tr><td>English</td><td>"Well..."</td><td>400ms</td><td>Considering</td></tr>
+  <tr><td>English</td><td>Inhale/breath sound</td><td>300ms</td><td>Natural pause</td></tr>
+  <tr><td>Cantonese</td><td>"嗯..." (ng2)</td><td>500ms</td><td>Thinking</td></tr>
+  <tr><td>Cantonese</td><td>"等我諗諗..." (dang2 ngo5 nam2 nam2)</td><td>800ms</td><td>"Let me think"</td></tr>
+  <tr><td>Cantonese</td><td>"咁呢..." (gam2 ne1)</td><td>400ms</td><td>"Well then..."</td></tr>
+  <tr><td>Cantonese</td><td>"好問題..." (hou2 man6 tai4)</td><td>800ms</td><td>"Good question"</td></tr>
+</table>
+
+<h3>Timing Logic</h3>
+<table>
+  <tr><th>LLM Response Time</th><th>Action</th></tr>
+  <tr><td>Under 300ms</td><td>No filler needed — feels natural</td></tr>
+  <tr><td>300-800ms</td><td>Play short filler ("hmm", breath)</td></tr>
+  <tr><td>800ms+</td><td>Play longer filler ("let me think about that")</td></tr>
+  <tr><td>Greetings / confirmations</td><td>Never play filler — use cached responses instead</td></tr>
+</table>
+
+<h3>How Industry Leaders Handle This</h3>
+<table>
+  <tr><th>Platform</th><th>Approach</th></tr>
+  <tr><td>Vapi</td><td>Configurable filler injection with custom phrases</td></tr>
+  <tr><td>Retell</td><td>Automatic filler sounds when processing</td></tr>
+  <tr><td>Sierra</td><td>No fillers. Optimizes latency through parallel execution. Pre-computes frequent phrases.</td></tr>
+  <tr><td>LiveKit</td><td>Relies on fast pipeline (no explicit filler feature)</td></tr>
+</table>
+
+<h3>Filler Sounds — Recommendation</h3>
+<table>
+  <tr><th>Approach</th><th>Effort</th><th>Impact</th><th>Recommendation</th></tr>
+  <tr><td>Pre-recorded filler clips</td><td>Easy</td><td>High</td><td class="tag-rec">YES — do first</td></tr>
+  <tr><td>Cache common responses</td><td>Medium</td><td>High</td><td class="tag-rec">YES — greetings, confirmations</td></tr>
+  <tr><td>Dynamic filler via fast TTS</td><td>Medium</td><td>Medium</td><td class="tag-later">LATER</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 class="page-break">7. Voice Personality Consistency</h2>
+<!-- ============================================================ -->
+
+<p><strong>What it is:</strong> Maintaining a consistent voice character across all turns so the AI sounds like the same "person" throughout.</p>
+
+<h3>ElevenLabs Voice Settings — Tuning Guide</h3>
+<table>
+  <tr><th>Setting</th><th>Range</th><th>What It Controls</th><th>Current</th><th>Recommended</th></tr>
+  <tr><td><strong>stability</strong></td><td>0.0-1.0</td><td>Consistency vs expressiveness</td><td>0.4</td><td><strong>0.45-0.55</strong></td></tr>
+  <tr><td><strong>similarity_boost</strong></td><td>0.0-1.0</td><td>Match to original voice</td><td>0.8</td><td>0.75-0.85 (keep)</td></tr>
+  <tr><td><strong>style</strong></td><td>0.0-1.0</td><td>Speaker style amplification. <em>Adds latency!</em></td><td>0.3</td><td><strong>0.0-0.1 (lower!)</strong></td></tr>
+  <tr><td><strong>use_speaker_boost</strong></td><td>boolean</td><td>Voice clarity enhancement</td><td>true</td><td>true (keep)</td></tr>
+  <tr><td><strong>speed</strong></td><td>0.7-1.3</td><td>Speaking rate</td><td>not set</td><td><strong>1.0 (add)</strong></td></tr>
+</table>
+
+<h3>Cross-Turn Consistency Tips</h3>
+<table>
+  <tr><th>Technique</th><th>What It Does</th></tr>
+  <tr><td>Keep TTS settings constant</td><td>Never change voice ID, stability, or style between turns</td></tr>
+  <tr><td>Use <code>previous_request_ids</code></td><td>Maintains prosody flow between ElevenLabs requests</td></tr>
+  <tr><td>Use <code>previous_text</code> / <code>next_text</code></td><td>Provides context for better cross-chunk prosody</td></tr>
+  <tr><td>Never mix TTS providers</td><td>Don't switch ElevenLabs ↔ Azure mid-conversation</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 class="page-break">8. Breathing &amp; Micro-Pauses</h2>
+<!-- ============================================================ -->
+
+<p><strong>What it is:</strong> Adding natural breathing sounds and micro-pauses between phrases to avoid "machine gun" continuous delivery.</p>
+
+<h3>TTS Engine Breathing Support</h3>
+<table>
+  <tr><th>Engine</th><th>Auto-Breathing</th><th>Manual Control</th><th>Notes</th></tr>
+  <tr><td>ElevenLabs v2/Turbo</td><td>Minimal</td><td><code>&lt;break&gt;</code> tags</td><td>Some natural pauses from model</td></tr>
+  <tr><td>ElevenLabs v3</td><td>Better</td><td><code>[pause]</code> <code>[sigh]</code> <code>[long pause]</code></td><td>More natural cadence</td></tr>
+  <tr><td>Azure Neural</td><td>Yes (basic)</td><td><code>&lt;break&gt;</code> <code>&lt;prosody&gt;</code></td><td>HD voices have better rhythm</td></tr>
+  <tr><td>Amazon Polly</td><td><strong>Yes (optional)</strong></td><td><code>&lt;amazon:auto-breaths&gt;</code></td><td><strong>ONLY engine with explicit auto-breathing</strong></td></tr>
+  <tr><td>Cartesia Sonic-3</td><td>Yes (natural)</td><td>Speed/emotion controls</td><td>Natural breathing built in</td></tr>
+</table>
+
+<h3>Text Preprocessing (Easiest Approach)</h3>
+<table>
+  <tr><th>Pattern</th><th>Replace With</th><th>Effect</th></tr>
+  <tr><td><code>, </code> (comma space)</td><td><code>, -- </code></td><td>Medium pause after commas</td></tr>
+  <tr><td><code>. </code> (period space)</td><td><code>. ... </code></td><td>Trailing pause between sentences</td></tr>
+  <tr><td>Long sentence</td><td>Add <code>...</code> mid-phrase</td><td>Natural trailing pause</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>9. Speaking Rate Matching</h2>
+<!-- ============================================================ -->
+
+<p><strong>What it is:</strong> Dynamically adjusting AI speaking speed to mirror the user's pace. No major platform offers this — it would be a differentiating feature.</p>
+
+<h3>Typical Speaking Rates</h3>
+<table>
+  <tr><th>Speed</th><th>English WPM</th><th>Cantonese SPM</th></tr>
+  <tr><td>Slow</td><td>Under 120</td><td>Under 80</td></tr>
+  <tr><td>Normal</td><td>120-160</td><td>100-130</td></tr>
+  <tr><td>Fast</td><td>160-200</td><td>130-160</td></tr>
+  <tr><td>Very fast</td><td>Over 200</td><td>Over 160</td></tr>
+</table>
+
+<h3>Rate Matching Algorithm</h3>
+<table>
+  <tr><th>User Speed</th><th>User WPM</th><th>Calculated TTS Rate</th></tr>
+  <tr><td>Very slow</td><td>100 WPM</td><td>0.83 → clamped to 0.8</td></tr>
+  <tr><td>Slow</td><td>120 WPM</td><td>0.9</td></tr>
+  <tr><td>Normal</td><td>150 WPM</td><td>1.0</td></tr>
+  <tr><td>Fast</td><td>180 WPM</td><td>1.1</td></tr>
+  <tr><td>Very fast</td><td>210 WPM</td><td>1.2</td></tr>
+</table>
+<p>Formula: <code>rate = 1.0 + (user_ratio - 1.0) × 0.5</code> — meets the user halfway. Clamped to 0.8-1.2. Smoothed with exponential moving average.</p>
+
+<h3>TTS Speed Parameters</h3>
+<table>
+  <tr><th>Engine</th><th>Parameter</th><th>Range</th></tr>
+  <tr><td>ElevenLabs</td><td><code>speed</code> in API request</td><td>0.7 to 1.3</td></tr>
+  <tr><td>Azure</td><td><code>&lt;prosody rate=""&gt;</code> in SSML</td><td>-50% to +100%</td></tr>
+  <tr><td>Cartesia</td><td><code>generation_config.speed</code></td><td>0.6 to 1.5</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 class="page-break">10. Interruption Handling</h2>
+<!-- ============================================================ -->
+
+<p><strong>What it is:</strong> Gracefully managing barge-in. Our current hard cut is jarring and unnatural.</p>
+
+<h3>All Solutions</h3>
+<table>
+  <tr><th>Solution</th><th>What It Does</th><th>Effort</th><th>Impact</th></tr>
+  <tr><td><strong>Fade-out (replace hard cut)</strong></td><td>AI speech volume decreases over 100-200ms using exponential ramp, then stops</td><td>Easy</td><td>High</td></tr>
+  <tr><td><strong>AI acknowledgment clip</strong></td><td>Pre-recorded "Oh sure, go ahead" plays immediately (zero latency)</td><td>Easy</td><td>Medium</td></tr>
+  <tr><td><strong>LLM context injection</strong></td><td>Add "[User interrupted]" to conversation so AI acknowledges naturally</td><td>Easy</td><td>Medium</td></tr>
+  <tr><td><strong>Smart interruption classification</strong></td><td>Distinguish backchannels ("yeah") from real interruptions (3+ words)</td><td>Medium</td><td>High</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 class="page-break">11. Speech-to-Speech Alternatives (Replace Entire Pipeline)</h2>
+<!-- ============================================================ -->
+
+<table>
+  <tr><th>Aspect</th><th>Our Pipeline<br>(Deepgram + Gemini + ElevenLabs)</th><th>OpenAI Realtime API</th><th>Gemini Live API</th></tr>
+  <tr><td><strong>Latency</strong></td><td>~500-1000ms</td><td>~250ms</td><td>Low</td></tr>
+  <tr><td><strong>Cost/minute</strong></td><td>~$0.05-0.10</td><td>Higher ($40-80/1M tokens)</td><td>Free tier available</td></tr>
+  <tr><td><strong>Cantonese</strong></td><td class="tag-yes">YES (proven)</td><td class="tag-partial">Uncertain ("Chinese")</td><td class="tag-partial">Uncertain ("Chinese")</td></tr>
+  <tr><td><strong>Control</strong></td><td>Full (we own every layer)</td><td>Limited</td><td>Limited</td></tr>
+  <tr><td><strong>Prosody quality</strong></td><td>Depends on TTS provider</td><td>Native, natural</td><td>Native, natural</td></tr>
+  <tr><td><strong>Can laugh/whisper</strong></td><td>Only with v3 audio tags</td><td class="tag-yes">Yes (native)</td><td class="tag-yes">Yes (native)</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>12. Voice Cloning</h2>
+<!-- ============================================================ -->
+
+<table>
+  <tr><th>Platform</th><th>Cantonese</th><th>Audio Needed</th><th>Method</th><th>Cost</th></tr>
+  <tr><td>ElevenLabs Instant</td><td class="tag-yes">Yes</td><td>1-5 minutes</td><td>Neural cloning</td><td>$5-330/mo</td></tr>
+  <tr><td>ElevenLabs Professional</td><td class="tag-yes">Yes</td><td>30 min - 3 hours</td><td>Professional cloning</td><td>$5-330/mo</td></tr>
+  <tr><td>Qwen3-TTS</td><td class="tag-yes">Yes</td><td>3 seconds</td><td>Zero-shot (open source)</td><td>Free</td></tr>
+  <tr><td>CosyVoice 3.0</td><td class="tag-yes">Yes</td><td>Zero-shot</td><td>Open source</td><td>Free</td></tr>
+  <tr><td>Azure Custom Neural</td><td class="tag-yes">Yes (zh-HK)</td><td>30 min - 3 hours</td><td>Custom training</td><td>$52/compute hr + $24/1M chars</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>13. Cantonese-Specific TTS (Open Source)</h2>
+<!-- ============================================================ -->
+
+<table>
+  <tr><th>Model</th><th>Release</th><th>Cantonese</th><th>Streaming</th><th>Voice Cloning</th><th>License</th><th>Key Stat</th></tr>
+  <tr><td><strong>Qwen3-TTS ★</strong></td><td>Jan 2026</td><td class="tag-yes">Full dialect</td><td>Yes</td><td>3 seconds</td><td>Apache 2.0</td><td>Beats ElevenLabs on similarity</td></tr>
+  <tr><td><strong>CosyVoice 3.0 ★</strong></td><td>Dec 2025</td><td class="tag-yes">18+ dialects</td><td>150ms latency</td><td>Zero-shot</td><td>Apache 2.0</td><td>0.81% character error rate</td></tr>
+  <tr><td><strong>IndexTTS2</strong></td><td>2025</td><td class="tag-yes">Yes</td><td>150ms latency</td><td>Zero-shot</td><td>Open source</td><td>Duration control for dubbing</td></tr>
+  <tr><td><strong>SenseVoice</strong></td><td>2025</td><td class="tag-yes">Native</td><td>N/A (STT+Emotion)</td><td>N/A</td><td>Open source</td><td>50%+ better than Whisper on Cantonese</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 class="page-break">14. Implementation Roadmap</h2>
+<!-- ============================================================ -->
+
+<div class="phase-header">Phase 1 — Easy Wins (1-2 days)</div>
+<table>
+  <tr><th>#</th><th>Task</th><th>Effort</th><th>Impact</th><th>Cost</th></tr>
+  <tr><td>1</td><td>Pre-recorded filler sounds (English + Cantonese)</td><td>Easy</td><td>High</td><td>Free</td></tr>
+  <tr><td>2</td><td>Fade-out on barge-in (replace hard cut)</td><td>Easy</td><td>High</td><td>Free</td></tr>
+  <tr><td>3</td><td>Text preprocessing for breathing pauses (<code>...</code>, <code>--</code>)</td><td>Easy</td><td>Medium</td><td>Free</td></tr>
+  <tr><td>4</td><td>Tune ElevenLabs settings (style → 0.0, stability → 0.5)</td><td>Easy</td><td>Medium</td><td>Free</td></tr>
+  <tr><td>5</td><td>Dynamic silence thresholds for turn-taking</td><td>Easy</td><td>Medium</td><td>Free</td></tr>
+  <tr><td>6</td><td>Background ambience via Howler.js</td><td>Easy</td><td>Medium</td><td>Free</td></tr>
+</table>
+
+<div class="phase-header">Phase 2 — Medium Effort (3-5 days)</div>
+<table>
+  <tr><th>#</th><th>Task</th><th>Effort</th><th>Impact</th><th>Cost</th></tr>
+  <tr><td>7</td><td>DIY backchanneling with timing logic</td><td>Medium</td><td>High</td><td>Free</td></tr>
+  <tr><td>8</td><td>Speaking rate matching from Deepgram timestamps</td><td>Medium</td><td>Medium-High</td><td>Free</td></tr>
+  <tr><td>9</td><td>Upgrade to ElevenLabs v3 Audio Tags</td><td>Easy</td><td>High</td><td>Same plan</td></tr>
+  <tr><td>10</td><td>Emotion detection via LLM prompt injection</td><td>Easy</td><td>Low</td><td>Free</td></tr>
+</table>
+
+<div class="phase-header">Phase 3 — Advanced (1-2 weeks)</div>
+<table>
+  <tr><th>#</th><th>Task</th><th>Effort</th><th>Impact</th><th>Cost</th></tr>
+  <tr><td>11</td><td>SenseVoice for Cantonese emotion detection</td><td>Hard</td><td>High</td><td>Free</td></tr>
+  <tr><td>12</td><td>LiveKit EOU or Pipecat Smart Turn for turn-taking</td><td>Hard</td><td>High</td><td>Free</td></tr>
+  <tr><td>13</td><td>Qwen3-TTS or CosyVoice for free Cantonese TTS</td><td>Hard</td><td>High</td><td>Free</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 class="page-break">Quick Reference: Technology Decision Matrix</h2>
+<!-- ============================================================ -->
+
+<table>
+  <tr><th style="width:220px">Need</th><th>Best Paid Option</th><th>Best Free / Open Source Option</th></tr>
+  <tr><td>Cantonese TTS</td><td>ElevenLabs or Azure (zh-HK)</td><td>Qwen3-TTS or CosyVoice 3.0</td></tr>
+  <tr><td>Cantonese voice cloning</td><td>ElevenLabs Professional Clone</td><td>Qwen3-TTS (3s) or CosyVoice</td></tr>
+  <tr><td>Emotional TTS</td><td>Azure DragonHD (auto-emotion)</td><td>Qwen3-TTS (multilingual)</td></tr>
+  <tr><td>Backchanneling</td><td>Retell AI or Vapi</td><td>Custom build (DIY)</td></tr>
+  <tr><td>Turn detection</td><td>AssemblyAI Semantic Endpointing</td><td>LiveKit EOU or Pipecat Smart Turn</td></tr>
+  <tr><td>Speech-to-speech</td><td>OpenAI Realtime API</td><td>N/A (no free option yet)</td></tr>
+  <tr><td>Background audio</td><td>N/A</td><td>Web Audio API + Howler.js</td></tr>
+  <tr><td>Prosody control</td><td>Azure SSML + DragonHD</td><td>Bark brackets or StyleTTS2</td></tr>
+  <tr><td>Full voice AI framework</td><td>Vapi or Retell AI</td><td>Pipecat or LiveKit Agents</td></tr>
+</table>
+
+<br><br>
+<p style="text-align:center; color:#888; font-size:9pt;">— END OF REPORT —</p>
+
+</body>
+</html>

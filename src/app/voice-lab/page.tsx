@@ -31,6 +31,49 @@ const TTS_OPTIONS = [
   { value: 'azure', label: 'Azure Speech (Cantonese)' },
 ]
 
+// Voice options per TTS provider
+const VOICE_OPTIONS: Record<string, { value: string; label: string }[]> = {
+  'elevenlabs-turbo': [
+    { value: 'cgSgspJ2msm6clMCkdW9', label: 'Jessica (F) — Playful, Warm' },
+    { value: 'EXAVITQu4vr4xnSDxMaL', label: 'Sarah (F) — Mature, Reassuring' },
+    { value: 'hpp4J3VqNfWAUOO0d1Us', label: 'Bella (F) — Professional, Warm' },
+    { value: 'XrExE9yKIg1WjnnlVkGX', label: 'Matilda (F) — Knowledgeable' },
+    { value: 'Xb7hH8MSUJpSbSDYk0k2', label: 'Alice (F) — Clear, British' },
+    { value: 'pFZP5JQG7iQjIQuC4Bku', label: 'Lily (F) — Velvety, British' },
+    { value: 'cjVigY5qzO86Huf0OWal', label: 'Eric (M) — Smooth, Trustworthy' },
+    { value: 'iP95p4xoKVk53GoZ742B', label: 'Chris (M) — Charming, Friendly' },
+    { value: 'CwhRBWXzGAHq8TQ4Fs17', label: 'Roger (M) — Laid-Back, Casual' },
+    { value: 'bIHbv24MWmeRgasZH58o', label: 'Will (M) — Relaxed Optimist' },
+    { value: 'onwK4e9ZLuTAKqWW03F9', label: 'Daniel (M) — Steady, British' },
+  ],
+  'elevenlabs-v3': [
+    { value: 'cgSgspJ2msm6clMCkdW9', label: 'Jessica (F) — Playful, Warm' },
+    { value: 'EXAVITQu4vr4xnSDxMaL', label: 'Sarah (F) — Mature, Reassuring' },
+    { value: 'cjVigY5qzO86Huf0OWal', label: 'Eric (M) — Smooth, Trustworthy' },
+    { value: 'iP95p4xoKVk53GoZ742B', label: 'Chris (M) — Charming, Friendly' },
+  ],
+  'deepgram-aura': [
+    { value: 'aura-asteria-en', label: 'Asteria (F) — Default' },
+    { value: 'aura-luna-en', label: 'Luna (F) — Soft' },
+    { value: 'aura-stella-en', label: 'Stella (F) — Confident' },
+    { value: 'aura-orion-en', label: 'Orion (M) — Deep' },
+    { value: 'aura-arcas-en', label: 'Arcas (M) — Warm' },
+    { value: 'aura-perseus-en', label: 'Perseus (M) — Clear' },
+  ],
+  'cartesia': [
+    { value: 'a0e99841-438c-4a64-b679-ae501e7d6091', label: 'Barbershop Man (M)' },
+    { value: '79a125e8-cd45-4c13-8a67-188112f4dd22', label: 'British Lady (F)' },
+    { value: 'e90c6678-f0d3-4767-9883-5d0ecf5894a8', label: 'Chinese Woman (F)' },
+  ],
+  'azure': [
+    { value: 'zh-HK-HiuMaanNeural', label: 'HiuMaan (F) — Cantonese' },
+    { value: 'zh-HK-HiuGaaiNeural', label: 'HiuGaai (F) — Cantonese' },
+    { value: 'zh-HK-WanLungNeural', label: 'WanLung (M) — Cantonese' },
+    { value: 'en-US-JennyNeural', label: 'Jenny (F) — English' },
+    { value: 'en-US-GuyNeural', label: 'Guy (M) — English' },
+  ],
+}
+
 interface VoicePanelProps {
   title: string
   lang: 'en' | 'yue'
@@ -42,23 +85,49 @@ interface VoicePanelProps {
 }
 
 function VoicePanel({ title, lang, greeting, businessUnitId, defaultStt = 'deepgram', defaultLlm = 'gpt-4o-mini', defaultTts = 'elevenlabs-turbo' }: VoicePanelProps) {
-  const [sttProvider, setSttProvider] = useState(defaultStt)
-  const [llmProvider, setLlmProvider] = useState(defaultLlm)
-  const [ttsProvider, setTtsProvider] = useState(defaultTts)
+  // Persist settings in localStorage per language panel
+  const storageKey = `voiceLab_${lang}`
+  const loadSaved = (key: string, fallback: string) => {
+    if (typeof window === 'undefined') return fallback
+    try { return localStorage.getItem(`${storageKey}_${key}`) || fallback } catch { return fallback }
+  }
+  const loadBool = (key: string, fallback: boolean) => {
+    if (typeof window === 'undefined') return fallback
+    try { const v = localStorage.getItem(`${storageKey}_${key}`); return v !== null ? v === 'true' : fallback } catch { return fallback }
+  }
+
+  const [sttProvider, setSttProvider] = useState(() => loadSaved('stt', defaultStt))
+  const [llmProvider, setLlmProvider] = useState(() => loadSaved('llm', defaultLlm))
+  const [ttsProvider, setTtsProvider] = useState(() => loadSaved('tts', defaultTts))
+  const [voiceId, setVoiceId] = useState(() => loadSaved('voice', VOICE_OPTIONS[loadSaved('tts', defaultTts)]?.[0]?.value || ''))
   const [status, setStatus] = useState<Status>('idle')
   const [messages, setMessages] = useState<Message[]>([])
   const [liveTranscript, setLiveTranscript] = useState('')
   const [isActive, setIsActive] = useState(false)
 
-  // Feature toggle states (UI placeholders — not wired to any logic yet)
-  const [bgAmbience, setBgAmbience] = useState(false)
-  const [thinkingFillers, setThinkingFillers] = useState(false)
-  const [micMuteOnTts, setMicMuteOnTts] = useState(false)
+  // Feature toggles — persisted + sent to server
+  const [bgAmbience, setBgAmbience] = useState(() => loadBool('bgAmbience', false))
+  const [thinkingFillers, setThinkingFillers] = useState(() => loadBool('thinkingFillers', false))
+  const [micMuteOnTts, setMicMuteOnTts] = useState(() => loadBool('micMuteOnTts', false))
+
+  // Save settings whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(`${storageKey}_stt`, sttProvider)
+      localStorage.setItem(`${storageKey}_llm`, llmProvider)
+      localStorage.setItem(`${storageKey}_tts`, ttsProvider)
+      localStorage.setItem(`${storageKey}_voice`, voiceId)
+      localStorage.setItem(`${storageKey}_bgAmbience`, String(bgAmbience))
+      localStorage.setItem(`${storageKey}_thinkingFillers`, String(thinkingFillers))
+      localStorage.setItem(`${storageKey}_micMuteOnTts`, String(micMuteOnTts))
+    } catch {}
+  }, [sttProvider, llmProvider, ttsProvider, voiceId, bgAmbience, thinkingFillers, micMuteOnTts, storageKey])
 
   const wsRef = useRef<WebSocket | null>(null)
   const processorRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const audioElRef = useRef<HTMLAudioElement | null>(null)
+  const backchannelElRef = useRef<HTMLAudioElement | null>(null) // separate channel for backchannels
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Audio queue system: each sentence becomes one blob, played sequentially
@@ -192,7 +261,7 @@ function VoicePanel({ title, lang, greeting, businessUnitId, defaultStt = 'deepg
 
       // Connect WebSocket — auto-detect protocol and host
       const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-      const wsUrl = `${wsProto}//${window.location.host}/api/voice/stream?businessUnitId=${businessUnitId}&lang=${lang}&stt=${sttProvider}&llm=${llmProvider}&tts=${ttsProvider}`
+      const wsUrl = `${wsProto}//${window.location.host}/api/voice/stream?businessUnitId=${businessUnitId}&lang=${lang}&stt=${sttProvider}&llm=${llmProvider}&tts=${ttsProvider}&voice=${encodeURIComponent(voiceId)}&fillers=${thinkingFillers}&ambience=${bgAmbience}`
       const ws = new WebSocket(wsUrl)
       wsRef.current = ws
       ws.binaryType = 'arraybuffer'
@@ -242,6 +311,40 @@ function VoicePanel({ title, lang, greeting, businessUnitId, defaultStt = 'deepg
           enqueueSentenceAudio()
         } else if (msg.type === 'audio_done') {
           enqueueSentenceAudio()
+        } else if (msg.type === 'backchannel_audio') {
+          // Play backchannel on separate audio element at lower volume — doesn't interrupt main AI audio
+          try {
+            const binary = atob(msg.data!)
+            const bytes = new Uint8Array(binary.length)
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+            const blob = new Blob([bytes], { type: 'audio/mpeg' })
+            const url = URL.createObjectURL(blob)
+            const bcAudio = backchannelElRef.current
+            if (bcAudio) {
+              bcAudio.volume = 0.5
+              bcAudio.src = url
+              bcAudio.play().catch(() => {})
+              bcAudio.onended = () => URL.revokeObjectURL(url)
+            }
+            console.log(`[VoiceLab:${lang}] Backchannel: "${(msg as any).phrase}"`)
+          } catch {}
+        } else if (msg.type === 'fade_out') {
+          // Smooth fade-out over 150ms instead of hard cut
+          const audio = audioElRef.current
+          if (audio && !audio.paused) {
+            const startVol = audio.volume
+            const fadeSteps = 10
+            const stepMs = 15 // 10 steps × 15ms = 150ms fade
+            let step = 0
+            const fadeInterval = setInterval(() => {
+              step++
+              audio.volume = Math.max(0, startVol * (1 - step / fadeSteps))
+              if (step >= fadeSteps) {
+                clearInterval(fadeInterval)
+                audio.volume = startVol // reset for next playback
+              }
+            }, stepMs)
+          }
         } else if (msg.type === 'barge_in') {
           stopAudio()
           setStatus('listening')
@@ -263,7 +366,7 @@ function VoicePanel({ title, lang, greeting, businessUnitId, defaultStt = 'deepg
       console.error(`[VoiceLab:${lang}] Start error:`, err)
       setStatus('error')
     }
-  }, [lang, greeting, businessUnitId, sttProvider, llmProvider, ttsProvider, enqueueSentenceAudio, stopAudio, startMicStream])
+  }, [lang, greeting, businessUnitId, sttProvider, llmProvider, ttsProvider, voiceId, thinkingFillers, bgAmbience, enqueueSentenceAudio, stopAudio, startMicStream])
 
   const stopConversation = useCallback(() => {
     wsRef.current?.send(JSON.stringify({ type: 'stop' }))
@@ -295,39 +398,58 @@ function VoicePanel({ title, lang, greeting, businessUnitId, defaultStt = 'deepg
     <div className="flex flex-col gap-5 w-full">
       {/* Hidden audio element — must be in DOM for autoplay unlock to work */}
       <audio ref={audioElRef} playsInline preload="none" style={{ display: 'none' }} />
+      <audio ref={backchannelElRef} playsInline preload="none" style={{ display: 'none' }} />
 
       {/* Panel title */}
       <div className="text-center">
         <h2 className="text-xl font-bold text-white">{title}</h2>
       </div>
 
-      {/* Conversation history */}
-      <div className="bg-gray-900 rounded-2xl p-4 h-64 overflow-y-auto flex flex-col gap-3">
-        {messages.length === 0 && (
-          <p className="text-gray-600 text-sm text-center mt-8">
-            Start talking to see the conversation here
-          </p>
-        )}
-        {messages.map((m, i) => (
-          <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div
-              className={`max-w-xs px-4 py-2 rounded-2xl text-sm ${
-                m.role === 'user'
-                  ? 'bg-blue-600 text-white rounded-br-sm'
-                  : 'bg-gray-700 text-gray-100 rounded-bl-sm'
-              }`}
-            >
+      {/* Split conversation: AI (left) | User (right) */}
+      <div className="grid grid-cols-2 gap-3 h-64">
+        {/* AI side */}
+        <div className="bg-gray-900 rounded-2xl p-3 overflow-y-auto flex flex-col gap-2">
+          <div className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1 flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full ${status === 'speaking' ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`} />
+            AI
+          </div>
+          {messages.filter(m => m.role === 'ai').length === 0 && (
+            <p className="text-gray-700 text-xs text-center mt-6">Waiting...</p>
+          )}
+          {messages.filter(m => m.role === 'ai').map((m, i) => (
+            <div key={i} className="px-3 py-2 rounded-xl text-sm bg-gray-700/60 text-gray-100">
               {m.text}
             </div>
+          ))}
+        </div>
+        {/* User side */}
+        <div className="bg-gray-900 rounded-2xl p-3 overflow-y-auto flex flex-col gap-2">
+          <div className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1 flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full ${status === 'listening' ? 'bg-blue-400 animate-pulse' : 'bg-gray-600'}`} />
+            You
           </div>
-        ))}
-        {liveTranscript && (
-          <div className="flex justify-end">
-            <div className="max-w-xs px-4 py-2 rounded-2xl text-sm bg-blue-600/40 text-blue-200 rounded-br-sm italic">
+          {messages.filter(m => m.role === 'user').length === 0 && !liveTranscript && (
+            <p className="text-gray-700 text-xs text-center mt-6">Start talking...</p>
+          )}
+          {messages.filter(m => m.role === 'user').map((m, i) => (
+            <div key={i} className="px-3 py-2 rounded-xl text-sm bg-blue-600/40 text-blue-100">
+              {m.text}
+            </div>
+          ))}
+          {liveTranscript && (
+            <div className="px-3 py-2 rounded-xl text-sm bg-blue-600/20 text-blue-300 italic">
               {liveTranscript}...
             </div>
+          )}
+        </div>
+      </div>
+      {/* Combined timeline below (shows interleaved conversation) */}
+      <div className="bg-gray-900/40 rounded-xl p-3 max-h-32 overflow-y-auto flex flex-col gap-1.5">
+        {messages.map((m, i) => (
+          <div key={i} className={`text-xs ${m.role === 'user' ? 'text-blue-300' : 'text-gray-400'}`}>
+            <span className="font-medium">{m.role === 'user' ? 'You' : 'AI'}:</span> {m.text}
           </div>
-        )}
+        ))}
         <div ref={messagesEndRef} />
       </div>
 
@@ -359,7 +481,10 @@ function VoicePanel({ title, lang, greeting, businessUnitId, defaultStt = 'deepg
       <div className="bg-gray-900/60 rounded-xl px-4 py-3 flex flex-col gap-2 text-xs border border-gray-800">
         <ProviderSelect label="STT" value={sttProvider} onChange={setSttProvider} options={STT_OPTIONS} disabled={isActive} />
         <ProviderSelect label="LLM" value={llmProvider} onChange={setLlmProvider} options={LLM_OPTIONS} disabled={isActive} />
-        <ProviderSelect label="TTS" value={ttsProvider} onChange={setTtsProvider} options={TTS_OPTIONS} disabled={isActive} />
+        <ProviderSelect label="TTS" value={ttsProvider} onChange={(v) => { setTtsProvider(v); setVoiceId(VOICE_OPTIONS[v]?.[0]?.value || '') }} options={TTS_OPTIONS} disabled={isActive} />
+        {VOICE_OPTIONS[ttsProvider] && (
+          <ProviderSelect label="Voice" value={voiceId} onChange={setVoiceId} options={VOICE_OPTIONS[ttsProvider]} disabled={isActive} />
+        )}
       </div>
 
       {/* Feature toggles (UI placeholders) */}
@@ -371,7 +496,7 @@ function VoicePanel({ title, lang, greeting, businessUnitId, defaultStt = 'deepg
           onChange={setBgAmbience}
         />
         <ToggleRow
-          label="Thinking Fillers"
+          label="Backchanneling (mhm, right...)"
           checked={thinkingFillers}
           onChange={setThinkingFillers}
         />
@@ -487,7 +612,7 @@ export default function VoiceLabPage() {
             lang="yue"
             greeting="你好！我係Breast Guardian嘅AI助手，有咩可以幫到你？"
             businessUnitId={BUSINESS_UNIT_ID}
-            defaultStt="elevenlabs-scribe"
+            defaultStt="azure"
             defaultLlm="gpt-4o-mini"
             defaultTts="azure"
           />
