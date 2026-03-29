@@ -151,7 +151,7 @@ Rules:
 
         // Stream LLM response — model depends on selected provider
         const llmModelMap = {
-          'cerebras': 'llama-3.3-70b',
+          'cerebras': 'llama3.1-8b',
           'gpt-4o-mini': 'gpt-4o-mini',
           'gpt-4o': 'gpt-4o',
           'gemini-flash': 'gpt-4o-mini', // Gemini uses different API, fallback for now
