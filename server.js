@@ -66,7 +66,12 @@ app.prepare().then(() => {
     ;(async () => {
       try {
         const OpenAI = (await import('openai')).default
-        model = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+        // Use Cerebras (OpenAI-compatible) for ultra-fast inference, or fallback to OpenAI
+        if (llmProvider === 'cerebras') {
+          model = new OpenAI({ apiKey: process.env.CEREBRAS_API_KEY, baseURL: 'https://api.cerebras.ai/v1' })
+        } else {
+          model = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+        }
 
         let businessContext = 'a helpful AI assistant'
         if (businessUnitId) {
@@ -144,9 +149,15 @@ Rules:
           { role: 'user', content: transcript }
         ]
 
-        // Stream GPT-4o-mini response
+        // Stream LLM response — model depends on selected provider
+        const llmModelMap = {
+          'cerebras': 'llama-3.3-70b',
+          'gpt-4o-mini': 'gpt-4o-mini',
+          'gpt-4o': 'gpt-4o',
+          'gemini-flash': 'gpt-4o-mini', // Gemini uses different API, fallback for now
+        }
         const stream = await model.chat.completions.create({
-          model: 'gpt-4o-mini',
+          model: llmModelMap[llmProvider] || 'gpt-4o-mini',
           messages,
           max_tokens: 150,
           temperature: 0.7,

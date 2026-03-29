@@ -18,6 +18,7 @@ const STT_OPTIONS = [
 ]
 
 const LLM_OPTIONS = [
+  { value: 'cerebras', label: 'Cerebras LLaMA 3.3 70B (fastest)' },
   { value: 'gpt-4o-mini', label: 'GPT-4o-mini' },
   { value: 'gpt-4o', label: 'GPT-4o' },
   { value: 'gemini-flash', label: 'Gemini 2.0 Flash' },
