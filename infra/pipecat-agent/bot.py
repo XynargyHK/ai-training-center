@@ -62,31 +62,54 @@ async def main():
     )
 
     # --- STT: Deepgram ---
+    lang = os.getenv("VOICE_LANG", "en")
     stt = DeepgramSTTService(
         api_key=os.getenv("DEEPGRAM_API_KEY"),
-        language="en",
+        language="yue" if lang == "yue" else "en",  # yue = Cantonese
     )
 
-    # --- LLM: Cerebras (OpenAI-compatible) ---
-    llm = OpenAILLMService(
-        api_key=os.getenv("CEREBRAS_API_KEY"),
-        base_url="https://api.cerebras.ai/v1",
-        model="llama3.1-8b",
-    )
+    # --- LLM: Cerebras for English, GPT-4o-mini for Cantonese ---
+    if lang == "yue":
+        llm = OpenAILLMService(
+            api_key=os.getenv("OPENAI_API_KEY"),
+            model="gpt-4o-mini",
+        )
+    else:
+        llm = OpenAILLMService(
+            api_key=os.getenv("CEREBRAS_API_KEY"),
+            base_url="https://api.cerebras.ai/v1",
+            model="llama3.1-8b",
+        )
 
-    # --- TTS: Cartesia Sonic ---
-    tts = CartesiaTTSService(
-        api_key=os.getenv("CARTESIA_API_KEY"),
-        voice_id=os.getenv("CARTESIA_VOICE_ID", "a0e99841-438c-4a64-b679-ae501e7d6091"),  # Barbershop Man default
-        model_id="sonic",
-        sample_rate=24000,
-    )
+    # --- TTS: Azure for Cantonese, Cartesia for English ---
+    if lang == "yue":
+        from pipecat.services.azure.tts import AzureTTSService
+        tts = AzureTTSService(
+            api_key=os.getenv("AZURE_SPEECH_KEY"),
+            region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
+            voice="zh-HK-HiuMaanNeural",
+            sample_rate=24000,
+        )
+    else:
+        tts = CartesiaTTSService(
+            api_key=os.getenv("CARTESIA_API_KEY"),
+            voice_id=os.getenv("CARTESIA_VOICE_ID", "a0e99841-438c-4a64-b679-ae501e7d6091"),
+            model_id="sonic",
+            sample_rate=24000,
+        )
 
     # --- Context with system prompt ---
-    messages = [
-        {
-            "role": "system",
-            "content": """You are a voice AI assistant. You speak like a real person in a phone call — not a chatbot.
+    if lang == "yue":
+        system_content = """你係一個語音AI助手。你講嘢要好似真人打電話咁，唔好似機械人。
+
+規則：
+- 每次回覆最多1-2句，要簡潔
+- 一定要用廣東話口語：用「係」唔好用「是」，用「嘅」唔好用「的」，用「咁」唔好用「這樣」
+- 自然啲回應：「嗯...」「哦！」「明白」「係喎」
+- 唔好用markdown、列表、星號。呢個係講嘢，唔係打字
+- 語氣要親切友善，好似同朋友傾計咁"""
+    else:
+        system_content = """You are a voice AI assistant. You speak like a real person in a phone call — not a chatbot.
 
 Rules:
 - Keep replies to 1-2 sentences max. Be concise.
@@ -94,9 +117,9 @@ Rules:
 - Use contractions: "I'm", "don't", "can't", "it's"
 - React naturally: laugh ("haha"), express surprise ("oh wow"), show empathy ("ah I see")
 - No markdown, no lists, no asterisks. This is spoken language.
-- Sound warm and friendly, like talking to a colleague.""",
-        },
-    ]
+- Sound warm and friendly, like talking to a colleague."""
+
+    messages = [{"role": "system", "content": system_content}]
 
     # Create LLM context and aggregator pair for conversation management
     context = OpenAILLMContext(messages)
