@@ -28,12 +28,6 @@ except ImportError:
     except ImportError:
         SileroVADAnalyzer = None
 
-try:
-    from duckduckgo_search import DDGS
-    HAS_SEARCH = True
-except ImportError:
-    HAS_SEARCH = False
-
 from loguru import logger
 
 try:
@@ -41,22 +35,6 @@ try:
 except ValueError:
     pass
 logger.add(sys.stderr, level="DEBUG")
-
-
-def web_search(query: str, max_results: int = 3) -> str:
-    """Search the web using DuckDuckGo and return summarized results."""
-    try:
-        with DDGS() as ddgs:
-            results = list(ddgs.text(query, max_results=max_results))
-        if not results:
-            return "No results found."
-        lines = []
-        for r in results:
-            lines.append(f"- {r['title']}: {r['body']}")
-        return "\n".join(lines)
-    except Exception as e:
-        logger.error(f"Web search error: {e}")
-        return f"Search failed: {str(e)}"
 
 
 async def main():
@@ -145,7 +123,7 @@ async def main():
         system_content = f"""You are a voice AI assistant. You speak like a real person in a phone call — not a chatbot.
 Today's date is {today}. The current time is {current_time}.
 
-You have access to web search. When the user asks about current events, news, prices, weather, facts you're not sure about, or anything that needs up-to-date information, use the web_search function. Say something like "let me look that up" before searching.
+You have Google Search available. Use it freely when the user asks about current events, news, prices, weather, sports scores, or anything that needs real-time information.
 
 Rules:
 - Keep replies to 1-2 sentences max. Be concise.
@@ -154,68 +132,25 @@ Rules:
 - React naturally: laugh ("haha"), express surprise ("oh wow"), show empathy ("ah I see")
 - No markdown, no lists, no asterisks. This is spoken language.
 - Sound warm and friendly, like talking to a colleague.
-- After a web search, summarize the key finding in 1-2 natural sentences. Don't read out URLs."""
+- After searching, summarize the key finding naturally. Don't read out URLs."""
 
     messages = [{"role": "system", "content": system_content}]
 
-    # --- Web search tool (English mode only, if duckduckgo available) ---
+    # --- Google Search grounding (built-in, no custom tool needed) ---
     tools = None
-    if lang != "yue" and HAS_SEARCH:
+    try:
+        from google.genai import types as gtypes
+        tools = [gtypes.Tool(google_search=gtypes.GoogleSearch())]
+        logger.info("Google Search grounding enabled")
+    except Exception as e:
+        logger.warning(f"Google Search grounding failed: {e}, trying fallback")
         try:
-            # Try google-genai SDK (newer)
-            from google.genai import types as gtypes
-            search_func = gtypes.FunctionDeclaration(
-                name="web_search",
-                description="Search the web for current information when user asks about news, weather, prices, or recent events.",
-                parameters=gtypes.Schema(
-                    type=gtypes.Type.OBJECT,
-                    properties={
-                        "query": gtypes.Schema(
-                            type=gtypes.Type.STRING,
-                            description="The search query"
-                        )
-                    },
-                    required=["query"]
-                )
-            )
-            tools = [gtypes.Tool(function_declarations=[search_func])]
-            logger.info("Web search tool created with google.genai.types")
-        except Exception as e1:
-            logger.warning(f"google.genai.types failed: {e1}, trying google.generativeai")
-            try:
-                # Try google-generativeai SDK (older)
-                import google.generativeai as genai
-                tools = [genai.protos.Tool(
-                    function_declarations=[genai.protos.FunctionDeclaration(
-                        name="web_search",
-                        description="Search the web for current information when user asks about news, weather, prices, or recent events.",
-                        parameters=genai.protos.Schema(
-                            type=genai.protos.Type.OBJECT,
-                            properties={
-                                "query": genai.protos.Schema(
-                                    type=genai.protos.Type.STRING,
-                                    description="The search query"
-                                )
-                            },
-                            required=["query"]
-                        )
-                    )]
-                )]
-                logger.info("Web search tool created with google.generativeai.protos")
-            except Exception as e2:
-                logger.error(f"Both Google SDK imports failed: {e1} / {e2}")
-                tools = None
-
-        if tools:
-            async def handle_web_search(params):
-                query = params.arguments.get("query", "")
-                logger.info(f"Web search triggered: {query}")
-                results = await asyncio.get_event_loop().run_in_executor(None, web_search, query)
-                logger.info(f"Web search results: {results[:200]}")
-                await params.result_callback({"results": results})
-
-            llm.register_function("web_search", handle_web_search)
-            logger.info("Web search function handler registered")
+            from google.genai.types import Tool, GoogleSearch
+            tools = [Tool(google_search=GoogleSearch())]
+            logger.info("Google Search grounding enabled (fallback import)")
+        except Exception as e2:
+            logger.error(f"Could not enable Google Search: {e2}")
+            tools = None
 
     # Create LLM context and aggregator pair for conversation management
     context = OpenAILLMContext(messages, tools=tools)

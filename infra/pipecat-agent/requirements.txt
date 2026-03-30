@@ -1,4 +1,3 @@
 pipecat-ai[daily,deepgram,cartesia,openai,silero,azure,google]
-duckduckgo-search
 loguru
 python-dotenv
