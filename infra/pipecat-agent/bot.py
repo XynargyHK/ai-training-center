@@ -7,7 +7,8 @@ import asyncio
 import os
 import sys
 
-from pipecat.frames.frames import LLMMessagesFrame, EndFrame
+from pipecat.frames.frames import LLMMessagesFrame, EndFrame, TextFrame, TranscriptionFrame
+from pipecat.processors.frame_processor import FrameProcessor, FrameDirection
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
@@ -44,7 +45,37 @@ except ValueError:
 logger.add(sys.stderr, level="DEBUG")
 
 
-    # TranscriptForwarder removed — using event handlers instead
+class TextForwarder(FrameProcessor):
+    """Taps into pipeline text flow and sends to browser."""
+    def __init__(self, transport_ref, name="TextForwarder"):
+        super().__init__(name=name)
+        self._transport_ref = transport_ref
+        self._ai_text = ""
+        print(f"TextForwarder created: {name}", flush=True)
+
+    async def process_frame(self, frame, direction):
+        await super().process_frame(frame, direction)
+
+        if isinstance(frame, TranscriptionFrame):
+            print(f"[STT] {frame.text}", flush=True)
+            try:
+                await self._transport_ref.send_app_message({"type": "stt", "text": frame.text})
+            except Exception as e:
+                print(f"[STT SEND ERROR] {e}", flush=True)
+
+        elif isinstance(frame, TextFrame):
+            self._ai_text += frame.text
+            try:
+                await self._transport_ref.send_app_message({"type": "llm", "text": self._ai_text})
+            except Exception as e:
+                print(f"[LLM SEND ERROR] {e}", flush=True)
+
+        # Reset on new response
+        fn = type(frame).__name__
+        if "LLMFullResponseStart" in fn or "LLMResponseStart" in fn:
+            self._ai_text = ""
+
+        await self.push_frame(frame, direction)
 
 
 async def main():
@@ -440,13 +471,18 @@ Rules:
     context = LLMContext(messages=messages, tools=tools)
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(context)
 
+    # --- Text forwarder: taps STT + LLM text for browser display ---
+    text_fwd = TextForwarder(transport, name="TextForwarder")
+
     # --- Pipeline ---
     pipeline = Pipeline(
         [
             transport.input(),
             stt,
+            text_fwd,
             user_aggregator,
             llm,
+            TextForwarder(transport, name="LLMForwarder"),
             tts,
             transport.output(),
             assistant_aggregator,
@@ -460,29 +496,6 @@ Rules:
             enable_metrics=True,
         ),
     )
-
-    # --- Transcript display: send STT + LLM text to browser ---
-    ai_text_buffer = {"text": ""}
-
-    @stt.event_handler("on_transcription")
-    async def on_transcription(service, text, **kwargs):
-        logger.info(f"STT heard: {text}")
-        try:
-            await transport.send_app_message({"type": "stt", "text": text})
-        except Exception as e:
-            logger.error(f"STT send failed: {e}")
-
-    @llm.event_handler("on_llm_text_chunk")
-    async def on_llm_text_chunk(service, text, **kwargs):
-        ai_text_buffer["text"] += text
-        try:
-            await transport.send_app_message({"type": "llm", "text": ai_text_buffer["text"]})
-        except Exception as e:
-            logger.error(f"LLM send failed: {e}")
-
-    @llm.event_handler("on_llm_response_start")
-    async def on_llm_response_start(service, **kwargs):
-        ai_text_buffer["text"] = ""
 
     @transport.event_handler("on_first_participant_joined")
     async def on_first_participant_joined(transport, participant):
