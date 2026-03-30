@@ -38,14 +38,26 @@ async def create_daily_room():
 
 
 async def start_bot(room_url):
-    """Spawn the Pipecat bot as a subprocess pointing at the room."""
-    env = {**os.environ, "DAILY_ROOM_URL": room_url}
-    proc = subprocess.Popen(
-        ["python", "bot.py"],
-        env=env,
-        cwd=os.path.dirname(os.path.abspath(__file__)),
-    )
-    return proc.pid
+    """Run the Pipecat bot in a background task (same process, errors visible in logs)."""
+    os.environ["DAILY_ROOM_URL"] = room_url
+
+    async def run_bot():
+        try:
+            # Import and run bot.main() directly
+            import importlib
+            import sys
+            bot_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.py")
+            spec = importlib.util.spec_from_file_location("bot", bot_path)
+            bot_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(bot_module)
+            await bot_module.main()
+        except Exception as e:
+            print(f"BOT ERROR: {e}", flush=True)
+            import traceback
+            traceback.print_exc()
+
+    asyncio.ensure_future(run_bot())
+    return os.getpid()
 
 
 async def handle_start(request):
