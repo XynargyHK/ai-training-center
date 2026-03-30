@@ -55,7 +55,12 @@ async def main():
             audio_out_sample_rate=24000,
             audio_in_enabled=True,
             vad_enabled=True,
-            vad_analyzer=SileroVADAnalyzer(),
+            vad_analyzer=SileroVADAnalyzer(params=SileroVADAnalyzer.VADParams(
+                confidence=0.5,
+                min_volume=0.3,
+                start_secs=0.1,
+                stop_secs=0.3,
+            )),
             vad_audio_passthrough=True,
         ),
     )
