@@ -28,7 +28,12 @@ except ImportError:
     except ImportError:
         SileroVADAnalyzer = None
 
-from duckduckgo_search import DDGS
+try:
+    from duckduckgo_search import DDGS
+    HAS_SEARCH = True
+except ImportError:
+    HAS_SEARCH = False
+
 from loguru import logger
 
 try:
@@ -145,37 +150,39 @@ Rules:
 
     messages = [{"role": "system", "content": system_content}]
 
-    # --- Web search tool (English mode only) ---
+    # --- Web search tool (English mode only, if duckduckgo available) ---
     tools = None
-    if lang != "yue":
-        tools = [
-            {
-                "type": "function",
-                "function": {
-                    "name": "web_search",
-                    "description": "Search the web for current information. Use this when the user asks about recent events, facts you're unsure about, prices, news, weather, or anything that needs up-to-date information.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string",
-                                "description": "The search query"
-                            }
-                        },
-                        "required": ["query"]
-                    }
+    if lang != "yue" and HAS_SEARCH:
+        try:
+            from google.genai.types import FunctionDeclaration, Tool
+            search_func = FunctionDeclaration(
+                name="web_search",
+                description="Search the web for current information. Use this when the user asks about recent events, facts you're unsure about, prices, news, weather, or anything that needs up-to-date information.",
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "The search query"
+                        }
+                    },
+                    "required": ["query"]
                 }
-            }
-        ]
+            )
+            tools = [Tool(function_declarations=[search_func])]
 
-        async def handle_web_search(params):
-            query = params.arguments.get("query", "")
-            logger.info(f"Web search triggered: {query}")
-            results = await asyncio.get_event_loop().run_in_executor(None, web_search, query)
-            logger.info(f"Web search results: {results[:200]}")
-            await params.result_callback({"results": results})
+            async def handle_web_search(params):
+                query = params.arguments.get("query", "")
+                logger.info(f"Web search triggered: {query}")
+                results = await asyncio.get_event_loop().run_in_executor(None, web_search, query)
+                logger.info(f"Web search results: {results[:200]}")
+                await params.result_callback({"results": results})
 
-        llm.register_function("web_search", handle_web_search)
+            llm.register_function("web_search", handle_web_search)
+            logger.info("Web search tool registered successfully")
+        except Exception as e:
+            logger.error(f"Failed to register web search tool: {e}")
+            tools = None
 
     # Create LLM context and aggregator pair for conversation management
     context = OpenAILLMContext(messages, tools=tools)
