@@ -81,11 +81,11 @@ class TranscriptForwarder(FrameProcessor):
         # Reset AI text on new LLM response start
         if self._role == "ai" and "LLMFullResponseStart" in frame_name:
             self._text = ""
-        # Log all frame types for debugging
-        if self._role == "user" and "Transcription" in frame_name:
-            logger.debug(f"User forwarder got: {frame_name}")
-        if self._role == "ai" and "Text" in frame_name:
-            logger.debug(f"AI forwarder got: {frame_name}")
+        # Log ALL frame types to find the right ones
+        if self._role == "user":
+            logger.debug(f"User forwarder: {frame_name}")
+        if self._role == "ai" and frame_name not in ("AudioRawFrame", "StartFrame", "EndFrame"):
+            logger.debug(f"AI forwarder: {frame_name}")
         await self.push_frame(frame, direction)
 
 
