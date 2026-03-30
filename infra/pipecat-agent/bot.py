@@ -7,8 +7,7 @@ import asyncio
 import os
 import sys
 
-from pipecat.frames.frames import LLMMessagesFrame, EndFrame, TextFrame, TranscriptionFrame
-from pipecat.processors.frame_processor import FrameProcessor, FrameDirection
+from pipecat.frames.frames import LLMMessagesFrame, EndFrame
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
@@ -45,48 +44,7 @@ except ValueError:
 logger.add(sys.stderr, level="DEBUG")
 
 
-class TranscriptForwarder(FrameProcessor):
-    """Sends user transcripts and AI text to browser for display."""
-    def __init__(self, transport, role):
-        super().__init__()
-        self._transport = transport
-        self._role = role  # "user" or "ai"
-        self._text = ""
-
-    async def process_frame(self, frame, direction):
-        await super().process_frame(frame, direction)
-        frame_name = type(frame).__name__
-        if self._role == "user" and isinstance(frame, TranscriptionFrame):
-            logger.info(f"STT transcript: {frame.text}")
-            try:
-                msg = {"type": "stt", "text": frame.text}
-                if hasattr(self._transport, 'send_app_message'):
-                    await self._transport.send_app_message(msg)
-                elif hasattr(self._transport, '_output') and hasattr(self._transport._output, 'send_app_message'):
-                    await self._transport._output.send_app_message(msg)
-                else:
-                    logger.error(f"No send_app_message found. Transport type: {type(self._transport)}, attrs: {[a for a in dir(self._transport) if 'send' in a.lower() or 'app' in a.lower() or 'message' in a.lower()]}")
-            except Exception as e:
-                logger.error(f"Failed to send STT: {e}")
-        elif self._role == "ai" and isinstance(frame, TextFrame):
-            self._text += frame.text
-            try:
-                msg = {"type": "llm", "text": self._text}
-                if hasattr(self._transport, 'send_app_message'):
-                    await self._transport.send_app_message(msg)
-                elif hasattr(self._transport, '_output') and hasattr(self._transport._output, 'send_app_message'):
-                    await self._transport._output.send_app_message(msg)
-            except Exception as e:
-                logger.error(f"Failed to send LLM: {e}")
-        # Reset AI text on new LLM response start
-        if self._role == "ai" and "LLMFullResponseStart" in frame_name:
-            self._text = ""
-        # Log ALL frame types to find the right ones
-        if self._role == "user":
-            logger.debug(f"User forwarder: {frame_name}")
-        if self._role == "ai" and frame_name not in ("AudioRawFrame", "StartFrame", "EndFrame"):
-            logger.debug(f"AI forwarder: {frame_name}")
-        await self.push_frame(frame, direction)
+    # TranscriptForwarder removed — using event handlers instead
 
 
 async def main():
@@ -482,19 +440,13 @@ Rules:
     context = LLMContext(messages=messages, tools=tools)
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(context)
 
-    # --- Transcript forwarders for browser display ---
-    stt_forwarder = TranscriptForwarder(transport, "user")
-    llm_forwarder = TranscriptForwarder(transport, "ai")
-
     # --- Pipeline ---
     pipeline = Pipeline(
         [
             transport.input(),
             stt,
-            stt_forwarder,          # sends user transcript to browser
             user_aggregator,
             llm,
-            llm_forwarder,          # sends AI text to browser
             tts,
             transport.output(),
             assistant_aggregator,
@@ -508,6 +460,29 @@ Rules:
             enable_metrics=True,
         ),
     )
+
+    # --- Transcript display: send STT + LLM text to browser ---
+    ai_text_buffer = {"text": ""}
+
+    @stt.event_handler("on_transcription")
+    async def on_transcription(service, text, **kwargs):
+        logger.info(f"STT heard: {text}")
+        try:
+            await transport.send_app_message({"type": "stt", "text": text})
+        except Exception as e:
+            logger.error(f"STT send failed: {e}")
+
+    @llm.event_handler("on_llm_text_chunk")
+    async def on_llm_text_chunk(service, text, **kwargs):
+        ai_text_buffer["text"] += text
+        try:
+            await transport.send_app_message({"type": "llm", "text": ai_text_buffer["text"]})
+        except Exception as e:
+            logger.error(f"LLM send failed: {e}")
+
+    @llm.event_handler("on_llm_response_start")
+    async def on_llm_response_start(service, **kwargs):
+        ai_text_buffer["text"] = ""
 
     @transport.event_handler("on_first_participant_joined")
     async def on_first_participant_joined(transport, participant):
