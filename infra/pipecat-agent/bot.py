@@ -167,13 +167,13 @@ async def main():
         api_key=os.getenv("DEEPGRAM_API_KEY"),
         language="multi",
     )
+    azure_stt = AzureSTTService(
+        api_key=os.getenv("AZURE_SPEECH_KEY"),
+        region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
+        language="zh-HK",
+        sample_rate=24000,
+    )
     if lang == "yue":
-        azure_stt = AzureSTTService(
-            api_key=os.getenv("AZURE_SPEECH_KEY"),
-            region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
-            language="zh-HK",
-            sample_rate=24000,
-        )
         stt = azure_stt
     else:
         stt = deepgram_stt
