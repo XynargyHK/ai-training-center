@@ -455,7 +455,7 @@ Rules:
         await params.result_callback({
             "status": "translating",
             "target_language": target,
-            "instruction": f"TRANSLATION MODE: From now on, translate everything the user says into {target}. Speak the translation only, do not add commentary. If the user says something in {target}, translate it back to their original language."
+            "instruction": f"TRANSLATION MODE ACTIVE. Rules: 1) Translate everything the user says into {target}. 2) Output the COMPLETE translation as one full sentence — never break it into fragments. 3) Do not add commentary, just translate. 4) If the user says something in {target}, translate it back to their original language. 5) Keep translations natural and fluent, not word-for-word."
         })
 
     llm.register_function("translate", handle_translate)
