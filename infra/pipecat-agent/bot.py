@@ -55,21 +55,27 @@ class TranscriptForwarder(FrameProcessor):
 
     async def process_frame(self, frame, direction):
         await super().process_frame(frame, direction)
+        frame_name = type(frame).__name__
         if self._role == "user" and isinstance(frame, TranscriptionFrame):
+            logger.info(f"STT transcript: {frame.text}")
             try:
                 await self._transport.send_app_message({"type": "stt", "text": frame.text})
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"Failed to send STT: {e}")
         elif self._role == "ai" and isinstance(frame, TextFrame):
             self._text += frame.text
             try:
                 await self._transport.send_app_message({"type": "llm", "text": self._text})
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"Failed to send LLM: {e}")
         # Reset AI text on new LLM response start
-        frame_name = type(frame).__name__
         if self._role == "ai" and "LLMFullResponseStart" in frame_name:
             self._text = ""
+        # Log all frame types for debugging
+        if self._role == "user" and "Transcription" in frame_name:
+            logger.debug(f"User forwarder got: {frame_name}")
+        if self._role == "ai" and "Text" in frame_name:
+            logger.debug(f"AI forwarder got: {frame_name}")
         await self.push_frame(frame, direction)
 
 
