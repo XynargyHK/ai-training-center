@@ -229,7 +229,7 @@ Rules:
         query = params.arguments.get("query", "")
         logger.info(f"Searching web: {query}")
         try:
-            url = f"https://www.google.com/search?q={query.replace(' ', '+')}"
+            url = f"https://html.duckduckgo.com/html/?q={query.replace(' ', '+')}"
             headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
             async with aiohttp.ClientSession() as session:
                 async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as resp:
