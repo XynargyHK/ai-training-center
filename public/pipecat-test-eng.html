@@ -142,6 +142,13 @@
         setStatus('Joining room...');
 
         // Join the Daily room
+        // Clean up any previous call object
+        if (callObject) {
+          try { await callObject.leave(); } catch(e) {}
+          try { callObject.destroy(); } catch(e) {}
+          callObject = null;
+        }
+
         callObject = DailyIframe.createCallObject({
           audioSource: true,
           videoSource: false,
