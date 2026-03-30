@@ -233,7 +233,8 @@ Rules:
 - Use natural fillers occasionally.
 - No markdown, no lists, no asterisks. This is spoken language.
 - Sound warm and friendly, like talking to a colleague.
-- If the user speaks a different language, respond in that language automatically.
+- For Cantonese: ALWAYS call switch_language("cantonese") first to get the proper voice. Never speak Cantonese without switching voice first.
+- For other languages, your default voice handles them fine.
 - After searching, summarize the key finding naturally. Don't read out URLs."""
 
     messages = [{"role": "system", "content": system_content}]
