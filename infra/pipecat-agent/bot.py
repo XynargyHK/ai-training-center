@@ -118,19 +118,16 @@ async def main():
 
     # --- STT ---
     lang = os.getenv("VOICE_LANG", "en")
-    # Languages that need Azure STT (Chinese languages — Deepgram can't handle them well)
+    # Azure STT language codes — used for ALL non-English languages
+    # Deepgram doesn't properly enforce language, Azure does
     AZURE_STT_LANGUAGES = {
         "yue": "zh-HK",
         "zh": "zh-CN",
-    }
-    # Languages that use Deepgram STT
-    DEEPGRAM_LANG_MAP = {
-        "en": "en",
-        "ja": "ja",
-        "ko": "ko",
-        "fr": "fr",
-        "es": "es",
-        "de": "de",
+        "ja": "ja-JP",
+        "ko": "ko-KR",
+        "fr": "fr-FR",
+        "es": "es-ES",
+        "de": "de-DE",
     }
     if lang in AZURE_STT_LANGUAGES:
         from pipecat.services.azure.stt import AzureSTTService
@@ -143,12 +140,12 @@ async def main():
         )
         logger.info(f"STT: Azure ({azure_lang})")
     else:
-        deepgram_lang = DEEPGRAM_LANG_MAP.get(lang, "multi")
+        # English — use Deepgram (faster, cheaper)
         stt = DeepgramSTTService(
             api_key=os.getenv("DEEPGRAM_API_KEY"),
-            language=deepgram_lang,
+            language="en",
         )
-        logger.info(f"STT: Deepgram ({deepgram_lang})")
+        logger.info(f"STT: Deepgram (en)")
 
     # --- LLM: Gemini Flash ---
     from pipecat.services.google.llm import GoogleLLMService
@@ -257,10 +254,12 @@ async def main():
 - 不要用markdown、列表、星号。这是说话，不是打字
 - 语气要亲切友善，像同事聊天一样"""
     else:
-        system_content = f"""You are a multilingual voice AI assistant. You speak like a real person in a phone call — not a chatbot.
+        lang_name = LANG_NAMES.get(lang, "English")
+        lang_instruction = f"You MUST respond in {lang_name}. The user has selected {lang_name} as their language." if lang != "en" else "Detect what language the user speaks and respond in the same language."
+        system_content = f"""You are a voice AI assistant. You speak like a real person in a phone call — not a chatbot.
 Today's date is {today}. The current time is {current_time}.
 
-You can understand and respond in multiple languages. The user may speak English, Mandarin, Cantonese, Japanese, Korean, French, Spanish, German, or any other language. Detect what language they speak and respond in the same language by default.
+{lang_instruction}
 
 You have these tools:
 1. search_web(query) — search the internet for current info like prices, news, weather.
