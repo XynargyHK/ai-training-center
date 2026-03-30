@@ -174,10 +174,12 @@ async def main():
         sample_rate=24000,
     )
 
+    # Azure STT as default — handles English + Cantonese, switchable via set_language
     if lang == "yue":
-        stt = azure_stt
+        azure_stt._settings.language = "zh-HK"
     else:
-        stt = deepgram_stt
+        azure_stt._settings.language = "en-US"
+    stt = azure_stt
 
     # Router for mid-call STT swapping
     stt_router = STTRouter(stt, name="STTRouter")
@@ -491,11 +493,15 @@ Rules:
             logger.info(f"TTS voice updated to {voice}")
         except Exception as e:
             logger.error(f"Could not update TTS voice: {e}")
-        # Swap STT for Cantonese
-        if language == "cantonese":
-            await stt_router.switch_stt("cantonese")
-        else:
-            await stt_router.switch_stt("deepgram")
+        # Swap STT language
+        try:
+            if language == "cantonese":
+                await stt.set_language("zh-HK")
+            elif language == "english":
+                await stt.set_language("en-US")
+            logger.info(f"STT language updated for {language}")
+        except Exception as e:
+            logger.error(f"Could not update STT language: {e}")
         await params.result_callback({
             "status": "switched",
             "language": language,
