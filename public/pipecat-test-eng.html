@@ -36,6 +36,18 @@
   <button id="start" onclick="startCall()">Start Voice Call</button>
   <div id="status">Click to start</div>
 
+  <!-- Transcript panels -->
+  <div style="display:flex;gap:12px;margin-top:15px;">
+    <div style="flex:1;background:#1a2e1a;border:1px solid #2a4a2a;border-radius:10px;padding:12px;min-height:60px;">
+      <div style="font-size:11px;color:#4a8;margin-bottom:6px;text-transform:uppercase;">You said (STT)</div>
+      <div id="stt-text" style="font-size:14px;color:#cfc;line-height:1.5;"></div>
+    </div>
+    <div style="flex:1;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;padding:12px;min-height:60px;">
+      <div style="font-size:11px;color:#88f;margin-bottom:6px;text-transform:uppercase;">AI said (LLM → TTS)</div>
+      <div id="llm-text" style="font-size:14px;color:#ccf;line-height:1.5;"></div>
+    </div>
+  </div>
+
 
   <!-- Browser frame -->
   <div style="margin-top:20px;">
@@ -181,9 +193,11 @@
           const data = event.data;
           if (!data || !data.type) return;
           if (data.type === 'open-url' && data.url) {
-            const frame = document.getElementById('display-frame');
-            frame.innerHTML = '<div style="text-align:left;width:100%"><div style="color:#7c7cff;font-size:12px;margin-bottom:10px;">Opening: ' + data.url + '</div><a href="' + data.url + '" target="_blank" style="color:#2563eb;font-size:16px;">Click to open in new tab</a></div>';
             window.open(data.url, '_blank');
+          } else if (data.type === 'stt') {
+            document.getElementById('stt-text').textContent = data.text;
+          } else if (data.type === 'llm') {
+            document.getElementById('llm-text').textContent = data.text;
           }
         });
 

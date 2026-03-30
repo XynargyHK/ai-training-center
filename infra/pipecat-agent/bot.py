@@ -7,7 +7,8 @@ import asyncio
 import os
 import sys
 
-from pipecat.frames.frames import LLMMessagesFrame, EndFrame
+from pipecat.frames.frames import LLMMessagesFrame, EndFrame, TextFrame, TranscriptionFrame
+from pipecat.processors.frame_processor import FrameProcessor, FrameDirection
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
@@ -42,6 +43,34 @@ try:
 except ValueError:
     pass
 logger.add(sys.stderr, level="DEBUG")
+
+
+class TranscriptForwarder(FrameProcessor):
+    """Sends user transcripts and AI text to browser for display."""
+    def __init__(self, transport, role):
+        super().__init__()
+        self._transport = transport
+        self._role = role  # "user" or "ai"
+        self._text = ""
+
+    async def process_frame(self, frame, direction):
+        await super().process_frame(frame, direction)
+        if self._role == "user" and isinstance(frame, TranscriptionFrame):
+            try:
+                await self._transport.send_app_message({"type": "stt", "text": frame.text})
+            except Exception:
+                pass
+        elif self._role == "ai" and isinstance(frame, TextFrame):
+            self._text += frame.text
+            try:
+                await self._transport.send_app_message({"type": "llm", "text": self._text})
+            except Exception:
+                pass
+        # Reset AI text on new LLM response start
+        frame_name = type(frame).__name__
+        if self._role == "ai" and "LLMFullResponseStart" in frame_name:
+            self._text = ""
+        await self.push_frame(frame, direction)
 
 
 async def main():
@@ -437,13 +466,19 @@ Rules:
     context = LLMContext(messages=messages, tools=tools)
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(context)
 
+    # --- Transcript forwarders for browser display ---
+    stt_forwarder = TranscriptForwarder(transport, "user")
+    llm_forwarder = TranscriptForwarder(transport, "ai")
+
     # --- Pipeline ---
     pipeline = Pipeline(
         [
             transport.input(),
             stt,
+            stt_forwarder,          # sends user transcript to browser
             user_aggregator,
             llm,
+            llm_forwarder,          # sends AI text to browser
             tts,
             transport.output(),
             assistant_aggregator,
