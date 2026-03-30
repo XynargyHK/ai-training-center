@@ -28,7 +28,10 @@ except ImportError:
 
 from loguru import logger
 
-logger.remove(0)
+try:
+    logger.remove(0)
+except ValueError:
+    pass
 logger.add(sys.stderr, level="DEBUG")
 
 
