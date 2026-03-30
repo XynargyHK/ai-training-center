@@ -1,18 +1,16 @@
 """
 Pipecat Voice AI Agent — Full-duplex conversation
-Uses: Deepgram STT + Cerebras/Gemini LLM + Cartesia/Azure TTS + Daily WebRTC
-Supports web search via DuckDuckGo (English mode)
+Uses: Deepgram STT + Gemini Flash LLM + Cartesia/Azure TTS + Daily WebRTC
+Google Search grounding for real-time info
 """
 import asyncio
 import os
 import sys
 
-import json
-from pipecat.frames.frames import LLMMessagesFrame, EndFrame, TextFrame, TranscriptionFrame
+from pipecat.frames.frames import LLMMessagesFrame, EndFrame
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
-from pipecat.processors.frame_processor import FrameProcessor, FrameDirection
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.services.cartesia.tts import CartesiaTTSService
 from pipecat.services.deepgram.stt import DeepgramSTTService
@@ -30,8 +28,6 @@ except ImportError:
     except ImportError:
         SileroVADAnalyzer = None
 
-import aiohttp
-from bs4 import BeautifulSoup
 from loguru import logger
 
 try:
@@ -41,79 +37,7 @@ except ValueError:
 logger.add(sys.stderr, level="DEBUG")
 
 
-async def fetch_webpage(url: str, max_chars: int = 3000) -> str:
-    """Fetch a webpage and extract readable text content."""
-    try:
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as resp:
-                if resp.status != 200:
-                    return f"Error: HTTP {resp.status}"
-                html = await resp.text()
-        soup = BeautifulSoup(html, "html.parser")
-        # Remove scripts, styles, nav
-        for tag in soup(["script", "style", "nav", "footer", "header", "aside"]):
-            tag.decompose()
-        text = soup.get_text(separator="\n", strip=True)
-        # Clean up whitespace
-        lines = [l.strip() for l in text.splitlines() if l.strip()]
-        clean = "\n".join(lines)
-        return clean[:max_chars]
-    except Exception as e:
-        logger.error(f"Webpage fetch error: {e}")
-        return f"Failed to fetch: {str(e)}"
-
-
-class InfoDisplayProcessor(FrameProcessor):
-    """Sends search/info results to browser when AI uses Google Search grounding."""
-
-    def __init__(self, transport):
-        super().__init__()
-        self._transport = transport
-        self._ai_text = ""
-        self._has_grounding = False
-
-    async def process_frame(self, frame, direction):
-        await super().process_frame(frame, direction)
-
-        if isinstance(frame, TextFrame):
-            self._ai_text += frame.text
-
-        elif isinstance(frame, TranscriptionFrame):
-            # New user speech — clear previous info and reset
-            self._ai_text = ""
-            self._has_grounding = False
-            try:
-                await self._transport.send_app_message({"type": "clear-info"})
-            except Exception:
-                pass
-
-        # Check for grounding/search metadata frames
-        # Pipecat may pass through various frame types from Google
-        frame_name = type(frame).__name__
-        if "grounding" in frame_name.lower() or "search" in frame_name.lower():
-            self._has_grounding = True
-            logger.info(f"Grounding frame detected: {frame_name}")
-
-        # When we see an EndFrame or LLM end, send accumulated text if it looks like search info
-        if frame_name in ("LLMFullResponseEndFrame", "LLMResponseEndFrame") or isinstance(frame, EndFrame):
-            if self._ai_text.strip() and len(self._ai_text) > 80:
-                # Longer responses likely contain search info — display it
-                try:
-                    await self._transport.send_app_message({
-                        "type": "info",
-                        "text": self._ai_text.strip()
-                    })
-                    logger.info(f"Sent info to browser: {self._ai_text[:100]}...")
-                except Exception as e:
-                    logger.debug(f"Could not send info: {e}")
-            self._ai_text = ""
-
-        await self.push_frame(frame, direction)
-
-
 async def main():
-    # Daily room URL passed from the API endpoint
     room_url = os.getenv("DAILY_ROOM_URL")
     daily_api_key = os.getenv("DAILY_API_KEY")
 
@@ -124,7 +48,7 @@ async def main():
     # --- Transport: Daily WebRTC ---
     transport = DailyTransport(
         room_url,
-        None,  # token (None = guest)
+        None,
         "AI Assistant",
         DailyParams(
             api_key=daily_api_key,
@@ -137,7 +61,7 @@ async def main():
         ),
     )
 
-    # --- STT: Deepgram ---
+    # --- STT ---
     lang = os.getenv("VOICE_LANG", "en")
     if lang == "yue":
         from pipecat.services.azure.stt import AzureSTTService
@@ -153,14 +77,14 @@ async def main():
             language="en",
         )
 
-    # --- LLM: Gemini Flash for both (supports function calling for web search) ---
+    # --- LLM: Gemini Flash ---
     from pipecat.services.google.llm import GoogleLLMService
     llm = GoogleLLMService(
         api_key=os.getenv("GOOGLE_GEMINI_API_KEY"),
         model="gemini-2.0-flash",
     )
 
-    # --- TTS: Azure for Cantonese, Cartesia for English ---
+    # --- TTS ---
     if lang == "yue":
         from pipecat.services.azure.tts import AzureTTSService
         tts = AzureTTSService(
@@ -177,7 +101,7 @@ async def main():
             sample_rate=24000,
         )
 
-    # --- Context with system prompt ---
+    # --- System prompt ---
     from datetime import datetime, timezone, timedelta
     hkt = timezone(timedelta(hours=8))
     now = datetime.now(hkt)
@@ -198,12 +122,7 @@ async def main():
         system_content = f"""You are a voice AI assistant. You speak like a real person in a phone call — not a chatbot.
 Today's date is {today}. The current time is {current_time}.
 
-You can browse the internet using fetch_webpage. Use it when the user asks to:
-- Visit a website: fetch_webpage("https://www.cnn.com")
-- Search for info: fetch_webpage("https://www.google.com/search?q=latest+AI+news")
-- Read an article: fetch_webpage with the article URL
-
-The fetched content appears on the user's screen automatically. Summarize key points by voice.
+You have Google Search available. Use it freely when the user asks about current events, news, prices, weather, sports scores, or anything that needs real-time information.
 
 Rules:
 - Keep replies to 1-2 sentences max. Be concise.
@@ -216,72 +135,26 @@ Rules:
 
     messages = [{"role": "system", "content": system_content}]
 
-    # --- Tools: Google Search + webpage fetch ---
+    # --- Google Search grounding ---
     tools = None
     try:
         from google.genai import types as gtypes
-
-        fetch_func = gtypes.FunctionDeclaration(
-            name="fetch_webpage",
-            description="Fetch and read the content of a specific webpage URL. Use when the user asks to go to a website, read an article, or check a specific URL like cnn.com, bbc.com, etc.",
-            parameters=gtypes.Schema(
-                type=gtypes.Type.OBJECT,
-                properties={
-                    "url": gtypes.Schema(
-                        type=gtypes.Type.STRING,
-                        description="The full URL to fetch, e.g. https://www.cnn.com"
-                    )
-                },
-                required=["url"]
-            )
-        )
-
-        # Note: google_search grounding can't be mixed with function_declarations
-        # So we keep only fetch_webpage as a function tool
-        tools = [
-            gtypes.Tool(function_declarations=[fetch_func]),
-        ]
-
-        async def handle_fetch_webpage(params):
-            url = params.arguments.get("url", "")
-            if not url.startswith("http"):
-                url = "https://" + url
-            logger.info(f"Fetching webpage: {url}")
-            content = await fetch_webpage(url)
-            logger.info(f"Fetched {len(content)} chars from {url}")
-            # Send to browser info frame
-            try:
-                await transport.send_app_message({
-                    "type": "info",
-                    "text": content[:2000],
-                    "source": url
-                })
-            except Exception:
-                pass
-            await params.result_callback({"content": content, "url": url})
-
-        llm.register_function("fetch_webpage", handle_fetch_webpage)
-        logger.info("Google Search + webpage fetch tools enabled")
+        tools = [gtypes.Tool(google_search=gtypes.GoogleSearch())]
+        logger.info("Google Search grounding enabled")
     except Exception as e:
-        logger.error(f"Could not set up tools: {e}")
-        tools = None
+        logger.error(f"Could not enable Google Search: {e}")
 
-    # Create LLM context and aggregator pair for conversation management
+    # --- Context ---
     context = OpenAILLMContext(messages, tools=tools)
     context_aggregator = llm.create_context_aggregator(context)
-
-    # --- Info display: shows search results in browser frame ---
-    info_display = InfoDisplayProcessor(transport)
 
     # --- Pipeline ---
     pipeline = Pipeline(
         [
             transport.input(),
             stt,
-            info_display,                         # clears frame on new user speech
             context_aggregator.user(),
             llm,
-            InfoDisplayProcessor(transport),       # captures AI text, sends to frame if info
             tts,
             transport.output(),
             context_aggregator.assistant(),
@@ -291,7 +164,7 @@ Rules:
     task = PipelineTask(
         pipeline,
         params=PipelineParams(
-            allow_interruptions=True,       # full-duplex: user can interrupt AI
+            allow_interruptions=True,
             enable_metrics=True,
         ),
     )
@@ -299,7 +172,6 @@ Rules:
     @transport.event_handler("on_first_participant_joined")
     async def on_first_participant_joined(transport, participant):
         logger.info(f"Participant joined: {participant['id']}")
-        # Trigger initial greeting via context
         await task.queue_frames([context_aggregator.user().get_context_frame()])
 
     @transport.event_handler("on_participant_left")
