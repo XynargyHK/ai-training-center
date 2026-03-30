@@ -120,11 +120,12 @@ async def main():
             model="tts-1",
             sample_rate=24000,
         )
-    elif tts_provider == "google":
-        from pipecat.services.google.tts import GoogleTTSService
-        tts = GoogleTTSService(
+    elif tts_provider == "gemini":
+        from pipecat.services.google.tts import GeminiTTSService
+        tts = GeminiTTSService(
             api_key=os.getenv("GOOGLE_GEMINI_API_KEY"),
-            voice=tts_voice or "en-US-Chirp3-HD-Aoede",
+            voice=tts_voice or "Aoede",
+            model="gemini-2.5-flash-tts",
             sample_rate=24000,
         )
     else:
