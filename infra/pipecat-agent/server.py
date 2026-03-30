@@ -60,6 +60,12 @@ async def start_bot(room_url):
 
 async def handle_start(request):
     """POST /start — create room, spawn bot, return room URL to browser."""
+    try:
+        body = await request.json()
+    except:
+        body = {}
+    lang = body.get("lang", "en")
+    os.environ["VOICE_LANG"] = lang
     room_url, room_name = await create_daily_room()
     if not room_url:
         return web.json_response({"error": "Failed to create Daily room"}, status=500)

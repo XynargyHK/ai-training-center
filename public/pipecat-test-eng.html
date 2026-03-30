@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Pipecat Voice AI - Full Duplex</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 50px auto; background: #111; color: #eee; }
+    button { padding: 15px 30px; font-size: 18px; cursor: pointer; border: none; border-radius: 10px; }
+    #start { background: #2563eb; color: white; }
+    #start:hover { background: #1d4ed8; }
+    #start:disabled { background: #555; }
+    #status { margin: 20px 0; font-size: 14px; color: #888; }
+    #log { background: #222; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>Pipecat Voice AI</h1>
+  <p>Full-duplex conversation with Deepgram STT + Cerebras LLM + Cartesia TTS</p>
+  <button id="start" onclick="startCall()">Start Voice Call</button>
+  <div id="status">Click to start</div>
+  <div id="log"></div>
+
+  <script src="https://unpkg.com/@daily-co/daily-js"></script>
+  <script>
+    const PIPECAT_URL = 'https://pretty-alignment-production-891e.up.railway.app';
+    let callObject = null;
+
+    function log(msg) {
+      const el = document.getElementById('log');
+      el.textContent += new Date().toLocaleTimeString() + ' ' + msg + '\n';
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function setStatus(msg) {
+      document.getElementById('status').textContent = msg;
+    }
+
+    async function startCall() {
+      const btn = document.getElementById('start');
+      btn.disabled = true;
+      setStatus('Creating room...');
+      log('Calling POST /start...');
+
+      try {
+        const res = await fetch(PIPECAT_URL + '/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lang: 'en' }) });
+        const data = await res.json();
+
+        if (data.error) {
+          log('Error: ' + data.error);
+          setStatus('Error: ' + data.error);
+          btn.disabled = false;
+          return;
+        }
+
+        log('Room created: ' + data.room_url);
+        log('Bot PID: ' + data.bot_pid);
+        setStatus('Joining room...');
+
+        // Join the Daily room
+        callObject = DailyIframe.createCallObject({
+          audioSource: true,
+          videoSource: false,
+          subscribeToTracksAutomatically: true,
+          dailyConfig: {
+            experimentalChromeVideoMuteLightOff: true,
+          },
+        });
+
+        // Ensure we can hear remote audio
+        callObject.on('track-started', (event) => {
+          if (event.track.kind === 'audio' && !event.participant.local) {
+            log('Receiving AI audio track');
+            const audio = new Audio();
+            audio.srcObject = new MediaStream([event.track]);
+            audio.autoplay = true;
+            audio.play().catch(e => log('Audio play error: ' + e.message));
+          }
+        });
+
+        callObject.on('joined-meeting', () => {
+          log('Joined meeting!');
+          setStatus('Connected - speak now! (full-duplex)');
+          btn.textContent = 'End Call';
+          btn.disabled = false;
+          btn.style.background = '#dc2626';
+          btn.onclick = endCall;
+        });
+
+        callObject.on('participant-joined', (e) => {
+          if (!e.participant.local) {
+            log('AI bot joined the room');
+          }
+        });
+
+        callObject.on('participant-left', (e) => {
+          if (!e.participant.local) {
+            log('AI bot left the room');
+          }
+        });
+
+        callObject.on('error', (e) => {
+          log('Error: ' + JSON.stringify(e));
+        });
+
+        callObject.on('left-meeting', () => {
+          log('Left meeting');
+          setStatus('Call ended');
+          btn.textContent = 'Start Voice Call';
+          btn.disabled = false;
+          btn.style.background = '#2563eb';
+          btn.onclick = startCall;
+        });
+
+        await callObject.join({ url: data.room_url });
+
+      } catch (err) {
+        log('Error: ' + err.message);
+        setStatus('Error: ' + err.message);
+        btn.disabled = false;
+      }
+    }
+
+    async function endCall() {
+      if (callObject) {
+        await callObject.leave();
+        callObject.destroy();
+        callObject = null;
+      }
+    }
+  </script>
+</body>
+</html>
