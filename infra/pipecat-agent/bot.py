@@ -13,8 +13,8 @@ from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.services.cartesia.tts import CartesiaTTSService
 from pipecat.services.deepgram.stt import DeepgramSTTService
 from pipecat.services.openai.llm import OpenAILLMService
-from pipecat.transports.services.daily import DailyParams, DailyTransport
-from pipecat.vad.silero import SileroVADAnalyzer
+from pipecat.transports.daily.transport import DailyParams, DailyTransport
+from pipecat.audio.vad.silero import SileroVADAnalyzer
 
 from loguru import logger
 
