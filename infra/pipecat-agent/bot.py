@@ -85,7 +85,11 @@ async def main():
     )
 
     # --- TTS ---
+    tts_provider = os.getenv("TTS_PROVIDER", "azure")
+    tts_voice = os.getenv("TTS_VOICE", "")
+
     if lang == "yue":
+        # Cantonese always uses Azure
         from pipecat.services.azure.tts import AzureTTSService
         tts = AzureTTSService(
             api_key=os.getenv("AZURE_SPEECH_KEY"),
@@ -93,13 +97,30 @@ async def main():
             voice=os.getenv("VOICE_NAME", "zh-HK-WanLungNeural"),
             sample_rate=24000,
         )
-    else:
+    elif tts_provider == "cartesia":
         tts = CartesiaTTSService(
             api_key=os.getenv("CARTESIA_API_KEY"),
-            voice_id=os.getenv("CARTESIA_VOICE_ID", "a0e99841-438c-4a64-b679-ae501e7d6091"),
+            voice_id=tts_voice or "a0e99841-438c-4a64-b679-ae501e7d6091",
             model_id="sonic",
             sample_rate=24000,
         )
+    elif tts_provider == "google":
+        from pipecat.services.google.tts import GoogleTTSService
+        tts = GoogleTTSService(
+            api_key=os.getenv("GOOGLE_GEMINI_API_KEY"),
+            voice=tts_voice or "en-US-Chirp3-HD-Aoede",
+            sample_rate=24000,
+        )
+    else:
+        # Default: Azure English
+        from pipecat.services.azure.tts import AzureTTSService
+        tts = AzureTTSService(
+            api_key=os.getenv("AZURE_SPEECH_KEY"),
+            region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
+            voice=tts_voice or "en-US-JennyNeural",
+            sample_rate=24000,
+        )
+    logger.info(f"TTS: {tts_provider} / {tts_voice}")
 
     # --- System prompt ---
     from datetime import datetime, timezone, timedelta

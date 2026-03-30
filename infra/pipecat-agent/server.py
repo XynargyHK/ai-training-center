@@ -70,8 +70,12 @@ async def handle_start(request):
         body = {}
     lang = body.get("lang", "en")
     voice = body.get("voice", "")
+    tts_provider = body.get("tts_provider", "azure")
+    tts_voice = body.get("tts_voice", "")
     os.environ["VOICE_LANG"] = lang
     os.environ["VOICE_NAME"] = voice
+    os.environ["TTS_PROVIDER"] = tts_provider
+    os.environ["TTS_VOICE"] = tts_voice
     room_url, room_name = await create_daily_room()
     if not room_url:
         return web.json_response({"error": "Failed to create Daily room"}, status=500)

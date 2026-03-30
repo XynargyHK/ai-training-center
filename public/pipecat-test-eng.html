@@ -14,7 +14,23 @@
 </head>
 <body>
   <h1>Pipecat Voice AI</h1>
-  <p>Full-duplex | Gemini Flash + Google Search + Cartesia TTS</p>
+  <p>Full-duplex | Gemini Flash + Google Search</p>
+
+  <div style="display:flex;gap:12px;margin-bottom:15px;flex-wrap:wrap;">
+    <div>
+      <label style="font-size:12px;color:#888;">TTS Provider</label><br>
+      <select id="tts-provider" onchange="updateVoices()" style="padding:8px;background:#222;color:#eee;border:1px solid #444;border-radius:8px;font-size:14px;">
+        <option value="azure">Azure</option>
+        <option value="cartesia">Cartesia</option>
+        <option value="google">Google</option>
+      </select>
+    </div>
+    <div>
+      <label style="font-size:12px;color:#888;">Voice</label><br>
+      <select id="tts-voice" style="padding:8px;background:#222;color:#eee;border:1px solid #444;border-radius:8px;font-size:14px;min-width:200px;"></select>
+    </div>
+  </div>
+
   <button id="start" onclick="startCall()">Start Voice Call</button>
   <div id="status">Click to start</div>
 
@@ -38,6 +54,41 @@
     const PIPECAT_URL = 'https://pretty-alignment-production-891e.up.railway.app';
     let callObject = null;
 
+    const VOICES = {
+      azure: [
+        { value: 'en-US-JennyNeural', label: 'Jenny (Female, US)' },
+        { value: 'en-US-GuyNeural', label: 'Guy (Male, US)' },
+        { value: 'en-US-AriaNeural', label: 'Aria (Female, US)' },
+        { value: 'en-US-DavisNeural', label: 'Davis (Male, US)' },
+        { value: 'en-GB-SoniaNeural', label: 'Sonia (Female, UK)' },
+        { value: 'en-GB-RyanNeural', label: 'Ryan (Male, UK)' },
+      ],
+      cartesia: [
+        { value: 'a0e99841-438c-4a64-b679-ae501e7d6091', label: 'Barbershop Man' },
+        { value: '79a125e8-cd45-4c13-8a67-188112f4dd22', label: 'British Lady' },
+        { value: '694f9389-aac1-45b6-b726-9d9369183238', label: 'Confident Man' },
+      ],
+      google: [
+        { value: 'en-US-Chirp3-HD-Aoede', label: 'Aoede (Female)' },
+        { value: 'en-US-Chirp3-HD-Puck', label: 'Puck (Male)' },
+        { value: 'en-US-Chirp3-HD-Kore', label: 'Kore (Female)' },
+        { value: 'en-US-Chirp3-HD-Charon', label: 'Charon (Male)' },
+      ]
+    };
+
+    function updateVoices() {
+      const provider = document.getElementById('tts-provider').value;
+      const select = document.getElementById('tts-voice');
+      select.innerHTML = '';
+      VOICES[provider].forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.value;
+        opt.textContent = v.label;
+        select.appendChild(opt);
+      });
+    }
+    updateVoices();
+
     function log(msg) {
       const el = document.getElementById('log');
       el.textContent += new Date().toLocaleTimeString() + ' ' + msg + '\n';
@@ -55,7 +106,9 @@
       log('Calling POST /start...');
 
       try {
-        const res = await fetch(PIPECAT_URL + '/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lang: 'en' }) });
+        const ttsProvider = document.getElementById('tts-provider').value;
+        const ttsVoice = document.getElementById('tts-voice').value;
+        const res = await fetch(PIPECAT_URL + '/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lang: 'en', tts_provider: ttsProvider, tts_voice: ttsVoice }) });
         const data = await res.json();
 
         if (data.error) {
