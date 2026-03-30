@@ -40,10 +40,10 @@
   <!-- Browser frame -->
   <div style="margin-top:20px;">
     <div style="display:flex;gap:8px;margin-bottom:8px;">
-      <input id="url-bar" type="text" placeholder="Type a URL and press Enter..." value="https://www.google.com" style="flex:1;padding:8px 12px;background:#222;border:1px solid #444;border-radius:8px;color:#eee;font-size:13px;" onkeydown="if(event.key==='Enter'){document.getElementById('browser').src=this.value}">
-      <button onclick="document.getElementById('browser').src=document.getElementById('url-bar').value" style="padding:8px 16px;background:#2563eb;color:white;border:none;border-radius:8px;cursor:pointer;">Go</button>
+      <input id="url-bar" type="text" placeholder="Type a URL and press Enter..." value="https://www.google.com" style="flex:1;padding:8px 12px;background:#222;border:1px solid #444;border-radius:8px;color:#eee;font-size:13px;" onkeydown="if(event.key==='Enter')loadProxy()">
+      <button onclick="loadProxy()" style="padding:8px 16px;background:#2563eb;color:white;border:none;border-radius:8px;cursor:pointer;">Go</button>
     </div>
-    <iframe id="browser" src="https://www.google.com" style="width:100%;height:500px;border:1px solid #333;border-radius:10px;background:white;"></iframe>
+    <iframe id="browser" src="about:blank" style="width:100%;height:500px;border:1px solid #333;border-radius:10px;background:white;"></iframe>
   </div>
 
   <details style="margin-top:15px;">
@@ -94,6 +94,13 @@
         { value: 'Fenrir', label: 'Fenrir — bold, strong, commanding (M)' },
       ],
     };
+
+    function loadProxy() {
+      let url = document.getElementById('url-bar').value.trim();
+      if (!url) return;
+      if (!url.startsWith('http')) url = 'https://' + url;
+      document.getElementById('browser').src = PIPECAT_URL + '/proxy?url=' + encodeURIComponent(url);
+    }
 
     function updateVoices() {
       const provider = document.getElementById('tts-provider').value;

@@ -88,9 +88,32 @@ async def handle_health(request):
     return web.json_response({"status": "ok"})
 
 
+async def handle_proxy(request):
+    """GET /proxy?url=https://... — fetch a page and serve it without iframe-blocking headers."""
+    url = request.query.get("url", "")
+    if not url:
+        return web.Response(text="Missing url parameter", status=400)
+    try:
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=15)) as resp:
+                body = await resp.read()
+                content_type = resp.headers.get("Content-Type", "text/html")
+                return web.Response(
+                    body=body,
+                    content_type=content_type,
+                    headers={
+                        "Access-Control-Allow-Origin": "*",
+                    },
+                )
+    except Exception as e:
+        return web.Response(text=f"Proxy error: {str(e)}", status=502)
+
+
 app = web.Application()
 app.router.add_post("/start", handle_start)
 app.router.add_get("/health", handle_health)
+app.router.add_get("/proxy", handle_proxy)
 # CORS for browser requests
 app.router.add_options("/start", lambda r: web.Response(headers={
     "Access-Control-Allow-Origin": "*",
