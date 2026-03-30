@@ -59,13 +59,23 @@ class TranscriptForwarder(FrameProcessor):
         if self._role == "user" and isinstance(frame, TranscriptionFrame):
             logger.info(f"STT transcript: {frame.text}")
             try:
-                await self._transport.send_app_message({"type": "stt", "text": frame.text})
+                msg = {"type": "stt", "text": frame.text}
+                if hasattr(self._transport, 'send_app_message'):
+                    await self._transport.send_app_message(msg)
+                elif hasattr(self._transport, '_output') and hasattr(self._transport._output, 'send_app_message'):
+                    await self._transport._output.send_app_message(msg)
+                else:
+                    logger.error(f"No send_app_message found. Transport type: {type(self._transport)}, attrs: {[a for a in dir(self._transport) if 'send' in a.lower() or 'app' in a.lower() or 'message' in a.lower()]}")
             except Exception as e:
                 logger.error(f"Failed to send STT: {e}")
         elif self._role == "ai" and isinstance(frame, TextFrame):
             self._text += frame.text
             try:
-                await self._transport.send_app_message({"type": "llm", "text": self._text})
+                msg = {"type": "llm", "text": self._text}
+                if hasattr(self._transport, 'send_app_message'):
+                    await self._transport.send_app_message(msg)
+                elif hasattr(self._transport, '_output') and hasattr(self._transport._output, 'send_app_message'):
+                    await self._transport._output.send_app_message(msg)
             except Exception as e:
                 logger.error(f"Failed to send LLM: {e}")
         # Reset AI text on new LLM response start
