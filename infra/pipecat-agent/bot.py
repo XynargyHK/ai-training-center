@@ -118,6 +118,16 @@ async def main():
 
     # --- STT ---
     lang = os.getenv("VOICE_LANG", "en")
+    # Map lang codes to Deepgram language param
+    DEEPGRAM_LANG_MAP = {
+        "en": "en",
+        "zh": "zh",
+        "ja": "ja",
+        "ko": "ko",
+        "fr": "fr",
+        "es": "es",
+        "de": "de",
+    }
     if lang == "yue":
         from pipecat.services.azure.stt import AzureSTTService
         stt = AzureSTTService(
@@ -127,9 +137,10 @@ async def main():
             sample_rate=24000,
         )
     else:
+        deepgram_lang = DEEPGRAM_LANG_MAP.get(lang, "multi")
         stt = DeepgramSTTService(
             api_key=os.getenv("DEEPGRAM_API_KEY"),
-            language="multi",
+            language=deepgram_lang,
         )
 
     # --- LLM: Gemini Flash ---
@@ -225,7 +236,7 @@ You have these tools:
 3. send_whatsapp(phone, message) — send a real WhatsApp message.
 4. make_call(phone) — dial a phone number.
 5. send_email(to, subject, body) — open email compose.
-6. switch_language(language) — switch your speaking language when the user asks. This also changes your voice.
+6. switch_language(language) — switch the call to a different language. This will restart the call with the correct voice and speech recognition for that language. Say a brief goodbye before switching.
 7. translate(target_language) — become a real-time translator. Translate everything the user says into the target language.
 
 Rules:
@@ -233,8 +244,7 @@ Rules:
 - Use natural fillers occasionally.
 - No markdown, no lists, no asterisks. This is spoken language.
 - Sound warm and friendly, like talking to a colleague.
-- For Cantonese: ALWAYS call switch_language("cantonese") first to get the proper voice. Never speak Cantonese without switching voice first.
-- For other languages, your default voice handles them fine.
+- When user asks to switch language, call switch_language() — the call will restart automatically with the right settings.
 - After searching, summarize the key finding naturally. Don't read out URLs."""
 
     messages = [{"role": "system", "content": system_content}]
@@ -429,39 +439,36 @@ Rules:
         required=["language"],
     )
 
-    # STT language codes for Deepgram
-    STT_LANGUAGE_CODES = {
+    # Map language names to lang codes for restart
+    LANGUAGE_CODES = {
         "english": "en",
         "mandarin": "zh",
+        "cantonese": "yue",
         "japanese": "ja",
         "korean": "ko",
         "french": "fr",
         "spanish": "es",
         "german": "de",
-        "cantonese": "zh",  # Deepgram uses zh for Chinese (not great for Cantonese)
     }
 
     async def handle_switch_language(params: FunctionCallParams):
         language = params.arguments.get("language", "english").lower()
-        voice = LANGUAGE_VOICES.get(language, MULTILINGUAL_VOICE)
-        logger.info(f"Switching language to {language}, voice: {voice}")
-        # Swap TTS voice
+        lang_code = LANGUAGE_CODES.get(language, "en")
+        logger.info(f"Switching language to {language} (code: {lang_code}) — sending restart to browser")
+        # Tell the browser to switch language and restart the call
         try:
-            tts._settings.voice = voice
-            logger.info(f"TTS voice updated to {voice}")
+            await transport.output().send_message(
+                DailyOutputTransportMessageFrame(message={
+                    "type": "switch-language",
+                    "lang": lang_code,
+                })
+            )
         except Exception as e:
-            logger.error(f"Could not update TTS voice: {e}")
-        # Swap STT language on Deepgram
-        stt_lang = STT_LANGUAGE_CODES.get(language, "multi")
-        try:
-            await stt.set_language(stt_lang)
-            logger.info(f"STT language updated to {stt_lang}")
-        except Exception as e:
-            logger.error(f"Could not update STT language: {e}")
+            logger.error(f"Could not send switch-language to browser: {e}")
         await params.result_callback({
-            "status": "switched",
+            "status": "restarting",
             "language": language,
-            "instruction": f"From now on, respond ONLY in {language}. Do not use English unless asked to switch back."
+            "instruction": f"The call is restarting with {language} language settings. Say a brief goodbye in the current language."
         })
 
     llm.register_function("switch_language", handle_switch_language)

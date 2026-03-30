@@ -14,10 +14,23 @@
 </head>
 <body>
   <h1>Pipecat Voice AI</h1>
-  <p>Full-duplex | Gemini Flash + Google Search</p>
+  <p>Full-duplex | Gemini Flash + Function Calling</p>
 
   <div style="display:flex;gap:12px;margin-bottom:15px;flex-wrap:wrap;">
     <div>
+      <label style="font-size:12px;color:#888;">Language</label><br>
+      <select id="language" onchange="onLanguageChange()" style="padding:8px;background:#222;color:#eee;border:1px solid #444;border-radius:8px;font-size:14px;">
+        <option value="en">English</option>
+        <option value="zh">Mandarin 普通话</option>
+        <option value="yue">Cantonese 廣東話</option>
+        <option value="ja">Japanese 日本語</option>
+        <option value="ko">Korean 한국어</option>
+        <option value="fr">French</option>
+        <option value="es">Spanish</option>
+        <option value="de">German</option>
+      </select>
+    </div>
+    <div id="tts-provider-wrap">
       <label style="font-size:12px;color:#888;">TTS Provider</label><br>
       <select id="tts-provider" onchange="updateVoices()" style="padding:8px;background:#222;color:#eee;border:1px solid #444;border-radius:8px;font-size:14px;">
         <option value="azure">Azure</option>
@@ -27,7 +40,7 @@
         <option value="gemini">Gemini</option>
       </select>
     </div>
-    <div>
+    <div id="tts-voice-wrap">
       <label style="font-size:12px;color:#888;">Voice</label><br>
       <select id="tts-voice" style="padding:8px;background:#222;color:#eee;border:1px solid #444;border-radius:8px;font-size:14px;min-width:200px;"></select>
     </div>
@@ -68,6 +81,13 @@
     const PIPECAT_URL = 'https://pretty-alignment-production-891e.up.railway.app';
     let callObject = null;
 
+    // Cantonese-only voices (Azure zh-HK)
+    const CANTONESE_VOICES = [
+      { value: 'zh-HK-WanLungNeural', label: 'WanLung — natural male Cantonese (M)' },
+      { value: 'zh-HK-HiuMaanNeural', label: 'HiuMaan — clear female Cantonese (F)' },
+      { value: 'zh-HK-HiuGaaiNeural', label: 'HiuGaai — warm female Cantonese (F)' },
+    ];
+
     const VOICES = {
       azure: [
         { value: 'en-US-JennyMultilingualNeural', label: 'Jenny Multilingual — warm, friendly, 100+ languages (F)' },
@@ -107,6 +127,45 @@
       ],
     };
 
+    function onLanguageChange() {
+      const lang = document.getElementById('language').value;
+      const providerWrap = document.getElementById('tts-provider-wrap');
+      const voiceWrap = document.getElementById('tts-voice-wrap');
+      if (lang === 'yue') {
+        // Cantonese: lock to Azure zh-HK voices, hide provider selector
+        providerWrap.style.display = 'none';
+        const select = document.getElementById('tts-voice');
+        select.innerHTML = '';
+        CANTONESE_VOICES.forEach(v => {
+          const opt = document.createElement('option');
+          opt.value = v.value;
+          opt.textContent = v.label;
+          select.appendChild(opt);
+        });
+        voiceWrap.style.display = '';
+      } else {
+        // All other languages: show provider + voice selectors
+        providerWrap.style.display = '';
+        voiceWrap.style.display = '';
+        updateVoices();
+      }
+      // If in a call, restart with new language
+      if (callObject) {
+        log('Language changed — restarting call...');
+        restartCall();
+      }
+    }
+
+    async function restartCall() {
+      if (callObject) {
+        try { await callObject.leave(); } catch(e) {}
+        try { callObject.destroy(); } catch(e) {}
+        callObject = null;
+      }
+      // Small delay to let cleanup finish, then start new call
+      setTimeout(() => startCall(), 500);
+    }
+
     function loadProxy() {
       let url = document.getElementById('url-bar').value.trim();
       if (!url) return;
@@ -144,9 +203,10 @@
       log('Calling POST /start...');
 
       try {
-        const ttsProvider = document.getElementById('tts-provider').value;
+        const lang = document.getElementById('language').value;
+        const ttsProvider = lang === 'yue' ? 'azure' : document.getElementById('tts-provider').value;
         const ttsVoice = document.getElementById('tts-voice').value;
-        const res = await fetch(PIPECAT_URL + '/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lang: 'en', tts_provider: ttsProvider, tts_voice: ttsVoice }) });
+        const res = await fetch(PIPECAT_URL + '/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lang: lang, tts_provider: ttsProvider, tts_voice: ttsVoice }) });
         const data = await res.json();
 
         if (data.error) {
@@ -198,6 +258,11 @@
             document.getElementById('stt-text').textContent = data.text;
           } else if (data.type === 'llm') {
             document.getElementById('llm-text').textContent = data.text;
+          } else if (data.type === 'switch-language' && data.lang) {
+            // Bot requested language switch — update selector and restart
+            log('Bot requested switch to: ' + data.lang);
+            document.getElementById('language').value = data.lang;
+            onLanguageChange();
           }
         });
 
