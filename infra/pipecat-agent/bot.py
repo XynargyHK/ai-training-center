@@ -469,7 +469,7 @@ Rules:
         await params.result_callback({
             "status": "translating",
             "target_language": target,
-            "instruction": f"TRANSLATION MODE. CRITICAL RULES: You are now a live interpreter. Output ONLY the translation in {target}. NEVER say 'let me translate', 'here is the translation', '翻譯是', '讓我來翻譯' or any other commentary. Just speak the translated words directly, as if YOU are saying them in {target}. Example: if user says 'the weather is nice today', you say '今天天气很好' — nothing else."
+            "instruction": f"TRANSLATION MODE ACTIVE. From now on, EVERY response must be in {target} ONLY. No matter what language the user speaks, always translate into {target}. NEVER respond in the user's language. NEVER add commentary. Just output the translation. Stay in this mode until the user says 'stop translating' or 'switch to English'."
         })
 
     llm.register_function("translate", handle_translate)
