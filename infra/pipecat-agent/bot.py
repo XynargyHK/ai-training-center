@@ -13,8 +13,18 @@ from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.services.cartesia.tts import CartesiaTTSService
 from pipecat.services.deepgram.stt import DeepgramSTTService
 from pipecat.services.openai.llm import OpenAILLMService
-from pipecat.transports.daily.transport import DailyParams, DailyTransport
-from pipecat.audio.vad.silero import SileroVADAnalyzer
+try:
+    from pipecat.transports.daily.transport import DailyParams, DailyTransport
+except ImportError:
+    from pipecat.transports.services.daily import DailyParams, DailyTransport
+
+try:
+    from pipecat.audio.vad.silero import SileroVADAnalyzer
+except ImportError:
+    try:
+        from pipecat.vad.silero import SileroVADAnalyzer
+    except ImportError:
+        SileroVADAnalyzer = None
 
 from loguru import logger
 
@@ -97,7 +107,7 @@ Rules:
 
     task = PipelineTask(
         pipeline,
-        PipelineParams(
+        params=PipelineParams(
             allow_interruptions=True,       # full-duplex: user can interrupt AI
             enable_metrics=True,
         ),
