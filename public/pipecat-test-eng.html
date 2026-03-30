@@ -146,9 +146,7 @@
       try {
         const ttsProvider = document.getElementById('tts-provider').value;
         const ttsVoice = document.getElementById('tts-voice').value;
-        const callLang = window._forceLang || 'en';
-        window._forceLang = null;
-        const res = await fetch(PIPECAT_URL + '/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lang: callLang, tts_provider: ttsProvider, tts_voice: ttsVoice }) });
+        const res = await fetch(PIPECAT_URL + '/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lang: 'en', tts_provider: ttsProvider, tts_voice: ttsVoice }) });
         const data = await res.json();
 
         if (data.error) {
@@ -196,24 +194,6 @@
           if (!data || !data.type) return;
           if (data.type === 'open-url' && data.url) {
             window.open(data.url, '_blank');
-          } else if (data.type === 'restart-cantonese') {
-            log('Restarting as Cantonese...');
-            setStatus('Restarting in Cantonese mode...');
-            // End current call
-            if (callObject) {
-              await callObject.leave();
-              callObject.destroy();
-              callObject = null;
-            }
-            // Auto-start new call with Cantonese config
-            setTimeout(() => {
-              document.getElementById('tts-provider').value = 'azure';
-              updateVoices();
-              document.getElementById('tts-voice').value = 'zh-HK-WanLungNeural';
-              // Override the POST body to use lang: yue
-              window._forceLang = 'yue';
-              startCall();
-            }, 1000);
           } else if (data.type === 'stt') {
             document.getElementById('stt-text').textContent = data.text;
           } else if (data.type === 'llm') {

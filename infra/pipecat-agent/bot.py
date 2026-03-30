@@ -46,48 +46,6 @@ except ValueError:
 logger.add(sys.stderr, level="DEBUG")
 
 
-class STTRouter(FrameProcessor):
-    """Routes audio to the active STT service. Allows swapping STT mid-call."""
-    def __init__(self, default_stt, name="STTRouter"):
-        super().__init__(name=name)
-        self._active_stt = default_stt
-        self._stts = {"default": default_stt}
-
-    def add_stt(self, key, stt_service):
-        self._stts[key] = stt_service
-        # Link STT output to flow through this router (so transcriptions reach the pipeline)
-        stt_service.link(self)
-
-    async def switch_stt(self, key):
-        if key in self._stts:
-            self._active_stt = self._stts[key]
-            logger.info(f"STT switched to: {key} ({type(self._active_stt).__name__})")
-
-    def link_stts_output(self, next_processor):
-        """Link all STT services to push their output to the next pipeline processor."""
-        for stt in self._stts.values():
-            stt.link(next_processor)
-
-    async def process_frame(self, frame, direction):
-        await super().process_frame(frame, direction)
-        from pipecat.frames.frames import InputAudioRawFrame, StartFrame as SF, EndFrame as EF
-
-        # Forward lifecycle frames (StartFrame, EndFrame) to ALL STTs
-        if isinstance(frame, (SF, EF)):
-            for stt in self._stts.values():
-                await stt.process_frame(frame, direction)
-            await self.push_frame(frame, direction)
-            return
-
-        # Forward audio frames to active STT only
-        if isinstance(frame, InputAudioRawFrame):
-            await self._active_stt.process_frame(frame, direction)
-            return
-
-        # Pass everything else through
-        await self.push_frame(frame, direction)
-
-
 class STTForwarder(FrameProcessor):
     """Sends user speech transcripts to browser."""
     def __init__(self, name="STTForwarder"):
@@ -159,29 +117,20 @@ async def main():
     )
 
     # --- STT ---
-    # --- STT: Deepgram (default) + Azure (Cantonese) ---
     lang = os.getenv("VOICE_LANG", "en")
-    from pipecat.services.azure.stt import AzureSTTService
-
-    deepgram_stt = DeepgramSTTService(
-        api_key=os.getenv("DEEPGRAM_API_KEY"),
-        language="multi",
-    )
-    azure_stt = AzureSTTService(
-        api_key=os.getenv("AZURE_SPEECH_KEY"),
-        region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
-        language="zh-HK",
-        sample_rate=24000,
-    )
     if lang == "yue":
-        stt = azure_stt
+        from pipecat.services.azure.stt import AzureSTTService
+        stt = AzureSTTService(
+            api_key=os.getenv("AZURE_SPEECH_KEY"),
+            region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
+            language="zh-HK",
+            sample_rate=24000,
+        )
     else:
-        stt = deepgram_stt
-
-    # Router for mid-call STT swapping
-    stt_router = STTRouter(stt, name="STTRouter")
-    stt_router.add_stt("deepgram", deepgram_stt)
-    stt_router.add_stt("cantonese", azure_stt)
+        stt = DeepgramSTTService(
+            api_key=os.getenv("DEEPGRAM_API_KEY"),
+            language="multi",
+        )
 
     # --- LLM: Gemini Flash ---
     from pipecat.services.google.llm import GoogleLLMService
@@ -284,8 +233,7 @@ Rules:
 - Use natural fillers occasionally.
 - No markdown, no lists, no asterisks. This is spoken language.
 - Sound warm and friendly, like talking to a colleague.
-- For Cantonese: Tell the user "To switch to Cantonese, I need to restart the session with a Cantonese specialist. Shall I do that?" If they confirm, call restart_as_cantonese(). Do NOT try to speak Cantonese yourself.
-- For other languages (Mandarin, Japanese, etc.), your default voice handles them fine.
+- If the user speaks a different language, respond in that language automatically.
 - After searching, summarize the key finding naturally. Don't read out URLs."""
 
     messages = [{"role": "system", "content": system_content}]
@@ -484,29 +432,11 @@ Rules:
         language = params.arguments.get("language", "english").lower()
         voice = LANGUAGE_VOICES.get(language, MULTILINGUAL_VOICE)
         logger.info(f"Switching language to {language}, voice: {voice}")
-
-        # For Cantonese: speak announcement with current voice FIRST, then switch
-        if language == "cantonese":
-            from pipecat.frames.frames import TTSSpeakFrame
-            await params.llm.push_frame(TTSSpeakFrame(text="Let me switch to our Cantonese specialist voice."))
-            import asyncio
-            await asyncio.sleep(2)  # Wait for Jenny to finish speaking
-
-        # Swap TTS voice
         try:
             tts._settings.voice = voice
             logger.info(f"TTS voice updated to {voice}")
         except Exception as e:
             logger.error(f"Could not update TTS voice: {e}")
-        # Swap STT language
-        try:
-            if language == "cantonese":
-                await stt.set_language("zh-HK")
-            elif language == "english":
-                await stt.set_language("en-US")
-            logger.info(f"STT language updated for {language}")
-        except Exception as e:
-            logger.error(f"Could not update STT language: {e}")
         await params.result_callback({
             "status": "switched",
             "language": language,
@@ -544,40 +474,16 @@ Rules:
 
     llm.register_function("translate", handle_translate)
 
-    # --- Function calling: restart_as_cantonese ---
-    restart_cantonese_func = FunctionSchema(
-        name="restart_as_cantonese",
-        description="Restart the call session in Cantonese mode. Use ONLY after the user confirms they want to switch to Cantonese.",
-        properties={},
-        required=[],
-    )
-
-    async def handle_restart_cantonese(params: FunctionCallParams):
-        logger.info("Restarting session as Cantonese")
-        from pipecat.frames.frames import TTSSpeakFrame
-        await params.llm.push_frame(TTSSpeakFrame(text="Alright, restarting now. Please wait a moment."))
-        import asyncio
-        await asyncio.sleep(2)
-        # Send restart message to browser
-        msg = DailyOutputTransportMessageFrame(message={"type": "restart-cantonese"})
-        await transport.output().send_message(msg)
-        await params.result_callback({"status": "restarting"})
-
-    llm.register_function("restart_as_cantonese", handle_restart_cantonese)
-
     # --- Tools: all functions ---
     tools = ToolsSchema(standard_tools=[
         open_url_func, search_web_func, send_whatsapp_func, make_call_func, send_email_func,
-        switch_language_func, translate_func, restart_cantonese_func
+        switch_language_func, translate_func
     ])
-    logger.info("Tools: 8 functions enabled")
+    logger.info("Tools: 7 functions enabled")
 
     # --- Context (universal, not deprecated OpenAILLMContext) ---
     context = LLMContext(messages=messages, tools=tools)
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(context)
-
-    # --- Link STT outputs to the forwarder ---
-    stt_fwd = STTForwarder()
 
     # --- Pipeline ---
     pipeline = Pipeline(
