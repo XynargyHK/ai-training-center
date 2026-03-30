@@ -160,12 +160,14 @@ async def main():
 
     if lang == "yue":
         from pipecat.services.azure.tts import AzureTTSService
+        cantonese_voice = tts_voice or "zh-HK-WanLungNeural"
         tts = AzureTTSService(
             api_key=os.getenv("AZURE_SPEECH_KEY"),
             region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
-            voice=os.getenv("VOICE_NAME", "zh-HK-WanLungNeural"),
+            voice=cantonese_voice,
             sample_rate=24000,
         )
+        logger.info(f"TTS: Azure Cantonese ({cantonese_voice})")
     elif tts_provider == "elevenlabs":
         from pipecat.services.elevenlabs.tts import ElevenLabsTTSService
         tts = ElevenLabsTTSService(
