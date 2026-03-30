@@ -170,11 +170,13 @@ async def main():
 Today's date is {today}. The current time is {current_time}.
 
 You have these tools:
-1. search_web(query) — search the internet for current info like prices, news, weather. Summarize results by voice.
+1. search_web(query) — search the internet for current info like prices, news, weather.
 2. open_url(url) — open a website on the user's screen.
-3. send_whatsapp(phone, message) — send a real WhatsApp message. Ask for the phone number and message content before sending.
-4. make_call(phone) — dial a phone number on the user's device.
-5. send_email(to, subject, body) — open email compose on the user's device.
+3. send_whatsapp(phone, message) — send a real WhatsApp message.
+4. make_call(phone) — dial a phone number.
+5. send_email(to, subject, body) — open email compose.
+6. switch_language(language) — switch your speaking language. Supported: english, mandarin, cantonese, japanese, korean, french, spanish, german.
+7. translate(target_language) — become a real-time translator. Translate everything the user says into the target language.
 
 Rules:
 - Keep replies to 1-2 sentences max. Be concise.
@@ -358,11 +360,82 @@ Rules:
 
     llm.register_function("send_email", handle_send_email)
 
+    # --- Function calling: switch_language ---
+    LANGUAGE_VOICES = {
+        "english": "en-US-JennyNeural",
+        "mandarin": "zh-CN-XiaoxiaoNeural",
+        "cantonese": "zh-HK-HiuMaanNeural",
+        "japanese": "ja-JP-NanamiNeural",
+        "korean": "ko-KR-SunHiNeural",
+        "french": "fr-FR-DeniseNeural",
+        "spanish": "es-ES-ElviraNeural",
+        "german": "de-DE-KatjaNeural",
+    }
+
+    switch_language_func = FunctionSchema(
+        name="switch_language",
+        description="Switch the AI's speaking language. Use when user says 'speak Mandarin', 'switch to Japanese', 'talk in French', etc. After switching, respond in the new language.",
+        properties={
+            "language": {
+                "type": "string",
+                "description": "Target language: english, mandarin, cantonese, japanese, korean, french, spanish, german"
+            }
+        },
+        required=["language"],
+    )
+
+    async def handle_switch_language(params: FunctionCallParams):
+        language = params.arguments.get("language", "english").lower()
+        voice = LANGUAGE_VOICES.get(language, "en-US-JennyNeural")
+        logger.info(f"Switching language to {language}, voice: {voice}")
+        try:
+            tts._settings.voice = voice
+            logger.info(f"TTS voice updated to {voice}")
+        except Exception as e:
+            logger.error(f"Could not update TTS voice: {e}")
+        await params.result_callback({
+            "status": "switched",
+            "language": language,
+            "instruction": f"From now on, respond ONLY in {language}. Do not use English unless asked to switch back."
+        })
+
+    llm.register_function("switch_language", handle_switch_language)
+
+    # --- Function calling: translate ---
+    translate_func = FunctionSchema(
+        name="translate",
+        description="Start real-time translation mode. The user speaks in their language, and you translate and speak in the target language. Use when user says 'translate to Mandarin', 'be my interpreter for Japanese', etc.",
+        properties={
+            "target_language": {
+                "type": "string",
+                "description": "The language to translate INTO: english, mandarin, cantonese, japanese, korean, french, spanish, german"
+            }
+        },
+        required=["target_language"],
+    )
+
+    async def handle_translate(params: FunctionCallParams):
+        target = params.arguments.get("target_language", "english").lower()
+        voice = LANGUAGE_VOICES.get(target, "en-US-JennyNeural")
+        logger.info(f"Translation mode: translating to {target}, voice: {voice}")
+        try:
+            tts._settings.voice = voice
+        except Exception as e:
+            logger.error(f"Could not update TTS voice: {e}")
+        await params.result_callback({
+            "status": "translating",
+            "target_language": target,
+            "instruction": f"TRANSLATION MODE: From now on, translate everything the user says into {target}. Speak the translation only, do not add commentary. If the user says something in {target}, translate it back to their original language."
+        })
+
+    llm.register_function("translate", handle_translate)
+
     # --- Tools: all functions ---
     tools = ToolsSchema(standard_tools=[
-        open_url_func, search_web_func, send_whatsapp_func, make_call_func, send_email_func
+        open_url_func, search_web_func, send_whatsapp_func, make_call_func, send_email_func,
+        switch_language_func, translate_func
     ])
-    logger.info("Tools: open_url + search_web + send_whatsapp + make_call + send_email enabled")
+    logger.info("Tools: 7 functions enabled")
 
     # --- Context (universal, not deprecated OpenAILLMContext) ---
     context = LLMContext(messages=messages, tools=tools)
