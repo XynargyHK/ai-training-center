@@ -133,8 +133,16 @@ Rules:
 
     messages = [{"role": "system", "content": system_content}]
 
-    # --- Context (no tools — keeping it stable) ---
-    context = OpenAILLMContext(messages)
+    # --- Google Search grounding ---
+    tools = None
+    try:
+        from google.genai import types as gtypes
+        tools = [gtypes.Tool(google_search=gtypes.GoogleSearch())]
+        logger.info("Google Search grounding enabled")
+    except Exception as e:
+        logger.error(f"Could not enable Google Search: {e}")
+
+    context = OpenAILLMContext(messages, tools=tools)
     context_aggregator = llm.create_context_aggregator(context)
 
     # --- Pipeline ---
