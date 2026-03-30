@@ -551,8 +551,8 @@ Rules:
     pipeline = Pipeline(
         [
             transport.input(),
-            stt_router,
-            stt_fwd,
+            stt,
+            STTForwarder(),
             user_aggregator,
             llm,
             CJKSpaceFixer(),
