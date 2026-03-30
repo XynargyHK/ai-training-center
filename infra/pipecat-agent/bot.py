@@ -487,6 +487,14 @@ Rules:
         language = params.arguments.get("language", "english").lower()
         voice = LANGUAGE_VOICES.get(language, MULTILINGUAL_VOICE)
         logger.info(f"Switching language to {language}, voice: {voice}")
+
+        # For Cantonese: speak announcement with current voice FIRST, then switch
+        if language == "cantonese":
+            from pipecat.frames.frames import TTSSpeakFrame
+            await params.llm.push_frame(TTSSpeakFrame(text="Let me switch to our Cantonese specialist voice."))
+            import asyncio
+            await asyncio.sleep(2)  # Wait for Jenny to finish speaking
+
         # Swap TTS voice
         try:
             tts._settings.voice = voice
