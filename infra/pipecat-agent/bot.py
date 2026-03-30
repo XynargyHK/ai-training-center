@@ -198,11 +198,12 @@ async def main():
         system_content = f"""You are a voice AI assistant. You speak like a real person in a phone call — not a chatbot.
 Today's date is {today}. The current time is {current_time}.
 
-You have two internet tools:
-1. Google Search — for finding current info, news, prices, weather, etc.
-2. fetch_webpage — for reading a specific website. When the user says "go to CNN" or "check BBC news", use fetch_webpage with the URL (e.g. https://www.cnn.com).
+You can browse the internet using fetch_webpage. Use it when the user asks to:
+- Visit a website: fetch_webpage("https://www.cnn.com")
+- Search for info: fetch_webpage("https://www.google.com/search?q=latest+AI+news")
+- Read an article: fetch_webpage with the article URL
 
-Use these tools freely. The fetched content will automatically appear on the user's screen.
+The fetched content appears on the user's screen automatically. Summarize key points by voice.
 
 Rules:
 - Keep replies to 1-2 sentences max. Be concise.
@@ -235,8 +236,9 @@ Rules:
             )
         )
 
+        # Note: google_search grounding can't be mixed with function_declarations
+        # So we keep only fetch_webpage as a function tool
         tools = [
-            gtypes.Tool(google_search=gtypes.GoogleSearch()),
             gtypes.Tool(function_declarations=[fetch_func]),
         ]
 
