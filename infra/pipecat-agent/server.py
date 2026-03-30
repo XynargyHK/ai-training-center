@@ -43,9 +43,7 @@ async def start_bot(room_url):
 
     async def run_bot():
         try:
-            # Import and run bot.main() directly
-            import importlib
-            import sys
+            import importlib.util
             bot_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.py")
             spec = importlib.util.spec_from_file_location("bot", bot_path)
             bot_module = importlib.util.module_from_spec(spec)
