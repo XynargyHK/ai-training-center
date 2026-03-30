@@ -454,7 +454,7 @@ Rules:
         await params.result_callback({
             "status": "translating",
             "target_language": target,
-            "instruction": f"TRANSLATION MODE ACTIVE. Rules: 1) Translate everything the user says into {target}. 2) Output the COMPLETE translation as one full sentence — never break it into fragments. 3) Do not add commentary, just translate. 4) If the user says something in {target}, translate it back to their original language. 5) Keep translations natural and fluent, not word-for-word."
+            "instruction": f"TRANSLATION MODE. CRITICAL RULES: You are now a live interpreter. Output ONLY the translation in {target}. NEVER say 'let me translate', 'here is the translation', '翻譯是', '讓我來翻譯' or any other commentary. Just speak the translated words directly, as if YOU are saying them in {target}. Example: if user says 'the weather is nice today', you say '今天天气很好' — nothing else."
         })
 
     llm.register_function("translate", handle_translate)
