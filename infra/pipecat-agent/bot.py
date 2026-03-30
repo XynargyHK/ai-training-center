@@ -63,10 +63,19 @@ async def main():
 
     # --- STT: Deepgram ---
     lang = os.getenv("VOICE_LANG", "en")
-    stt = DeepgramSTTService(
-        api_key=os.getenv("DEEPGRAM_API_KEY"),
-        language="yue" if lang == "yue" else "en",  # yue = Cantonese
-    )
+    if lang == "yue":
+        from pipecat.services.azure.stt import AzureSTTService
+        stt = AzureSTTService(
+            api_key=os.getenv("AZURE_SPEECH_KEY"),
+            region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
+            language="zh-HK",
+            sample_rate=24000,
+        )
+    else:
+        stt = DeepgramSTTService(
+            api_key=os.getenv("DEEPGRAM_API_KEY"),
+            language="en",
+        )
 
     # --- LLM: Cerebras for English, GPT-4o-mini for Cantonese ---
     if lang == "yue":
