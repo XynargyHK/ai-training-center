@@ -532,7 +532,7 @@ Rules:
     pipeline = Pipeline(
         [
             transport.input(),
-            stt_router,
+            stt,
             STTForwarder(),
             user_aggregator,
             llm,
