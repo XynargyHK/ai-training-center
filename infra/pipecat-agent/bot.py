@@ -7,10 +7,12 @@ import asyncio
 import os
 import sys
 
-from pipecat.frames.frames import LLMMessagesFrame, EndFrame
+import json
+from pipecat.frames.frames import LLMMessagesFrame, EndFrame, TextFrame, TranscriptionFrame
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
+from pipecat.processors.frame_processor import FrameProcessor, FrameDirection
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.services.cartesia.tts import CartesiaTTSService
 from pipecat.services.deepgram.stt import DeepgramSTTService
@@ -35,6 +37,45 @@ try:
 except ValueError:
     pass
 logger.add(sys.stderr, level="DEBUG")
+
+
+class SubtitleProcessor(FrameProcessor):
+    """Intercepts text frames and sends them to the browser via Daily app messages."""
+
+    def __init__(self, transport):
+        super().__init__()
+        self._transport = transport
+        self._ai_text = ""
+
+    async def process_frame(self, frame, direction):
+        await super().process_frame(frame, direction)
+
+        if isinstance(frame, TranscriptionFrame):
+            # User speech transcript
+            try:
+                await self._transport.send_app_message({
+                    "type": "transcript",
+                    "role": "user",
+                    "text": frame.text
+                })
+            except Exception as e:
+                logger.debug(f"Could not send transcript: {e}")
+
+        elif isinstance(frame, TextFrame):
+            # AI response text (streaming chunks)
+            self._ai_text += frame.text
+            try:
+                await self._transport.send_app_message({
+                    "type": "subtitle",
+                    "role": "assistant",
+                    "text": self._ai_text,
+                    "delta": frame.text
+                })
+            except Exception as e:
+                logger.debug(f"Could not send subtitle: {e}")
+
+        # Always pass frame through
+        await self.push_frame(frame, direction)
 
 
 async def main():
@@ -156,13 +197,18 @@ Rules:
     context = OpenAILLMContext(messages, tools=tools)
     context_aggregator = llm.create_context_aggregator(context)
 
-    # --- Pipeline: STT → UserAggregator → LLM → TTS → AssistantAggregator ---
+    # --- Subtitle processor: intercepts text and sends to browser ---
+    subtitle_proc = SubtitleProcessor(transport)
+
+    # --- Pipeline: STT → Subtitle → UserAggregator → LLM → Subtitle → TTS → Output ---
     pipeline = Pipeline(
         [
             transport.input(),                    # audio from user (WebRTC)
             stt,                                  # speech-to-text
+            subtitle_proc,                        # captures user transcript + AI text
             context_aggregator.user(),            # collects user speech, sends to LLM
             llm,                                  # language model
+            SubtitleProcessor(transport),          # captures AI response text
             tts,                                  # text-to-speech
             transport.output(),                   # audio back to user (WebRTC)
             context_aggregator.assistant(),        # tracks AI responses for context
