@@ -122,7 +122,7 @@ async def main():
         system_content = f"""You are a voice AI assistant. You speak like a real person in a phone call — not a chatbot.
 Today's date is {today}. The current time is {current_time}.
 
-You have Google Search available. Use it freely when the user asks about current events, news, prices, weather, sports scores, or anything that needs real-time information.
+You can open websites for the user using open_webpage. When they say "go to CNN", "show me BBC news", or "open google.com", use it. The page appears on their screen.
 
 Rules:
 - Keep replies to 1-2 sentences max. Be concise.
@@ -135,14 +135,38 @@ Rules:
 
     messages = [{"role": "system", "content": system_content}]
 
-    # --- Google Search grounding ---
+    # --- Tools: open_webpage (sends URL to browser iframe) ---
     tools = None
     try:
         from google.genai import types as gtypes
-        tools = [gtypes.Tool(google_search=gtypes.GoogleSearch())]
-        logger.info("Google Search grounding enabled")
+        open_func = gtypes.FunctionDeclaration(
+            name="open_webpage",
+            description="Open a website in the user's browser. Use when user says 'go to CNN', 'show me BBC', 'open google.com', etc.",
+            parameters=gtypes.Schema(
+                type=gtypes.Type.OBJECT,
+                properties={
+                    "url": gtypes.Schema(type=gtypes.Type.STRING, description="Full URL e.g. https://www.cnn.com")
+                },
+                required=["url"]
+            )
+        )
+        tools = [gtypes.Tool(function_declarations=[open_func])]
+
+        async def handle_open_webpage(params):
+            url = params.arguments.get("url", "")
+            if not url.startswith("http"):
+                url = "https://" + url
+            logger.info(f"Opening webpage: {url}")
+            try:
+                await transport.send_app_message({"type": "open-url", "url": url})
+            except Exception as e:
+                logger.error(f"Could not send URL to browser: {e}")
+            await params.result_callback({"status": "opened", "url": url})
+
+        llm.register_function("open_webpage", handle_open_webpage)
+        logger.info("open_webpage tool registered")
     except Exception as e:
-        logger.error(f"Could not enable Google Search: {e}")
+        logger.error(f"Could not set up tools: {e}")
 
     # --- Context ---
     context = OpenAILLMContext(messages, tools=tools)
