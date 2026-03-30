@@ -81,7 +81,7 @@ async def main():
     else:
         stt = DeepgramSTTService(
             api_key=os.getenv("DEEPGRAM_API_KEY"),
-            language="en",
+            language="multi",
         )
 
     # --- LLM: Gemini Flash ---
@@ -143,7 +143,7 @@ async def main():
         tts = AzureTTSService(
             api_key=os.getenv("AZURE_SPEECH_KEY"),
             region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
-            voice=tts_voice or "en-US-JennyNeural",
+            voice=tts_voice or "en-US-JennyMultilingualNeural",
             sample_rate=24000,
         )
     logger.info(f"TTS: {tts_provider} / {tts_voice}")
@@ -166,8 +166,10 @@ async def main():
 - 唔好用markdown、列表、星號。呢個係講嘢，唔係打字
 - 語氣要親切友善，好似同朋友傾計咁"""
     else:
-        system_content = f"""You are a voice AI assistant. You speak like a real person in a phone call — not a chatbot.
+        system_content = f"""You are a multilingual voice AI assistant. You speak like a real person in a phone call — not a chatbot.
 Today's date is {today}. The current time is {current_time}.
+
+You can understand and respond in multiple languages. The user may speak English, Mandarin, Cantonese, Japanese, Korean, French, Spanish, German, or any other language. Detect what language they speak and respond in the same language by default.
 
 You have these tools:
 1. search_web(query) — search the internet for current info like prices, news, weather.
@@ -175,16 +177,15 @@ You have these tools:
 3. send_whatsapp(phone, message) — send a real WhatsApp message.
 4. make_call(phone) — dial a phone number.
 5. send_email(to, subject, body) — open email compose.
-6. switch_language(language) — switch your speaking language. Supported: english, mandarin, cantonese, japanese, korean, french, spanish, german.
+6. switch_language(language) — switch your speaking language when the user asks. This also changes your voice.
 7. translate(target_language) — become a real-time translator. Translate everything the user says into the target language.
 
 Rules:
 - Keep replies to 1-2 sentences max. Be concise.
-- Use natural fillers occasionally: "hmm", "well", "you know", "let me think..."
-- Use contractions: "I'm", "don't", "can't", "it's"
-- React naturally: laugh ("haha"), express surprise ("oh wow"), show empathy ("ah I see")
+- Use natural fillers occasionally.
 - No markdown, no lists, no asterisks. This is spoken language.
 - Sound warm and friendly, like talking to a colleague.
+- If the user speaks a different language, respond in that language automatically.
 - After searching, summarize the key finding naturally. Don't read out URLs."""
 
     messages = [{"role": "system", "content": system_content}]
@@ -361,16 +362,11 @@ Rules:
     llm.register_function("send_email", handle_send_email)
 
     # --- Function calling: switch_language ---
+    # Only Cantonese needs a special voice — multilingual handles all others
     LANGUAGE_VOICES = {
-        "english": "en-US-JennyNeural",
-        "mandarin": "zh-CN-XiaoxiaoNeural",
-        "cantonese": "zh-HK-HiuMaanNeural",
-        "japanese": "ja-JP-NanamiNeural",
-        "korean": "ko-KR-SunHiNeural",
-        "french": "fr-FR-DeniseNeural",
-        "spanish": "es-ES-ElviraNeural",
-        "german": "de-DE-KatjaNeural",
+        "cantonese": "zh-HK-WanLungNeural",
     }
+    MULTILINGUAL_VOICE = "en-US-JennyMultilingualNeural"
 
     switch_language_func = FunctionSchema(
         name="switch_language",
@@ -386,7 +382,7 @@ Rules:
 
     async def handle_switch_language(params: FunctionCallParams):
         language = params.arguments.get("language", "english").lower()
-        voice = LANGUAGE_VOICES.get(language, "en-US-JennyNeural")
+        voice = LANGUAGE_VOICES.get(language, MULTILINGUAL_VOICE)
         logger.info(f"Switching language to {language}, voice: {voice}")
         try:
             tts._settings.voice = voice
@@ -416,7 +412,7 @@ Rules:
 
     async def handle_translate(params: FunctionCallParams):
         target = params.arguments.get("target_language", "english").lower()
-        voice = LANGUAGE_VOICES.get(target, "en-US-JennyNeural")
+        voice = LANGUAGE_VOICES.get(target, MULTILINGUAL_VOICE)
         logger.info(f"Translation mode: translating to {target}, voice: {voice}")
         try:
             tts._settings.voice = voice
