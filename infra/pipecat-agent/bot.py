@@ -169,7 +169,9 @@ async def main():
         system_content = f"""You are a voice AI assistant. You speak like a real person in a phone call — not a chatbot.
 Today's date is {today}. The current time is {current_time}.
 
-You can open websites and apps on the user's device using open_url. Use it when they say "go to CNN", "open google", "call John", "message on WhatsApp", etc. The page will appear on their screen.
+You have two tools:
+1. search_web(query) — search the internet for current info. Use for prices, news, weather, research, facts. Summarize the results by voice.
+2. open_url(url) — open a website or app on the user's screen. Use when they say "go to CNN", "open google", "call John", etc.
 
 Rules:
 - Keep replies to 1-2 sentences max. Be concise.
@@ -209,9 +211,47 @@ Rules:
 
     llm.register_function("open_url", handle_open_url)
 
-    # --- Tools: function calling (Google Search can't be combined with functions) ---
-    tools = ToolsSchema(standard_tools=[open_url_func])
-    logger.info("Tools: open_url function calling enabled")
+    # --- Function calling: search_web ---
+    search_web_func = FunctionSchema(
+        name="search_web",
+        description="Search the web and return results. Use when user asks for current info like prices, news, weather, facts, research, etc. Returns text content that you should summarize by voice.",
+        properties={
+            "query": {
+                "type": "string",
+                "description": "The search query, e.g. 'oil price today' or 'latest AI news'"
+            }
+        },
+        required=["query"],
+    )
+
+    async def handle_search_web(params: FunctionCallParams):
+        import aiohttp
+        query = params.arguments.get("query", "")
+        logger.info(f"Searching web: {query}")
+        try:
+            url = f"https://www.google.com/search?q={query.replace(' ', '+')}"
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                    html = await resp.text()
+            # Extract text from HTML (simple approach, no BeautifulSoup needed)
+            import re
+            text = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL)
+            text = re.sub(r'<style[^>]*>.*?</style>', '', text, flags=re.DOTALL)
+            text = re.sub(r'<[^>]+>', ' ', text)
+            text = re.sub(r'\s+', ' ', text).strip()
+            result = text[:3000]
+            logger.info(f"Search result: {result[:200]}...")
+            await params.result_callback({"results": result, "query": query})
+        except Exception as e:
+            logger.error(f"Search error: {e}")
+            await params.result_callback({"error": str(e), "query": query})
+
+    llm.register_function("search_web", handle_search_web)
+
+    # --- Tools: function calling ---
+    tools = ToolsSchema(standard_tools=[open_url_func, search_web_func])
+    logger.info("Tools: open_url + search_web enabled")
 
     # --- Context (universal, not deprecated OpenAILLMContext) ---
     context = LLMContext(messages=messages, tools=tools)
