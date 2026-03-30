@@ -98,10 +98,11 @@ async def handle_proxy(request):
         async with aiohttp.ClientSession() as session:
             async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=15)) as resp:
                 body = await resp.read()
-                content_type = resp.headers.get("Content-Type", "text/html")
+                raw_ct = resp.headers.get("Content-Type", "text/html")
+                ct = raw_ct.split(";")[0].strip()
                 return web.Response(
                     body=body,
-                    content_type=content_type,
+                    content_type=ct,
                     headers={
                         "Access-Control-Allow-Origin": "*",
                     },
