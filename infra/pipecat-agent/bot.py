@@ -30,6 +30,8 @@ except ImportError:
     except ImportError:
         SileroVADAnalyzer = None
 
+import aiohttp
+from bs4 import BeautifulSoup
 from loguru import logger
 
 try:
@@ -37,6 +39,29 @@ try:
 except ValueError:
     pass
 logger.add(sys.stderr, level="DEBUG")
+
+
+async def fetch_webpage(url: str, max_chars: int = 3000) -> str:
+    """Fetch a webpage and extract readable text content."""
+    try:
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                if resp.status != 200:
+                    return f"Error: HTTP {resp.status}"
+                html = await resp.text()
+        soup = BeautifulSoup(html, "html.parser")
+        # Remove scripts, styles, nav
+        for tag in soup(["script", "style", "nav", "footer", "header", "aside"]):
+            tag.decompose()
+        text = soup.get_text(separator="\n", strip=True)
+        # Clean up whitespace
+        lines = [l.strip() for l in text.splitlines() if l.strip()]
+        clean = "\n".join(lines)
+        return clean[:max_chars]
+    except Exception as e:
+        logger.error(f"Webpage fetch error: {e}")
+        return f"Failed to fetch: {str(e)}"
 
 
 class InfoDisplayProcessor(FrameProcessor):
@@ -173,7 +198,11 @@ async def main():
         system_content = f"""You are a voice AI assistant. You speak like a real person in a phone call — not a chatbot.
 Today's date is {today}. The current time is {current_time}.
 
-You have Google Search available. Use it freely when the user asks about current events, news, prices, weather, sports scores, or anything that needs real-time information.
+You have two internet tools:
+1. Google Search — for finding current info, news, prices, weather, etc.
+2. fetch_webpage — for reading a specific website. When the user says "go to CNN" or "check BBC news", use fetch_webpage with the URL (e.g. https://www.cnn.com).
+
+Use these tools freely. The fetched content will automatically appear on the user's screen.
 
 Rules:
 - Keep replies to 1-2 sentences max. Be concise.
@@ -186,21 +215,54 @@ Rules:
 
     messages = [{"role": "system", "content": system_content}]
 
-    # --- Google Search grounding (built-in, no custom tool needed) ---
+    # --- Tools: Google Search + webpage fetch ---
     tools = None
     try:
         from google.genai import types as gtypes
-        tools = [gtypes.Tool(google_search=gtypes.GoogleSearch())]
-        logger.info("Google Search grounding enabled")
+
+        fetch_func = gtypes.FunctionDeclaration(
+            name="fetch_webpage",
+            description="Fetch and read the content of a specific webpage URL. Use when the user asks to go to a website, read an article, or check a specific URL like cnn.com, bbc.com, etc.",
+            parameters=gtypes.Schema(
+                type=gtypes.Type.OBJECT,
+                properties={
+                    "url": gtypes.Schema(
+                        type=gtypes.Type.STRING,
+                        description="The full URL to fetch, e.g. https://www.cnn.com"
+                    )
+                },
+                required=["url"]
+            )
+        )
+
+        tools = [
+            gtypes.Tool(google_search=gtypes.GoogleSearch()),
+            gtypes.Tool(function_declarations=[fetch_func]),
+        ]
+
+        async def handle_fetch_webpage(params):
+            url = params.arguments.get("url", "")
+            if not url.startswith("http"):
+                url = "https://" + url
+            logger.info(f"Fetching webpage: {url}")
+            content = await fetch_webpage(url)
+            logger.info(f"Fetched {len(content)} chars from {url}")
+            # Send to browser info frame
+            try:
+                await transport.send_app_message({
+                    "type": "info",
+                    "text": content[:2000],
+                    "source": url
+                })
+            except Exception:
+                pass
+            await params.result_callback({"content": content, "url": url})
+
+        llm.register_function("fetch_webpage", handle_fetch_webpage)
+        logger.info("Google Search + webpage fetch tools enabled")
     except Exception as e:
-        logger.warning(f"Google Search grounding failed: {e}, trying fallback")
-        try:
-            from google.genai.types import Tool, GoogleSearch
-            tools = [Tool(google_search=GoogleSearch())]
-            logger.info("Google Search grounding enabled (fallback import)")
-        except Exception as e2:
-            logger.error(f"Could not enable Google Search: {e2}")
-            tools = None
+        logger.error(f"Could not set up tools: {e}")
+        tools = None
 
     # Create LLM context and aggregator pair for conversation management
     context = OpenAILLMContext(messages, tools=tools)

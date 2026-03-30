@@ -11,9 +11,10 @@
     #status { margin: 15px 0; font-size: 14px; color: #888; }
     #log { background: #222; padding: 12px; border-radius: 10px; font-family: monospace; font-size: 11px; max-height: 150px; overflow-y: auto; white-space: pre-wrap; }
     /* Info frame */
-    #info-frame { margin-top: 20px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; min-height: 60px; padding: 20px; display: none; animation: fadeIn 0.3s; }
+    #info-frame { margin-top: 20px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; min-height: 60px; padding: 20px; display: none; animation: fadeIn 0.3s; max-height: 500px; overflow-y: auto; }
     #info-frame.visible { display: block; }
-    #info-frame .info-content { font-size: 15px; line-height: 1.6; color: #e0e0e0; }
+    #info-frame .info-source { font-size: 11px; color: #7c7cff; margin-bottom: 10px; word-break: break-all; }
+    #info-frame .info-content { font-size: 14px; line-height: 1.6; color: #e0e0e0; white-space: pre-wrap; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   </style>
 </head>
@@ -24,7 +25,7 @@
   <div id="status">Click to start</div>
 
   <!-- Info frame: empty by default, shows search results when available -->
-  <div id="info-frame"><div class="info-content"></div></div>
+  <div id="info-frame"><div class="info-source"></div><div class="info-content"></div></div>
 
   <details style="margin-top:15px;">
     <summary style="cursor:pointer;color:#555;font-size:12px;">Debug Log</summary>
@@ -96,8 +97,14 @@
           const content = frame.querySelector('.info-content');
 
           if (data.type === 'info') {
-            // Show search results / info in the frame
-            content.innerHTML = data.html || data.text || '';
+            // Show fetched content in the frame
+            const source = frame.querySelector('.info-source');
+            if (data.source) {
+              source.textContent = data.source;
+            } else {
+              source.textContent = '';
+            }
+            content.textContent = data.text || '';
             frame.classList.add('visible');
           } else if (data.type === 'clear-info') {
             frame.classList.remove('visible');
