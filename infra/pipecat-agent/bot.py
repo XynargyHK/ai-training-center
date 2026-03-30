@@ -101,9 +101,11 @@ async def main():
         from pipecat.services.elevenlabs.tts import ElevenLabsTTSService
         tts = ElevenLabsTTSService(
             api_key=os.getenv("ELEVENLABS_API_KEY"),
-            voice_id=tts_voice or "EXAVITQu4vr4xnSDxMaL",
-            model="eleven_turbo_v2_5",
             sample_rate=24000,
+            settings=ElevenLabsTTSService.Settings(
+                voice=tts_voice or "EXAVITQu4vr4xnSDxMaL",
+                model="eleven_turbo_v2_5",
+            ),
         )
     elif tts_provider == "cartesia":
         tts = CartesiaTTSService(
@@ -124,9 +126,11 @@ async def main():
         from pipecat.services.google.tts import GeminiTTSService
         tts = GeminiTTSService(
             api_key=os.getenv("GOOGLE_GEMINI_API_KEY"),
-            voice=tts_voice or "Aoede",
-            model="gemini-2.5-flash-tts",
             sample_rate=24000,
+            settings=GeminiTTSService.Settings(
+                voice=tts_voice or "Aoede",
+                model="gemini-2.5-flash-tts",
+            ),
         )
     else:
         # Default: Azure English
