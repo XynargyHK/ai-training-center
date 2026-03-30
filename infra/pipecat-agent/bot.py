@@ -1,6 +1,7 @@
 """
 Pipecat Voice AI Agent — Full-duplex conversation
-Uses: Deepgram STT + Cerebras LLM + Cartesia TTS + Daily WebRTC
+Uses: Deepgram STT + Cerebras/Gemini LLM + Cartesia/Azure TTS + Daily WebRTC
+Supports web search via DuckDuckGo (English mode)
 """
 import asyncio
 import os
@@ -27,6 +28,7 @@ except ImportError:
     except ImportError:
         SileroVADAnalyzer = None
 
+from duckduckgo_search import DDGS
 from loguru import logger
 
 try:
@@ -34,6 +36,22 @@ try:
 except ValueError:
     pass
 logger.add(sys.stderr, level="DEBUG")
+
+
+def web_search(query: str, max_results: int = 3) -> str:
+    """Search the web using DuckDuckGo and return summarized results."""
+    try:
+        with DDGS() as ddgs:
+            results = list(ddgs.text(query, max_results=max_results))
+        if not results:
+            return "No results found."
+        lines = []
+        for r in results:
+            lines.append(f"- {r['title']}: {r['body']}")
+        return "\n".join(lines)
+    except Exception as e:
+        logger.error(f"Web search error: {e}")
+        return f"Search failed: {str(e)}"
 
 
 async def main():
@@ -77,19 +95,12 @@ async def main():
             language="en",
         )
 
-    # --- LLM: Cerebras for English, Gemini Flash for Cantonese ---
-    if lang == "yue":
-        from pipecat.services.google.llm import GoogleLLMService
-        llm = GoogleLLMService(
-            api_key=os.getenv("GOOGLE_GEMINI_API_KEY"),
-            model="gemini-2.0-flash",
-        )
-    else:
-        llm = OpenAILLMService(
-            api_key=os.getenv("CEREBRAS_API_KEY"),
-            base_url="https://api.cerebras.ai/v1",
-            model="llama3.1-8b",
-        )
+    # --- LLM: Gemini Flash for both (supports function calling for web search) ---
+    from pipecat.services.google.llm import GoogleLLMService
+    llm = GoogleLLMService(
+        api_key=os.getenv("GOOGLE_GEMINI_API_KEY"),
+        model="gemini-2.0-flash",
+    )
 
     # --- TTS: Azure for Cantonese, Cartesia for English ---
     if lang == "yue":
@@ -121,18 +132,53 @@ async def main():
     else:
         system_content = """You are a voice AI assistant. You speak like a real person in a phone call — not a chatbot.
 
+You have access to web search. When the user asks about current events, news, prices, weather, facts you're not sure about, or anything that needs up-to-date information, use the web_search function. Say something like "let me look that up" before searching.
+
 Rules:
 - Keep replies to 1-2 sentences max. Be concise.
 - Use natural fillers occasionally: "hmm", "well", "you know", "let me think..."
 - Use contractions: "I'm", "don't", "can't", "it's"
 - React naturally: laugh ("haha"), express surprise ("oh wow"), show empathy ("ah I see")
 - No markdown, no lists, no asterisks. This is spoken language.
-- Sound warm and friendly, like talking to a colleague."""
+- Sound warm and friendly, like talking to a colleague.
+- After a web search, summarize the key finding in 1-2 natural sentences. Don't read out URLs."""
 
     messages = [{"role": "system", "content": system_content}]
 
+    # --- Web search tool (English mode only) ---
+    tools = None
+    if lang != "yue":
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "web_search",
+                    "description": "Search the web for current information. Use this when the user asks about recent events, facts you're unsure about, prices, news, weather, or anything that needs up-to-date information.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "The search query"
+                            }
+                        },
+                        "required": ["query"]
+                    }
+                }
+            }
+        ]
+
+        async def handle_web_search(params):
+            query = params.arguments.get("query", "")
+            logger.info(f"Web search triggered: {query}")
+            results = await asyncio.get_event_loop().run_in_executor(None, web_search, query)
+            logger.info(f"Web search results: {results[:200]}")
+            await params.result_callback({"results": results})
+
+        llm.register_function("web_search", handle_web_search)
+
     # Create LLM context and aggregator pair for conversation management
-    context = OpenAILLMContext(messages)
+    context = OpenAILLMContext(messages, tools=tools)
     context_aggregator = llm.create_context_aggregator(context)
 
     # --- Pipeline: STT → UserAggregator → LLM → TTS → AssistantAggregator ---
