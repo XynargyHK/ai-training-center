@@ -1,3 +1,3 @@
-pipecat-ai[daily,deepgram,cartesia,openai,silero,azure,google]
+pipecat-ai[daily,deepgram,cartesia,openai,silero,azure,google,elevenlabs]
 loguru
 python-dotenv

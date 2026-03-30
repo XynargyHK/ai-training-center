@@ -97,11 +97,27 @@ async def main():
             voice=os.getenv("VOICE_NAME", "zh-HK-WanLungNeural"),
             sample_rate=24000,
         )
+    elif tts_provider == "elevenlabs":
+        from pipecat.services.elevenlabs.tts import ElevenLabsTTSService
+        tts = ElevenLabsTTSService(
+            api_key=os.getenv("ELEVENLABS_API_KEY"),
+            voice_id=tts_voice or "EXAVITQu4vr4xnSDxMaL",
+            model="eleven_turbo_v2_5",
+            sample_rate=24000,
+        )
     elif tts_provider == "cartesia":
         tts = CartesiaTTSService(
             api_key=os.getenv("CARTESIA_API_KEY"),
             voice_id=tts_voice or "a0e99841-438c-4a64-b679-ae501e7d6091",
             model_id="sonic",
+            sample_rate=24000,
+        )
+    elif tts_provider == "openai":
+        from pipecat.services.openai.tts import OpenAITTSService
+        tts = OpenAITTSService(
+            api_key=os.getenv("OPENAI_API_KEY"),
+            voice=tts_voice or "nova",
+            model="tts-1",
             sample_rate=24000,
         )
     elif tts_provider == "google":
