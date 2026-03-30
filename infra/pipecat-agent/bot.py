@@ -167,15 +167,16 @@ async def main():
         api_key=os.getenv("DEEPGRAM_API_KEY"),
         language="multi",
     )
-    # Azure STT — create with correct initial language
-    initial_lang = "zh-HK" if lang == "yue" else "en-US"
-    azure_stt = AzureSTTService(
-        api_key=os.getenv("AZURE_SPEECH_KEY"),
-        region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
-        language=initial_lang,
-        sample_rate=24000,
-    )
-    stt = azure_stt
+    if lang == "yue":
+        azure_stt = AzureSTTService(
+            api_key=os.getenv("AZURE_SPEECH_KEY"),
+            region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
+            language="zh-HK",
+            sample_rate=24000,
+        )
+        stt = azure_stt
+    else:
+        stt = deepgram_stt
 
     # Router for mid-call STT swapping
     stt_router = STTRouter(stt, name="STTRouter")
