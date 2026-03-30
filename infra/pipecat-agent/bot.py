@@ -118,30 +118,37 @@ async def main():
 
     # --- STT ---
     lang = os.getenv("VOICE_LANG", "en")
-    # Map lang codes to Deepgram language param
+    # Languages that need Azure STT (Chinese languages — Deepgram can't handle them well)
+    AZURE_STT_LANGUAGES = {
+        "yue": "zh-HK",
+        "zh": "zh-CN",
+    }
+    # Languages that use Deepgram STT
     DEEPGRAM_LANG_MAP = {
         "en": "en",
-        "zh": "zh",
         "ja": "ja",
         "ko": "ko",
         "fr": "fr",
         "es": "es",
         "de": "de",
     }
-    if lang == "yue":
+    if lang in AZURE_STT_LANGUAGES:
         from pipecat.services.azure.stt import AzureSTTService
+        azure_lang = AZURE_STT_LANGUAGES[lang]
         stt = AzureSTTService(
             api_key=os.getenv("AZURE_SPEECH_KEY"),
             region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
-            language="zh-HK",
+            language=azure_lang,
             sample_rate=24000,
         )
+        logger.info(f"STT: Azure ({azure_lang})")
     else:
         deepgram_lang = DEEPGRAM_LANG_MAP.get(lang, "multi")
         stt = DeepgramSTTService(
             api_key=os.getenv("DEEPGRAM_API_KEY"),
             language=deepgram_lang,
         )
+        logger.info(f"STT: Deepgram ({deepgram_lang})")
 
     # --- LLM: Gemini Flash ---
     from pipecat.services.google.llm import GoogleLLMService
@@ -214,6 +221,12 @@ async def main():
     today = now.strftime("%B %d, %Y")
     current_time = now.strftime("%I:%M %p HKT")
 
+    # Map lang code to name for system prompt
+    LANG_NAMES = {
+        "en": "English", "zh": "Mandarin Chinese", "yue": "Cantonese",
+        "ja": "Japanese", "ko": "Korean", "fr": "French", "es": "Spanish", "de": "German",
+    }
+
     if lang == "yue":
         system_content = f"""你係一個語音AI助手。你講嘢要好似真人打電話咁，唔好似機械人。
 今日係{today}，而家時間係{current_time}。
@@ -224,6 +237,25 @@ async def main():
 - 自然啲回應：「嗯...」「哦！」「明白」「係喎」
 - 唔好用markdown、列表、星號。呢個係講嘢，唔係打字
 - 語氣要親切友善，好似同朋友傾計咁"""
+    elif lang == "zh":
+        system_content = f"""你是一个语音AI助手。你说话要像真人打电话一样，不要像机器人。
+今天是{today}，现在时间是{current_time}。
+
+你有这些工具：
+1. search_web(query) — 搜索网络获取最新信息。
+2. open_url(url) — 在用户屏幕上打开网站。
+3. send_whatsapp(phone, message) — 发送WhatsApp消息。
+4. make_call(phone) — 拨打电话。
+5. send_email(to, subject, body) — 打开邮件编辑。
+6. switch_language(language) — 切换语言，通话会自动重启。
+7. translate(target_language) — 实时翻译模式。
+
+规则：
+- 每次回复最多1-2句，要简洁
+- 一定要用中文普通话回应
+- 自然的回应：「嗯...」「哦！」「好的」「明白」
+- 不要用markdown、列表、星号。这是说话，不是打字
+- 语气要亲切友善，像同事聊天一样"""
     else:
         system_content = f"""You are a multilingual voice AI assistant. You speak like a real person in a phone call — not a chatbot.
 Today's date is {today}. The current time is {current_time}.
