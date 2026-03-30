@@ -429,15 +429,35 @@ Rules:
         required=["language"],
     )
 
+    # STT language codes for Deepgram
+    STT_LANGUAGE_CODES = {
+        "english": "en",
+        "mandarin": "zh",
+        "japanese": "ja",
+        "korean": "ko",
+        "french": "fr",
+        "spanish": "es",
+        "german": "de",
+        "cantonese": "zh",  # Deepgram uses zh for Chinese (not great for Cantonese)
+    }
+
     async def handle_switch_language(params: FunctionCallParams):
         language = params.arguments.get("language", "english").lower()
         voice = LANGUAGE_VOICES.get(language, MULTILINGUAL_VOICE)
         logger.info(f"Switching language to {language}, voice: {voice}")
+        # Swap TTS voice
         try:
             tts._settings.voice = voice
             logger.info(f"TTS voice updated to {voice}")
         except Exception as e:
             logger.error(f"Could not update TTS voice: {e}")
+        # Swap STT language on Deepgram
+        stt_lang = STT_LANGUAGE_CODES.get(language, "multi")
+        try:
+            await stt.set_language(stt_lang)
+            logger.info(f"STT language updated to {stt_lang}")
+        except Exception as e:
+            logger.error(f"Could not update STT language: {e}")
         await params.result_callback({
             "status": "switched",
             "language": language,
