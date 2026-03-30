@@ -169,9 +169,12 @@ async def main():
         system_content = f"""You are a voice AI assistant. You speak like a real person in a phone call — not a chatbot.
 Today's date is {today}. The current time is {current_time}.
 
-You have two tools:
-1. search_web(query) — search the internet for current info. Use for prices, news, weather, research, facts. Summarize the results by voice.
-2. open_url(url) — open a website or app on the user's screen. Use when they say "go to CNN", "open google", "call John", etc.
+You have these tools:
+1. search_web(query) — search the internet for current info like prices, news, weather. Summarize results by voice.
+2. open_url(url) — open a website on the user's screen.
+3. send_whatsapp(phone, message) — send a real WhatsApp message. Ask for the phone number and message content before sending.
+4. make_call(phone) — dial a phone number on the user's device.
+5. send_email(to, subject, body) — open email compose on the user's device.
 
 Rules:
 - Keep replies to 1-2 sentences max. Be concise.
@@ -249,9 +252,117 @@ Rules:
 
     llm.register_function("search_web", handle_search_web)
 
-    # --- Tools: function calling ---
-    tools = ToolsSchema(standard_tools=[open_url_func, search_web_func])
-    logger.info("Tools: open_url + search_web enabled")
+    # --- Function calling: send_whatsapp ---
+    send_whatsapp_func = FunctionSchema(
+        name="send_whatsapp",
+        description="Send a WhatsApp message to a phone number. Use when user says 'message John on WhatsApp', 'send a WhatsApp to 852...', etc.",
+        properties={
+            "phone": {
+                "type": "string",
+                "description": "Phone number with country code, e.g. 85296099766"
+            },
+            "message": {
+                "type": "string",
+                "description": "The message text to send"
+            }
+        },
+        required=["phone", "message"],
+    )
+
+    async def handle_send_whatsapp(params: FunctionCallParams):
+        import aiohttp
+        phone = params.arguments.get("phone", "").replace("+", "").replace(" ", "").replace("-", "")
+        message = params.arguments.get("message", "")
+        whapi_token = os.getenv("WHAPI_TOKEN", "")
+        logger.info(f"Sending WhatsApp to {phone}: {message[:50]}...")
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    "https://gate.whapi.cloud/messages/text",
+                    headers={"Authorization": f"Bearer {whapi_token}", "Content-Type": "application/json"},
+                    json={"to": phone, "body": message},
+                    timeout=aiohttp.ClientTimeout(total=10),
+                ) as resp:
+                    result = await resp.json()
+                    logger.info(f"WhatsApp API response: {resp.status} {result}")
+                    if resp.status == 200 or resp.status == 201:
+                        await params.result_callback({"status": "sent", "phone": phone})
+                    else:
+                        await params.result_callback({"status": "failed", "error": str(result)})
+        except Exception as e:
+            logger.error(f"WhatsApp send error: {e}")
+            await params.result_callback({"status": "failed", "error": str(e)})
+
+    llm.register_function("send_whatsapp", handle_send_whatsapp)
+
+    # --- Function calling: make_call ---
+    make_call_func = FunctionSchema(
+        name="make_call",
+        description="Initiate a phone call. Opens the phone dialer on the user's device.",
+        properties={
+            "phone": {
+                "type": "string",
+                "description": "Phone number with country code, e.g. +85296099766"
+            }
+        },
+        required=["phone"],
+    )
+
+    async def handle_make_call(params: FunctionCallParams):
+        phone = params.arguments.get("phone", "")
+        if not phone.startswith("+"):
+            phone = "+" + phone
+        url = f"tel:{phone}"
+        logger.info(f"Making call: {url}")
+        try:
+            await transport.send_app_message({"type": "open-url", "url": url})
+        except Exception as e:
+            logger.error(f"Could not trigger call: {e}")
+        await params.result_callback({"status": "dialing", "phone": phone})
+
+    llm.register_function("make_call", handle_make_call)
+
+    # --- Function calling: send_email ---
+    send_email_func = FunctionSchema(
+        name="send_email",
+        description="Open an email compose window on the user's device.",
+        properties={
+            "to": {
+                "type": "string",
+                "description": "Email address"
+            },
+            "subject": {
+                "type": "string",
+                "description": "Email subject line"
+            },
+            "body": {
+                "type": "string",
+                "description": "Email body text"
+            }
+        },
+        required=["to"],
+    )
+
+    async def handle_send_email(params: FunctionCallParams):
+        import urllib.parse
+        to = params.arguments.get("to", "")
+        subject = urllib.parse.quote(params.arguments.get("subject", ""))
+        body = urllib.parse.quote(params.arguments.get("body", ""))
+        url = f"mailto:{to}?subject={subject}&body={body}"
+        logger.info(f"Sending email: {url[:100]}")
+        try:
+            await transport.send_app_message({"type": "open-url", "url": url})
+        except Exception as e:
+            logger.error(f"Could not trigger email: {e}")
+        await params.result_callback({"status": "opened", "to": to})
+
+    llm.register_function("send_email", handle_send_email)
+
+    # --- Tools: all functions ---
+    tools = ToolsSchema(standard_tools=[
+        open_url_func, search_web_func, send_whatsapp_func, make_call_func, send_email_func
+    ])
+    logger.info("Tools: open_url + search_web + send_whatsapp + make_call + send_email enabled")
 
     # --- Context (universal, not deprecated OpenAILLMContext) ---
     context = LLMContext(messages=messages, tools=tools)
