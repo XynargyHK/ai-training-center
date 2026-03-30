@@ -10,20 +10,11 @@
     #start:disabled { background: #555; }
     #status { margin: 15px 0; font-size: 14px; color: #888; }
     #log { background: #222; padding: 12px; border-radius: 10px; font-family: monospace; font-size: 11px; max-height: 150px; overflow-y: auto; white-space: pre-wrap; }
-    /* Conversation panel */
-    #conversation { margin-top: 20px; }
-    #conversation h3 { margin: 0 0 10px; font-size: 14px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-    #messages { background: #1a1a2e; border-radius: 12px; padding: 15px; min-height: 200px; max-height: 400px; overflow-y: auto; }
-    .msg { margin: 8px 0; padding: 10px 14px; border-radius: 10px; max-width: 85%; line-height: 1.5; font-size: 15px; animation: fadeIn 0.3s; }
-    .msg.user { background: #2563eb; margin-left: auto; text-align: right; color: white; }
-    .msg.ai { background: #2d2d44; color: #e0e0e0; }
-    .msg .label { font-size: 10px; text-transform: uppercase; color: #888; margin-bottom: 3px; }
-    .msg.ai .label { color: #7c7cff; }
-    .msg.user .label { color: #93c5fd; }
-    /* Live subtitle */
-    #live-subtitle { margin-top: 15px; padding: 12px 16px; background: #0d0d1a; border: 1px solid #333; border-radius: 10px; min-height: 40px; font-size: 16px; color: #aaa; font-style: italic; }
-    #live-subtitle.active { color: #fff; border-color: #7c7cff; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    /* Info frame */
+    #info-frame { margin-top: 20px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; min-height: 60px; padding: 20px; display: none; animation: fadeIn 0.3s; }
+    #info-frame.visible { display: block; }
+    #info-frame .info-content { font-size: 15px; line-height: 1.6; color: #e0e0e0; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   </style>
 </head>
 <body>
@@ -32,14 +23,9 @@
   <button id="start" onclick="startCall()">Start Voice Call</button>
   <div id="status">Click to start</div>
 
-  <!-- Conversation panel with subtitles -->
-  <div id="conversation">
-    <h3>Conversation</h3>
-    <div id="messages"></div>
-    <div id="live-subtitle">Waiting for conversation...</div>
-  </div>
+  <!-- Info frame: empty by default, shows search results when available -->
+  <div id="info-frame"><div class="info-content"></div></div>
 
-  <!-- Debug log (collapsed) -->
   <details style="margin-top:15px;">
     <summary style="cursor:pointer;color:#555;font-size:12px;">Debug Log</summary>
     <div id="log"></div>
@@ -102,49 +88,20 @@
           }
         });
 
-        // Listen for subtitle/transcript messages from the bot
-        let lastAiText = '';
-        let commitTimer = null;
-
-        function commitAiMessage() {
-          if (lastAiText.trim()) {
-            const messagesEl = document.getElementById('messages');
-            const div = document.createElement('div');
-            div.className = 'msg ai';
-            div.innerHTML = '<div class="label">AI</div>' + lastAiText;
-            messagesEl.appendChild(div);
-            messagesEl.scrollTop = messagesEl.scrollHeight;
-          }
-          lastAiText = '';
-          document.getElementById('live-subtitle').className = '';
-          document.getElementById('live-subtitle').textContent = '';
-        }
-
+        // Listen for info display messages from the bot
         callObject.on('app-message', (event) => {
           const data = event.data;
           if (!data || !data.type) return;
+          const frame = document.getElementById('info-frame');
+          const content = frame.querySelector('.info-content');
 
-          const subtitleEl = document.getElementById('live-subtitle');
-          const messagesEl = document.getElementById('messages');
-
-          if (data.type === 'transcript') {
-            // Commit previous AI message if any
-            if (commitTimer) clearTimeout(commitTimer);
-            commitAiMessage();
-            // Show user message
-            const div = document.createElement('div');
-            div.className = 'msg user';
-            div.innerHTML = '<div class="label">You</div>' + data.text;
-            messagesEl.appendChild(div);
-            messagesEl.scrollTop = messagesEl.scrollHeight;
-          } else if (data.type === 'subtitle') {
-            // AI is speaking (streaming)
-            subtitleEl.className = 'active';
-            subtitleEl.textContent = data.text;
-            lastAiText = data.text;
-            // Auto-commit after 2s of no new text
-            if (commitTimer) clearTimeout(commitTimer);
-            commitTimer = setTimeout(commitAiMessage, 2000);
+          if (data.type === 'info') {
+            // Show search results / info in the frame
+            content.innerHTML = data.html || data.text || '';
+            frame.classList.add('visible');
+          } else if (data.type === 'clear-info') {
+            frame.classList.remove('visible');
+            content.innerHTML = '';
           }
         });
 

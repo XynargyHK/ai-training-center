@@ -39,42 +39,51 @@ except ValueError:
 logger.add(sys.stderr, level="DEBUG")
 
 
-class SubtitleProcessor(FrameProcessor):
-    """Intercepts text frames and sends them to the browser via Daily app messages."""
+class InfoDisplayProcessor(FrameProcessor):
+    """Sends search/info results to browser when AI uses Google Search grounding."""
 
     def __init__(self, transport):
         super().__init__()
         self._transport = transport
         self._ai_text = ""
+        self._has_grounding = False
 
     async def process_frame(self, frame, direction):
         await super().process_frame(frame, direction)
 
-        if isinstance(frame, TranscriptionFrame):
-            # User speech transcript
-            try:
-                await self._transport.send_app_message({
-                    "type": "transcript",
-                    "role": "user",
-                    "text": frame.text
-                })
-            except Exception as e:
-                logger.debug(f"Could not send transcript: {e}")
-
-        elif isinstance(frame, TextFrame):
-            # AI response text (streaming chunks)
+        if isinstance(frame, TextFrame):
             self._ai_text += frame.text
-            try:
-                await self._transport.send_app_message({
-                    "type": "subtitle",
-                    "role": "assistant",
-                    "text": self._ai_text,
-                    "delta": frame.text
-                })
-            except Exception as e:
-                logger.debug(f"Could not send subtitle: {e}")
 
-        # Always pass frame through
+        elif isinstance(frame, TranscriptionFrame):
+            # New user speech — clear previous info and reset
+            self._ai_text = ""
+            self._has_grounding = False
+            try:
+                await self._transport.send_app_message({"type": "clear-info"})
+            except Exception:
+                pass
+
+        # Check for grounding/search metadata frames
+        # Pipecat may pass through various frame types from Google
+        frame_name = type(frame).__name__
+        if "grounding" in frame_name.lower() or "search" in frame_name.lower():
+            self._has_grounding = True
+            logger.info(f"Grounding frame detected: {frame_name}")
+
+        # When we see an EndFrame or LLM end, send accumulated text if it looks like search info
+        if frame_name in ("LLMFullResponseEndFrame", "LLMResponseEndFrame") or isinstance(frame, EndFrame):
+            if self._ai_text.strip() and len(self._ai_text) > 80:
+                # Longer responses likely contain search info — display it
+                try:
+                    await self._transport.send_app_message({
+                        "type": "info",
+                        "text": self._ai_text.strip()
+                    })
+                    logger.info(f"Sent info to browser: {self._ai_text[:100]}...")
+                except Exception as e:
+                    logger.debug(f"Could not send info: {e}")
+            self._ai_text = ""
+
         await self.push_frame(frame, direction)
 
 
@@ -197,21 +206,21 @@ Rules:
     context = OpenAILLMContext(messages, tools=tools)
     context_aggregator = llm.create_context_aggregator(context)
 
-    # --- Subtitle processor: intercepts text and sends to browser ---
-    subtitle_proc = SubtitleProcessor(transport)
+    # --- Info display: shows search results in browser frame ---
+    info_display = InfoDisplayProcessor(transport)
 
-    # --- Pipeline: STT → Subtitle → UserAggregator → LLM → Subtitle → TTS → Output ---
+    # --- Pipeline ---
     pipeline = Pipeline(
         [
-            transport.input(),                    # audio from user (WebRTC)
-            stt,                                  # speech-to-text
-            subtitle_proc,                        # captures user transcript + AI text
-            context_aggregator.user(),            # collects user speech, sends to LLM
-            llm,                                  # language model
-            SubtitleProcessor(transport),          # captures AI response text
-            tts,                                  # text-to-speech
-            transport.output(),                   # audio back to user (WebRTC)
-            context_aggregator.assistant(),        # tracks AI responses for context
+            transport.input(),
+            stt,
+            info_display,                         # clears frame on new user speech
+            context_aggregator.user(),
+            llm,
+            InfoDisplayProcessor(transport),       # captures AI text, sends to frame if info
+            tts,
+            transport.output(),
+            context_aggregator.assistant(),
         ]
     )
 
