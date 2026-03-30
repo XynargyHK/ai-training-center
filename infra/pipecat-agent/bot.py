@@ -284,7 +284,7 @@ Rules:
 - Use natural fillers occasionally.
 - No markdown, no lists, no asterisks. This is spoken language.
 - Sound warm and friendly, like talking to a colleague.
-- For Cantonese: You MUST call switch_language("cantonese") first. Do NOT say any announcement — just call the function silently, then respond in Cantonese.
+- For Cantonese: Tell the user "To switch to Cantonese, I need to restart the session with a Cantonese specialist. Shall I do that?" If they confirm, call restart_as_cantonese(). Do NOT try to speak Cantonese yourself.
 - For other languages (Mandarin, Japanese, etc.), your default voice handles them fine.
 - After searching, summarize the key finding naturally. Don't read out URLs."""
 
@@ -544,12 +544,33 @@ Rules:
 
     llm.register_function("translate", handle_translate)
 
+    # --- Function calling: restart_as_cantonese ---
+    restart_cantonese_func = FunctionSchema(
+        name="restart_as_cantonese",
+        description="Restart the call session in Cantonese mode. Use ONLY after the user confirms they want to switch to Cantonese.",
+        properties={},
+        required=[],
+    )
+
+    async def handle_restart_cantonese(params: FunctionCallParams):
+        logger.info("Restarting session as Cantonese")
+        from pipecat.frames.frames import TTSSpeakFrame
+        await params.llm.push_frame(TTSSpeakFrame(text="Alright, restarting now. Please wait a moment."))
+        import asyncio
+        await asyncio.sleep(2)
+        # Send restart message to browser
+        msg = DailyOutputTransportMessageFrame(message={"type": "restart-cantonese"})
+        await transport.output().send_message(msg)
+        await params.result_callback({"status": "restarting"})
+
+    llm.register_function("restart_as_cantonese", handle_restart_cantonese)
+
     # --- Tools: all functions ---
     tools = ToolsSchema(standard_tools=[
         open_url_func, search_web_func, send_whatsapp_func, make_call_func, send_email_func,
-        switch_language_func, translate_func
+        switch_language_func, translate_func, restart_cantonese_func
     ])
-    logger.info("Tools: 7 functions enabled")
+    logger.info("Tools: 8 functions enabled")
 
     # --- Context (universal, not deprecated OpenAILLMContext) ---
     context = LLMContext(messages=messages, tools=tools)
