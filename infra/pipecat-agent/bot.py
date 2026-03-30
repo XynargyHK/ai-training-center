@@ -77,11 +77,12 @@ async def main():
             language="en",
         )
 
-    # --- LLM: Cerebras for English, GPT-4o-mini for Cantonese ---
+    # --- LLM: Cerebras for English, Gemini Flash for Cantonese ---
     if lang == "yue":
-        llm = OpenAILLMService(
-            api_key=os.getenv("OPENAI_API_KEY"),
-            model="gpt-4o-mini",
+        from pipecat.services.google.llm import GoogleLLMService
+        llm = GoogleLLMService(
+            api_key=os.getenv("GOOGLE_GEMINI_API_KEY"),
+            model="gemini-2.0-flash",
         )
     else:
         llm = OpenAILLMService(
