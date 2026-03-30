@@ -19,9 +19,13 @@
   <div id="status">Click to start</div>
 
 
-  <!-- Display frame -->
-  <div id="display-frame" style="margin-top:20px; background:#1a1a2e; border:1px solid #333; border-radius:12px; min-height:200px; padding:20px; color:#666; font-size:14px; text-align:center; display:flex; align-items:center; justify-content:center;">
-    Display area — content will appear here
+  <!-- Browser frame -->
+  <div style="margin-top:20px;">
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <input id="url-bar" type="text" placeholder="Type a URL and press Enter..." value="https://www.google.com" style="flex:1;padding:8px 12px;background:#222;border:1px solid #444;border-radius:8px;color:#eee;font-size:13px;" onkeydown="if(event.key==='Enter'){document.getElementById('browser').src=this.value}">
+      <button onclick="document.getElementById('browser').src=document.getElementById('url-bar').value" style="padding:8px 16px;background:#2563eb;color:white;border:none;border-radius:8px;cursor:pointer;">Go</button>
+    </div>
+    <iframe id="browser" src="https://www.google.com" style="width:100%;height:500px;border:1px solid #333;border-radius:10px;background:white;"></iframe>
   </div>
 
   <details style="margin-top:15px;">
