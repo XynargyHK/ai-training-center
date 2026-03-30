@@ -125,12 +125,15 @@ async def main():
         )
 
     # --- Context with system prompt ---
-    from datetime import datetime
-    today = datetime.now().strftime("%B %d, %Y")
+    from datetime import datetime, timezone, timedelta
+    hkt = timezone(timedelta(hours=8))
+    now = datetime.now(hkt)
+    today = now.strftime("%B %d, %Y")
+    current_time = now.strftime("%I:%M %p HKT")
 
     if lang == "yue":
         system_content = f"""你係一個語音AI助手。你講嘢要好似真人打電話咁，唔好似機械人。
-今日係{today}。
+今日係{today}，而家時間係{current_time}。
 
 規則：
 - 每次回覆最多1-2句，要簡潔
@@ -140,7 +143,7 @@ async def main():
 - 語氣要親切友善，好似同朋友傾計咁"""
     else:
         system_content = f"""You are a voice AI assistant. You speak like a real person in a phone call — not a chatbot.
-Today's date is {today}.
+Today's date is {today}. The current time is {current_time}.
 
 You have access to web search. When the user asks about current events, news, prices, weather, facts you're not sure about, or anything that needs up-to-date information, use the web_search function. Say something like "let me look that up" before searching.
 
@@ -159,23 +162,51 @@ Rules:
     tools = None
     if lang != "yue" and HAS_SEARCH:
         try:
-            from google.genai.types import FunctionDeclaration, Tool
-            search_func = FunctionDeclaration(
+            # Try google-genai SDK (newer)
+            from google.genai import types as gtypes
+            search_func = gtypes.FunctionDeclaration(
                 name="web_search",
-                description="Search the web for current information. Use this when the user asks about recent events, facts you're unsure about, prices, news, weather, or anything that needs up-to-date information.",
-                parameters={
-                    "type": "object",
-                    "properties": {
-                        "query": {
-                            "type": "string",
-                            "description": "The search query"
-                        }
+                description="Search the web for current information when user asks about news, weather, prices, or recent events.",
+                parameters=gtypes.Schema(
+                    type=gtypes.Type.OBJECT,
+                    properties={
+                        "query": gtypes.Schema(
+                            type=gtypes.Type.STRING,
+                            description="The search query"
+                        )
                     },
-                    "required": ["query"]
-                }
+                    required=["query"]
+                )
             )
-            tools = [Tool(function_declarations=[search_func])]
+            tools = [gtypes.Tool(function_declarations=[search_func])]
+            logger.info("Web search tool created with google.genai.types")
+        except Exception as e1:
+            logger.warning(f"google.genai.types failed: {e1}, trying google.generativeai")
+            try:
+                # Try google-generativeai SDK (older)
+                import google.generativeai as genai
+                tools = [genai.protos.Tool(
+                    function_declarations=[genai.protos.FunctionDeclaration(
+                        name="web_search",
+                        description="Search the web for current information when user asks about news, weather, prices, or recent events.",
+                        parameters=genai.protos.Schema(
+                            type=genai.protos.Type.OBJECT,
+                            properties={
+                                "query": genai.protos.Schema(
+                                    type=genai.protos.Type.STRING,
+                                    description="The search query"
+                                )
+                            },
+                            required=["query"]
+                        )
+                    )]
+                )]
+                logger.info("Web search tool created with google.generativeai.protos")
+            except Exception as e2:
+                logger.error(f"Both Google SDK imports failed: {e1} / {e2}")
+                tools = None
 
+        if tools:
             async def handle_web_search(params):
                 query = params.arguments.get("query", "")
                 logger.info(f"Web search triggered: {query}")
@@ -184,10 +215,7 @@ Rules:
                 await params.result_callback({"results": results})
 
             llm.register_function("web_search", handle_web_search)
-            logger.info("Web search tool registered successfully")
-        except Exception as e:
-            logger.error(f"Failed to register web search tool: {e}")
-            tools = None
+            logger.info("Web search function handler registered")
 
     # Create LLM context and aggregator pair for conversation management
     context = OpenAILLMContext(messages, tools=tools)
