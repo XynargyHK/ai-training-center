@@ -97,7 +97,7 @@ async def main():
         tts = AzureTTSService(
             api_key=os.getenv("AZURE_SPEECH_KEY"),
             region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
-            voice="zh-HK-WanLungNeural",
+            voice=os.getenv("VOICE_NAME", "zh-HK-WanLungNeural"),
             sample_rate=24000,
         )
     else:

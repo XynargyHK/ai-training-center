@@ -69,7 +69,9 @@ async def handle_start(request):
     except:
         body = {}
     lang = body.get("lang", "en")
+    voice = body.get("voice", "")
     os.environ["VOICE_LANG"] = lang
+    os.environ["VOICE_NAME"] = voice
     room_url, room_name = await create_daily_room()
     if not room_url:
         return web.json_response({"error": "Failed to create Daily room"}, status=500)

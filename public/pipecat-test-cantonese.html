@@ -14,7 +14,14 @@
 </head>
 <body>
   <h1>Pipecat Voice AI — Cantonese</h1>
-  <p>Deepgram STT + GPT-4o-mini + Azure TTS (zh-HK)</p>
+  <p>Azure STT + Gemini Flash + Azure TTS (zh-HK)</p>
+  <label for="voice" style="font-size:14px;color:#aaa;">Voice:</label>
+  <select id="voice" style="padding:8px 12px;font-size:14px;border-radius:8px;background:#222;color:#eee;border:1px solid #444;margin-bottom:15px;">
+    <option value="zh-HK-WanLungNeural">WanLung (Male)</option>
+    <option value="zh-HK-HiuMaanNeural">HiuMaan (Female)</option>
+    <option value="zh-HK-HiuGaaiNeural">HiuGaai (Female)</option>
+  </select>
+  <br>
   <button id="start" onclick="startCall()">Start Voice Call</button>
   <div id="status">Click to start</div>
   <div id="log"></div>
@@ -41,7 +48,8 @@
       log('Calling POST /start...');
 
       try {
-        const res = await fetch(PIPECAT_URL + '/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lang: 'yue' }) });
+        const voice = document.getElementById('voice').value;
+        const res = await fetch(PIPECAT_URL + '/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lang: 'yue', voice: voice }) });
         const data = await res.json();
 
         if (data.error) {
