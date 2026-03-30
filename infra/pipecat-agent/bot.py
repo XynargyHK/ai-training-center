@@ -55,19 +55,35 @@ class STTRouter(FrameProcessor):
 
     def add_stt(self, key, stt_service):
         self._stts[key] = stt_service
+        # Link STT output to flow through this router (so transcriptions reach the pipeline)
+        stt_service.link(self)
 
     async def switch_stt(self, key):
         if key in self._stts:
             self._active_stt = self._stts[key]
             logger.info(f"STT switched to: {key} ({type(self._active_stt).__name__})")
 
+    def link_stts_output(self, next_processor):
+        """Link all STT services to push their output to the next pipeline processor."""
+        for stt in self._stts.values():
+            stt.link(next_processor)
+
     async def process_frame(self, frame, direction):
         await super().process_frame(frame, direction)
-        # Forward audio frames to active STT for processing
-        from pipecat.frames.frames import InputAudioRawFrame
+        from pipecat.frames.frames import InputAudioRawFrame, StartFrame as SF, EndFrame as EF
+
+        # Forward lifecycle frames (StartFrame, EndFrame) to ALL STTs
+        if isinstance(frame, (SF, EF)):
+            for stt in self._stts.values():
+                await stt.process_frame(frame, direction)
+            await self.push_frame(frame, direction)
+            return
+
+        # Forward audio frames to active STT only
         if isinstance(frame, InputAudioRawFrame):
             await self._active_stt.process_frame(frame, direction)
-            return  # STT will push transcription frames
+            return
+
         # Pass everything else through
         await self.push_frame(frame, direction)
 
@@ -528,12 +544,15 @@ Rules:
     context = LLMContext(messages=messages, tools=tools)
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(context)
 
+    # --- Link STT outputs to the forwarder ---
+    stt_fwd = STTForwarder()
+
     # --- Pipeline ---
     pipeline = Pipeline(
         [
             transport.input(),
-            stt,
-            STTForwarder(),
+            stt_router,
+            stt_fwd,
             user_aggregator,
             llm,
             CJKSpaceFixer(),
