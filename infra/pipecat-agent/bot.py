@@ -10,6 +10,7 @@ from pipecat.frames.frames import LLMMessagesFrame, EndFrame
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
+from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.services.cartesia.tts import CartesiaTTSService
 from pipecat.services.deepgram.stt import DeepgramSTTService
 from pipecat.services.openai.llm import OpenAILLMService
@@ -55,12 +56,7 @@ async def main():
             audio_out_sample_rate=24000,
             audio_in_enabled=True,
             vad_enabled=True,
-            vad_analyzer=SileroVADAnalyzer(params=SileroVADAnalyzer.VADParams(
-                confidence=0.5,
-                min_volume=0.3,
-                start_secs=0.1,
-                stop_secs=0.3,
-            )),
+            vad_analyzer=SileroVADAnalyzer(),
             vad_audio_passthrough=True,
         ),
     )
@@ -86,7 +82,7 @@ async def main():
         sample_rate=24000,
     )
 
-    # --- System prompt ---
+    # --- Context with system prompt ---
     messages = [
         {
             "role": "system",
@@ -102,14 +98,20 @@ Rules:
         },
     ]
 
-    # --- Pipeline: STT → LLM → TTS ---
+    # Create LLM context and aggregator pair for conversation management
+    context = OpenAILLMContext(messages)
+    context_aggregator = llm.create_context_aggregator(context)
+
+    # --- Pipeline: STT → UserAggregator → LLM → TTS → AssistantAggregator ---
     pipeline = Pipeline(
         [
-            transport.input(),   # audio from user (WebRTC)
-            stt,                 # speech-to-text
-            llm,                 # language model
-            tts,                 # text-to-speech
-            transport.output(),  # audio back to user (WebRTC)
+            transport.input(),                    # audio from user (WebRTC)
+            stt,                                  # speech-to-text
+            context_aggregator.user(),            # collects user speech, sends to LLM
+            llm,                                  # language model
+            tts,                                  # text-to-speech
+            transport.output(),                   # audio back to user (WebRTC)
+            context_aggregator.assistant(),        # tracks AI responses for context
         ]
     )
 
@@ -124,10 +126,8 @@ Rules:
     @transport.event_handler("on_first_participant_joined")
     async def on_first_participant_joined(transport, participant):
         logger.info(f"Participant joined: {participant['id']}")
-        # Send initial greeting
-        await task.queue_frames(
-            [LLMMessagesFrame(messages + [{"role": "user", "content": "Say a brief greeting to start the conversation."}])]
-        )
+        # Trigger initial greeting via context
+        await task.queue_frames([context_aggregator.user().get_context_frame()])
 
     @transport.event_handler("on_participant_left")
     async def on_participant_left(transport, participant, reason):
