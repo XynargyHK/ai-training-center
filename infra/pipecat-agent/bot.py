@@ -51,7 +51,7 @@ class TextForwarder(FrameProcessor):
         super().__init__(name=name)
         self._transport_ref = transport_ref
         self._ai_text = ""
-        print(f"TextForwarder created: {name}", flush=True)
+        print(f"TextForwarder created: {name}, transport type: {type(transport_ref).__name__}, methods: {[m for m in dir(transport_ref) if 'send' in m.lower() or 'message' in m.lower() or 'app' in m.lower()]}", flush=True)
 
     async def process_frame(self, frame, direction):
         await super().process_frame(frame, direction)
