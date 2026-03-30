@@ -59,14 +59,14 @@ class TextForwarder(FrameProcessor):
         if isinstance(frame, TranscriptionFrame):
             print(f"[STT] {frame.text}", flush=True)
             try:
-                await self._transport_ref.send_app_message({"type": "stt", "text": frame.text})
+                await self._transport_ref.send_message({"type": "stt", "text": frame.text})
             except Exception as e:
                 print(f"[STT SEND ERROR] {e}", flush=True)
 
         elif isinstance(frame, TextFrame):
             self._ai_text += frame.text
             try:
-                await self._transport_ref.send_app_message({"type": "llm", "text": self._ai_text})
+                await self._transport_ref.send_message({"type": "llm", "text": self._ai_text})
             except Exception as e:
                 print(f"[LLM SEND ERROR] {e}", flush=True)
 
@@ -244,7 +244,7 @@ Rules:
             url = "https://" + url
         logger.info(f"Opening URL: {url}")
         try:
-            await transport.send_app_message({"type": "open-url", "url": url})
+            await transport.send_message({"type": "open-url", "url": url})
         except Exception as e:
             logger.error(f"Could not send URL to browser: {e}")
         await params.result_callback({"status": "opened", "url": url})
@@ -352,7 +352,7 @@ Rules:
         url = f"tel:{phone}"
         logger.info(f"Making call: {url}")
         try:
-            await transport.send_app_message({"type": "open-url", "url": url})
+            await transport.send_message({"type": "open-url", "url": url})
         except Exception as e:
             logger.error(f"Could not trigger call: {e}")
         await params.result_callback({"status": "dialing", "phone": phone})
@@ -388,7 +388,7 @@ Rules:
         url = f"mailto:{to}?subject={subject}&body={body}"
         logger.info(f"Sending email: {url[:100]}")
         try:
-            await transport.send_app_message({"type": "open-url", "url": url})
+            await transport.send_message({"type": "open-url", "url": url})
         except Exception as e:
             logger.error(f"Could not trigger email: {e}")
         await params.result_callback({"status": "opened", "to": to})
