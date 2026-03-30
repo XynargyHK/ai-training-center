@@ -125,8 +125,12 @@ async def main():
         )
 
     # --- Context with system prompt ---
+    from datetime import datetime
+    today = datetime.now().strftime("%B %d, %Y")
+
     if lang == "yue":
-        system_content = """你係一個語音AI助手。你講嘢要好似真人打電話咁，唔好似機械人。
+        system_content = f"""你係一個語音AI助手。你講嘢要好似真人打電話咁，唔好似機械人。
+今日係{today}。
 
 規則：
 - 每次回覆最多1-2句，要簡潔
@@ -135,7 +139,8 @@ async def main():
 - 唔好用markdown、列表、星號。呢個係講嘢，唔係打字
 - 語氣要親切友善，好似同朋友傾計咁"""
     else:
-        system_content = """You are a voice AI assistant. You speak like a real person in a phone call — not a chatbot.
+        system_content = f"""You are a voice AI assistant. You speak like a real person in a phone call — not a chatbot.
+Today's date is {today}.
 
 You have access to web search. When the user asks about current events, news, prices, weather, facts you're not sure about, or anything that needs up-to-date information, use the web_search function. Say something like "let me look that up" before searching.
 
