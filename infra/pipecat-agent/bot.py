@@ -46,6 +46,32 @@ except ValueError:
 logger.add(sys.stderr, level="DEBUG")
 
 
+class STTRouter(FrameProcessor):
+    """Routes audio to the active STT service. Allows swapping STT mid-call."""
+    def __init__(self, default_stt, name="STTRouter"):
+        super().__init__(name=name)
+        self._active_stt = default_stt
+        self._stts = {"default": default_stt}
+
+    def add_stt(self, key, stt_service):
+        self._stts[key] = stt_service
+
+    async def switch_stt(self, key):
+        if key in self._stts:
+            self._active_stt = self._stts[key]
+            logger.info(f"STT switched to: {key} ({type(self._active_stt).__name__})")
+
+    async def process_frame(self, frame, direction):
+        await super().process_frame(frame, direction)
+        # Forward audio frames to active STT for processing
+        from pipecat.frames.frames import InputAudioRawFrame
+        if isinstance(frame, InputAudioRawFrame):
+            await self._active_stt.process_frame(frame, direction)
+            return  # STT will push transcription frames
+        # Pass everything else through
+        await self.push_frame(frame, direction)
+
+
 class STTForwarder(FrameProcessor):
     """Sends user speech transcripts to browser."""
     def __init__(self, name="STTForwarder"):
@@ -117,20 +143,30 @@ async def main():
     )
 
     # --- STT ---
+    # --- STT: Deepgram (default) + Azure (Cantonese) ---
     lang = os.getenv("VOICE_LANG", "en")
+    from pipecat.services.azure.stt import AzureSTTService
+
+    deepgram_stt = DeepgramSTTService(
+        api_key=os.getenv("DEEPGRAM_API_KEY"),
+        language="multi",
+    )
+    azure_stt = AzureSTTService(
+        api_key=os.getenv("AZURE_SPEECH_KEY"),
+        region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
+        language="zh-HK",
+        sample_rate=24000,
+    )
+
     if lang == "yue":
-        from pipecat.services.azure.stt import AzureSTTService
-        stt = AzureSTTService(
-            api_key=os.getenv("AZURE_SPEECH_KEY"),
-            region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
-            language="zh-HK",
-            sample_rate=24000,
-        )
+        stt = azure_stt
     else:
-        stt = DeepgramSTTService(
-            api_key=os.getenv("DEEPGRAM_API_KEY"),
-            language="multi",
-        )
+        stt = deepgram_stt
+
+    # Router for mid-call STT swapping
+    stt_router = STTRouter(stt, name="STTRouter")
+    stt_router.add_stt("deepgram", deepgram_stt)
+    stt_router.add_stt("cantonese", azure_stt)
 
     # --- LLM: Gemini Flash ---
     from pipecat.services.google.llm import GoogleLLMService
@@ -433,11 +469,17 @@ Rules:
         language = params.arguments.get("language", "english").lower()
         voice = LANGUAGE_VOICES.get(language, MULTILINGUAL_VOICE)
         logger.info(f"Switching language to {language}, voice: {voice}")
+        # Swap TTS voice
         try:
             tts._settings.voice = voice
             logger.info(f"TTS voice updated to {voice}")
         except Exception as e:
             logger.error(f"Could not update TTS voice: {e}")
+        # Swap STT for Cantonese
+        if language == "cantonese":
+            await stt_router.switch_stt("cantonese")
+        else:
+            await stt_router.switch_stt("deepgram")
         await params.result_callback({
             "status": "switched",
             "language": language,
@@ -490,7 +532,7 @@ Rules:
     pipeline = Pipeline(
         [
             transport.input(),
-            stt,
+            stt_router,
             STTForwarder(),
             user_aggregator,
             llm,
