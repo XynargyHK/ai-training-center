@@ -46,32 +46,34 @@ except ValueError:
 logger.add(sys.stderr, level="DEBUG")
 
 
-class TextForwarder(FrameProcessor):
-    """Taps into pipeline text flow and sends to browser."""
-    def __init__(self, transport_ref, name="TextForwarder"):
+class STTForwarder(FrameProcessor):
+    """Sends user speech transcripts to browser."""
+    def __init__(self, name="STTForwarder"):
         super().__init__(name=name)
-        self._transport_ref = transport_ref
-        self._ai_text = ""
-        print(f"TextForwarder created: {name}, transport type: {type(transport_ref).__name__}, methods: {[m for m in dir(transport_ref) if 'send' in m.lower() or 'message' in m.lower() or 'app' in m.lower()]}", flush=True)
 
     async def process_frame(self, frame, direction):
         await super().process_frame(frame, direction)
-
         if isinstance(frame, TranscriptionFrame):
-            print(f"[STT] {frame.text}", flush=True)
-            msg_frame = DailyOutputTransportMessageFrame(message={"type": "stt", "text": frame.text})
-            await self.push_frame(msg_frame, FrameDirection.DOWNSTREAM)
+            msg = DailyOutputTransportMessageFrame(message={"type": "stt", "text": frame.text})
+            await self.push_frame(msg, FrameDirection.DOWNSTREAM)
+        await self.push_frame(frame, direction)
 
-        elif isinstance(frame, TextFrame):
-            self._ai_text += frame.text
-            msg_frame = DailyOutputTransportMessageFrame(message={"type": "llm", "text": self._ai_text})
-            await self.push_frame(msg_frame, FrameDirection.DOWNSTREAM)
 
-        # Reset on new response
+class LLMForwarder(FrameProcessor):
+    """Sends AI response text to browser."""
+    def __init__(self, name="LLMForwarder"):
+        super().__init__(name=name)
+        self._text = ""
+
+    async def process_frame(self, frame, direction):
+        await super().process_frame(frame, direction)
         fn = type(frame).__name__
         if "LLMFullResponseStart" in fn or "LLMResponseStart" in fn:
-            self._ai_text = ""
-
+            self._text = ""
+        if isinstance(frame, TextFrame):
+            self._text += frame.text
+            msg = DailyOutputTransportMessageFrame(message={"type": "llm", "text": self._text})
+            await self.push_frame(msg, FrameDirection.DOWNSTREAM)
         await self.push_frame(frame, direction)
 
 
@@ -468,18 +470,15 @@ Rules:
     context = LLMContext(messages=messages, tools=tools)
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(context)
 
-    # --- Text forwarder: taps STT + LLM text for browser display ---
-    text_fwd = TextForwarder(transport, name="TextForwarder")
-
     # --- Pipeline ---
     pipeline = Pipeline(
         [
             transport.input(),
             stt,
-            text_fwd,
+            STTForwarder(),
             user_aggregator,
             llm,
-            TextForwarder(transport, name="LLMForwarder"),
+            LLMForwarder(),
             tts,
             transport.output(),
             assistant_aggregator,
