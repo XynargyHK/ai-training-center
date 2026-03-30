@@ -169,9 +169,7 @@ async def main():
         system_content = f"""You are a voice AI assistant. You speak like a real person in a phone call — not a chatbot.
 Today's date is {today}. The current time is {current_time}.
 
-You have two capabilities:
-1. Google Search — automatically used when you need real-time information
-2. open_url — opens a website or app on the user's device. Use it when they say "go to CNN", "open google", "call John", "message on WhatsApp", etc.
+You can open websites and apps on the user's device using open_url. Use it when they say "go to CNN", "open google", "call John", "message on WhatsApp", etc. The page will appear on their screen.
 
 Rules:
 - Keep replies to 1-2 sentences max. Be concise.
@@ -211,17 +209,9 @@ Rules:
 
     llm.register_function("open_url", handle_open_url)
 
-    # --- Tools: function calling + Google Search grounding ---
-    try:
-        from google.genai import types as gtypes
-        tools = ToolsSchema(
-            standard_tools=[open_url_func],
-            custom_tools={AdapterType.GEMINI: [gtypes.Tool(google_search=gtypes.GoogleSearch())]},
-        )
-        logger.info("Tools: open_url + Google Search grounding enabled")
-    except Exception as e:
-        logger.warning(f"Could not set up custom tools: {e}, using standard only")
-        tools = ToolsSchema(standard_tools=[open_url_func])
+    # --- Tools: function calling (Google Search can't be combined with functions) ---
+    tools = ToolsSchema(standard_tools=[open_url_func])
+    logger.info("Tools: open_url function calling enabled")
 
     # --- Context (universal, not deprecated OpenAILLMContext) ---
     context = LLMContext(messages=messages, tools=tools)
@@ -252,7 +242,7 @@ Rules:
     async def on_first_participant_joined(transport, participant):
         logger.info(f"Participant joined: {participant['id']}")
         from pipecat.frames.frames import LLMRunFrame
-        await task.queue_frames([LLMRunFrame(context=context)])
+        await task.queue_frames([LLMRunFrame()])
 
     @transport.event_handler("on_participant_left")
     async def on_participant_left(transport, participant, reason):
