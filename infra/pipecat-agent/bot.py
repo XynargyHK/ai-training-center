@@ -1,7 +1,7 @@
 """
 Pipecat Voice AI Agent — Full-duplex conversation
-Uses: Deepgram STT + Gemini Flash LLM + Cartesia/Azure TTS + Daily WebRTC
-Google Search grounding for real-time info
+Uses: Deepgram STT + Gemini Flash LLM + multi-provider TTS + Daily WebRTC
+Google Search grounding + function calling (open_url)
 """
 import asyncio
 import os
@@ -11,7 +11,14 @@ from pipecat.frames.frames import LLMMessagesFrame, EndFrame
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
-from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
+from pipecat.processors.aggregators.llm_context import LLMContext
+from pipecat.processors.aggregators.llm_response_universal import (
+    LLMContextAggregatorPair,
+    LLMUserAggregatorParams,
+)
+from pipecat.adapters.schemas.function_schema import FunctionSchema
+from pipecat.adapters.schemas.tools_schema import ToolsSchema, AdapterType
+from pipecat.services.llm_service import FunctionCallParams
 from pipecat.services.cartesia.tts import CartesiaTTSService
 from pipecat.services.deepgram.stt import DeepgramSTTService
 from pipecat.services.openai.llm import OpenAILLMService
@@ -89,7 +96,6 @@ async def main():
     tts_voice = os.getenv("TTS_VOICE", "")
 
     if lang == "yue":
-        # Cantonese always uses Azure
         from pipecat.services.azure.tts import AzureTTSService
         tts = AzureTTSService(
             api_key=os.getenv("AZURE_SPEECH_KEY"),
@@ -133,7 +139,6 @@ async def main():
             ),
         )
     else:
-        # Default: Azure English
         from pipecat.services.azure.tts import AzureTTSService
         tts = AzureTTSService(
             api_key=os.getenv("AZURE_SPEECH_KEY"),
@@ -164,6 +169,10 @@ async def main():
         system_content = f"""You are a voice AI assistant. You speak like a real person in a phone call — not a chatbot.
 Today's date is {today}. The current time is {current_time}.
 
+You have two capabilities:
+1. Google Search — automatically used when you need real-time information
+2. open_url — opens a website or app on the user's device. Use it when they say "go to CNN", "open google", "call John", "message on WhatsApp", etc.
+
 Rules:
 - Keep replies to 1-2 sentences max. Be concise.
 - Use natural fillers occasionally: "hmm", "well", "you know", "let me think..."
@@ -175,28 +184,59 @@ Rules:
 
     messages = [{"role": "system", "content": system_content}]
 
-    # --- Google Search grounding ---
-    tools = None
+    # --- Function calling: open_url ---
+    open_url_func = FunctionSchema(
+        name="open_url",
+        description="Open a URL on the user's device. Use for websites (https://cnn.com), phone calls (tel:+852...), WhatsApp (https://wa.me/852...), email (mailto:...), or maps.",
+        properties={
+            "url": {
+                "type": "string",
+                "description": "The full URL to open, e.g. https://www.cnn.com or tel:+85291234567"
+            }
+        },
+        required=["url"],
+    )
+
+    # Handler for open_url
+    async def handle_open_url(params: FunctionCallParams):
+        url = params.arguments.get("url", "")
+        if not url.startswith(("http", "tel:", "mailto:", "geo:")):
+            url = "https://" + url
+        logger.info(f"Opening URL: {url}")
+        try:
+            await transport.send_app_message({"type": "open-url", "url": url})
+        except Exception as e:
+            logger.error(f"Could not send URL to browser: {e}")
+        await params.result_callback({"status": "opened", "url": url})
+
+    llm.register_function("open_url", handle_open_url)
+
+    # --- Tools: function calling + Google Search grounding ---
     try:
         from google.genai import types as gtypes
-        tools = [gtypes.Tool(google_search=gtypes.GoogleSearch())]
-        logger.info("Google Search grounding enabled")
+        tools = ToolsSchema(
+            standard_tools=[open_url_func],
+            custom_tools={AdapterType.GEMINI: [gtypes.Tool(google_search=gtypes.GoogleSearch())]},
+        )
+        logger.info("Tools: open_url + Google Search grounding enabled")
     except Exception as e:
-        logger.error(f"Could not enable Google Search: {e}")
+        logger.warning(f"Could not set up custom tools: {e}, using standard only")
+        tools = ToolsSchema(standard_tools=[open_url_func])
 
-    context = OpenAILLMContext(messages, tools=tools)
-    context_aggregator = llm.create_context_aggregator(context)
+    # --- Context (universal, not deprecated OpenAILLMContext) ---
+    context = LLMContext(messages=messages, tools=tools)
+    user_aggregator, assistant_aggregator = LLMContextAggregatorPair(context)
 
     # --- Pipeline ---
     pipeline = Pipeline(
         [
             transport.input(),
             stt,
-            context_aggregator.user(),
+            user_aggregator,
             llm,
             tts,
             transport.output(),
-            context_aggregator.assistant(),
+            assistant_aggregator,
         ]
     )
 
@@ -211,7 +251,8 @@ Rules:
     @transport.event_handler("on_first_participant_joined")
     async def on_first_participant_joined(transport, participant):
         logger.info(f"Participant joined: {participant['id']}")
-        await task.queue_frames([context_aggregator.user().get_context_frame()])
+        from pipecat.frames.frames import LLMRunFrame
+        await task.queue_frames([LLMRunFrame(context=context)])
 
     @transport.event_handler("on_participant_left")
     async def on_participant_left(transport, participant, reason):
