@@ -59,6 +59,21 @@ class STTForwarder(FrameProcessor):
         await self.push_frame(frame, direction)
 
 
+class CJKSpaceFixer(FrameProcessor):
+    """Removes extra spaces between CJK characters in TextFrames."""
+    def __init__(self, name="CJKSpaceFixer"):
+        super().__init__(name=name)
+
+    async def process_frame(self, frame, direction):
+        await super().process_frame(frame, direction)
+        if isinstance(frame, TextFrame):
+            import re
+            fixed = re.sub(r'(?<=[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef])\s+(?=[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef])', '', frame.text)
+            if fixed != frame.text:
+                frame = TextFrame(text=fixed)
+        await self.push_frame(frame, direction)
+
+
 class LLMForwarder(FrameProcessor):
     """Sends AI response text to browser."""
     def __init__(self, name="LLMForwarder"):
@@ -478,6 +493,7 @@ Rules:
             STTForwarder(),
             user_aggregator,
             llm,
+            CJKSpaceFixer(),
             LLMForwarder(),
             tts,
             transport.output(),
