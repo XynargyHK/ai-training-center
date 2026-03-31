@@ -128,6 +128,7 @@ async def main():
         "fr": "fr-FR",
         "es": "es-ES",
         "de": "de-DE",
+        "vi": "vi-VN",
     }
     if lang in AZURE_STT_LANGUAGES:
         from pipecat.services.azure.stt import AzureSTTService
@@ -158,16 +159,21 @@ async def main():
     tts_provider = os.getenv("TTS_PROVIDER", "azure")
     tts_voice = os.getenv("TTS_VOICE", "")
 
-    if lang == "yue":
+    # Languages that need native Azure voices (not Jenny multilingual)
+    NATIVE_VOICE_DEFAULTS = {
+        "yue": "zh-HK-WanLungNeural",
+        "vi": "vi-VN-HoaiMyNeural",
+    }
+    if lang in NATIVE_VOICE_DEFAULTS:
         from pipecat.services.azure.tts import AzureTTSService
-        cantonese_voice = tts_voice or "zh-HK-WanLungNeural"
+        native_voice = tts_voice or NATIVE_VOICE_DEFAULTS[lang]
         tts = AzureTTSService(
             api_key=os.getenv("AZURE_SPEECH_KEY"),
             region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
-            voice=cantonese_voice,
+            voice=native_voice,
             sample_rate=24000,
         )
-        logger.info(f"TTS: Azure Cantonese ({cantonese_voice})")
+        logger.info(f"TTS: Azure native ({native_voice})")
     elif tts_provider == "elevenlabs":
         from pipecat.services.elevenlabs.tts import ElevenLabsTTSService
         tts = ElevenLabsTTSService(
@@ -223,7 +229,7 @@ async def main():
     # Map lang code to name for system prompt
     LANG_NAMES = {
         "en": "English", "zh": "Mandarin Chinese", "yue": "Cantonese",
-        "ja": "Japanese", "ko": "Korean", "fr": "French", "es": "Spanish", "de": "German",
+        "ja": "Japanese", "ko": "Korean", "fr": "French", "es": "Spanish", "de": "German", "vi": "Vietnamese",
     }
 
     if lang == "yue":
@@ -457,6 +463,7 @@ Rules:
     # Only Cantonese needs a special voice — multilingual handles all others
     LANGUAGE_VOICES = {
         "cantonese": "zh-HK-WanLungNeural",
+        "vietnamese": "vi-VN-HoaiMyNeural",
     }
     MULTILINGUAL_VOICE = "en-US-JennyMultilingualNeural"
 
@@ -466,7 +473,7 @@ Rules:
         properties={
             "language": {
                 "type": "string",
-                "description": "Target language: english, mandarin, cantonese, japanese, korean, french, spanish, german"
+                "description": "Target language: english, mandarin, cantonese, japanese, korean, french, spanish, german, vietnamese"
             }
         },
         required=["language"],
@@ -482,6 +489,7 @@ Rules:
         "french": "fr",
         "spanish": "es",
         "german": "de",
+        "vietnamese": "vi",
     }
 
     async def handle_switch_language(params: FunctionCallParams):
