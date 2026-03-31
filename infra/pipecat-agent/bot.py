@@ -6,8 +6,9 @@ Google Search grounding + function calling (open_url)
 import asyncio
 import os
 import sys
+import time
 
-from pipecat.frames.frames import LLMMessagesFrame, EndFrame, TextFrame, TranscriptionFrame
+from pipecat.frames.frames import LLMMessagesFrame, EndFrame, TextFrame, TranscriptionFrame, UserStartedSpeakingFrame
 from pipecat.processors.frame_processor import FrameProcessor, FrameDirection
 from pipecat.transports.daily.transport import DailyOutputTransportMessageFrame
 from pipecat.pipeline.pipeline import Pipeline
@@ -44,6 +45,40 @@ try:
 except ValueError:
     pass
 logger.add(sys.stderr, level="DEBUG")
+
+
+class STTLatencyMonitor(FrameProcessor):
+    """Monitors STT TTFB and forces reconnection when latency exceeds threshold.
+    Detects degradation before the user notices and recycles the connection."""
+    def __init__(self, stt_service, threshold=3.0, name="STTLatencyMonitor"):
+        super().__init__(name=name)
+        self._stt = stt_service
+        self._threshold = threshold
+        self._speech_start = None
+        self._recycling = False
+
+    async def process_frame(self, frame, direction):
+        await super().process_frame(frame, direction)
+        if isinstance(frame, UserStartedSpeakingFrame):
+            # User turn started — record timestamp for TTFB measurement
+            self._speech_start = time.time()
+        elif isinstance(frame, TranscriptionFrame) and self._speech_start:
+            ttfb = time.time() - self._speech_start
+            self._speech_start = None
+            if ttfb > self._threshold and not self._recycling:
+                logger.warning(f"STT TTFB {ttfb:.1f}s exceeds {self._threshold}s — recycling connection")
+                self._recycling = True
+                asyncio.create_task(self._recycle())
+        await self.push_frame(frame, direction)
+
+    async def _recycle(self):
+        try:
+            await self._stt._update_settings(self._stt._settings)
+            logger.info("STT connection recycled successfully")
+        except Exception as e:
+            logger.error(f"STT recycle failed: {e}")
+        finally:
+            self._recycling = False
 
 
 class STTForwarder(FrameProcessor):
@@ -558,11 +593,15 @@ Rules:
     context = LLMContext(messages=messages, tools=tools)
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(context)
 
+    # --- STT Latency Monitor (auto-recycle on degradation) ---
+    stt_monitor = STTLatencyMonitor(stt_service=stt, threshold=3.0)
+
     # --- Pipeline ---
     pipeline = Pipeline(
         [
             transport.input(),
             stt,
+            stt_monitor,
             STTForwarder(),
             user_aggregator,
             llm,
