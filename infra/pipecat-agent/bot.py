@@ -221,6 +221,35 @@ class AutoDetectAzureSTTService:
                 stt._speech_recognizer.recognized.connect(stt._on_handle_recognized)
                 stt._speech_recognizer.canceled.connect(stt._on_handle_canceled)
 
+                # Patch recognized handler to extract auto-detected language
+                original_on_recognized = stt._on_handle_recognized
+                def patched_on_recognized(event):
+                    # Extract detected language from AutoDetectSourceLanguageResult
+                    try:
+                        auto_result = speechsdk.AutoDetectSourceLanguageResult(event.result)
+                        if auto_result.language:
+                            event.result.language = auto_result.language
+                    except Exception:
+                        pass
+                    original_on_recognized(event)
+
+                stt._speech_recognizer.recognized.disconnect_all()
+                stt._speech_recognizer.recognized.connect(patched_on_recognized)
+
+                # Also patch recognizing handler for interim results
+                original_on_recognizing = stt._on_handle_recognizing
+                def patched_on_recognizing(event):
+                    try:
+                        auto_result = speechsdk.AutoDetectSourceLanguageResult(event.result)
+                        if auto_result.language:
+                            event.result.language = auto_result.language
+                    except Exception:
+                        pass
+                    original_on_recognizing(event)
+
+                stt._speech_recognizer.recognizing.disconnect_all()
+                stt._speech_recognizer.recognizing.connect(patched_on_recognizing)
+
                 # Start continuous recognition (same as original — no .get(), no await)
                 stt._speech_recognizer.start_continuous_recognition_async()
                 logger.info(f"Azure STT auto-detect started with candidates: {candidate_languages}")
