@@ -127,6 +127,71 @@ class LLMForwarder(FrameProcessor):
         await self.push_frame(frame, direction)
 
 
+class AutoDetectAzureSTTService:
+    """Azure STT with auto language identification.
+    Wraps AzureSTTService but overrides _connect() to use AutoDetectSourceLanguageConfig.
+    Supports continuous language ID — detects language per utterance."""
+
+    @staticmethod
+    def create(api_key, region, candidate_languages, sample_rate=24000):
+        """Create an AzureSTTService with auto language detection.
+        candidate_languages: list like ["en-US", "zh-HK", "zh-CN", "vi-VN", "ja-JP", "ko-KR"]
+        """
+        from pipecat.services.azure.stt import AzureSTTService
+        import azure.cognitiveservices.speech as speechsdk
+
+        # Create base service with first candidate as default
+        stt = AzureSTTService(
+            api_key=api_key,
+            region=region,
+            language=candidate_languages[0],
+            sample_rate=sample_rate,
+        )
+
+        # Patch _connect to inject auto-detect config
+        original_connect = stt._connect
+
+        async def patched_connect():
+            # Set continuous language ID mode
+            stt._speech_config.set_property(
+                property_id=speechsdk.PropertyId.SpeechServiceConnection_LanguageIdMode,
+                value="Continuous"
+            )
+
+            # Create auto-detect config
+            auto_detect_config = speechsdk.languageconfig.AutoDetectSourceLanguageConfig(
+                languages=candidate_languages
+            )
+
+            # Create audio stream (same as original)
+            stream_format = speechsdk.audio.AudioStreamFormat(
+                samples_per_second=stt.sample_rate,
+                bits_per_sample=16,
+                channels=1,
+            )
+            stt._push_stream = speechsdk.audio.PushAudioInputStream(stream_format=stream_format)
+            audio_config = speechsdk.audio.AudioConfig(stream=stt._push_stream)
+
+            # Create recognizer WITH auto-detect (this is the key difference)
+            stt._speech_recognizer = speechsdk.SpeechRecognizer(
+                speech_config=stt._speech_config,
+                auto_detect_source_language_config=auto_detect_config,
+                audio_config=audio_config,
+            )
+
+            # Attach event handlers (same as original)
+            stt._speech_recognizer.recognizing.connect(stt._on_handle_recognizing)
+            stt._speech_recognizer.recognized.connect(stt._on_handle_recognized)
+            stt._speech_recognizer.canceled.connect(stt._on_handle_canceled)
+
+            # Start continuous recognition
+            await asyncio.to_thread(stt._speech_recognizer.start_continuous_recognition_async().get)
+            logger.info(f"Azure STT auto-detect started with candidates: {candidate_languages}")
+
+        stt._connect = patched_connect
+        return stt
+
+
 async def main():
     room_url = os.getenv("DAILY_ROOM_URL")
     daily_api_key = os.getenv("DAILY_API_KEY")
@@ -168,7 +233,16 @@ async def main():
     AZURE_STT_LANGUAGES = {
         "yue": "zh-HK",
     }
-    if lang in AZURE_STT_LANGUAGES:
+    if lang == "auto":
+        # Auto-detect language using Azure continuous language ID
+        stt = AutoDetectAzureSTTService.create(
+            api_key=os.getenv("AZURE_SPEECH_KEY"),
+            region=os.getenv("AZURE_SPEECH_REGION", "eastus"),
+            candidate_languages=["en-US", "zh-HK", "zh-CN", "vi-VN", "ja-JP", "ko-KR", "fr-FR", "es-ES", "de-DE"],
+            sample_rate=24000,
+        )
+        logger.info("STT: Azure Auto-Detect (en/yue/zh/vi/ja/ko/fr/es/de)")
+    elif lang in AZURE_STT_LANGUAGES:
         from pipecat.services.azure.stt import AzureSTTService
         azure_lang = AZURE_STT_LANGUAGES[lang]
         stt = AzureSTTService(
