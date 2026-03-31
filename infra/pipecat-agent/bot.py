@@ -94,6 +94,36 @@ class STTForwarder(FrameProcessor):
         await self.push_frame(frame, direction)
 
 
+class AutoTTSVoiceSwapper(FrameProcessor):
+    """Auto-swaps TTS voice based on detected language from Azure auto-detect STT.
+    Reads TranscriptionFrame.language and updates tts._settings.voice accordingly.
+    Safe mid-call — voice is read fresh per TTS synthesis call."""
+    # Native voices for languages that need them (not Jenny multilingual)
+    VOICE_MAP = {
+        "zh-HK": "zh-HK-WanLungNeural",      # Cantonese
+        "vi-VN": "vi-VN-HoaiMyNeural",         # Vietnamese
+    }
+    MULTILINGUAL_VOICE = "en-US-JennyMultilingualNeural"
+
+    def __init__(self, tts_service, name="AutoTTSVoiceSwapper"):
+        super().__init__(name=name)
+        self._tts = tts_service
+        self._current_lang = None
+
+    async def process_frame(self, frame, direction):
+        await super().process_frame(frame, direction)
+        if isinstance(frame, TranscriptionFrame):
+            lang = getattr(frame, 'language', None)
+            if lang and lang != self._current_lang:
+                self._current_lang = lang
+                new_voice = self.VOICE_MAP.get(str(lang), self.MULTILINGUAL_VOICE)
+                old_voice = self._tts._settings.voice
+                if new_voice != old_voice:
+                    self._tts._settings.voice = new_voice
+                    logger.info(f"Auto TTS voice swap: {old_voice} → {new_voice} (detected: {lang})")
+        await self.push_frame(frame, direction)
+
+
 class CJKSpaceFixer(FrameProcessor):
     """Removes extra spaces between CJK characters in TextFrames."""
     def __init__(self, name="CJKSpaceFixer"):
@@ -381,6 +411,8 @@ async def main():
 - 自然的回应：「嗯...」「哦！」「好的」「明白」
 - 不要用markdown、列表、星号。这是说话，不是打字
 - 语气要亲切友善，像同事聊天一样"""
+    elif lang == "auto":
+        lang_instruction = "Auto-detect the language the user speaks and ALWAYS respond in that SAME language. If they speak Cantonese, respond in Cantonese. If they speak English, respond in English. If they speak Mandarin, respond in Mandarin. Match their language exactly."
     else:
         lang_name = LANG_NAMES.get(lang, "English")
         lang_instruction = f"You MUST respond in {lang_name}. The user has selected {lang_name} as their language." if lang != "en" else "Detect what language the user speaks and respond in the same language."
@@ -677,13 +709,19 @@ Rules:
     # --- STT Latency Monitor (auto-recycle on degradation) ---
     stt_monitor = STTLatencyMonitor(stt_service=stt, threshold=3.0)
 
+    # --- Auto TTS Voice Swapper (only for auto-detect mode) ---
+    auto_voice_swapper = AutoTTSVoiceSwapper(tts_service=tts) if lang == "auto" else None
+
     # --- Pipeline ---
+    stt_processors = [stt, stt_monitor]
+    if auto_voice_swapper:
+        stt_processors.append(auto_voice_swapper)
+    stt_processors.append(STTForwarder())
+
     pipeline = Pipeline(
         [
             transport.input(),
-            stt,
-            stt_monitor,
-            STTForwarder(),
+            *stt_processors,
             user_aggregator,
             llm,
             CJKSpaceFixer(),
