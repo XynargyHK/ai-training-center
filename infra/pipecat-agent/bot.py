@@ -144,11 +144,11 @@ async def main():
         )
         logger.info(f"STT: Azure ({azure_lang})")
     else:
-        # Deepgram Nova-3 (default in pipecat 0.0.108) for all other languages
+        # Deepgram Nova-3 — language MUST be set via settings, not constructor kwarg
         dg_lang = DEEPGRAM_LANGUAGES.get(lang, "en")
         stt = DeepgramSTTService(
             api_key=os.getenv("DEEPGRAM_API_KEY"),
-            language=dg_lang,
+            settings=DeepgramSTTService.Settings(language=dg_lang),
         )
         logger.info(f"STT: Deepgram ({dg_lang})")
 
