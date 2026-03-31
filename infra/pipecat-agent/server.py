@@ -271,22 +271,39 @@ async def handle_ws_phone(request):
                                 await ws_internal.send_str(buf_msg)
                             await ws_internal.send_str(msg.data)
 
-                            # Bidirectional proxy
+                            # Bidirectional proxy with logging
+                            ext_to_int_count = [0]
+                            int_to_ext_count = [0]
+
                             async def forward_to_internal():
                                 async for ext_msg in ws_external:
                                     if ext_msg.type == aiohttp_client.WSMsgType.TEXT:
+                                        ext_to_int_count[0] += 1
+                                        if ext_to_int_count[0] <= 3:
+                                            print(f"[PROXY] Twilio→Bot msg #{ext_to_int_count[0]}: {ext_msg.data[:100]}", flush=True)
                                         await ws_internal.send_str(ext_msg.data)
-                                    elif ext_msg.type == aiohttp_client.WSMsgType.CLOSE:
+                                    elif ext_msg.type in (aiohttp_client.WSMsgType.CLOSE, aiohttp_client.WSMsgType.CLOSING, aiohttp_client.WSMsgType.CLOSED):
+                                        print(f"[PROXY] Twilio WS closed after {ext_to_int_count[0]} messages", flush=True)
                                         await ws_internal.close()
+                                        break
+                                    elif ext_msg.type == aiohttp_client.WSMsgType.ERROR:
+                                        print(f"[PROXY] Twilio WS error: {ws_external.exception()}", flush=True)
                                         break
 
                             async def forward_to_external():
                                 async for int_msg in ws_internal:
                                     if int_msg.type == aiohttp_client.WSMsgType.TEXT:
+                                        int_to_ext_count[0] += 1
+                                        if int_to_ext_count[0] <= 3:
+                                            print(f"[PROXY] Bot→Twilio msg #{int_to_ext_count[0]}: {int_msg.data[:100]}", flush=True)
                                         await ws_external.send_str(int_msg.data)
                                     elif int_msg.type == aiohttp_client.WSMsgType.BINARY:
+                                        int_to_ext_count[0] += 1
+                                        if int_to_ext_count[0] <= 3:
+                                            print(f"[PROXY] Bot→Twilio binary #{int_to_ext_count[0]}: {len(int_msg.data)} bytes", flush=True)
                                         await ws_external.send_bytes(int_msg.data)
-                                    elif int_msg.type == aiohttp_client.WSMsgType.CLOSE:
+                                    elif int_msg.type in (aiohttp_client.WSMsgType.CLOSE, aiohttp_client.WSMsgType.CLOSING, aiohttp_client.WSMsgType.CLOSED):
+                                        print(f"[PROXY] Bot WS closed after sending {int_to_ext_count[0]} messages", flush=True)
                                         await ws_external.close()
                                         break
 
