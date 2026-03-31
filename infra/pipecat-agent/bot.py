@@ -118,35 +118,39 @@ async def main():
 
     # --- STT ---
     lang = os.getenv("VOICE_LANG", "en")
-    # Azure STT language codes — used for ALL non-English languages
-    # Deepgram doesn't properly enforce language, Azure does
+    # Deepgram Nova-3 languages (fast, <300ms)
+    DEEPGRAM_LANGUAGES = {
+        "en": "en",
+        "vi": "vi",
+        "zh": "zh",
+        "ja": "ja",
+        "ko": "ko",
+        "fr": "fr",
+        "es": "es",
+        "de": "de",
+    }
+    # Azure STT only for Cantonese (Deepgram doesn't support zh-HK well)
     AZURE_STT_LANGUAGES = {
         "yue": "zh-HK",
-        "zh": "zh-CN",
-        "ja": "ja-JP",
-        "ko": "ko-KR",
-        "fr": "fr-FR",
-        "es": "es-ES",
-        "de": "de-DE",
-        "vi": "vi-VN",
     }
     if lang in AZURE_STT_LANGUAGES:
         from pipecat.services.azure.stt import AzureSTTService
         azure_lang = AZURE_STT_LANGUAGES[lang]
         stt = AzureSTTService(
             api_key=os.getenv("AZURE_SPEECH_KEY"),
-            region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
+            region=os.getenv("AZURE_SPEECH_REGION", "eastus"),
             language=azure_lang,
             sample_rate=24000,
         )
         logger.info(f"STT: Azure ({azure_lang})")
     else:
-        # English — use Deepgram (faster, cheaper)
+        # Deepgram Nova-3 (default in pipecat 0.0.108) for all other languages
+        dg_lang = DEEPGRAM_LANGUAGES.get(lang, "en")
         stt = DeepgramSTTService(
             api_key=os.getenv("DEEPGRAM_API_KEY"),
-            language="en",
+            language=dg_lang,
         )
-        logger.info(f"STT: Deepgram (en)")
+        logger.info(f"STT: Deepgram ({dg_lang})")
 
     # --- LLM: Gemini Flash ---
     from pipecat.services.google.llm import GoogleLLMService
@@ -169,7 +173,7 @@ async def main():
         native_voice = tts_voice or NATIVE_VOICE_DEFAULTS[lang]
         tts = AzureTTSService(
             api_key=os.getenv("AZURE_SPEECH_KEY"),
-            region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
+            region=os.getenv("AZURE_SPEECH_REGION", "eastus"),
             voice=native_voice,
             sample_rate=24000,
         )
@@ -213,7 +217,7 @@ async def main():
         from pipecat.services.azure.tts import AzureTTSService
         tts = AzureTTSService(
             api_key=os.getenv("AZURE_SPEECH_KEY"),
-            region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
+            region=os.getenv("AZURE_SPEECH_REGION", "eastus"),
             voice=tts_voice or "en-US-JennyMultilingualNeural",
             sample_rate=24000,
         )
