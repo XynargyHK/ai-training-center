@@ -239,11 +239,80 @@ async def _run_phone_bot(phone_port, call_sid, from_number, to_number):
         traceback.print_exc()
 
 
+async def handle_ws_phone(request):
+    """WebSocket proxy: Twilio connects here (port 8765), we forward to internal phone bot (port 877x)."""
+    import aiohttp as aiohttp_client
+
+    ws_external = web.WebSocketResponse()
+    await ws_external.prepare(request)
+
+    # First message from Twilio is "connected", second is "start" with streamSid
+    # We need to read the start message to get the phone_port from custom parameters
+    phone_port = None
+    buffered = []
+
+    async for msg in ws_external:
+        if msg.type == aiohttp_client.WSMsgType.TEXT:
+            import json
+            data = json.loads(msg.data)
+
+            if data.get("event") == "start":
+                # Extract custom parameters
+                custom = data.get("start", {}).get("customParameters", {})
+                phone_port = int(custom.get("phone_port", 8770))
+                print(f"Twilio stream started, proxying to internal port {phone_port}", flush=True)
+
+                # Now connect to the internal phone bot WebSocket and proxy
+                try:
+                    async with aiohttp_client.ClientSession() as session:
+                        async with session.ws_connect(f"ws://localhost:{phone_port}/ws") as ws_internal:
+                            # Forward the buffered messages
+                            for buf_msg in buffered:
+                                await ws_internal.send_str(buf_msg)
+                            await ws_internal.send_str(msg.data)
+
+                            # Bidirectional proxy
+                            async def forward_to_internal():
+                                async for ext_msg in ws_external:
+                                    if ext_msg.type == aiohttp_client.WSMsgType.TEXT:
+                                        await ws_internal.send_str(ext_msg.data)
+                                    elif ext_msg.type == aiohttp_client.WSMsgType.CLOSE:
+                                        await ws_internal.close()
+                                        break
+
+                            async def forward_to_external():
+                                async for int_msg in ws_internal:
+                                    if int_msg.type == aiohttp_client.WSMsgType.TEXT:
+                                        await ws_external.send_str(int_msg.data)
+                                    elif int_msg.type == aiohttp_client.WSMsgType.BINARY:
+                                        await ws_external.send_bytes(int_msg.data)
+                                    elif int_msg.type == aiohttp_client.WSMsgType.CLOSE:
+                                        await ws_external.close()
+                                        break
+
+                            await asyncio.gather(
+                                forward_to_internal(),
+                                forward_to_external(),
+                                return_exceptions=True,
+                            )
+                except Exception as e:
+                    print(f"WS proxy error: {e}", flush=True)
+                break
+            else:
+                # Buffer messages until we get the "start" event
+                buffered.append(msg.data)
+        elif msg.type == aiohttp_client.WSMsgType.ERROR:
+            break
+
+    return ws_external
+
+
 app = web.Application()
 app.router.add_post("/start", handle_start)
 app.router.add_post("/dialout", handle_dialout)
 app.router.add_post("/twiml", handle_twiml)
 app.router.add_get("/twiml", handle_twiml)
+app.router.add_get("/ws-phone", handle_ws_phone)
 app.router.add_get("/health", handle_health)
 app.router.add_get("/proxy", handle_proxy)
 # CORS for browser requests
