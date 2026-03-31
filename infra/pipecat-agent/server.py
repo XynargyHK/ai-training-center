@@ -1,6 +1,9 @@
 """
-HTTP server that creates a Daily room and spawns the Pipecat bot.
-Browser calls POST /start → gets room URL → joins via Daily JS SDK.
+HTTP server for Voice AI:
+- POST /start → creates Daily room + spawns browser voice bot
+- POST /dialout → makes outbound phone call via Twilio + spawns phone bot
+- POST /twiml → returns TwiML XML for Twilio to connect WebSocket
+- GET /health, GET /proxy
 """
 import os
 import subprocess
@@ -111,16 +114,145 @@ async def handle_proxy(request):
         return web.Response(text=f"Proxy error: {str(e)}", status=502)
 
 
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
+TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
+TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER", "")
+
+# Track active phone bot ports
+_next_phone_port = 8770
+
+
+async def handle_dialout(request):
+    """POST /dialout — make an outbound phone call via Twilio."""
+    global _next_phone_port
+    try:
+        body = await request.json()
+    except:
+        body = {}
+
+    to_number = body.get("to", "")
+    from_number = body.get("from", TWILIO_PHONE_NUMBER)
+    lang = body.get("lang", "en")
+
+    if not to_number:
+        return web.json_response({"error": "Missing 'to' phone number"}, status=400)
+    if not TWILIO_ACCOUNT_SID or not TWILIO_AUTH_TOKEN:
+        return web.json_response({"error": "Twilio credentials not configured"}, status=500)
+
+    # Assign a port for this phone bot's WebSocket
+    phone_port = _next_phone_port
+    _next_phone_port += 1
+    if _next_phone_port > 8799:
+        _next_phone_port = 8770
+
+    # Get the public URL for this server (Railway provides it)
+    server_url = os.getenv("RAILWAY_PUBLIC_DOMAIN", "")
+    if not server_url:
+        # Fallback: construct from request
+        server_url = request.host
+
+    # Create outbound call via Twilio REST API
+    import base64
+    auth = base64.b64encode(f"{TWILIO_ACCOUNT_SID}:{TWILIO_AUTH_TOKEN}".encode()).decode()
+
+    twiml_url = f"https://{server_url}/twiml?port={phone_port}&to={to_number}&from={from_number}"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            f"https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Calls.json",
+            headers={"Authorization": f"Basic {auth}"},
+            data={
+                "To": to_number,
+                "From": from_number,
+                "Url": twiml_url,
+            },
+            timeout=aiohttp.ClientTimeout(total=15),
+        ) as resp:
+            result = await resp.json()
+            print(f"Twilio call response: {resp.status} {result}")
+            if resp.status in (200, 201):
+                call_sid = result.get("sid", "")
+
+                # Spawn phone bot in background
+                os.environ["VOICE_LANG"] = lang
+                asyncio.ensure_future(_run_phone_bot(
+                    phone_port=phone_port,
+                    call_sid=call_sid,
+                    from_number=from_number,
+                    to_number=to_number,
+                ))
+
+                return web.json_response({
+                    "status": "calling",
+                    "call_sid": call_sid,
+                    "to": to_number,
+                    "from": from_number,
+                })
+            else:
+                return web.json_response({"error": result}, status=500)
+
+
+async def handle_twiml(request):
+    """POST /twiml — Twilio hits this when call connects, returns TwiML to stream audio."""
+    phone_port = request.query.get("port", "8770")
+    to_number = request.query.get("to", "")
+    from_number = request.query.get("from", "")
+
+    server_url = os.getenv("RAILWAY_PUBLIC_DOMAIN", request.host)
+
+    twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Connect>
+        <Stream url="wss://{server_url}/ws-phone">
+            <Parameter name="phone_port" value="{phone_port}" />
+            <Parameter name="to_number" value="{to_number}" />
+            <Parameter name="from_number" value="{from_number}" />
+        </Stream>
+    </Connect>
+</Response>"""
+
+    return web.Response(text=twiml, content_type="application/xml")
+
+
+async def _run_phone_bot(phone_port, call_sid, from_number, to_number):
+    """Run the phone bot pipeline."""
+    try:
+        import importlib.util
+        import sys
+        if "phone_bot" in sys.modules:
+            del sys.modules["phone_bot"]
+        bot_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "phone_bot.py")
+        spec = importlib.util.spec_from_file_location("phone_bot", bot_path)
+        phone_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(phone_module)
+        await phone_module.run_phone_bot(
+            websocket_server_host="0.0.0.0",
+            websocket_server_port=phone_port,
+            stream_sid="",  # Will be set when Twilio connects
+            call_sid=call_sid,
+            from_number=from_number,
+            to_number=to_number,
+        )
+    except Exception as e:
+        print(f"PHONE BOT ERROR: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
+
+
 app = web.Application()
 app.router.add_post("/start", handle_start)
+app.router.add_post("/dialout", handle_dialout)
+app.router.add_post("/twiml", handle_twiml)
+app.router.add_get("/twiml", handle_twiml)
 app.router.add_get("/health", handle_health)
 app.router.add_get("/proxy", handle_proxy)
 # CORS for browser requests
-app.router.add_options("/start", lambda r: web.Response(headers={
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "POST",
-    "Access-Control-Allow-Headers": "Content-Type",
-}))
+for route in ["/start", "/dialout"]:
+    app.router.add_options(route, lambda r: web.Response(headers={
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST",
+        "Access-Control-Allow-Headers": "Content-Type",
+    }))
 
 
 @web.middleware
