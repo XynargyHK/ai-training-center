@@ -21,6 +21,24 @@ from pipecat.services.llm_service import FunctionCallParams
 from pipecat.services.deepgram.stt import DeepgramSTTService
 from pipecat.transports.websocket.server import WebsocketServerTransport, WebsocketServerParams
 from pipecat.serializers.twilio import TwilioFrameSerializer
+import json
+
+
+class AutoStreamSidTwilioSerializer(TwilioFrameSerializer):
+    """TwilioFrameSerializer that auto-captures stream_sid from the 'start' event.
+    Pipecat's default serializer doesn't update stream_sid from incoming messages."""
+    def deserialize(self, data):
+        if isinstance(data, str):
+            try:
+                msg = json.loads(data)
+                if msg.get("event") == "start":
+                    sid = msg.get("start", {}).get("streamSid", "") or msg.get("streamSid", "")
+                    if sid:
+                        self._stream_sid = sid
+                        logger.info(f"Captured Twilio streamSid: {sid}")
+            except (json.JSONDecodeError, KeyError):
+                pass
+        return super().deserialize(data)
 
 try:
     from pipecat.audio.vad.silero import SileroVADAnalyzer
@@ -228,8 +246,8 @@ Rules:
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(context)
 
     # --- Transport: Twilio WebSocket ---
-    serializer = TwilioFrameSerializer(
-        stream_sid=stream_sid,
+    serializer = AutoStreamSidTwilioSerializer(
+        stream_sid=stream_sid or "pending",
         call_sid=call_sid,
         account_sid=os.getenv("TWILIO_ACCOUNT_SID"),
         auth_token=os.getenv("TWILIO_AUTH_TOKEN"),

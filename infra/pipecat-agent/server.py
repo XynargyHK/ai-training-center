@@ -12,6 +12,7 @@ import time
 
 import aiohttp
 from aiohttp import web
+from loguru import logger
 
 DAILY_API_KEY = os.getenv("DAILY_API_KEY")
 DAILY_API_URL = "https://api.daily.co/v1"
@@ -257,15 +258,16 @@ async def handle_ws_phone(request):
             data = json.loads(msg.data)
 
             if data.get("event") == "start":
-                # Extract custom parameters
+                # Extract custom parameters and stream_sid
                 custom = data.get("start", {}).get("customParameters", {})
                 phone_port = int(custom.get("phone_port", 8770))
-                print(f"Twilio stream started, proxying to internal port {phone_port}", flush=True)
+                stream_sid = data.get("start", {}).get("streamSid", data.get("streamSid", ""))
+                logger.info(f"Twilio stream started, streamSid={stream_sid}, proxying to port {phone_port}")
 
-                # Now connect to the internal phone bot WebSocket and proxy
+                # Pass stream_sid to internal bot via query parameter
                 try:
                     async with aiohttp_client.ClientSession() as session:
-                        async with session.ws_connect(f"ws://localhost:{phone_port}/ws") as ws_internal:
+                        async with session.ws_connect(f"ws://localhost:{phone_port}/ws?stream_sid={stream_sid}") as ws_internal:
                             # Forward the buffered messages
                             for buf_msg in buffered:
                                 await ws_internal.send_str(buf_msg)
