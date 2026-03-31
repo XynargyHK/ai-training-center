@@ -19,7 +19,7 @@ from pipecat.adapters.schemas.function_schema import FunctionSchema
 from pipecat.adapters.schemas.tools_schema import ToolsSchema
 from pipecat.services.llm_service import FunctionCallParams
 from pipecat.services.deepgram.stt import DeepgramSTTService
-from pipecat.transports.websocket.server import WebSocketServerTransport, WebsocketServerParams
+from pipecat.transports.websocket.server import WebsocketServerTransport, WebsocketServerParams
 from pipecat.serializers.twilio import TwilioFrameSerializer
 
 try:
@@ -235,7 +235,7 @@ Rules:
         auth_token=os.getenv("TWILIO_AUTH_TOKEN"),
     )
 
-    transport = WebSocketServerTransport(
+    transport = WebsocketServerTransport(
         params=WebsocketServerParams(
             serializer=serializer,
             audio_in_enabled=True,
