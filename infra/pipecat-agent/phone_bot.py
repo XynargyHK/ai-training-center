@@ -116,11 +116,20 @@ async def run_phone_bot(websocket_server_host, websocket_server_port, stream_sid
         sample_rate=8000,  # Phone audio = 8kHz
     )
 
-    # --- STT: Deepgram ---
-    stt = DeepgramSTTService(
-        api_key=os.getenv("DEEPGRAM_API_KEY"),
-        settings=DeepgramSTTService.Settings(language="en"),
+    # --- STT: Azure Auto-Detect (same as browser auto-detect mode) ---
+    # Import the AutoDetectAzureSTTService from bot.py
+    import importlib.util, sys
+    bot_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.py")
+    spec = importlib.util.spec_from_file_location("bot_module", bot_path)
+    bot_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(bot_module)
+    stt = bot_module.AutoDetectAzureSTTService.create(
+        api_key=os.getenv("AZURE_SPEECH_KEY"),
+        region=os.getenv("AZURE_SPEECH_REGION", "eastus"),
+        candidate_languages=["en-US", "zh-HK", "zh-CN", "vi-VN", "ja-JP", "ko-KR", "fr-FR", "es-ES", "de-DE"],
+        sample_rate=8000,
     )
+    logger.info("Phone STT: Azure Auto-Detect (en/yue/zh/vi/ja/ko/fr/es/de)")
 
     # --- LLM: Gemini Flash ---
     from pipecat.services.google.llm import GoogleLLMService
@@ -136,9 +145,11 @@ async def run_phone_bot(websocket_server_host, websocket_server_port, stream_sid
     today = now.strftime("%B %d, %Y")
     current_time = now.strftime("%I:%M %p HKT")
 
-    system_content = f"""You are a voice AI assistant making a phone call. You speak like a real person — warm, professional, concise.
+    system_content = f"""You are a multilingual voice AI assistant making a phone call. You speak like a real person — warm, professional, concise.
 Today's date is {today}. The current time is {current_time}.
 You are calling {to_number} from {from_number}.
+
+Auto-detect the language the person speaks and ALWAYS respond in that SAME language. If they speak Cantonese, respond in colloquial Cantonese (用「係」唔好用「是」). If they speak English, respond in English. If they speak Mandarin, respond in Mandarin. Match their language exactly.
 
 You have these tools:
 1. search_web(query) — search the internet for current info.
@@ -147,7 +158,7 @@ You have these tools:
 
 Rules:
 - Keep replies to 1-2 sentences max. Phone conversations should be concise.
-- Use natural fillers occasionally: "um", "let me check", "sure thing".
+- Use natural fillers occasionally.
 - No markdown, no lists. This is a phone call.
 - Sound warm and professional, like a real business call.
 - If asked to schedule/book something, confirm the details clearly.
