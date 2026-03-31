@@ -114,13 +114,17 @@ class AutoTTSVoiceSwapper(FrameProcessor):
         await super().process_frame(frame, direction)
         if isinstance(frame, TranscriptionFrame):
             lang = getattr(frame, 'language', None)
-            if lang and lang != self._current_lang:
-                self._current_lang = lang
-                new_voice = self.VOICE_MAP.get(str(lang), self.MULTILINGUAL_VOICE)
-                old_voice = self._tts._settings.voice
-                if new_voice != old_voice:
-                    self._tts._settings.voice = new_voice
-                    logger.info(f"Auto TTS voice swap: {old_voice} → {new_voice} (detected: {lang})")
+            if lang:
+                # Convert to string for matching — could be Language enum or string
+                lang_str = str(lang)
+                if lang_str != self._current_lang:
+                    self._current_lang = lang_str
+                    logger.info(f"AutoTTSVoiceSwapper: detected language = '{lang_str}' (type: {type(lang).__name__})")
+                    new_voice = self.VOICE_MAP.get(lang_str, self.MULTILINGUAL_VOICE)
+                    old_voice = self._tts._settings.voice
+                    if new_voice != old_voice:
+                        self._tts._settings.voice = new_voice
+                        logger.info(f"Auto TTS voice swap: {old_voice} → {new_voice}")
         await self.push_frame(frame, direction)
 
 
