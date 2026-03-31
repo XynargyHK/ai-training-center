@@ -632,12 +632,17 @@ Rules:
 
     llm.register_function("translate", handle_translate)
 
+    # --- Additional skills ---
+    from skills import get_all_skill_schemas, register_all_skills
+    register_all_skills(llm)
+
     # --- Tools: all functions ---
-    tools = ToolsSchema(standard_tools=[
+    all_tools = [
         open_url_func, search_web_func, send_whatsapp_func, make_call_func, send_email_func,
         switch_language_func, translate_func
-    ])
-    logger.info("Tools: 7 functions enabled")
+    ] + get_all_skill_schemas()
+    tools = ToolsSchema(standard_tools=all_tools)
+    logger.info(f"Tools: {len(all_tools)} functions enabled")
 
     # --- Context (universal, not deprecated OpenAILLMContext) ---
     context = LLMContext(messages=messages, tools=tools)

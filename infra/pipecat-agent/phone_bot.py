@@ -244,8 +244,13 @@ Rules:
 
     llm.register_function("send_email", handle_send_email)
 
+    # --- Additional skills ---
+    from skills import get_all_skill_schemas, register_all_skills
+    register_all_skills(llm)
+
     # --- Tools ---
-    tools = ToolsSchema(standard_tools=[search_web_func, send_whatsapp_func, send_email_func])
+    all_tools = [search_web_func, send_whatsapp_func, send_email_func] + get_all_skill_schemas()
+    tools = ToolsSchema(standard_tools=all_tools)
 
     # --- Context ---
     context = LLMContext(messages=messages, tools=tools)
