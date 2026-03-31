@@ -152,41 +152,48 @@ class AutoDetectAzureSTTService:
         original_connect = stt._connect
 
         async def patched_connect():
-            # Set continuous language ID mode
-            stt._speech_config.set_property(
-                property_id=speechsdk.PropertyId.SpeechServiceConnection_LanguageIdMode,
-                value="Continuous"
-            )
+            if stt._audio_stream:
+                return
 
-            # Create auto-detect config
-            auto_detect_config = speechsdk.languageconfig.AutoDetectSourceLanguageConfig(
-                languages=candidate_languages
-            )
+            try:
+                # Set continuous language ID mode
+                stt._speech_config.set_property(
+                    property_id=speechsdk.PropertyId.SpeechServiceConnection_LanguageIdMode,
+                    value="Continuous"
+                )
 
-            # Create audio stream (same as original)
-            stream_format = speechsdk.audio.AudioStreamFormat(
-                samples_per_second=stt.sample_rate,
-                bits_per_sample=16,
-                channels=1,
-            )
-            stt._push_stream = speechsdk.audio.PushAudioInputStream(stream_format=stream_format)
-            audio_config = speechsdk.audio.AudioConfig(stream=stt._push_stream)
+                # Create auto-detect config
+                auto_detect_config = speechsdk.languageconfig.AutoDetectSourceLanguageConfig(
+                    languages=candidate_languages
+                )
 
-            # Create recognizer WITH auto-detect (this is the key difference)
-            stt._speech_recognizer = speechsdk.SpeechRecognizer(
-                speech_config=stt._speech_config,
-                auto_detect_source_language_config=auto_detect_config,
-                audio_config=audio_config,
-            )
+                # Create audio stream (matching original _connect exactly)
+                from azure.cognitiveservices.speech.audio import AudioStreamFormat, PushAudioInputStream
+                from azure.cognitiveservices.speech.dialog import AudioConfig
 
-            # Attach event handlers (same as original)
-            stt._speech_recognizer.recognizing.connect(stt._on_handle_recognizing)
-            stt._speech_recognizer.recognized.connect(stt._on_handle_recognized)
-            stt._speech_recognizer.canceled.connect(stt._on_handle_canceled)
+                stream_format = AudioStreamFormat(samples_per_second=stt.sample_rate, channels=1)
+                stt._audio_stream = PushAudioInputStream(stream_format)
+                audio_config = AudioConfig(stream=stt._audio_stream)
 
-            # Start continuous recognition
-            await asyncio.to_thread(stt._speech_recognizer.start_continuous_recognition_async().get)
-            logger.info(f"Azure STT auto-detect started with candidates: {candidate_languages}")
+                # Create recognizer WITH auto-detect (key difference from original)
+                stt._speech_recognizer = speechsdk.SpeechRecognizer(
+                    speech_config=stt._speech_config,
+                    auto_detect_source_language_config=auto_detect_config,
+                    audio_config=audio_config,
+                )
+
+                # Attach event handlers (same as original)
+                stt._speech_recognizer.recognizing.connect(stt._on_handle_recognizing)
+                stt._speech_recognizer.recognized.connect(stt._on_handle_recognized)
+                stt._speech_recognizer.canceled.connect(stt._on_handle_canceled)
+
+                # Start continuous recognition (same as original — no .get(), no await)
+                stt._speech_recognizer.start_continuous_recognition_async()
+                logger.info(f"Azure STT auto-detect started with candidates: {candidate_languages}")
+            except Exception as e:
+                logger.error(f"Azure auto-detect STT init error: {e}")
+                import traceback
+                traceback.print_exc()
 
         stt._connect = patched_connect
         return stt
