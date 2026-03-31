@@ -412,10 +412,12 @@ async def main():
 - 不要用markdown、列表、星号。这是说话，不是打字
 - 语气要亲切友善，像同事聊天一样"""
     elif lang == "auto":
-        lang_instruction = "Auto-detect the language the user speaks and ALWAYS respond in that SAME language. If they speak Cantonese, respond in Cantonese. If they speak English, respond in English. If they speak Mandarin, respond in Mandarin. Match their language exactly."
+        lang_instruction = "Auto-detect the language the user speaks and ALWAYS respond in that SAME language. If they speak Cantonese, respond in Cantonese using colloquial Cantonese (用「係」唔好用「是」). If they speak English, respond in English. If they speak Mandarin, respond in Mandarin. Match their language exactly."
     else:
         lang_name = LANG_NAMES.get(lang, "English")
         lang_instruction = f"You MUST respond in {lang_name}. The user has selected {lang_name} as their language." if lang != "en" else "Detect what language the user speaks and respond in the same language."
+
+    if lang not in ("yue", "zh"):
         system_content = f"""You are a voice AI assistant. You speak like a real person in a phone call — not a chatbot.
 Today's date is {today}. The current time is {current_time}.
 
