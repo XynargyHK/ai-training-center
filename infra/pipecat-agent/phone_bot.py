@@ -116,14 +116,9 @@ async def run_phone_bot(websocket_server_host, websocket_server_port, stream_sid
         sample_rate=8000,  # Phone audio = 8kHz
     )
 
-    # --- STT: Azure Auto-Detect (same as browser auto-detect mode) ---
-    # Import the AutoDetectAzureSTTService from bot.py
-    import importlib.util, sys
-    bot_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.py")
-    spec = importlib.util.spec_from_file_location("bot_module", bot_path)
-    bot_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(bot_module)
-    stt = bot_module.AutoDetectAzureSTTService.create(
+    # --- STT: Azure Auto-Detect (shared utility, same as browser) ---
+    from stt_utils import AutoDetectAzureSTTService
+    stt = AutoDetectAzureSTTService.create(
         api_key=os.getenv("AZURE_SPEECH_KEY"),
         region=os.getenv("AZURE_SPEECH_REGION", "eastus"),
         candidate_languages=["en-US", "zh-HK", "zh-CN", "vi-VN", "ja-JP", "ko-KR", "fr-FR", "es-ES", "de-DE"],
