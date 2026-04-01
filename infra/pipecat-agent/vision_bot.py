@@ -65,6 +65,7 @@ async def main():
         return
 
     # --- Transport: Daily WebRTC with VIDEO INPUT enabled ---
+    # GeminiLiveLLMService handles VAD server-side, so disable local VAD
     transport = DailyTransport(
         room_url,
         None,
@@ -74,10 +75,7 @@ async def main():
             audio_out_enabled=True,
             audio_out_sample_rate=24000,
             audio_in_enabled=True,
-            video_in_enabled=True,  # Enable camera input from browser
-            vad_enabled=True,
-            vad_analyzer=SileroVADAnalyzer() if SileroVADAnalyzer else None,
-            vad_audio_passthrough=True,
+            video_in_enabled=True,
         ),
     )
 
