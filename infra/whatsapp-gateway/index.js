@@ -218,7 +218,7 @@ app.get('/status', (req, res) => {
   res.json({ status: connectionStatus, connected: connectionStatus === 'connected' })
 })
 
-// QR code endpoint (for web-based scanning)
+// QR code endpoint (JSON)
 app.get('/qr', (req, res) => {
   if (connectionStatus === 'connected') {
     return res.json({ status: 'connected', qr: null })
@@ -227,6 +227,32 @@ app.get('/qr', (req, res) => {
     return res.json({ status: 'waiting_qr', qr: qrCode })
   }
   res.json({ status: connectionStatus, qr: null })
+})
+
+// Visual QR code page — open in browser to scan
+app.get('/qr-page', async (req, res) => {
+  if (connectionStatus === 'connected') {
+    return res.send('<html><body style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;font-size:2em;background:#0a0">✅ WhatsApp Connected!</body></html>')
+  }
+  if (!qrCode) {
+    return res.send('<html><body style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;font-size:1.5em"><p>No QR code yet. Waiting for WhatsApp...<br><a href="/qr-page">Refresh</a></p></body></html>')
+  }
+
+  // Generate QR as data URL using qrcode-terminal's underlying lib or inline SVG
+  try {
+    const QRCode = require('qrcode')
+    const dataUrl = await QRCode.toDataURL(qrCode, { width: 400, margin: 2 })
+    res.send(`<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>WhatsApp QR</title></head>
+<body style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;background:#111;color:#fff">
+<h2>Scan with WhatsApp Business</h2>
+<img src="${dataUrl}" style="border-radius:12px" />
+<p style="color:#888;margin-top:16px">QR refreshes every ~20s. <a href="/qr-page" style="color:#25D366">Reload</a> if expired.</p>
+<script>setTimeout(()=>location.reload(),15000)</script>
+</body></html>`)
+  } catch (e) {
+    // Fallback if qrcode package not installed
+    res.send(`<html><body style="font-family:monospace;padding:40px"><h2>QR Data (install 'qrcode' pkg for image)</h2><pre>${qrCode}</pre></body></html>`)
+  }
 })
 
 // Health check
