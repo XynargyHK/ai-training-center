@@ -322,6 +322,10 @@ FUNCTION_REGISTRY = {
     "recall_facts": recall_facts,
 }
 
+# Add advanced tools (OpenClaw-inspired)
+from tools_advanced import ADVANCED_FUNCTION_REGISTRY, ADVANCED_TOOL_DECLARATIONS
+FUNCTION_REGISTRY.update(ADVANCED_FUNCTION_REGISTRY)
+
 
 # ============================================================
 # TOOL DECLARATIONS — for Gemini function calling
@@ -407,4 +411,4 @@ TOOL_DECLARATIONS = [
         "description": "Search stored facts and memories. Use when user asks 'do you remember...', 'what did I tell you about...', or needs info from a previous conversation.",
         "parameters": {"type": "object", "properties": {"query": {"type": "string", "description": "What to search for"}}, "required": ["query"]},
     },
-]
+] + ADVANCED_TOOL_DECLARATIONS
