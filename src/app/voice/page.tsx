@@ -77,20 +77,27 @@ export default function VoicePage() {
     setLlmText('')
     try {
       // For vision mode: request camera+mic permission FIRST (required on Safari iOS)
-      // Keep the stream alive — Daily needs active permission grant on Safari
       if (visionMode) {
         try {
-          await navigator.mediaDevices.getUserMedia({
+          const permStream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: cameraFacing },
             audio: true
           })
-          // Don't stop tracks — Safari needs the permission to remain active
-          // Daily will request its own streams
+          // Must stop ALL tracks before Daily creates its own
+          permStream.getTracks().forEach(t => t.stop())
         } catch (permErr) {
           console.error('Camera permission denied:', permErr)
+          alert('Camera permission required for Vision mode')
           setStatus('idle')
           return
         }
+      }
+
+      // Destroy any existing Daily instance first
+      if (callRef.current) {
+        try { await callRef.current.leave() } catch(e) {}
+        try { callRef.current.destroy() } catch(e) {}
+        callRef.current = null
       }
 
       const endpoint = visionMode ? '/start-vision' : '/start'
@@ -101,11 +108,6 @@ export default function VoicePage() {
       })
       const data = await res.json()
       if (data.error) { setStatus('idle'); return }
-
-      if (callRef.current) {
-        try { await callRef.current.leave() } catch(e) {}
-        try { callRef.current.destroy() } catch(e) {}
-      }
 
       const co = DailyIframe.createCallObject({
         audioSource: true,
