@@ -119,7 +119,7 @@ export default function VoicePage() {
 
       const co = DailyIframe.createCallObject({
         audioSource: true,
-        videoSource: visionMode ? { facingMode: cameraFacing } : false,
+        videoSource: visionMode ? true : false,
         subscribeToTracksAutomatically: true,
       })
       co.on('track-started', (e: any) => {
