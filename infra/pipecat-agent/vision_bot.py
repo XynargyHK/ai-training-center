@@ -127,6 +127,7 @@ RULES:
 
     llm = GeminiLiveLLMService(
         api_key=os.getenv("GOOGLE_GEMINI_API_KEY"),
+        inference_on_context_initialization=True,  # AI speaks first
         settings=GeminiLiveLLMService.Settings(**settings_kwargs),
     )
 
