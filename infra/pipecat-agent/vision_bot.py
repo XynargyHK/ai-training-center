@@ -132,14 +132,10 @@ RULES:
         settings=GeminiLiveLLMService.Settings(**settings_kwargs),
     )
 
-    # --- Text forwarder for subtitles ---
-    text_fwd = LLMTextForwarder()
-
-    # --- Pipeline ---
+    # --- Pipeline (minimal — Gemini Live handles STT + Vision + LLM + TTS) ---
     pipeline = Pipeline([
         transport.input(),
-        llm,              # Gemini handles STT + Vision + LLM + TTS all in one
-        text_fwd,
+        llm,
         transport.output(),
     ])
 
@@ -150,7 +146,6 @@ RULES:
             enable_metrics=False,
             enable_usage_metrics=False,
         ),
-        observers=[],  # Disable auto-observers that crash on this Pipecat version
     )
 
     @transport.event_handler("on_first_participant_joined")
