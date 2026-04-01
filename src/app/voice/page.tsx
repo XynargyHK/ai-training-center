@@ -64,8 +64,11 @@ export default function VoicePage() {
   const [llmText, setLlmText] = useState('')
   const [activeSkill, setActiveSkill] = useState<string | null>(null)
   const [lang, setLang] = useState('en')
+  const [visionMode, setVisionMode] = useState(false)
+  const [cameraFacing, setCameraFacing] = useState<'user' | 'environment'>('environment')
   const [dailyLoaded, setDailyLoaded] = useState(false)
   const callRef = useRef<any>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
 
   const startCall = useCallback(async () => {
     if (!dailyLoaded) return
@@ -73,7 +76,8 @@ export default function VoicePage() {
     setSttText('')
     setLlmText('')
     try {
-      const res = await fetch(`${PIPECAT_URL}/start`, {
+      const endpoint = visionMode ? '/start-vision' : '/start'
+      const res = await fetch(`${PIPECAT_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lang, tts_provider: 'azure', tts_voice: '' }),
@@ -87,11 +91,18 @@ export default function VoicePage() {
       }
 
       const co = DailyIframe.createCallObject({
-        audioSource: true, videoSource: false, subscribeToTracksAutomatically: true,
+        audioSource: true,
+        videoSource: visionMode ? { facingMode: cameraFacing } : false,
+        subscribeToTracksAutomatically: true,
       })
       co.on('track-started', (e: any) => {
         if (e.track.kind === 'audio' && !e.participant.local) {
           const a = new Audio(); a.srcObject = new MediaStream([e.track]); a.autoplay = true; a.play().catch(() => {})
+        }
+        // Show local camera preview
+        if (e.track.kind === 'video' && e.participant.local && videoRef.current) {
+          videoRef.current.srcObject = new MediaStream([e.track])
+          videoRef.current.play().catch(() => {})
         }
       })
       co.on('app-message', (e: any) => {
@@ -107,7 +118,15 @@ export default function VoicePage() {
       await co.join({ url: data.room_url })
       callRef.current = co
     } catch { setStatus('idle') }
-  }, [dailyLoaded, lang])
+  }, [dailyLoaded, lang, visionMode, cameraFacing])
+
+  const toggleCamera = useCallback(async () => {
+    const newFacing = cameraFacing === 'user' ? 'environment' : 'user'
+    setCameraFacing(newFacing)
+    if (callRef.current && visionMode) {
+      await callRef.current.setInputDevicesAsync({ videoSource: { facingMode: newFacing } })
+    }
+  }, [cameraFacing, visionMode])
 
   const endCall = useCallback(async () => {
     if (callRef.current) { await callRef.current.leave(); callRef.current.destroy(); callRef.current = null }
@@ -145,18 +164,78 @@ export default function VoicePage() {
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <div>
-            <h1 style={{ fontSize: '20px', fontWeight: 700, margin: 0 }}>AI Voice Assistant</h1>
+            <h1 style={{ fontSize: '20px', fontWeight: 700, margin: 0 }}>
+              {visionMode ? 'AI Vision + Voice' : 'AI Voice Assistant'}
+            </h1>
             <p style={{ fontSize: '11px', color: '#555', margin: '2px 0 0' }}>Powered by AI Staffs</p>
           </div>
-          <select value={lang} onChange={e => setLang(e.target.value)} disabled={status !== 'idle'}
-            style={{ padding: '6px 10px', background: '#1a1a24', color: '#aaa', border: '1px solid #2a2a3a',
-              borderRadius: '8px', fontSize: '12px', outline: 'none' }}>
-            {LANGUAGES.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
-          </select>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button onClick={() => setVisionMode(!visionMode)} disabled={status !== 'idle'}
+              style={{
+                padding: '6px 10px', background: visionMode ? '#1a3a1a' : '#1a1a24',
+                color: visionMode ? '#4ade80' : '#aaa',
+                border: `1px solid ${visionMode ? '#2a5a2a' : '#2a2a3a'}`,
+                borderRadius: '8px', fontSize: '12px', cursor: 'pointer',
+              }}>
+              {visionMode ? '👁️ Vision ON' : '👁️ Vision'}
+            </button>
+            {!visionMode && (
+              <select value={lang} onChange={e => setLang(e.target.value)} disabled={status !== 'idle'}
+                style={{ padding: '6px 10px', background: '#1a1a24', color: '#aaa', border: '1px solid #2a2a3a',
+                  borderRadius: '8px', fontSize: '12px', outline: 'none' }}>
+                {LANGUAGES.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
+              </select>
+            )}
+          </div>
         </div>
 
+        {/* Camera Preview (Vision Mode) */}
+        {visionMode && (
+          <div style={{ position: 'relative', marginBottom: '12px', borderRadius: '16px', overflow: 'hidden',
+            background: '#111', aspectRatio: status === 'connected' ? '4/3' : undefined,
+            minHeight: status === 'connected' ? undefined : '80px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: '1px solid #2a2a3a',
+          }}>
+            <video ref={videoRef} autoPlay playsInline muted
+              style={{
+                width: '100%', height: '100%', objectFit: 'cover',
+                transform: cameraFacing === 'user' ? 'scaleX(-1)' : 'none',
+                display: status === 'connected' ? 'block' : 'none',
+              }} />
+            {status !== 'connected' && (
+              <div style={{ color: '#555', fontSize: '13px', textAlign: 'center', padding: '20px' }}>
+                Camera will activate when call starts
+              </div>
+            )}
+            {status === 'connected' && (
+              <button onClick={toggleCamera}
+                style={{
+                  position: 'absolute', bottom: '12px', right: '12px',
+                  width: '40px', height: '40px', borderRadius: '50%',
+                  background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.2)',
+                  color: '#fff', fontSize: '18px', cursor: 'pointer',
+                  backdropFilter: 'blur(8px)',
+                }}>
+                🔄
+              </button>
+            )}
+            {/* Subtitle overlay */}
+            {status === 'connected' && llmText && (
+              <div style={{
+                position: 'absolute', bottom: '60px', left: '8px', right: '8px',
+                background: 'rgba(0,0,0,0.7)', borderRadius: '8px',
+                padding: '8px 12px', fontSize: '13px', color: '#fff',
+                backdropFilter: 'blur(4px)', maxHeight: '80px', overflow: 'hidden',
+              }}>
+                {llmText}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Skill Categories */}
-        <div style={{ flex: 1, overflowY: 'auto', marginBottom: '16px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', marginBottom: '16px', display: visionMode && status === 'connected' ? 'none' : undefined }}>
           {CATEGORIES.map(cat => (
             <div key={cat.title} style={{ marginBottom: '16px' }}>
               <div style={{ fontSize: '13px', color: '#666', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>

@@ -88,6 +88,45 @@ async def handle_start(request):
     return web.json_response({"room_url": room_url, "room_name": room_name, "bot_pid": pid})
 
 
+async def start_vision_bot(room_url):
+    """Run the vision bot (Gemini multimodal live) in a background task."""
+    os.environ["DAILY_ROOM_URL"] = room_url
+
+    async def run_bot():
+        try:
+            import importlib.util
+            import sys
+            if "vision_bot" in sys.modules:
+                del sys.modules["vision_bot"]
+            bot_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "vision_bot.py")
+            spec = importlib.util.spec_from_file_location("vision_bot", bot_path)
+            bot_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(bot_module)
+            await bot_module.main()
+        except Exception as e:
+            print(f"VISION BOT ERROR: {e}", flush=True)
+            import traceback
+            traceback.print_exc()
+
+    asyncio.ensure_future(run_bot())
+    return os.getpid()
+
+
+async def handle_start_vision(request):
+    """POST /start-vision — create room, spawn vision bot with camera support."""
+    try:
+        body = await request.json()
+    except:
+        body = {}
+
+    room_url, room_name = await create_daily_room()
+    if not room_url:
+        return web.json_response({"error": "Failed to create Daily room"}, status=500)
+
+    pid = await start_vision_bot(room_url)
+    return web.json_response({"room_url": room_url, "room_name": room_name, "bot_pid": pid, "mode": "vision"})
+
+
 async def handle_health(request):
     return web.json_response({"status": "ok"})
 
@@ -328,6 +367,7 @@ async def handle_ws_phone(request):
 
 app = web.Application()
 app.router.add_post("/start", handle_start)
+app.router.add_post("/start-vision", handle_start_vision)
 app.router.add_post("/dialout", handle_dialout)
 app.router.add_post("/twiml", handle_twiml)
 app.router.add_get("/twiml", handle_twiml)
@@ -335,7 +375,7 @@ app.router.add_get("/ws-phone", handle_ws_phone)
 app.router.add_get("/health", handle_health)
 app.router.add_get("/proxy", handle_proxy)
 # CORS for browser requests
-for route in ["/start", "/dialout"]:
+for route in ["/start", "/start-vision", "/dialout"]:
     app.router.add_options(route, lambda r: web.Response(headers={
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "POST",
