@@ -1,31 +1,24 @@
 """
 Pipecat Voice + Vision AI Agent
-Uses: Gemini 2.5 Flash Native Audio (multimodal live) — audio + video in one service
-No separate STT/TTS needed — Gemini handles everything natively.
+Based on official pipecat gemini-live-video.py example.
+Uses: GeminiLiveLLMService — audio + video in one service, server-side VAD.
 """
 import asyncio
 import os
 import sys
 
-from pipecat.frames.frames import TextFrame, TranscriptionFrame
-from pipecat.processors.frame_processor import FrameProcessor, FrameDirection
-from pipecat.transports.daily.transport import DailyOutputTransportMessageFrame
+from pipecat.frames.frames import LLMRunFrame
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
+from pipecat.processors.aggregators.llm_context import LLMContext
+from pipecat.processors.aggregators.llm_response_universal import LLMContextAggregatorPair
+from pipecat.services.google.gemini_live.llm import GeminiLiveLLMService
 
 try:
     from pipecat.transports.daily.transport import DailyParams, DailyTransport
 except ImportError:
     from pipecat.transports.services.daily import DailyParams, DailyTransport
-
-try:
-    from pipecat.audio.vad.silero import SileroVADAnalyzer
-except ImportError:
-    try:
-        from pipecat.vad.silero import SileroVADAnalyzer
-    except ImportError:
-        SileroVADAnalyzer = None
 
 from loguru import logger
 
@@ -36,26 +29,6 @@ except ValueError:
 logger.add(sys.stderr, level="DEBUG")
 
 
-class LLMTextForwarder(FrameProcessor):
-    """Sends AI response text to browser as subtitles."""
-    def __init__(self, name="LLMTextForwarder"):
-        super().__init__(name=name)
-        self._text = ""
-
-    async def process_frame(self, frame, direction):
-        await super().process_frame(frame, direction)
-        fn = type(frame).__name__
-        if "LLMFullResponseStart" in fn or "LLMResponseStart" in fn:
-            self._text = ""
-        if isinstance(frame, TextFrame):
-            self._text += frame.text
-            msg = DailyOutputTransportMessageFrame(
-                message={"type": "llm", "text": self._text}
-            )
-            await self.push_frame(msg, FrameDirection.DOWNSTREAM)
-        await self.push_frame(frame, direction)
-
-
 async def main():
     room_url = os.getenv("DAILY_ROOM_URL")
     daily_api_key = os.getenv("DAILY_API_KEY")
@@ -64,103 +37,100 @@ async def main():
         logger.error("DAILY_ROOM_URL not set")
         return
 
-    # --- Transport: Daily WebRTC with VIDEO INPUT enabled ---
-    # GeminiLiveLLMService handles VAD server-side, so disable local VAD
+    # --- Transport: Daily WebRTC with video input ---
+    # No local VAD — GeminiLive handles VAD server-side
     transport = DailyTransport(
         room_url,
         None,
         "AI Vision Assistant",
         DailyParams(
             api_key=daily_api_key,
-            audio_out_enabled=True,
-            audio_out_sample_rate=24000,
             audio_in_enabled=True,
+            audio_out_enabled=True,
             video_in_enabled=True,
         ),
     )
 
-    # --- LLM: Gemini Multimodal Live (audio + vision in one) ---
-    from pipecat.services.google.gemini_live import GeminiLiveLLMService
-    try:
-        from pipecat.services.google.gemini_live.llm import GeminiMediaResolution
-        media_res = GeminiMediaResolution.HIGH
-    except ImportError:
-        media_res = None
-        logger.warning("GeminiMediaResolution not available — using default resolution")
-
+    # --- LLM: Gemini Multimodal Live ---
     from datetime import datetime, timezone, timedelta
     hkt = timezone(timedelta(hours=8))
     now = datetime.now(hkt)
     today = now.strftime("%B %d, %Y")
     current_time = now.strftime("%I:%M %p HKT")
 
-    system_instruction = f"""You are Sarah, an AI assistant with eyes and ears. You can SEE through the user's camera and HEAR them speak simultaneously.
+    llm = GeminiLiveLLMService(
+        api_key=os.getenv("GOOGLE_GEMINI_API_KEY"),
+        settings=GeminiLiveLLMService.Settings(
+            voice="Aoede",
+        ),
+    )
 
+    # --- Context with initial greeting trigger ---
+    context = LLMContext([
+        {
+            "role": "developer",
+            "content": f"""You are Sarah, an AI assistant with eyes and ears. You can SEE through the user's camera and HEAR them speak simultaneously.
 Today is {today}, current time is {current_time}.
 
+When you first connect, greet the user warmly and tell them you can see through their camera.
+
 VISION CAPABILITIES:
-- You can see what the camera shows in real-time
-- When the user points the camera at something, describe what you see
-- Read text, menus, signs, labels in any language and translate if asked
+- Describe what the camera shows in real-time
+- Read text, menus, signs, labels in any language and translate
 - Identify objects, places, food, plants, products
-- For skin concerns: analyze what you see and give professional skincare advice
+- For skin concerns: analyze and give professional skincare advice
 - For travel: identify landmarks, read maps, translate signs
 
 RULES:
 - Keep spoken responses to 1-3 sentences. Be concise.
-- When describing what you see, be specific and helpful
-- If you can't see clearly, say so naturally: "Could you hold the camera a bit steadier?"
-- Use natural speech patterns, not robotic descriptions
+- Be specific and helpful when describing what you see
+- Use natural speech, not robotic descriptions
 - Sound warm and friendly
-- No markdown, lists, or asterisks — this is spoken conversation
-- If the user asks "what do you see?" — describe the camera view in detail
-- Proactively mention interesting things you notice in the camera feed"""
+- No markdown, lists, or asterisks — this is spoken conversation"""
+        },
+    ])
 
-    settings_kwargs = {
-        "model": "models/gemini-2.5-flash-native-audio-preview-12-2025",
-        "system_instruction": system_instruction,
-        "voice": "Aoede",
-        "language": "en-US",
-    }
-    if media_res is not None:
-        settings_kwargs["media_resolution"] = media_res
+    # Server-side VAD is enabled by default; no local VAD needed
+    user_aggregator, assistant_aggregator = LLMContextAggregatorPair(context)
 
-    llm = GeminiLiveLLMService(
-        api_key=os.getenv("GOOGLE_GEMINI_API_KEY"),
-        inference_on_context_initialization=True,  # AI speaks first
-        settings=GeminiLiveLLMService.Settings(**settings_kwargs),
-    )
-
-    # --- Pipeline (minimal — Gemini Live handles STT + Vision + LLM + TTS) ---
+    # --- Pipeline (matching official example structure) ---
     pipeline = Pipeline([
         transport.input(),
+        user_aggregator,
         llm,
         transport.output(),
+        assistant_aggregator,
     ])
 
     task = PipelineTask(
         pipeline,
         params=PipelineParams(
-            allow_interruptions=True,
-            enable_metrics=False,
-            enable_usage_metrics=False,
+            enable_metrics=True,
+            enable_usage_metrics=True,
         ),
-        enable_turn_tracking=False,
-        idle_timeout_secs=None,
-        observers=[],
     )
 
     @transport.event_handler("on_first_participant_joined")
     async def on_first_participant_joined(transport, participant):
         logger.info(f"Participant joined: {participant['id']}")
-        # Capture video from the participant's camera
+
+        # Capture camera video at 1 fps
         await transport.capture_participant_video(
             participant["id"],
-            framerate=1,  # 1 frame per second (Gemini Live throttles to 1fps anyway)
+            framerate=1,
             video_source="camera",
             color_format="RGB",
         )
-        logger.info("Camera capture started — vision mode active")
+
+        # Trigger initial greeting
+        await task.queue_frames([LLMRunFrame()])
+
+        # Wait then unpause audio/video input
+        await asyncio.sleep(3)
+        logger.debug("Unpausing audio and video input")
+        llm.set_audio_input_paused(False)
+        llm.set_video_input_paused(False)
+        logger.info("Vision mode fully active — camera + voice + AI")
 
     @transport.event_handler("on_participant_left")
     async def on_participant_left(transport, participant, reason):
