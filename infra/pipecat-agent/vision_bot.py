@@ -82,7 +82,13 @@ async def main():
     )
 
     # --- LLM: Gemini Multimodal Live (audio + vision in one) ---
-    from pipecat.services.google.gemini_live import GeminiLiveLLMService, GeminiMediaResolution
+    from pipecat.services.google.gemini_live import GeminiLiveLLMService
+    try:
+        from pipecat.services.google.gemini_live.llm import GeminiMediaResolution
+        media_res = GeminiMediaResolution.HIGH
+    except ImportError:
+        media_res = None
+        logger.warning("GeminiMediaResolution not available — using default resolution")
 
     from datetime import datetime, timezone, timedelta
     hkt = timezone(timedelta(hours=8))
@@ -112,15 +118,18 @@ RULES:
 - If the user asks "what do you see?" — describe the camera view in detail
 - Proactively mention interesting things you notice in the camera feed"""
 
+    settings_kwargs = {
+        "model": "models/gemini-2.5-flash-native-audio-preview-12-2025",
+        "system_instruction": system_instruction,
+        "voice": "Aoede",
+        "language": "en-US",
+    }
+    if media_res is not None:
+        settings_kwargs["media_resolution"] = media_res
+
     llm = GeminiLiveLLMService(
         api_key=os.getenv("GOOGLE_GEMINI_API_KEY"),
-        settings=GeminiLiveLLMService.Settings(
-            model="models/gemini-2.5-flash-native-audio-preview-12-2025",
-            system_instruction=system_instruction,
-            voice="Aoede",
-            language="en-US",
-            media_resolution=GeminiMediaResolution.HIGH,
-        ),
+        settings=GeminiLiveLLMService.Settings(**settings_kwargs),
     )
 
     # --- Text forwarder for subtitles ---
