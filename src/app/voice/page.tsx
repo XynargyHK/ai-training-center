@@ -93,12 +93,20 @@ export default function VoicePage() {
         }
       }
 
-      // Destroy any existing Daily instance first
+      // Destroy any existing Daily instance first (check both ref and singleton)
       if (callRef.current) {
         try { await callRef.current.leave() } catch(e) {}
         try { callRef.current.destroy() } catch(e) {}
         callRef.current = null
       }
+      // Also check Daily's internal singleton
+      try {
+        const existing = DailyIframe.getCallInstance()
+        if (existing) {
+          try { await existing.leave() } catch(e) {}
+          try { existing.destroy() } catch(e) {}
+        }
+      } catch(e) {} // getCallInstance throws if none exists
 
       const endpoint = visionMode ? '/start-vision' : '/start'
       const res = await fetch(`${PIPECAT_URL}${endpoint}`, {
@@ -133,7 +141,11 @@ export default function VoicePage() {
         }
       })
       co.on('joined-meeting', () => setStatus('connected'))
-      co.on('left-meeting', () => { setStatus('idle'); callRef.current = null })
+      co.on('left-meeting', () => {
+        setStatus('idle')
+        try { co.destroy() } catch(e) {}
+        callRef.current = null
+      })
       await co.join({ url: data.room_url })
       callRef.current = co
     } catch (err: any) {
@@ -152,7 +164,16 @@ export default function VoicePage() {
   }, [cameraFacing, visionMode])
 
   const endCall = useCallback(async () => {
-    if (callRef.current) { await callRef.current.leave(); callRef.current.destroy(); callRef.current = null }
+    try {
+      if (callRef.current) {
+        await callRef.current.leave()
+        callRef.current.destroy()
+        callRef.current = null
+      }
+      // Also clean up Daily singleton
+      const existing = DailyIframe.getCallInstance?.()
+      if (existing) { existing.destroy() }
+    } catch(e) {}
     setStatus('idle')
   }, [])
 
