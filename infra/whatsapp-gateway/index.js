@@ -124,6 +124,9 @@ async function connectToWhatsApp() {
       if (msg.key.fromMe) continue
 
       const remoteJid = msg.key.remoteJid
+      const isGroup = remoteJid.endsWith('@g.us')
+      const participant = msg.key.participant || null // Who sent in group
+
       const text = msg.message?.conversation ||
                    msg.message?.extendedTextMessage?.text ||
                    msg.message?.imageMessage?.caption ||
@@ -131,13 +134,17 @@ async function connectToWhatsApp() {
 
       if (!text) continue
 
-      // Use remoteJid directly — works for both @s.whatsapp.net and @lid formats
-      // Baileys can send to both formats
+      // For DMs: sender = remoteJid (the person)
+      // For groups: sender = remoteJid (the group), participant = who sent it
       const sender = remoteJid
 
-      console.log(`📱 Incoming from ${sender}: ${text.substring(0, 50)}...`)
+      if (isGroup) {
+        console.log(`👥 Group ${sender} | ${participant}: ${text.substring(0, 50)}...`)
+      } else {
+        console.log(`📱 DM from ${sender}: ${text.substring(0, 50)}...`)
+      }
 
-      // Forward to webhook — include full JID so gateway can reply to it
+      // Forward to webhook with group context
       const webhookPayload = {
         messages: [{
           from: sender,
@@ -145,6 +152,10 @@ async function connectToWhatsApp() {
           id: msg.key.id,
           timestamp: msg.messageTimestamp,
           from_me: false,
+          // Group-specific fields
+          is_group: isGroup,
+          group_id: isGroup ? remoteJid : null,
+          participant: participant, // Individual sender in group
         }]
       }
 
@@ -239,6 +250,126 @@ app.post('/messages/video', async (req, res) => {
       caption: caption || '',
     })
     res.json({ sent: true, message: { id: result.key.id } })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// ============================================================
+// GROUP ENDPOINTS
+// ============================================================
+
+// Send text to group
+app.post('/groups/text', async (req, res) => {
+  const { group_id, body } = req.body
+  if (!group_id || !body) return res.status(400).json({ error: 'Missing group_id or body' })
+  if (!sock || connectionStatus !== 'connected') {
+    return res.status(503).json({ error: 'WhatsApp not connected' })
+  }
+
+  try {
+    const jid = group_id.includes('@') ? group_id : group_id + '@g.us'
+    const result = await sock.sendMessage(jid, { text: body })
+    res.json({ sent: true, message: { id: result.key.id, group: jid } })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Send image to group
+app.post('/groups/image', async (req, res) => {
+  const { group_id, media, caption } = req.body
+  if (!group_id || !media) return res.status(400).json({ error: 'Missing group_id or media' })
+  if (!sock || connectionStatus !== 'connected') {
+    return res.status(503).json({ error: 'WhatsApp not connected' })
+  }
+
+  try {
+    const jid = group_id.includes('@') ? group_id : group_id + '@g.us'
+    const buffer = await downloadMedia(media)
+    const result = await sock.sendMessage(jid, { image: buffer, caption: caption || '' })
+    res.json({ sent: true, message: { id: result.key.id, group: jid } })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Send video to group
+app.post('/groups/video', async (req, res) => {
+  const { group_id, media, caption } = req.body
+  if (!group_id || !media) return res.status(400).json({ error: 'Missing group_id or media' })
+  if (!sock || connectionStatus !== 'connected') {
+    return res.status(503).json({ error: 'WhatsApp not connected' })
+  }
+
+  try {
+    const jid = group_id.includes('@') ? group_id : group_id + '@g.us'
+    const buffer = await downloadMedia(media)
+    const result = await sock.sendMessage(jid, { video: buffer, caption: caption || '' })
+    res.json({ sent: true, message: { id: result.key.id, group: jid } })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Create a new group
+app.post('/groups/create', async (req, res) => {
+  const { name, participants } = req.body
+  if (!name || !participants || !participants.length) {
+    return res.status(400).json({ error: 'Missing name or participants array' })
+  }
+  if (!sock || connectionStatus !== 'connected') {
+    return res.status(503).json({ error: 'WhatsApp not connected' })
+  }
+
+  try {
+    const jids = participants.map(p => formatJid(p))
+    const group = await sock.groupCreate(name, jids)
+    res.json({ created: true, group_id: group.id, name })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Get group info (members, name, etc.)
+app.get('/groups/:groupId/info', async (req, res) => {
+  if (!sock || connectionStatus !== 'connected') {
+    return res.status(503).json({ error: 'WhatsApp not connected' })
+  }
+
+  try {
+    const jid = req.params.groupId.includes('@') ? req.params.groupId : req.params.groupId + '@g.us'
+    const metadata = await sock.groupMetadata(jid)
+    res.json({
+      id: metadata.id,
+      name: metadata.subject,
+      description: metadata.desc,
+      owner: metadata.owner,
+      participants: metadata.participants.map(p => ({
+        id: p.id,
+        admin: p.admin || null,
+      })),
+      size: metadata.size || metadata.participants.length,
+    })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// List all groups
+app.get('/groups', async (req, res) => {
+  if (!sock || connectionStatus !== 'connected') {
+    return res.status(503).json({ error: 'WhatsApp not connected' })
+  }
+
+  try {
+    const groups = await sock.groupFetchAllParticipating()
+    const list = Object.values(groups).map(g => ({
+      id: g.id,
+      name: g.subject,
+      size: g.participants?.length || 0,
+    }))
+    res.json({ groups: list, count: list.length })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
