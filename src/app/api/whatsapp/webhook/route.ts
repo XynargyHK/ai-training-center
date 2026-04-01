@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateSiloedResponse } from '@/lib/ai-engine'
+import { createClient } from '@supabase/supabase-js'
+import { sendWhatsAppMessage } from '@/lib/whatsapp'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 /**
  * UNIVERSAL WHATSAPP WEBHOOK
- * Handles incoming messages from Gateway (Whapi/Maytapi)
+ * Handles incoming messages from Gateway (Whapi/Maytapi) or Meta API
  */
 export async function POST(request: NextRequest) {
   try {
@@ -11,82 +18,120 @@ export async function POST(request: NextRequest) {
     console.log('📱 WhatsApp Webhook Received:', JSON.stringify(body, null, 2))
 
     // 1. EXTRACT DATA (Universal Mapping)
-    // Most gateways send: { messages: [ { from: "123...", text: { body: "..." } } ] }
     const messageData = body.messages?.[0] || body[0]?.message || body.data
     const sender = messageData?.from || body.from || body.chatId
     const text = messageData?.text?.body || messageData?.body || body.text
-    const phoneNumberId = body.phone_id || body.instance_id // Used to identify which Business Unit this belongs to
+    // Identify which Business Unit this belongs to via the phone_id / instance_id
+    const incomingPhoneId = body.phone_id || body.instance_id || body.entry?.[0]?.changes?.[0]?.value?.metadata?.phone_number_id
 
-    // 1.5. SAFETY FILTER (For personal number testing)
-    // Only respond if the message starts with #AI or Sarah
-    const lowerText = text.toLowerCase()
-    const isTriggered = lowerText.startsWith('#ai') || lowerText.startsWith('sarah')
-    
-    if (!isTriggered) {
-      console.log('🔇 Ignoring non-trigger message in personal test mode')
-      return NextResponse.json({ status: 'ignored', reason: 'no_trigger' })
-    }
-
-    // Strip the trigger for the AI brain
-    const cleanText = text.replace(/^#ai\s*/i, '').replace(/^sarah\s*/i, '').trim()
-
-    if (!sender || !cleanText) {
+    if (!sender || !text) {
       return NextResponse.json({ status: 'ignored', reason: 'no_message_content' })
     }
 
-    // 2. IDENTIFY BUSINESS UNIT
-    // For this 30-minute POC, we will hardcode your "SkinCoach" ID.
-    // In the SaaS version, we lookup business_unit_id from business_unit_settings.whatsapp_phone_number_id
-    const HARDCODED_BU_ID = process.env.WHATSAPP_TEST_BU_ID || 'your-default-bu-id'
-    
-    console.log(`🧠 Routing WhatsApp message to AI Brain for BU: ${HARDCODED_BU_ID}`)
+    // 1.5. SAFETY FILTER — disabled for dedicated business number (+85294740952)
+    // Previously required #AI prefix for personal number testing
+    // Now all messages are processed since this is a business-only number
+    const cleanText = text.replace(/^#ai\s*/i, '').replace(/^sarah\s*/i, '').trim() || text
 
-    // 3. GENERATE AI RESPONSE (The "One Brain")
+    // 2. IDENTIFY BUSINESS UNIT DYNAMICALLY
+    let businessUnitId = process.env.WHATSAPP_TEST_BU_ID
+    let settings = null
+
+    if (incomingPhoneId) {
+      const { data, error } = await supabase
+        .from('business_unit_settings')
+        .select('*')
+        .eq('whatsapp_phone_number_id', incomingPhoneId)
+        .single()
+      
+      if (data) {
+        businessUnitId = data.business_unit_id
+        settings = data
+        console.log(`✅ Found BU matching WhatsApp ID: ${businessUnitId}`)
+      } else if (error) {
+        console.warn(`⚠️ No BU found for WhatsApp ID ${incomingPhoneId}:`, error.message)
+      }
+    }
+
+    if (!businessUnitId) {
+      console.error('❌ Could not identify Business Unit for this message')
+      return NextResponse.json({ error: 'Unknown Business Unit' }, { status: 404 })
+    }
+
+    // 2.5. FETCH CONVERSATION HISTORY (Sarah's Memory)
+    const { data: historyData } = await supabase
+      .from('whatsapp_conversations')
+      .select('role, content')
+      .eq('wa_chat_id', sender)
+      .eq('business_unit_id', businessUnitId)
+      .order('created_at', { ascending: false })
+      .limit(10)
+
+    const conversationHistory = (historyData || []).reverse()
+
+    // 2.6. STORE USER MESSAGE
+    await supabase.from('whatsapp_conversations').insert({
+      business_unit_id: businessUnitId,
+      wa_chat_id: sender,
+      role: 'user',
+      content: cleanText
+    })
+    
+    console.log(`🧠 Routing WhatsApp message to AI Brain for BU: ${businessUnitId} (History: ${conversationHistory.length} msgs)`)
+
+    // 3. GENERATE AI RESPONSE
     const aiResult = await generateSiloedResponse({
-      businessUnitId: HARDCODED_BU_ID,
+      businessUnitId: businessUnitId,
       message: cleanText,
-      conversationHistory: [], // In Phase 3, we'll fetch real history from DB
+      conversationHistory: conversationHistory, 
       staffRole: 'coach',
       staffName: 'Sarah',
       language: 'en'
     })
 
-    // 4. SEND REPLY VIA GATEWAY (The "Hand")
-    const GATEWAY_URL = process.env.WHATSAPP_GATEWAY_URL // e.g., https://gate.whapi.cloud/messages/text
-    const GATEWAY_TOKEN = process.env.WHATSAPP_GATEWAY_TOKEN
+    // 3.5. STORE AI RESPONSE
+    await supabase.from('whatsapp_conversations').insert({
+      business_unit_id: businessUnitId,
+      wa_chat_id: sender,
+      role: 'assistant',
+      content: aiResult.response
+    })
 
-    if (GATEWAY_URL && GATEWAY_TOKEN) {
-      console.log(`📤 Sending WhatsApp reply to ${sender}...`)
-      
-      // Simulate "Typing..." state if the gateway supports it
-      await fetch(GATEWAY_URL.replace('/text', '/typing'), {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${GATEWAY_TOKEN}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to: sender, typing: true })
-      }).catch(e => console.warn('Typing status failed', e))
-
-      // Final Send
-      const response = await fetch(GATEWAY_URL, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${GATEWAY_TOKEN}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          to: sender,
-          body: aiResult.response,
-          // Handle Whapi vs Maytapi naming differences
-          chatId: sender,
-          text: aiResult.response 
-        })
+    // 4. SEND REPLY
+    // Option A: Use Meta Official API if credentials exist
+    if (settings?.whatsapp_access_token && settings?.whatsapp_phone_number_id) {
+      console.log('📤 Sending via Official Meta API...')
+      await sendWhatsAppMessage({
+        accessToken: settings.whatsapp_access_token,
+        phoneNumberId: settings.whatsapp_phone_number_id,
+        to: sender,
+        text: aiResult.response
       })
+    } 
+    // Option B: Fallback to Whapi/Maytapi Gateway
+    else {
+      const GATEWAY_URL = process.env.WHATSAPP_GATEWAY_URL
+      const GATEWAY_TOKEN = process.env.WHATSAPP_GATEWAY_TOKEN
 
-      if (!response.ok) {
-        const err = await response.text()
-        console.error('❌ Gateway Send Error:', err)
+      if (GATEWAY_URL && GATEWAY_TOKEN) {
+        console.log(`📤 Sending via Gateway to ${sender}...`)
+        
+        await fetch(GATEWAY_URL, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${GATEWAY_TOKEN}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            to: sender,
+            body: aiResult.response,
+            chatId: sender,
+            text: aiResult.response 
+          })
+        })
+      } else {
+        console.warn('⚠️ No WhatsApp credentials (Meta or Gateway) available')
       }
-    } else {
-      console.warn('⚠️ WhatsApp Gateway Credentials missing in .env.local')
     }
 
     return NextResponse.json({ success: true, ai_responded: true })
