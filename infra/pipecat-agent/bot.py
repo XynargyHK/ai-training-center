@@ -233,12 +233,26 @@ async def main():
         )
         logger.info(f"STT: Deepgram ({dg_lang})")
 
-    # --- LLM: Gemini Flash ---
-    from pipecat.services.google.llm import GoogleLLMService
-    llm = GoogleLLMService(
-        api_key=os.getenv("GOOGLE_GEMINI_API_KEY"),
-        model="gemini-2.0-flash",
-    )
+    # --- LLM ---
+    llm_provider = os.getenv("LLM_PROVIDER", "gemini")  # "gemini" or "cerebras"
+
+    if llm_provider == "cerebras":
+        # Cerebras = fast mouth, delegates complex tasks to Brain container
+        from pipecat.services.openai.llm import OpenAILLMService
+        llm = OpenAILLMService(
+            api_key=os.getenv("CEREBRAS_API_KEY"),
+            model=os.getenv("CEREBRAS_MODEL", "llama-4-scout-17b-16e-instruct"),
+            base_url="https://api.cerebras.ai/v1",
+        )
+        logger.info(f"LLM: Cerebras ({os.getenv('CEREBRAS_MODEL', 'llama-4-scout-17b-16e-instruct')})")
+    else:
+        # Default: Gemini Flash — all functions local
+        from pipecat.services.google.llm import GoogleLLMService
+        llm = GoogleLLMService(
+            api_key=os.getenv("GOOGLE_GEMINI_API_KEY"),
+            model="gemini-2.0-flash",
+        )
+        logger.info("LLM: Gemini 2.0 Flash")
 
     # --- TTS ---
     tts_provider = os.getenv("TTS_PROVIDER", "azure")
@@ -374,6 +388,25 @@ Rules:
 - Sound warm and friendly, like talking to a colleague.
 - When user asks to switch language, call switch_language() — the call will restart automatically with the right settings.
 - After searching, summarize the key finding naturally. Don't read out URLs."""
+
+    # Override system prompt for Cerebras mode (fast mouth, delegates to Brain)
+    if llm_provider == "cerebras":
+        system_content = f"""You are a voice AI assistant. Today is {today}, {current_time}.
+
+You are the fast-responding voice. For simple conversation (greetings, chitchat, clarifications), respond directly.
+
+For ANYTHING that requires real data or actions — weather, search, currency, WhatsApp, email, URLs, maps, directions, places, notes, reminders, phone calls, translation, language switching — call ask_brain() with the user's full request.
+
+When calling ask_brain, say a brief filler first like "Let me check..." or "One moment..." then call the function.
+
+After getting the Brain's response, speak the brain_response naturally. Don't say "the brain says" — relay the information as your own.
+
+{lang_instruction if lang not in ('yue', 'zh') else ''}
+
+Rules:
+- 1-2 sentences max. Concise.
+- Natural spoken language, no markdown.
+- Warm and friendly tone."""
 
     messages = [{"role": "system", "content": system_content}]
 
@@ -632,17 +665,76 @@ Rules:
 
     llm.register_function("translate", handle_translate)
 
-    # --- Additional skills ---
-    from skills import get_all_skill_schemas, register_all_skills
-    register_all_skills(llm)
+    # --- Tools registration (depends on LLM provider) ---
+    if llm_provider == "cerebras":
+        # Cerebras mode: single ask_brain function that delegates to Brain container
+        ask_brain_func = FunctionSchema(
+            name="ask_brain",
+            description="Ask the Brain to do something that requires real data, actions, or tools. Use for: web search, weather, currency conversion, sending WhatsApp messages, opening URLs, maps, directions, places, notes, reminders, making calls, sending emails, translation, language switching, or any request that needs real-time data or action execution. Pass the user's full request.",
+            properties={
+                "message": {
+                    "type": "string",
+                    "description": "The user's request that needs Brain processing"
+                }
+            },
+            required=["message"],
+        )
 
-    # --- Tools: all functions ---
-    all_tools = [
-        open_url_func, search_web_func, send_whatsapp_func, make_call_func, send_email_func,
-        switch_language_func, translate_func
-    ] + get_all_skill_schemas()
-    tools = ToolsSchema(standard_tools=all_tools)
-    logger.info(f"Tools: {len(all_tools)} functions enabled")
+        async def handle_ask_brain(params: FunctionCallParams):
+            import aiohttp
+            brain_url = os.getenv("BRAIN_URL", "http://localhost:8000")
+            message = params.arguments.get("message", "")
+            logger.info(f"Delegating to Brain: {message[:100]}")
+
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(
+                        f"{brain_url}/think",
+                        json={
+                            "message": message,
+                            "conversation_history": [],
+                            "user_context": {
+                                "lang": os.getenv("VOICE_LANG", "en"),
+                            }
+                        },
+                        timeout=aiohttp.ClientTimeout(total=30),
+                    ) as resp:
+                        data = await resp.json()
+
+                        # Forward client actions to browser
+                        for action in data.get("client_actions", []):
+                            try:
+                                await transport.output().send_message(
+                                    DailyOutputTransportMessageFrame(message=action)
+                                )
+                            except Exception:
+                                pass
+
+                        await params.result_callback({
+                            "brain_response": data.get("response", "I couldn't process that."),
+                        })
+            except Exception as e:
+                logger.error(f"Brain call failed: {e}")
+                await params.result_callback({
+                    "brain_response": "Sorry, I had trouble processing that. Could you try again?"
+                })
+
+        llm.register_function("ask_brain", handle_ask_brain)
+        all_tools = [ask_brain_func]
+        tools = ToolsSchema(standard_tools=all_tools)
+        logger.info("Tools: Cerebras mode — 1 function (ask_brain → Brain container)")
+
+    else:
+        # Gemini mode: all functions registered locally (existing behavior)
+        from skills import get_all_skill_schemas, register_all_skills
+        register_all_skills(llm)
+
+        all_tools = [
+            open_url_func, search_web_func, send_whatsapp_func, make_call_func, send_email_func,
+            switch_language_func, translate_func
+        ] + get_all_skill_schemas()
+        tools = ToolsSchema(standard_tools=all_tools)
+        logger.info(f"Tools: Gemini mode — {len(all_tools)} functions enabled")
 
     # --- Context (universal, not deprecated OpenAILLMContext) ---
     context = LLMContext(messages=messages, tools=tools)
