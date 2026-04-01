@@ -76,6 +76,27 @@ export default function VoicePage() {
     setSttText('')
     setLlmText('')
     try {
+      // For vision mode: request camera permission FIRST (required on Safari iOS)
+      if (visionMode) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: cameraFacing },
+            audio: true
+          })
+          // Show preview immediately
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream
+            videoRef.current.play().catch(() => {})
+          }
+          // Stop the tracks — Daily will create its own
+          stream.getTracks().forEach(t => t.stop())
+        } catch (permErr) {
+          console.error('Camera permission denied:', permErr)
+          setStatus('idle')
+          return
+        }
+      }
+
       const endpoint = visionMode ? '/start-vision' : '/start'
       const res = await fetch(`${PIPECAT_URL}${endpoint}`, {
         method: 'POST',
