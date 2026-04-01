@@ -80,8 +80,73 @@ async def health():
         "status": "ok",
         "service": "brain",
         "functions": len(FUNCTION_REGISTRY),
-        "model": os.getenv("GEMINI_MODEL", "gemini-2.0-flash"),
+        "model": os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
     }
+
+
+# ============================================================
+# MEMORY ENDPOINTS
+# ============================================================
+class RememberRequest(BaseModel):
+    user_id: str
+    business_unit_id: str
+    entity_type: str = "fact"
+    entity_key: str
+    content: str
+    source: str = "user_explicit"
+
+
+class EventRequest(BaseModel):
+    business_unit_id: str
+    user_id: str
+    event_type: str
+    content: dict
+    priority: str = "briefing"
+
+
+@app.post("/remember")
+async def remember_endpoint(req: RememberRequest):
+    """Store a permanent fact in the soul."""
+    from memory import store_soul_fact
+    result = await store_soul_fact(
+        user_id=req.user_id,
+        business_unit_id=req.business_unit_id,
+        entity_type=req.entity_type,
+        entity_key=req.entity_key,
+        content=req.content,
+        source=req.source,
+    )
+    return result
+
+
+@app.post("/event")
+async def event_endpoint(req: EventRequest):
+    """Queue an event for the Secretary Batcher."""
+    from memory import queue_event
+    result = await queue_event(
+        business_unit_id=req.business_unit_id,
+        user_id=req.user_id,
+        event_type=req.event_type,
+        content=req.content,
+        priority=req.priority,
+    )
+    return result
+
+
+@app.get("/soul/{user_id}")
+async def get_soul_endpoint(user_id: str, business_unit_id: str = ""):
+    """Get soul facts for a user."""
+    from memory import get_soul_facts
+    facts = await get_soul_facts(user_id, business_unit_id)
+    return {"facts": facts, "count": len(facts)}
+
+
+@app.get("/insights/{user_id}")
+async def get_insights_endpoint(user_id: str, business_unit_id: str = "", limit: int = 10):
+    """Get recent session insights for a user."""
+    from memory import get_recent_insights
+    insights = await get_recent_insights(user_id, business_unit_id, limit)
+    return {"insights": insights, "count": len(insights)}
 
 
 if __name__ == "__main__":
