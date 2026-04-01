@@ -1,0 +1,15 @@
+{
+  "name": "whatsapp-gateway",
+  "version": "1.0.0",
+  "description": "Self-hosted WhatsApp gateway using Baileys — replaces Whapi ($35/mo)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.16",
+    "express": "^4.18.2",
+    "pino": "^8.17.2",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
