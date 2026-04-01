@@ -147,8 +147,10 @@ RULES:
         pipeline,
         params=PipelineParams(
             allow_interruptions=True,
-            enable_metrics=True,
+            enable_metrics=False,
+            enable_usage_metrics=False,
         ),
+        observers=[],  # Disable auto-observers that crash on this Pipecat version
     )
 
     @transport.event_handler("on_first_participant_joined")
