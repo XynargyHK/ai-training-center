@@ -108,27 +108,23 @@ export async function POST(request: NextRequest) {
         text: aiResult.response
       })
     } 
-    // Option B: Fallback to Whapi/Maytapi Gateway
+    // Option B: Fallback to self-hosted Baileys Gateway
     else {
       const GATEWAY_URL = process.env.WHATSAPP_GATEWAY_URL
-      const GATEWAY_TOKEN = process.env.WHATSAPP_GATEWAY_TOKEN
 
-      if (GATEWAY_URL && GATEWAY_TOKEN) {
-        console.log(`📤 Sending via Gateway to ${sender}...`)
-        
-        await fetch(GATEWAY_URL, {
+      if (GATEWAY_URL) {
+        console.log(`📤 Sending via Baileys Gateway to ${sender}...`)
+
+        const gatewayRes = await fetch(`${GATEWAY_URL}/messages/text`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${GATEWAY_TOKEN}`,
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             to: sender,
-            body: aiResult.response,
-            chatId: sender,
-            text: aiResult.response 
+            body: aiResult.response
           })
         })
+        const gatewayResult = await gatewayRes.json()
+        console.log('📤 Gateway response:', JSON.stringify(gatewayResult))
       } else {
         console.warn('⚠️ No WhatsApp credentials (Meta or Gateway) available')
       }
