@@ -111,20 +111,26 @@ export async function POST(request: NextRequest) {
     // Option B: Fallback to self-hosted Baileys Gateway
     else {
       const GATEWAY_URL = process.env.WHATSAPP_GATEWAY_URL
+      console.log(`📤 Gateway URL: "${GATEWAY_URL}", sender: "${sender}"`)
 
       if (GATEWAY_URL) {
-        console.log(`📤 Sending via Baileys Gateway to ${sender}...`)
+        try {
+          const sendUrl = `${GATEWAY_URL}/messages/text`
+          console.log(`📤 Sending via Baileys Gateway: POST ${sendUrl}`)
 
-        const gatewayRes = await fetch(`${GATEWAY_URL}/messages/text`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to: sender,
-            body: aiResult.response
+          const gatewayRes = await fetch(sendUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: sender,
+              body: aiResult.response
+            })
           })
-        })
-        const gatewayResult = await gatewayRes.json()
-        console.log('📤 Gateway response:', JSON.stringify(gatewayResult))
+          const gatewayText = await gatewayRes.text()
+          console.log(`📤 Gateway response (${gatewayRes.status}): ${gatewayText}`)
+        } catch (gwErr: any) {
+          console.error('❌ Gateway send failed:', gwErr.message)
+        }
       } else {
         console.warn('⚠️ No WhatsApp credentials (Meta or Gateway) available')
       }
