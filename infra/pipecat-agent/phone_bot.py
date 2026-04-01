@@ -126,12 +126,24 @@ async def run_phone_bot(websocket_server_host, websocket_server_port, stream_sid
     )
     logger.info("Phone STT: Azure Auto-Detect (en/yue/zh/vi/ja/ko/fr/es/de)")
 
-    # --- LLM: Gemini Flash ---
-    from pipecat.services.google.llm import GoogleLLMService
-    llm = GoogleLLMService(
-        api_key=os.getenv("GOOGLE_GEMINI_API_KEY"),
-        model="gemini-2.0-flash",
-    )
+    # --- LLM ---
+    llm_provider = os.getenv("LLM_PROVIDER", "gemini")
+
+    if llm_provider == "cerebras":
+        from pipecat.services.openai.llm import OpenAILLMService
+        llm = OpenAILLMService(
+            api_key=os.getenv("CEREBRAS_API_KEY"),
+            model=os.getenv("CEREBRAS_MODEL", "llama-4-scout-17b-16e-instruct"),
+            base_url="https://api.cerebras.ai/v1",
+        )
+        logger.info(f"Phone LLM: Cerebras ({os.getenv('CEREBRAS_MODEL', 'llama-4-scout-17b-16e-instruct')})")
+    else:
+        from pipecat.services.google.llm import GoogleLLMService
+        llm = GoogleLLMService(
+            api_key=os.getenv("GOOGLE_GEMINI_API_KEY"),
+            model="gemini-2.0-flash",
+        )
+        logger.info("Phone LLM: Gemini 2.0 Flash")
 
     # --- System prompt ---
     from datetime import datetime, timezone, timedelta
@@ -245,12 +257,44 @@ Rules:
     llm.register_function("send_email", handle_send_email)
 
     # --- Additional skills ---
-    from skills import get_all_skill_schemas, register_all_skills
-    register_all_skills(llm)
+    # --- Tools (depends on LLM provider) ---
+    if llm_provider == "cerebras":
+        # Cerebras mode: single ask_brain function
+        ask_brain_func = FunctionSchema(
+            name="ask_brain",
+            description="Ask the Brain to do something requiring real data or actions. Use for: search, weather, WhatsApp, maps, directions, currency, notes, reminders, or any request needing real-time data.",
+            properties={"message": {"type": "string", "description": "The user's request"}},
+            required=["message"],
+        )
 
-    # --- Tools ---
-    all_tools = [search_web_func, send_whatsapp_func, send_email_func] + get_all_skill_schemas()
-    tools = ToolsSchema(standard_tools=all_tools)
+        async def handle_ask_brain(params: FunctionCallParams):
+            import aiohttp
+            brain_url = os.getenv("BRAIN_URL", "http://localhost:8000")
+            message = params.arguments.get("message", "")
+            logger.info(f"Phone: Delegating to Brain: {message[:80]}")
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(
+                        f"{brain_url}/think",
+                        json={"message": message, "conversation_history": [], "user_context": {"channel": "phone"}},
+                        timeout=aiohttp.ClientTimeout(total=30),
+                    ) as resp:
+                        data = await resp.json()
+                        await params.result_callback({"brain_response": data.get("response", "I couldn't process that.")})
+            except Exception as e:
+                logger.error(f"Phone Brain call failed: {e}")
+                await params.result_callback({"brain_response": "Sorry, I had trouble with that."})
+
+        llm.register_function("ask_brain", handle_ask_brain)
+        all_tools = [ask_brain_func]
+        tools = ToolsSchema(standard_tools=all_tools)
+        logger.info("Phone Tools: Cerebras mode — ask_brain → Brain")
+    else:
+        from skills import get_all_skill_schemas, register_all_skills
+        register_all_skills(llm)
+        all_tools = [search_web_func, send_whatsapp_func, send_email_func] + get_all_skill_schemas()
+        tools = ToolsSchema(standard_tools=all_tools)
+        logger.info(f"Phone Tools: Gemini mode — {len(all_tools)} functions")
 
     # --- Context ---
     context = LLMContext(messages=messages, tools=tools)
