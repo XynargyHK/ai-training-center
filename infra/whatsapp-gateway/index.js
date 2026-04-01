@@ -96,7 +96,7 @@ async function connectToWhatsApp() {
       // Skip own messages
       if (msg.key.fromMe) continue
 
-      const sender = msg.key.remoteJid
+      const remoteJid = msg.key.remoteJid
       const text = msg.message?.conversation ||
                    msg.message?.extendedTextMessage?.text ||
                    msg.message?.imageMessage?.caption ||
@@ -104,12 +104,16 @@ async function connectToWhatsApp() {
 
       if (!text) continue
 
+      // Use remoteJid directly — works for both @s.whatsapp.net and @lid formats
+      // Baileys can send to both formats
+      const sender = remoteJid
+
       console.log(`📱 Incoming from ${sender}: ${text.substring(0, 50)}...`)
 
-      // Forward to webhook in Whapi-compatible format
+      // Forward to webhook — include full JID so gateway can reply to it
       const webhookPayload = {
         messages: [{
-          from: sender.replace('@s.whatsapp.net', ''),
+          from: sender,
           text: { body: text },
           id: msg.key.id,
           timestamp: msg.messageTimestamp,
