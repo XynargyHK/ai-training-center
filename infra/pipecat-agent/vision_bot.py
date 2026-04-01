@@ -146,6 +146,9 @@ RULES:
             enable_metrics=False,
             enable_usage_metrics=False,
         ),
+        enable_turn_tracking=False,
+        idle_timeout_secs=None,
+        observers=[],
     )
 
     @transport.event_handler("on_first_participant_joined")
