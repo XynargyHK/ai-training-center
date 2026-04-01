@@ -149,6 +149,36 @@ async def get_insights_endpoint(user_id: str, business_unit_id: str = "", limit:
     return {"insights": insights, "count": len(insights)}
 
 
+# ============================================================
+# COMPACTION ENDPOINT
+# ============================================================
+class CompactRequest(BaseModel):
+    messages: list
+    session_id: str = ""
+    user_id: str = ""
+    business_unit_id: str = ""
+
+
+@app.post("/compact")
+async def compact_endpoint(req: CompactRequest):
+    """Compact a conversation into a JSON State Object."""
+    from compaction import compact_conversation
+    result = await compact_conversation(req.messages)
+
+    # Optionally save to Supabase
+    if req.session_id:
+        from memory import save_state_object
+        await save_state_object(
+            session_id=req.session_id,
+            user_id=req.user_id,
+            business_unit_id=req.business_unit_id,
+            state=result["state_object"],
+            messages_compacted=result.get("messages_compacted", 0),
+        )
+
+    return result
+
+
 if __name__ == "__main__":
     import uvicorn
     logger.info(f"Brain starting on port {PORT}")

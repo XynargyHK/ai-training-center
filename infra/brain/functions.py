@@ -265,6 +265,42 @@ async def set_reminder(message: str, minutes: float = 5) -> dict:
 
 
 # ============================================================
+# 15. REMEMBER FACT (store in Brain's soul)
+# ============================================================
+async def remember_fact(entity_type: str, entity_key: str, content: str) -> dict:
+    """Store a permanent fact in the Brain's soul memory."""
+    logger.info(f"Remembering: {entity_type}/{entity_key} = {content[:50]}")
+    try:
+        from memory import store_soul_fact
+        result = await store_soul_fact(
+            user_id="system",
+            business_unit_id="",
+            entity_type=entity_type,
+            entity_key=entity_key,
+            content=content,
+            source="brain_auto",
+        )
+        return {"status": "remembered", "entity_key": entity_key}
+    except Exception as e:
+        return {"status": "failed", "error": str(e)}
+
+
+# ============================================================
+# 16. RECALL FACTS (search Brain's soul)
+# ============================================================
+async def recall_facts(query: str) -> dict:
+    """Search the Brain's soul memory for relevant facts."""
+    logger.info(f"Recalling: {query}")
+    try:
+        from memory import get_soul_facts
+        facts = await get_soul_facts(user_id="system", business_unit_id="", limit=10)
+        relevant = [f for f in facts if query.lower() in f.get("content", "").lower() or query.lower() in f.get("entity_key", "").lower()]
+        return {"facts": [f["content"] for f in relevant[:5]], "count": len(relevant)}
+    except Exception as e:
+        return {"facts": [], "error": str(e)}
+
+
+# ============================================================
 # FUNCTION REGISTRY — maps function names to handlers
 # ============================================================
 FUNCTION_REGISTRY = {
@@ -282,6 +318,8 @@ FUNCTION_REGISTRY = {
     "send_whatsapp_media": send_whatsapp_media,
     "create_note": create_note,
     "set_reminder": set_reminder,
+    "remember_fact": remember_fact,
+    "recall_facts": recall_facts,
 }
 
 
@@ -358,5 +396,15 @@ TOOL_DECLARATIONS = [
         "name": "set_reminder",
         "description": "Set a reminder for the user.",
         "parameters": {"type": "object", "properties": {"message": {"type": "string"}, "minutes": {"type": "number"}}, "required": ["message", "minutes"]},
+    },
+    {
+        "name": "remember_fact",
+        "description": "Store a permanent fact about the user or a contact. Use when the user says 'remember this', 'note that I...', or shares important personal info like allergies, preferences, birthdays.",
+        "parameters": {"type": "object", "properties": {"entity_type": {"type": "string", "description": "Type: person, preference, fact, product, dispute"}, "entity_key": {"type": "string", "description": "Unique key, e.g. 'shellfish_allergy' or 'birthday'"}, "content": {"type": "string", "description": "The fact to remember"}}, "required": ["entity_type", "entity_key", "content"]},
+    },
+    {
+        "name": "recall_facts",
+        "description": "Search stored facts and memories. Use when user asks 'do you remember...', 'what did I tell you about...', or needs info from a previous conversation.",
+        "parameters": {"type": "object", "properties": {"query": {"type": "string", "description": "What to search for"}}, "required": ["query"]},
     },
 ]
