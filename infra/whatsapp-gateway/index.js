@@ -26,10 +26,12 @@ app.use(express.json())
 const PORT = process.env.PORT || 3001
 const WEBHOOK_URL = process.env.WEBHOOK_URL || 'https://ai-training-center-production.up.railway.app/api/whatsapp/webhook'
 const AUTH_DIR = path.join(__dirname, 'auth_info')
+const ALERT_NUMBER = '85294740952'
 
 let sock = null
 let qrCode = null
 let connectionStatus = 'disconnected'
+let lastAlertTime = 0
 
 // ============================================================
 // BAILEYS CONNECTION
@@ -69,11 +71,19 @@ async function connectToWhatsApp() {
       console.log(`Connection closed. Status: ${statusCode}. Reconnecting: ${shouldReconnect}`)
       connectionStatus = 'disconnected'
 
+      // Alert: WhatsApp disconnected (max once per 5 min)
+      const now = Date.now()
+      if (now - lastAlertTime > 5 * 60 * 1000) {
+        lastAlertTime = now
+        console.log('⚠️ Sending disconnect alert...')
+        // Can't send WhatsApp since we're disconnected — will alert on reconnect
+      }
+
       if (shouldReconnect) {
         setTimeout(() => connectToWhatsApp(), 3000)
       } else {
         // Logged out — clear auth and require new QR scan
-        console.log('Logged out — clearing auth. Need new QR scan.')
+        console.log('🚨 LOGGED OUT — clearing auth. Need new QR scan.')
         if (fs.existsSync(AUTH_DIR)) {
           fs.rmSync(AUTH_DIR, { recursive: true })
         }
@@ -85,6 +95,23 @@ async function connectToWhatsApp() {
       connectionStatus = 'connected'
       qrCode = null
       console.log('WhatsApp connected!')
+
+      // Alert: Send reconnection notice if we were disconnected
+      if (lastAlertTime > 0) {
+        const downtime = Math.round((Date.now() - lastAlertTime) / 1000)
+        setTimeout(async () => {
+          try {
+            const jid = ALERT_NUMBER + '@s.whatsapp.net'
+            await sock.sendMessage(jid, {
+              text: `⚠️ WhatsApp Gateway Alert\n\nGateway was disconnected and has reconnected.\nDowntime: ~${downtime}s\nStatus: Back online ✅\nTime: ${new Date().toISOString()}`
+            })
+            console.log('✅ Reconnect alert sent to ' + ALERT_NUMBER)
+          } catch (e) {
+            console.error('Failed to send alert:', e.message)
+          }
+          lastAlertTime = 0
+        }, 3000) // Wait 3s after connect before sending
+      }
     }
   })
 
@@ -311,10 +338,42 @@ async function postJSON(url, data) {
 }
 
 // ============================================================
+// PERIODIC HEALTH CHECK (every 10 min)
+// ============================================================
+setInterval(async () => {
+  if (connectionStatus !== 'connected' || !sock) {
+    console.log('⚠️ Health check: WhatsApp not connected')
+    return
+  }
+
+  // Check if webhook is reachable
+  try {
+    const res = await new Promise((resolve, reject) => {
+      const urlObj = new URL(WEBHOOK_URL)
+      const client = urlObj.protocol === 'https:' ? https : http
+      const req = client.get(WEBHOOK_URL, { timeout: 10000 }, (res) => resolve(res))
+      req.on('error', reject)
+      req.on('timeout', () => { req.destroy(); reject(new Error('timeout')) })
+    })
+    console.log(`✅ Health check: WA=${connectionStatus}, Webhook=${res.statusCode}`)
+  } catch (err) {
+    console.error(`🚨 Health check FAILED: Webhook unreachable — ${err.message}`)
+    // Alert via WhatsApp
+    try {
+      const jid = ALERT_NUMBER + '@s.whatsapp.net'
+      await sock.sendMessage(jid, {
+        text: `🚨 Gateway Health Alert\n\nWebhook unreachable: ${WEBHOOK_URL}\nError: ${err.message}\nTime: ${new Date().toISOString()}\n\nIncoming WhatsApp messages will NOT get AI responses until this is fixed.`
+      })
+    } catch (e) {}
+  }
+}, 10 * 60 * 1000) // Every 10 minutes
+
+// ============================================================
 // START
 // ============================================================
 app.listen(PORT, () => {
   console.log(`WhatsApp Gateway running on port ${PORT}`)
   console.log(`Webhook: ${WEBHOOK_URL}`)
+  console.log(`Alerts: ${ALERT_NUMBER}`)
   connectToWhatsApp()
 })
