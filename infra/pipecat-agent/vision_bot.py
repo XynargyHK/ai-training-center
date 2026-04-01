@@ -163,7 +163,7 @@ RULES:
     @transport.event_handler("on_participant_left")
     async def on_participant_left(transport, participant, reason):
         logger.info(f"Participant left: {reason}")
-        await task.queue_frame(asyncio.ensure_future(task.cancel()))
+        await task.cancel()
 
     runner = PipelineRunner()
     await runner.run(task)
