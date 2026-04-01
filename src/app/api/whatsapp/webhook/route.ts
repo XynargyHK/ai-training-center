@@ -97,6 +97,29 @@ export async function POST(request: NextRequest) {
       content: aiResult.response
     })
 
+    // 3.6. NOTIFY BRAIN (queue event for Secretary Batcher)
+    try {
+      const BRAIN_URL = process.env.BRAIN_URL
+      if (BRAIN_URL) {
+        await fetch(`${BRAIN_URL}/event`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            business_unit_id: businessUnitId,
+            user_id: sender,
+            event_type: 'whatsapp_message',
+            priority: 'briefing',
+            content: {
+              summary: `WhatsApp from ${sender}: ${cleanText.substring(0, 100)}`,
+              ai_response: aiResult.response.substring(0, 200),
+            }
+          })
+        })
+      }
+    } catch (brainErr) {
+      console.warn('Brain event notification failed (non-critical):', brainErr)
+    }
+
     // 4. SEND REPLY
     // Option A: Use Meta Official API if credentials exist
     if (settings?.whatsapp_access_token && settings?.whatsapp_phone_number_id) {
