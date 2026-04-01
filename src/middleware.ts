@@ -19,6 +19,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/_next') ||
     pathname.startsWith('/auth') ||
     pathname.startsWith('/operator') ||
+    pathname.startsWith('/voice') ||
     pathname.includes('favicon.ico')
   ) {
     return NextResponse.next()
@@ -54,9 +55,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // 4. HANDLE ROOT REDIRECT (e.g., skincoach.ai/ -> skincoach.ai/hk)
+  // 4. HANDLE ROOT REDIRECT (e.g., skincoach.ai/ -> skincoach.ai/hk or /us)
   if (pathname === '/') {
-    const country = (request.headers.get('x-vercel-ip-country') || 'HK').toLowerCase()
+    const countryHeader = request.headers.get('x-vercel-ip-country') || 'HK'
+    const country = countryHeader.toLowerCase() === 'us' ? 'us' : 'hk'
+    
     const url = request.nextUrl.clone()
     url.pathname = `/${country}`
     return NextResponse.redirect(url, 302)
