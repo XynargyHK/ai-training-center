@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, ai_responded: true })
+    return NextResponse.json({ success: true, ai_responded: true, gateway_url: process.env.WHATSAPP_GATEWAY_URL, sender })
 
   } catch (error: any) {
     console.error('❌ WhatsApp Webhook Error:', error)
