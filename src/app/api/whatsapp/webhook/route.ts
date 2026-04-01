@@ -147,9 +147,18 @@ export async function POST(request: NextRequest) {
 // For Verification Handshake (if needed by gateway)
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
-  const hubMode = searchParams.get('hub.mode')
-  const hubVerifyToken = searchParams.get('hub.verify_token')
   const hubChallenge = searchParams.get('hub.challenge')
+
+  // Diagnostic endpoint
+  if (searchParams.get('diag') === '1') {
+    const gwUrl = process.env.WHATSAPP_GATEWAY_URL || '(not set)'
+    const buId = process.env.WHATSAPP_TEST_BU_ID || '(not set)'
+    return NextResponse.json({
+      WHATSAPP_GATEWAY_URL: gwUrl.substring(0, 50),
+      WHATSAPP_TEST_BU_ID: buId.substring(0, 20) + '...',
+      timestamp: new Date().toISOString()
+    })
+  }
 
   return new NextResponse(hubChallenge || 'Webhook Active')
 }
