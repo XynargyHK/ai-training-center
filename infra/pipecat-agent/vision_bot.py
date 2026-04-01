@@ -82,7 +82,7 @@ async def main():
     )
 
     # --- LLM: Gemini Multimodal Live (audio + vision in one) ---
-    from pipecat.services.google.gemini_live import GeminiLiveLLMService
+    from pipecat.services.google.gemini_live import GeminiLiveLLMService, GeminiMediaResolution
 
     from datetime import datetime, timezone, timedelta
     hkt = timezone(timedelta(hours=8))
@@ -119,7 +119,7 @@ RULES:
             system_instruction=system_instruction,
             voice="Aoede",
             language="en-US",
-            media_resolution="HIGH",
+            media_resolution=GeminiMediaResolution.HIGH,
         ),
     )
 
