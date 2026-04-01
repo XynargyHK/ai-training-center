@@ -76,20 +76,16 @@ export default function VoicePage() {
     setSttText('')
     setLlmText('')
     try {
-      // For vision mode: request camera permission FIRST (required on Safari iOS)
+      // For vision mode: request camera+mic permission FIRST (required on Safari iOS)
+      // Keep the stream alive — Daily needs active permission grant on Safari
       if (visionMode) {
         try {
-          const stream = await navigator.mediaDevices.getUserMedia({
+          await navigator.mediaDevices.getUserMedia({
             video: { facingMode: cameraFacing },
             audio: true
           })
-          // Show preview immediately
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream
-            videoRef.current.play().catch(() => {})
-          }
-          // Stop the tracks — Daily will create its own
-          stream.getTracks().forEach(t => t.stop())
+          // Don't stop tracks — Safari needs the permission to remain active
+          // Daily will request its own streams
         } catch (permErr) {
           console.error('Camera permission denied:', permErr)
           setStatus('idle')
@@ -138,7 +134,11 @@ export default function VoicePage() {
       co.on('left-meeting', () => { setStatus('idle'); callRef.current = null })
       await co.join({ url: data.room_url })
       callRef.current = co
-    } catch { setStatus('idle') }
+    } catch (err: any) {
+      console.error('Call failed:', err)
+      alert('Call failed: ' + (err?.message || err))
+      setStatus('idle')
+    }
   }, [dailyLoaded, lang, visionMode, cameraFacing])
 
   const toggleCamera = useCallback(async () => {
