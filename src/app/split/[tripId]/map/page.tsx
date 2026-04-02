@@ -204,8 +204,12 @@ export default function TripMapPage() {
                 <div style={{ fontSize: '14px', fontWeight: 600 }}>{m?.name || '?'}</div>
                 <div style={{ fontSize: '11px', color: '#888' }}>{loc.lat.toFixed(5)}, {loc.lng.toFixed(5)}</div>
                 <div style={{ fontSize: '10px', color: '#4ade80' }}>{timeAgo(loc.updated_at)}</div>
+                <a href={`https://uri.amap.com/marker?position=${loc.lng},${loc.lat}&name=${encodeURIComponent(m?.name || '')}`} target="_blank"
+                  style={{ fontSize: '11px', color: '#3b82f6', textDecoration: 'none', marginRight: '8px' }}>Amap</a>
+                <a href={`https://api.map.baidu.com/marker?location=${loc.lat},${loc.lng}&title=${encodeURIComponent(m?.name || '')}&output=html`} target="_blank"
+                  style={{ fontSize: '11px', color: '#3b82f6', textDecoration: 'none', marginRight: '8px' }}>Baidu</a>
                 <a href={`https://www.google.com/maps?q=${loc.lat},${loc.lng}`} target="_blank"
-                  style={{ fontSize: '11px', color: '#3b82f6', textDecoration: 'none' }}>Open in Maps</a>
+                  style={{ fontSize: '11px', color: '#888', textDecoration: 'none' }}>Google</a>
               </div>
             )
           }) : 'No one sharing location yet'}
