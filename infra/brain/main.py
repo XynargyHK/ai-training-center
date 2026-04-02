@@ -219,6 +219,69 @@ async def compact_endpoint(req: CompactRequest):
 # ============================================================
 # GUARDRAILS
 # ============================================================
+# ============================================================
+# KNOWLEDGE BASE / RAG
+# ============================================================
+class KnowledgeSearchRequest(BaseModel):
+    query: str
+    business_unit_id: str = ""
+    top_k: int = 5
+
+
+class KnowledgeAddRequest(BaseModel):
+    title: str
+    content: str
+    business_unit_id: str = ""
+    source: str = "manual"
+
+
+@app.post("/knowledge/search")
+async def knowledge_search_endpoint(req: KnowledgeSearchRequest):
+    from knowledge import search_knowledge
+    results = await search_knowledge(req.query, req.business_unit_id, req.top_k)
+    return {"results": results, "count": len(results)}
+
+
+@app.post("/knowledge/add")
+async def knowledge_add_endpoint(req: KnowledgeAddRequest):
+    from knowledge import add_document
+    return await add_document(req.title, req.content, req.business_unit_id, req.source)
+
+
+@app.post("/knowledge/scrape")
+async def knowledge_scrape_endpoint(url: str = "", business_unit_id: str = ""):
+    from scraper import scrape_and_store
+    return await scrape_and_store(url, business_unit_id)
+
+
+# ============================================================
+# EVALUATION
+# ============================================================
+class EvalRequest(BaseModel):
+    user_message: str
+    ai_response: str
+    context: str = ""
+
+
+class EvalSessionRequest(BaseModel):
+    messages: list
+
+
+@app.post("/evaluate")
+async def evaluate_endpoint(req: EvalRequest):
+    from evaluator import evaluate_response
+    return await evaluate_response(req.user_message, req.ai_response, req.context)
+
+
+@app.post("/evaluate/session")
+async def evaluate_session_endpoint(req: EvalSessionRequest):
+    from evaluator import evaluate_session
+    return await evaluate_session(req.messages)
+
+
+# ============================================================
+# GUARDRAILS
+# ============================================================
 class GuardrailRequest(BaseModel):
     text: str
     direction: str = "input"  # "input" or "output"
