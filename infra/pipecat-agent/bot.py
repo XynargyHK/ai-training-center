@@ -145,28 +145,53 @@ class CJKSpaceFixer(FrameProcessor):
 
 class JsonTextFilter(FrameProcessor):
     """Safety filter: catches JSON/function-call text that LLM accidentally outputs as speech.
-    Strips it out before it reaches TTS so the user never hears syntax."""
+    Strips it out before it reaches TTS so the user never hears syntax.
+    Works with streaming chunks — accumulates suspicious text and blocks entire sequences."""
     def __init__(self, name="JsonTextFilter"):
         super().__init__(name=name)
-        self._buffer = ""
+        self._suspicious = False
+        self._blocked_count = 0
 
     async def process_frame(self, frame, direction):
         await super().process_frame(frame, direction)
         if isinstance(frame, TextFrame):
             text = frame.text
-            # Detect JSON-like patterns that should never be spoken
-            import re
-            # Match function call JSON: {"name": "ask_brain", "arguments": {...}}
-            # Match raw JSON objects/arrays
-            # Match tool_call syntax
-            if re.search(r'\{["\']name["\']:\s*["\']', text) or \
-               re.search(r'["\']arguments["\']:\s*\{', text) or \
-               re.search(r'<\|tool_call\|>', text) or \
-               re.search(r'<tool_call>', text) or \
-               (text.strip().startswith('{') and text.strip().endswith('}')):
+            # Check for JSON/function-call patterns (even in small streaming chunks)
+            # These patterns should NEVER appear in natural speech
+            bad_patterns = [
+                '{"', '{ "', "{'", "{ '",           # JSON object start
+                '"name"', '"type"', '"arguments"',   # function call keys
+                "'name'", "'type'", "'arguments'",
+                '"function"', '"ask_brain"',
+                "tool_call", "<|tool",               # tool call markers
+                '\\n{', '```',                       # code blocks
+            ]
+            is_bad = any(p in text for p in bad_patterns)
+
+            # Also catch chunks that are just braces/quotes (part of streaming JSON)
+            stripped = text.strip()
+            if stripped in ('{', '}', '{"', '"}', ':{', '},', '":', '",'):
+                is_bad = True
+
+            if is_bad:
+                self._suspicious = True
+                self._blocked_count += 1
                 from loguru import logger
-                logger.warning(f"JsonTextFilter: BLOCKED JSON text from reaching TTS: {text[:100]}")
-                return  # Drop this frame — don't pass to TTS
+                logger.warning(f"JsonTextFilter: BLOCKED chunk {self._blocked_count}: {text[:80]}")
+                return  # Drop frame
+
+            # If we were in suspicious mode but got clean text, reset
+            if self._suspicious and self._blocked_count > 0:
+                # Check if this clean text is just a continuation of JSON
+                if stripped and not stripped[0].isalpha():
+                    self._blocked_count += 1
+                    from loguru import logger
+                    logger.warning(f"JsonTextFilter: BLOCKED continuation: {text[:80]}")
+                    return
+                # Reset — back to normal speech
+                self._suspicious = False
+                self._blocked_count = 0
+
         await self.push_frame(frame, direction)
 
 
