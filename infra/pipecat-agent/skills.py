@@ -245,6 +245,183 @@ async def handle_set_reminder(params: FunctionCallParams):
 
 
 # ============================================================
+# 8. SPLIT BILL
+# ============================================================
+split_bill_func = FunctionSchema(
+    name="split_bill",
+    description="Calculate bill splitting for a group. Use when user says 'split the bill', 'how much does each person owe', 'divide 500 by 4 people with tip', etc.",
+    properties={
+        "total": {"type": "number", "description": "Total bill amount"},
+        "num_people": {"type": "number", "description": "Number of people to split between"},
+        "currency": {"type": "string", "description": "Currency code, e.g. HKD, CNY, USD. Default: HKD"},
+        "tip_percent": {"type": "number", "description": "Tip percentage. Default: 0"},
+        "tax_percent": {"type": "number", "description": "Tax percentage (if not already included). Default: 0"},
+        "items": {"type": "string", "description": "Optional: individual items with amounts, e.g. 'John had the steak 280, Mary had salad 120'"},
+    },
+    required=["total", "num_people"],
+)
+
+async def handle_split_bill(params: FunctionCallParams):
+    total = params.arguments.get("total", 0)
+    num_people = params.arguments.get("num_people", 2)
+    currency = params.arguments.get("currency", "HKD")
+    tip_pct = params.arguments.get("tip_percent", 0)
+    tax_pct = params.arguments.get("tax_percent", 0)
+    items = params.arguments.get("items", "")
+
+    tax = total * (tax_pct / 100)
+    subtotal = total + tax
+    tip = subtotal * (tip_pct / 100)
+    grand_total = subtotal + tip
+    per_person = round(grand_total / num_people, 2)
+
+    result = {
+        "total": total,
+        "tax": round(tax, 2),
+        "tip": round(tip, 2),
+        "grand_total": round(grand_total, 2),
+        "num_people": num_people,
+        "per_person": per_person,
+        "currency": currency,
+        "summary": f"Total {currency} {grand_total:.2f} split {num_people} ways = {currency} {per_person:.2f} each",
+    }
+    if tip_pct > 0:
+        result["summary"] += f" (includes {tip_pct}% tip)"
+    if items:
+        result["items_note"] = items
+    logger.info(f"Bill split: {result['summary']}")
+    await params.result_callback(result)
+
+
+# ============================================================
+# 9. SEND WHATSAPP GROUP MESSAGE
+# ============================================================
+send_whatsapp_group_func = FunctionSchema(
+    name="send_whatsapp_group",
+    description="Send a message to a WhatsApp group. Use when user says 'message the group', 'send to our travel group', 'tell the group chat'. Can send text, images, videos, or links.",
+    properties={
+        "group_name": {"type": "string", "description": "Group name or ID to search for"},
+        "message": {"type": "string", "description": "Message text to send"},
+        "media_url": {"type": "string", "description": "Optional: URL of image/video/document to attach"},
+        "media_type": {"type": "string", "description": "Optional: image, video, document (only if media_url provided)"},
+    },
+    required=["group_name", "message"],
+)
+
+async def handle_send_whatsapp_group(params: FunctionCallParams):
+    group_name = params.arguments.get("group_name", "")
+    message = params.arguments.get("message", "")
+    media_url = params.arguments.get("media_url", "")
+    media_type = params.arguments.get("media_type", "image")
+    whapi_token = os.getenv("WHAPI_TOKEN", "")
+    logger.info(f"Sending to WhatsApp group '{group_name}': {message[:50]}...")
+
+    try:
+        # First, search for the group by name
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                "https://gate.whapi.cloud/groups",
+                headers={"Authorization": f"Bearer {whapi_token}"},
+                timeout=aiohttp.ClientTimeout(total=10),
+            ) as resp:
+                groups_data = await resp.json()
+
+            # Find group matching name (case-insensitive partial match)
+            groups = groups_data.get("groups", groups_data.get("data", []))
+            target_group = None
+            for g in groups:
+                name = g.get("name", g.get("subject", "")).lower()
+                if group_name.lower() in name:
+                    target_group = g
+                    break
+
+            if not target_group:
+                await params.result_callback({
+                    "status": "failed",
+                    "error": f"Group '{group_name}' not found. Available groups: {[g.get('name', g.get('subject', '')) for g in groups[:5]]}",
+                })
+                return
+
+            group_id = target_group.get("id", target_group.get("chat_id", ""))
+
+            # Send message (text or media)
+            if media_url:
+                endpoint = f"https://gate.whapi.cloud/messages/{media_type}"
+                payload = {"to": group_id, "media": media_url, "caption": message}
+            else:
+                endpoint = "https://gate.whapi.cloud/messages/text"
+                payload = {"to": group_id, "body": message}
+
+            async with session.post(
+                endpoint,
+                headers={"Authorization": f"Bearer {whapi_token}", "Content-Type": "application/json"},
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=10),
+            ) as resp:
+                result = await resp.json()
+                if resp.status in (200, 201):
+                    await params.result_callback({"status": "sent", "group": target_group.get("name", group_name)})
+                else:
+                    await params.result_callback({"status": "failed", "error": str(result)})
+    except Exception as e:
+        await params.result_callback({"status": "failed", "error": str(e)})
+
+
+# ============================================================
+# 10. SCHEDULE WHATSAPP MESSAGE
+# ============================================================
+schedule_whatsapp_func = FunctionSchema(
+    name="schedule_whatsapp",
+    description="Schedule a WhatsApp message to be sent later. Use when user says 'send this message tomorrow at 9am', 'remind John at 6pm', 'schedule a message for later'.",
+    properties={
+        "phone": {"type": "string", "description": "Phone number with country code, e.g. 85296099766, or group name"},
+        "message": {"type": "string", "description": "Message text to send"},
+        "delay_minutes": {"type": "number", "description": "Minutes from now to send the message. E.g. 60 for 1 hour, 1440 for 24 hours"},
+    },
+    required=["phone", "message", "delay_minutes"],
+)
+
+async def handle_schedule_whatsapp(params: FunctionCallParams):
+    phone = params.arguments.get("phone", "").replace("+", "").replace(" ", "")
+    message = params.arguments.get("message", "")
+    delay_minutes = params.arguments.get("delay_minutes", 60)
+    logger.info(f"Scheduling WhatsApp to {phone} in {delay_minutes}min: {message[:50]}...")
+
+    # For now, use asyncio delayed task (works while the bot is running)
+    import asyncio
+
+    async def send_later():
+        await asyncio.sleep(delay_minutes * 60)
+        whapi_token = os.getenv("WHAPI_TOKEN", "")
+        try:
+            async with aiohttp.ClientSession() as session:
+                await session.post(
+                    "https://gate.whapi.cloud/messages/text",
+                    headers={"Authorization": f"Bearer {whapi_token}", "Content-Type": "application/json"},
+                    json={"to": phone, "body": message},
+                    timeout=aiohttp.ClientTimeout(total=10),
+                )
+            logger.info(f"Scheduled message sent to {phone}: {message[:50]}")
+        except Exception as e:
+            logger.error(f"Scheduled message failed: {e}")
+
+    asyncio.create_task(send_later())
+
+    hours = delay_minutes / 60
+    if hours >= 1:
+        time_str = f"{hours:.1f} hours"
+    else:
+        time_str = f"{delay_minutes} minutes"
+
+    await params.result_callback({
+        "status": "scheduled",
+        "phone": phone,
+        "delay_minutes": delay_minutes,
+        "summary": f"Message scheduled to {phone} in {time_str}",
+    })
+
+
+# ============================================================
 # REGISTER ALL SKILLS
 # ============================================================
 def get_all_skill_schemas():
@@ -257,6 +434,9 @@ def get_all_skill_schemas():
         send_whatsapp_media_func,
         create_note_func,
         set_reminder_func,
+        split_bill_func,
+        send_whatsapp_group_func,
+        schedule_whatsapp_func,
     ]
 
 def register_all_skills(llm):
@@ -268,4 +448,7 @@ def register_all_skills(llm):
     llm.register_function("send_whatsapp_media", handle_send_whatsapp_media)
     llm.register_function("create_note", handle_create_note)
     llm.register_function("set_reminder", handle_set_reminder)
+    llm.register_function("split_bill", handle_split_bill)
+    llm.register_function("send_whatsapp_group", handle_send_whatsapp_group)
+    llm.register_function("schedule_whatsapp", handle_schedule_whatsapp)
     logger.info(f"Registered {len(get_all_skill_schemas())} additional skills")
