@@ -309,6 +309,114 @@ async def recall_facts(query: str) -> dict:
 
 
 # ============================================================
+# 17. SEND WHATSAPP GROUP (via Baileys gateway)
+# ============================================================
+async def send_whatsapp_group(group_name: str, message: str, media_url: str = "", media_type: str = "image") -> dict:
+    """Send a message to a WhatsApp group by searching for the group name."""
+    logger.info(f"Sending to WhatsApp group '{group_name}': {message[:50]}...")
+    try:
+        # Search for group by name via gateway
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"{WHATSAPP_GATEWAY_URL}/groups",
+                timeout=aiohttp.ClientTimeout(total=10),
+            ) as resp:
+                groups_data = await resp.json()
+
+            groups = groups_data.get("groups", groups_data.get("data", []))
+            target_group = None
+            for g in groups:
+                name = g.get("name", g.get("subject", "")).lower()
+                if group_name.lower() in name:
+                    target_group = g
+                    break
+
+            if not target_group:
+                return {
+                    "status": "failed",
+                    "error": f"Group '{group_name}' not found. Available: {[g.get('name', g.get('subject', '')) for g in groups[:5]]}",
+                }
+
+            group_id = target_group.get("id", target_group.get("chat_id", ""))
+
+            if media_url:
+                endpoint = f"{WHATSAPP_GATEWAY_URL}/messages/{media_type}"
+                payload = {"to": group_id, "media": media_url, "caption": message}
+            else:
+                endpoint = f"{WHATSAPP_GATEWAY_URL}/messages/text"
+                payload = {"to": group_id, "body": message}
+
+            async with session.post(
+                endpoint,
+                headers={"Content-Type": "application/json"},
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=10),
+            ) as resp:
+                result = await resp.json()
+                if resp.status in (200, 201):
+                    return {"status": "sent", "group": target_group.get("name", group_name)}
+                else:
+                    return {"status": "failed", "error": str(result)}
+    except Exception as e:
+        return {"status": "failed", "error": str(e)}
+
+
+# ============================================================
+# 18. SCHEDULE WHATSAPP MESSAGE
+# ============================================================
+async def schedule_whatsapp(phone: str, message: str, delay_minutes: float = 60) -> dict:
+    """Schedule a WhatsApp message to be sent later."""
+    import asyncio
+    logger.info(f"Scheduling WhatsApp to {phone} in {delay_minutes}min: {message[:50]}...")
+
+    async def send_later():
+        await asyncio.sleep(delay_minutes * 60)
+        try:
+            await send_whatsapp(phone, message)
+            logger.info(f"Scheduled message sent to {phone}")
+        except Exception as e:
+            logger.error(f"Scheduled message failed: {e}")
+
+    asyncio.create_task(send_later())
+
+    hours = delay_minutes / 60
+    time_str = f"{hours:.1f} hours" if hours >= 1 else f"{int(delay_minutes)} minutes"
+    return {
+        "status": "scheduled",
+        "phone": phone,
+        "delay_minutes": delay_minutes,
+        "summary": f"Message scheduled to {phone} in {time_str}",
+    }
+
+
+# ============================================================
+# 19. SPLIT BILL
+# ============================================================
+async def split_bill(total: float, num_people: int, currency: str = "HKD", tip_percent: float = 0, tax_percent: float = 0) -> dict:
+    """Calculate bill splitting for a group."""
+    tax = total * (tax_percent / 100)
+    subtotal = total + tax
+    tip = subtotal * (tip_percent / 100)
+    grand_total = subtotal + tip
+    per_person = round(grand_total / num_people, 2)
+
+    result = {
+        "total": total,
+        "tax": round(tax, 2),
+        "tip": round(tip, 2),
+        "grand_total": round(grand_total, 2),
+        "num_people": num_people,
+        "per_person": per_person,
+        "currency": currency,
+        "summary": f"Total {currency} {grand_total:.2f} split {num_people} ways = {currency} {per_person:.2f} each",
+    }
+    if tip_percent > 0:
+        result["summary"] += f" (includes {tip_percent}% tip)"
+    logger.info(f"Bill split: {result['summary']}")
+    return result
+
+
+# ============================================================
 # FUNCTION REGISTRY — maps function names to handlers
 # ============================================================
 FUNCTION_REGISTRY = {
@@ -328,6 +436,9 @@ FUNCTION_REGISTRY = {
     "set_reminder": set_reminder,
     "remember_fact": remember_fact,
     "recall_facts": recall_facts,
+    "send_whatsapp_group": send_whatsapp_group,
+    "schedule_whatsapp": schedule_whatsapp,
+    "split_bill": split_bill,
 }
 
 # Add advanced tools (OpenClaw-inspired)
