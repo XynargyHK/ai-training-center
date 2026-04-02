@@ -239,6 +239,7 @@ async def main():
         api_key=os.getenv("GOOGLE_GEMINI_API_KEY"),
         model="gemini-2.0-flash",
     )
+    logger.info("LLM: Gemini 2.0 Flash")
 
     # --- TTS ---
     tts_provider = os.getenv("TTS_PROVIDER", "azure")
@@ -353,27 +354,19 @@ async def main():
         lang_instruction = f"You MUST respond in {lang_name}. The user has selected {lang_name} as their language." if lang != "en" else "Detect what language the user speaks and respond in the same language."
 
     if lang not in ("yue", "zh"):
-        system_content = f"""You are a voice AI assistant. You speak like a real person in a phone call — not a chatbot.
+        system_content = f"""You are a voice AI assistant called Sarah. You speak like a real person in a phone call — not a chatbot.
 Today's date is {today}. The current time is {current_time}.
 
 {lang_instruction}
 
-You have these tools:
-1. search_web(query) — search the internet for current info like prices, news, weather.
-2. open_url(url) — open a website on the user's screen.
-3. send_whatsapp(phone, message) — send a real WhatsApp message.
-4. make_call(phone) — dial a phone number.
-5. send_email(to, subject, body) — open email compose.
-6. switch_language(language) — switch the call to a different language. This will restart the call with the correct voice and speech recognition for that language. Say a brief goodbye before switching.
-7. translate(target_language) — become a real-time translator. Translate everything the user says into the target language.
+You have tools available — use them when the user asks for real-time information, actions, or language switching. Do NOT write out function calls as text. Just use the tools directly.
 
 Rules:
 - Keep replies to 1-2 sentences max. Be concise.
-- Use natural fillers occasionally.
+- Use natural fillers occasionally like "Let me check on that" before using a tool.
 - No markdown, no lists, no asterisks. This is spoken language.
 - Sound warm and friendly, like talking to a colleague.
-- When user asks to switch language, call switch_language() — the call will restart automatically with the right settings.
-- After searching, summarize the key finding naturally. Don't read out URLs."""
+- After using search_web, summarize the key finding naturally. Don't read out URLs."""
 
     messages = [{"role": "system", "content": system_content}]
 
