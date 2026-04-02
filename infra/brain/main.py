@@ -85,6 +85,19 @@ async def health():
 
 
 # ============================================================
+# IDENTITY — shared persona for all channels
+# ============================================================
+@app.get("/identity")
+async def identity_endpoint(lang: str = "en", channel: str = "voice", date: str = "", time: str = ""):
+    """Get system prompt for any channel. Single source of truth."""
+    from identity import get_system_prompt, PERSONA
+    return {
+        "name": PERSONA["name"],
+        "system_prompt": get_system_prompt(lang=lang, channel=channel, date=date, time=time),
+    }
+
+
+# ============================================================
 # DIRECT EXECUTE — Pipecat calls specific functions without re-thinking
 # ============================================================
 class ExecuteRequest(BaseModel):

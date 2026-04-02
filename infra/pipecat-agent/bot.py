@@ -247,6 +247,10 @@ Rules:
     context = LLMContext(messages=messages, tools=tools)
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(context)
 
+    # --- Reasoning Logger (Level 2 observability) ---
+    from parts.reasoning_logger import ReasoningLogger
+    reasoning_logger = ReasoningLogger()
+
     # --- Pipeline ---
     pipeline = Pipeline(
         [
@@ -255,6 +259,7 @@ Rules:
             STTForwarder(),
             user_aggregator,
             llm,
+            reasoning_logger,
             CJKSpaceFixer(),
             LLMForwarder(),
             tts,
@@ -289,6 +294,14 @@ Rules:
     @transport.event_handler("on_participant_left")
     async def on_participant_left(transport, participant, reason):
         logger.info(f"Participant left: {participant['id']}")
+        # Session logger: send conversation to Brain (fire-and-forget)
+        import asyncio as _asyncio
+        from parts.session_logger import log_session
+        try:
+            msgs = [{"role": m.get("role", ""), "content": m.get("content", "")} for m in context.messages] if hasattr(context, 'messages') else []
+            _asyncio.create_task(log_session(msgs, lang=lang))
+        except Exception as e:
+            logger.warning(f"Session log failed (non-fatal): {e}")
         await task.queue_frame(EndFrame())
 
     runner = PipelineRunner()
