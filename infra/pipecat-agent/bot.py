@@ -241,10 +241,10 @@ async def main():
         from pipecat.services.openai.llm import OpenAILLMService
         llm = OpenAILLMService(
             api_key=os.getenv("CEREBRAS_API_KEY"),
-            model=os.getenv("CEREBRAS_MODEL", "llama-4-scout-17b-16e-instruct"),
+            model=os.getenv("CEREBRAS_MODEL", "llama3.1-8b"),
             base_url="https://api.cerebras.ai/v1",
         )
-        logger.info(f"LLM: Cerebras ({os.getenv('CEREBRAS_MODEL', 'llama-4-scout-17b-16e-instruct')})")
+        logger.info(f"LLM: Cerebras ({os.getenv('CEREBRAS_MODEL', 'llama3.1-8b')})")
     else:
         # Default: Gemini Flash — all functions local
         from pipecat.services.google.llm import GoogleLLMService

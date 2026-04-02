@@ -133,10 +133,10 @@ async def run_phone_bot(websocket_server_host, websocket_server_port, stream_sid
         from pipecat.services.openai.llm import OpenAILLMService
         llm = OpenAILLMService(
             api_key=os.getenv("CEREBRAS_API_KEY"),
-            model=os.getenv("CEREBRAS_MODEL", "llama-4-scout-17b-16e-instruct"),
+            model=os.getenv("CEREBRAS_MODEL", "llama3.1-8b"),
             base_url="https://api.cerebras.ai/v1",
         )
-        logger.info(f"Phone LLM: Cerebras ({os.getenv('CEREBRAS_MODEL', 'llama-4-scout-17b-16e-instruct')})")
+        logger.info(f"Phone LLM: Cerebras ({os.getenv('CEREBRAS_MODEL', 'llama3.1-8b')})")
     else:
         from pipecat.services.google.llm import GoogleLLMService
         llm = GoogleLLMService(
