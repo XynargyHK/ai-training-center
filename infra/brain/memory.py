@@ -31,11 +31,14 @@ async def store_soul_fact(
         return {"error": "Supabase not configured"}
 
     # Check if this entity_key already exists (for versioning)
-    existing = supabase.table("brain_soul").select("id, version").eq(
+    query = supabase.table("brain_soul").select("id, version").eq(
         "user_id", user_id
-    ).eq("business_unit_id", business_unit_id).eq(
-        "entity_key", entity_key
-    ).eq("is_active", True).execute()
+    ).eq("entity_key", entity_key).eq("is_active", True)
+    if business_unit_id:
+        query = query.eq("business_unit_id", business_unit_id)
+    else:
+        query = query.is_("business_unit_id", "null")
+    existing = query.execute()
 
     version = 1
     if existing.data:
@@ -45,15 +48,17 @@ async def store_soul_fact(
         supabase.table("brain_soul").update({"is_active": False}).eq("id", old_id).execute()
 
     # Insert new version
-    result = supabase.table("brain_soul").insert({
+    row = {
         "user_id": user_id,
-        "business_unit_id": business_unit_id,
         "entity_type": entity_type,
         "entity_key": entity_key,
         "content": content,
         "source": source,
         "version": version,
-    }).execute()
+    }
+    if business_unit_id:
+        row["business_unit_id"] = business_unit_id
+    result = supabase.table("brain_soul").insert(row).execute()
 
     logger.info(f"Soul fact stored: {entity_type}/{entity_key} v{version}")
     return {"stored": True, "version": version}
@@ -66,7 +71,11 @@ async def get_soul_facts(user_id: str, business_unit_id: str, entity_type: str =
 
     query = supabase.table("brain_soul").select("*").eq(
         "user_id", user_id
-    ).eq("business_unit_id", business_unit_id).eq("is_active", True)
+    ).eq("is_active", True)
+    if business_unit_id:
+        query = query.eq("business_unit_id", business_unit_id)
+    else:
+        query = query.is_("business_unit_id", "null")
 
     if entity_type:
         query = query.eq("entity_type", entity_type)

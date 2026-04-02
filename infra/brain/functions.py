@@ -274,12 +274,14 @@ async def remember_fact(entity_type: str, entity_key: str, content: str) -> dict
         from memory import store_soul_fact
         result = await store_soul_fact(
             user_id="system",
-            business_unit_id="",
+            business_unit_id=None,
             entity_type=entity_type,
             entity_key=entity_key,
             content=content,
             source="brain_auto",
         )
+        if "error" in result:
+            return {"status": "failed", "error": result["error"]}
         return {"status": "remembered", "entity_key": entity_key}
     except Exception as e:
         return {"status": "failed", "error": str(e)}
@@ -293,9 +295,15 @@ async def recall_facts(query: str) -> dict:
     logger.info(f"Recalling: {query}")
     try:
         from memory import get_soul_facts
-        facts = await get_soul_facts(user_id="system", business_unit_id="", limit=10)
-        relevant = [f for f in facts if query.lower() in f.get("content", "").lower() or query.lower() in f.get("entity_key", "").lower()]
-        return {"facts": [f["content"] for f in relevant[:5]], "count": len(relevant)}
+        facts = await get_soul_facts(user_id="system", business_unit_id=None, limit=50)
+        # Search across entity_key, entity_type, and content
+        query_words = query.lower().split()
+        relevant = []
+        for f in facts:
+            searchable = f"{f.get('content', '')} {f.get('entity_key', '')} {f.get('entity_type', '')}".lower()
+            if any(word in searchable for word in query_words):
+                relevant.append(f)
+        return {"facts": [{"key": f["entity_key"], "content": f["content"]} for f in relevant[:5]], "count": len(relevant)}
     except Exception as e:
         return {"facts": [], "error": str(e)}
 
