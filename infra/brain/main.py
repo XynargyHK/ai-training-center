@@ -216,6 +216,31 @@ async def compact_endpoint(req: CompactRequest):
     return result
 
 
+# ============================================================
+# GUARDRAILS
+# ============================================================
+class GuardrailRequest(BaseModel):
+    text: str
+    direction: str = "input"  # "input" or "output"
+
+
+@app.post("/guardrail")
+async def guardrail_endpoint(req: GuardrailRequest):
+    """Validate input or filter output."""
+    from guardrails import validate_input, validate_output
+    if req.direction == "input":
+        return validate_input(req.text)
+    else:
+        return {"text": validate_output(req.text)}
+
+
+@app.post("/check-risk")
+async def check_risk_endpoint(function_name: str = "", arguments: dict = {}):
+    """HITL check — is this action high-risk?"""
+    from guardrails import check_high_risk_action
+    return check_high_risk_action(function_name, arguments)
+
+
 if __name__ == "__main__":
     import uvicorn
     logger.info(f"Brain starting on port {PORT}")
