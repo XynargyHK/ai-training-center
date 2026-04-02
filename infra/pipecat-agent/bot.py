@@ -1,29 +1,21 @@
 """
 Pipecat Voice AI Agent — Full-duplex conversation
-Uses: Deepgram STT + Gemini Flash LLM + multi-provider TTS + Daily WebRTC
-Google Search grounding + function calling (open_url)
+All tools are modular (tools/*.py). bot.py is just pipeline wiring.
 """
 import asyncio
 import os
 import sys
 
-from pipecat.frames.frames import LLMMessagesFrame, EndFrame, TextFrame, TranscriptionFrame
+from pipecat.frames.frames import EndFrame, TextFrame, TranscriptionFrame
 from pipecat.processors.frame_processor import FrameProcessor, FrameDirection
 from pipecat.transports.daily.transport import DailyOutputTransportMessageFrame
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.llm_context import LLMContext
-from pipecat.processors.aggregators.llm_response_universal import (
-    LLMContextAggregatorPair,
-    LLMUserAggregatorParams,
-)
-from pipecat.adapters.schemas.function_schema import FunctionSchema
-from pipecat.adapters.schemas.tools_schema import ToolsSchema, AdapterType
-from pipecat.services.llm_service import FunctionCallParams
-from pipecat.services.cartesia.tts import CartesiaTTSService
+from pipecat.processors.aggregators.llm_response_universal import LLMContextAggregatorPair
+from pipecat.adapters.schemas.tools_schema import ToolsSchema
 from pipecat.services.deepgram.stt import DeepgramSTTService
-from pipecat.services.openai.llm import OpenAILLMService
 try:
     from pipecat.transports.daily.transport import DailyParams, DailyTransport
 except ImportError:
@@ -243,146 +235,13 @@ Rules:
 
     messages = [{"role": "system", "content": system_content}]
 
-    # --- Function calling: open_url ---
-    open_url_func = FunctionSchema(
-        name="open_url",
-        description="Open a URL on the user's device. Use for websites (https://cnn.com), phone calls (tel:+852...), WhatsApp (https://wa.me/852...), email (mailto:...), or maps.",
-        properties={
-            "url": {
-                "type": "string",
-                "description": "The full URL to open, e.g. https://www.cnn.com or tel:+85291234567"
-            }
-        },
-        required=["url"],
-    )
+    # --- ALL tools are now modular (tools/*.py) ---
+    from tools import get_schemas, register_all
+    register_all(llm, tts, transport=transport, participant_id_ref=participant_id_ref if vision_enabled else None)
 
-    # Handler for open_url
-    async def handle_open_url(params: FunctionCallParams):
-        url = params.arguments.get("url", "")
-        if not url.startswith(("http", "tel:", "mailto:", "geo:")):
-            url = "https://" + url
-        logger.info(f"Opening URL: {url}")
-        try:
-            await transport.output().send_message(DailyOutputTransportMessageFrame(message={"type": "open-url", "url": url}))
-        except Exception as e:
-            logger.error(f"Could not send URL to browser: {e}")
-        await params.result_callback({"status": "opened", "url": url})
-
-    llm.register_function("open_url", handle_open_url)
-
-    # --- Function calling: search_web ---
-    search_web_func = FunctionSchema(
-        name="search_web",
-        description="Search the web and return results. Use when user asks for current info like prices, news, weather, facts, research, etc. Returns text content that you should summarize by voice.",
-        properties={
-            "query": {
-                "type": "string",
-                "description": "The search query, e.g. 'oil price today' or 'latest AI news'"
-            }
-        },
-        required=["query"],
-    )
-
-    async def handle_search_web(params: FunctionCallParams):
-        import aiohttp
-        query = params.arguments.get("query", "")
-        logger.info(f"Searching web: {query}")
-        try:
-            url = f"https://html.duckduckgo.com/html/?q={query.replace(' ', '+')}"
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as resp:
-                    html = await resp.text()
-            # Extract text from HTML (simple approach, no BeautifulSoup needed)
-            import re
-            text = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL)
-            text = re.sub(r'<style[^>]*>.*?</style>', '', text, flags=re.DOTALL)
-            text = re.sub(r'<[^>]+>', ' ', text)
-            text = re.sub(r'\s+', ' ', text).strip()
-            result = text[:3000]
-            logger.info(f"Search result: {result[:200]}...")
-            await params.result_callback({"results": result, "query": query})
-        except Exception as e:
-            logger.error(f"Search error: {e}")
-            await params.result_callback({"error": str(e), "query": query})
-
-    llm.register_function("search_web", handle_search_web)
-
-    # --- send_whatsapp: now delegated to Brain (see tools/send_whatsapp.py) ---
-
-    # --- Function calling: make_call ---
-    make_call_func = FunctionSchema(
-        name="make_call",
-        description="Initiate a phone call. Opens the phone dialer on the user's device.",
-        properties={
-            "phone": {
-                "type": "string",
-                "description": "Phone number with country code, e.g. +85296099766"
-            }
-        },
-        required=["phone"],
-    )
-
-    async def handle_make_call(params: FunctionCallParams):
-        phone = params.arguments.get("phone", "")
-        if not phone.startswith("+"):
-            phone = "+" + phone
-        url = f"tel:{phone}"
-        logger.info(f"Making call: {url}")
-        try:
-            await transport.output().send_message(DailyOutputTransportMessageFrame(message={"type": "open-url", "url": url}))
-        except Exception as e:
-            logger.error(f"Could not trigger call: {e}")
-        await params.result_callback({"status": "dialing", "phone": phone})
-
-    llm.register_function("make_call", handle_make_call)
-
-    # --- Function calling: send_email ---
-    send_email_func = FunctionSchema(
-        name="send_email",
-        description="Open an email compose window on the user's device.",
-        properties={
-            "to": {
-                "type": "string",
-                "description": "Email address"
-            },
-            "subject": {
-                "type": "string",
-                "description": "Email subject line"
-            },
-            "body": {
-                "type": "string",
-                "description": "Email body text"
-            }
-        },
-        required=["to"],
-    )
-
-    async def handle_send_email(params: FunctionCallParams):
-        import urllib.parse
-        to = params.arguments.get("to", "")
-        subject = urllib.parse.quote(params.arguments.get("subject", ""))
-        body = urllib.parse.quote(params.arguments.get("body", ""))
-        url = f"mailto:{to}?subject={subject}&body={body}"
-        logger.info(f"Sending email: {url[:100]}")
-        try:
-            await transport.output().send_message(DailyOutputTransportMessageFrame(message={"type": "open-url", "url": url}))
-        except Exception as e:
-            logger.error(f"Could not trigger email: {e}")
-        await params.result_callback({"status": "opened", "to": to})
-
-    llm.register_function("send_email", handle_send_email)
-
-    # --- Modular tools ---
-    from tools import get_schemas as get_pipecat_tool_schemas, register_all as register_pipecat_tools
-    register_pipecat_tools(llm, tts, participant_id_ref=participant_id_ref if vision_enabled else None)
-
-    # --- Tools: all functions ---
-    pipecat_schemas = get_pipecat_tool_schemas(include_vision=vision_enabled)
-    tools = ToolsSchema(standard_tools=[
-        open_url_func, search_web_func, make_call_func, send_email_func,
-    ] + pipecat_schemas)
-    logger.info(f"Tools: {4 + len(pipecat_schemas)} functions enabled (vision={vision_enabled})")
+    all_schemas = get_schemas(include_vision=vision_enabled)
+    tools = ToolsSchema(standard_tools=all_schemas)
+    logger.info(f"Tools: {len(all_schemas)} functions enabled (vision={vision_enabled})")
 
     # --- Context (universal, not deprecated OpenAILLMContext) ---
     context = LLMContext(messages=messages, tools=tools)
