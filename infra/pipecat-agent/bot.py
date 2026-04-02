@@ -143,6 +143,33 @@ class CJKSpaceFixer(FrameProcessor):
         await self.push_frame(frame, direction)
 
 
+class JsonTextFilter(FrameProcessor):
+    """Safety filter: catches JSON/function-call text that LLM accidentally outputs as speech.
+    Strips it out before it reaches TTS so the user never hears syntax."""
+    def __init__(self, name="JsonTextFilter"):
+        super().__init__(name=name)
+        self._buffer = ""
+
+    async def process_frame(self, frame, direction):
+        await super().process_frame(frame, direction)
+        if isinstance(frame, TextFrame):
+            text = frame.text
+            # Detect JSON-like patterns that should never be spoken
+            import re
+            # Match function call JSON: {"name": "ask_brain", "arguments": {...}}
+            # Match raw JSON objects/arrays
+            # Match tool_call syntax
+            if re.search(r'\{["\']name["\']:\s*["\']', text) or \
+               re.search(r'["\']arguments["\']:\s*\{', text) or \
+               re.search(r'<\|tool_call\|>', text) or \
+               re.search(r'<tool_call>', text) or \
+               (text.strip().startswith('{') and text.strip().endswith('}')):
+                from loguru import logger
+                logger.warning(f"JsonTextFilter: BLOCKED JSON text from reaching TTS: {text[:100]}")
+                return  # Drop this frame — don't pass to TTS
+        await self.push_frame(frame, direction)
+
+
 class LLMForwarder(FrameProcessor):
     """Sends AI response text to browser."""
     def __init__(self, name="LLMForwarder"):
@@ -241,10 +268,10 @@ async def main():
         from pipecat.services.openai.llm import OpenAILLMService
         llm = OpenAILLMService(
             api_key=os.getenv("CEREBRAS_API_KEY"),
-            model=os.getenv("CEREBRAS_MODEL", "qwen-3-235b-a22b-instruct-2507"),
+            model=os.getenv("CEREBRAS_MODEL", "llama3.1-8b"),
             base_url="https://api.cerebras.ai/v1",
         )
-        logger.info(f"LLM: Cerebras ({os.getenv('CEREBRAS_MODEL', 'qwen-3-235b-a22b-instruct-2507')})")
+        logger.info(f"LLM: Cerebras ({os.getenv('CEREBRAS_MODEL', 'llama3.1-8b')})")
     else:
         # Default: Gemini Flash — all functions local
         from pipecat.services.google.llm import GoogleLLMService
@@ -752,19 +779,26 @@ Everything you output must be a normal spoken sentence. Never output JSON, code,
         stt_processors.append(auto_voice_swapper)
     stt_processors.append(STTForwarder())
 
-    pipeline = Pipeline(
-        [
-            transport.input(),
-            *stt_processors,
-            user_aggregator,
-            llm,
-            CJKSpaceFixer(),
-            LLMForwarder(),
-            tts,
-            transport.output(),
-            assistant_aggregator,
-        ]
-    )
+    # Add JSON text filter for Cerebras mode (catches accidental JSON in speech)
+    json_filter = JsonTextFilter() if llm_provider == "cerebras" else None
+
+    pipeline_processors = [
+        transport.input(),
+        *stt_processors,
+        user_aggregator,
+        llm,
+        CJKSpaceFixer(),
+    ]
+    if json_filter:
+        pipeline_processors.append(json_filter)
+    pipeline_processors.extend([
+        LLMForwarder(),
+        tts,
+        transport.output(),
+        assistant_aggregator,
+    ])
+
+    pipeline = Pipeline(pipeline_processors)
 
     task = PipelineTask(
         pipeline,
