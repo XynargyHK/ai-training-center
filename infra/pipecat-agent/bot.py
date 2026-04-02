@@ -548,96 +548,9 @@ Rules:
 
     llm.register_function("send_email", handle_send_email)
 
-    # --- Function calling: switch_language ---
-    # Native Azure TTS voices for each language (proper native speakers)
-    LANGUAGE_VOICES = {
-        "english": "en-US-JennyMultilingualNeural",
-        "mandarin": "zh-CN-XiaoxiaoNeural",
-        "cantonese": "zh-HK-WanLungNeural",
-        "japanese": "ja-JP-NanamiNeural",
-        "korean": "ko-KR-SunHiNeural",
-        "french": "fr-FR-DeniseNeural",
-        "spanish": "es-ES-ElviraNeural",
-        "german": "de-DE-KatjaNeural",
-        "vietnamese": "vi-VN-HoaiMyNeural",
-    }
-    MULTILINGUAL_VOICE = "en-US-JennyMultilingualNeural"
-
-    switch_language_func = FunctionSchema(
-        name="switch_language",
-        description="Switch the AI's speaking language. Use when user says 'speak Mandarin', 'switch to Japanese', 'talk in French', etc. After switching, respond in the new language.",
-        properties={
-            "language": {
-                "type": "string",
-                "description": "Target language: english, mandarin, cantonese, japanese, korean, french, spanish, german, vietnamese"
-            }
-        },
-        required=["language"],
-    )
-
-    # Map language names to lang codes for restart
-    LANGUAGE_CODES = {
-        "english": "en",
-        "mandarin": "zh",
-        "cantonese": "yue",
-        "japanese": "ja",
-        "korean": "ko",
-        "french": "fr",
-        "spanish": "es",
-        "german": "de",
-        "vietnamese": "vi",
-    }
-
-    async def handle_switch_language(params: FunctionCallParams):
-        language = params.arguments.get("language", "english").lower()
-        lang_code = LANGUAGE_CODES.get(language, "en")
-        logger.info(f"Switching language to {language} (code: {lang_code}) — sending restart to browser")
-        # Tell the browser to switch language and restart the call
-        try:
-            await transport.output().send_message(
-                DailyOutputTransportMessageFrame(message={
-                    "type": "switch-language",
-                    "lang": lang_code,
-                })
-            )
-        except Exception as e:
-            logger.error(f"Could not send switch-language to browser: {e}")
-        await params.result_callback({
-            "status": "restarting",
-            "language": language,
-            "instruction": f"The call is restarting with {language} language settings. Say a brief goodbye in the current language."
-        })
-
-    llm.register_function("switch_language", handle_switch_language)
-
-    # --- Function calling: translate ---
-    translate_func = FunctionSchema(
-        name="translate",
-        description="Start real-time translation mode. The user speaks in their language, and you translate and speak in the target language. Use when user says 'translate to Mandarin', 'be my interpreter for Japanese', etc.",
-        properties={
-            "target_language": {
-                "type": "string",
-                "description": "The language to translate INTO: english, mandarin, cantonese, japanese, korean, french, spanish, german"
-            }
-        },
-        required=["target_language"],
-    )
-
-    async def handle_translate(params: FunctionCallParams):
-        target = params.arguments.get("target_language", "english").lower()
-        voice = LANGUAGE_VOICES.get(target, MULTILINGUAL_VOICE)
-        logger.info(f"Translation mode: translating to {target}, voice: {voice}")
-        try:
-            tts._settings.voice = voice
-        except Exception as e:
-            logger.error(f"Could not update TTS voice: {e}")
-        await params.result_callback({
-            "status": "translating",
-            "target_language": target,
-            "instruction": f"TRANSLATION MODE ACTIVE. From now on, EVERY response must be in {target} ONLY. No matter what language the user speaks, always translate into {target}. NEVER respond in the user's language. NEVER add commentary. Just output the translation. Stay in this mode until the user says 'stop translating' or 'switch to English'."
-        })
-
-    llm.register_function("translate", handle_translate)
+    # --- Modular tools: translate + switch_language (Pipecat-local) ---
+    from tools import get_pipecat_schemas, register_pipecat_tools
+    register_pipecat_tools(llm, tts, transport)
 
     # --- Additional skills ---
     from skills import get_all_skill_schemas, register_all_skills
@@ -646,8 +559,7 @@ Rules:
     # --- Tools: all functions ---
     all_tools = [
         open_url_func, search_web_func, send_whatsapp_func, make_call_func, send_email_func,
-        switch_language_func, translate_func
-    ] + get_all_skill_schemas()
+    ] + get_pipecat_schemas() + get_all_skill_schemas()
     tools = ToolsSchema(standard_tools=all_tools)
     logger.info(f"Tools: {len(all_tools)} functions enabled")
 
