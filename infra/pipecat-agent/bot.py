@@ -293,10 +293,10 @@ async def main():
         from pipecat.services.openai.llm import OpenAILLMService
         llm = OpenAILLMService(
             api_key=os.getenv("CEREBRAS_API_KEY"),
-            model=os.getenv("CEREBRAS_MODEL", "llama3.1-8b"),
+            model=os.getenv("CEREBRAS_MODEL", "qwen-3-235b-a22b-instruct-2507"),
             base_url="https://api.cerebras.ai/v1",
         )
-        logger.info(f"LLM: Cerebras ({os.getenv('CEREBRAS_MODEL', 'llama3.1-8b')})")
+        logger.info(f"LLM: Cerebras ({os.getenv('CEREBRAS_MODEL', 'qwen-3-235b-a22b-instruct-2507')})")
     else:
         # Default: Gemini Flash — all functions local
         from pipecat.services.google.llm import GoogleLLMService
@@ -454,7 +454,7 @@ When the user asks for real-time data or actions such as weather, web search, cu
 {lang_instruction if lang not in ('yue', 'zh') else ''}
 
 Critical rules:
-Everything you output must be a normal spoken sentence. Never output JSON, code, markdown, bullet points, numbered lists, asterisks, emojis, or any technical formatting. Never narrate your own actions. Keep responses to one to three sentences. Sound like a warm, friendly person on a phone call."""
+Everything you output must be a normal spoken sentence. Never output JSON, code, markdown, bullet points, numbered lists, asterisks, or any technical formatting. Never use emojis or special characters. Never narrate your own actions. Keep responses to one to three sentences. Sound like a warm, friendly person on a phone call."""
 
     messages = [
         {"role": "system", "content": system_content},
@@ -838,7 +838,7 @@ Everything you output must be a normal spoken sentence. Never output JSON, code,
         logger.info(f"Participant joined: {participant['id']}")
         if llm_provider == "cerebras":
             # For Cerebras: speak greeting directly via TTS, don't trigger LLM
-            # This prevents llama3.1-8b from eagerly calling ask_brain on startup
+            # This prevents qwen-3-235b-a22b-instruct-2507 from eagerly calling ask_brain on startup
             from pipecat.frames.frames import TTSSpeakFrame
             await task.queue_frames([TTSSpeakFrame(text="Hey there! Great to hear from you. What's on your mind?")])
         else:
