@@ -836,8 +836,14 @@ Everything you output must be a normal spoken sentence. Never output JSON, code,
     @transport.event_handler("on_first_participant_joined")
     async def on_first_participant_joined(transport, participant):
         logger.info(f"Participant joined: {participant['id']}")
-        from pipecat.frames.frames import LLMRunFrame
-        await task.queue_frames([LLMRunFrame()])
+        if llm_provider == "cerebras":
+            # For Cerebras: speak greeting directly via TTS, don't trigger LLM
+            # This prevents llama3.1-8b from eagerly calling ask_brain on startup
+            from pipecat.frames.frames import TTSSpeakFrame
+            await task.queue_frames([TTSSpeakFrame(text="Hey there! Great to hear from you. What's on your mind?")])
+        else:
+            from pipecat.frames.frames import LLMRunFrame
+            await task.queue_frames([LLMRunFrame()])
 
     @transport.event_handler("on_participant_left")
     async def on_participant_left(transport, participant, reason):
