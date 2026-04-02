@@ -148,10 +148,8 @@ async def main():
         tts = AzureTTSService(
             api_key=os.getenv("AZURE_SPEECH_KEY"),
             region=os.getenv("AZURE_SPEECH_REGION", "eastus"),
+            voice="zh-HK-WanLungNeural",
             sample_rate=24000,
-            settings=AzureTTSService.Settings(
-                voice=os.getenv("VOICE_NAME", "zh-HK-WanLungNeural"),
-            ),
         )
     elif tts_provider == "elevenlabs":
         from pipecat.services.elevenlabs.tts import ElevenLabsTTSService
@@ -193,10 +191,8 @@ async def main():
         tts = AzureTTSService(
             api_key=os.getenv("AZURE_SPEECH_KEY"),
             region=os.getenv("AZURE_SPEECH_REGION", "eastus"),
+            voice=tts_voice or "en-US-JennyMultilingualNeural",
             sample_rate=24000,
-            settings=AzureTTSService.Settings(
-                voice=tts_voice or "en-US-JennyMultilingualNeural",
-            ),
         )
     logger.info(f"TTS: {tts_provider} / {tts_voice}")
 
