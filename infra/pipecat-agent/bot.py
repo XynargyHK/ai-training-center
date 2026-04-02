@@ -143,58 +143,6 @@ class CJKSpaceFixer(FrameProcessor):
         await self.push_frame(frame, direction)
 
 
-class JsonTextFilter(FrameProcessor):
-    """Safety filter: catches JSON/function-call text that LLM accidentally outputs as speech.
-    Strips it out before it reaches TTS so the user never hears syntax.
-    Works with streaming chunks — accumulates suspicious text and blocks entire sequences."""
-    def __init__(self, name="JsonTextFilter"):
-        super().__init__(name=name)
-        self._suspicious = False
-        self._blocked_count = 0
-
-    async def process_frame(self, frame, direction):
-        await super().process_frame(frame, direction)
-        if isinstance(frame, TextFrame):
-            text = frame.text
-            # Check for JSON/function-call patterns (even in small streaming chunks)
-            # These patterns should NEVER appear in natural speech
-            bad_patterns = [
-                '{"', '{ "', "{'", "{ '",           # JSON object start
-                '"name"', '"type"', '"arguments"',   # function call keys
-                "'name'", "'type'", "'arguments'",
-                '"function"', '"ask_brain"',
-                "tool_call", "<|tool",               # tool call markers
-                '\\n{', '```',                       # code blocks
-            ]
-            is_bad = any(p in text for p in bad_patterns)
-
-            # Also catch chunks that are just braces/quotes (part of streaming JSON)
-            stripped = text.strip()
-            if stripped in ('{', '}', '{"', '"}', ':{', '},', '":', '",'):
-                is_bad = True
-
-            if is_bad:
-                self._suspicious = True
-                self._blocked_count += 1
-                from loguru import logger
-                logger.warning(f"JsonTextFilter: BLOCKED chunk {self._blocked_count}: {text[:80]}")
-                return  # Drop frame
-
-            # If we were in suspicious mode but got clean text, reset
-            if self._suspicious and self._blocked_count > 0:
-                # Check if this clean text is just a continuation of JSON
-                if stripped and not stripped[0].isalpha():
-                    self._blocked_count += 1
-                    from loguru import logger
-                    logger.warning(f"JsonTextFilter: BLOCKED continuation: {text[:80]}")
-                    return
-                # Reset — back to normal speech
-                self._suspicious = False
-                self._blocked_count = 0
-
-        await self.push_frame(frame, direction)
-
-
 class LLMForwarder(FrameProcessor):
     """Sends AI response text to browser."""
     def __init__(self, name="LLMForwarder"):
@@ -285,26 +233,12 @@ async def main():
         )
         logger.info(f"STT: Deepgram ({dg_lang})")
 
-    # --- LLM ---
-    llm_provider = os.getenv("LLM_PROVIDER", "gemini")  # "gemini" or "cerebras"
-
-    if llm_provider == "cerebras":
-        # Cerebras = fast mouth, delegates complex tasks to Brain container
-        from pipecat.services.openai.llm import OpenAILLMService
-        llm = OpenAILLMService(
-            api_key=os.getenv("CEREBRAS_API_KEY"),
-            model=os.getenv("CEREBRAS_MODEL", "qwen-3-235b-a22b-instruct-2507"),
-            base_url="https://api.cerebras.ai/v1",
-        )
-        logger.info(f"LLM: Cerebras ({os.getenv('CEREBRAS_MODEL', 'qwen-3-235b-a22b-instruct-2507')})")
-    else:
-        # Default: Gemini Flash — all functions local
-        from pipecat.services.google.llm import GoogleLLMService
-        llm = GoogleLLMService(
-            api_key=os.getenv("GOOGLE_GEMINI_API_KEY"),
-            model="gemini-2.0-flash",
-        )
-        logger.info("LLM: Gemini 2.0 Flash")
+    # --- LLM: Gemini Flash ---
+    from pipecat.services.google.llm import GoogleLLMService
+    llm = GoogleLLMService(
+        api_key=os.getenv("GOOGLE_GEMINI_API_KEY"),
+        model="gemini-2.0-flash",
+    )
 
     # --- TTS ---
     tts_provider = os.getenv("TTS_PROVIDER", "azure")
@@ -441,26 +375,7 @@ Rules:
 - When user asks to switch language, call switch_language() — the call will restart automatically with the right settings.
 - After searching, summarize the key finding naturally. Don't read out URLs."""
 
-    # Override system prompt for Cerebras mode (fast mouth, delegates to Brain)
-    if llm_provider == "cerebras":
-        system_content = f"""You are Sarah, a warm and friendly voice AI assistant. Today is {today}, {current_time}.
-
-You are speaking to a real person through a microphone and speaker. Everything you output will be spoken aloud by a text-to-speech engine.
-
-For greetings, chitchat, opinions, jokes, and general conversation, respond naturally and directly. Do not call any function for these.
-
-When the user asks for real-time data or actions such as weather, web search, currency conversion, sending WhatsApp messages, emails, opening URLs, maps, directions, places, notes, reminders, or phone calls, use the ask_brain function with their full request. Before calling it, say a brief filler like "Let me check on that" or "One moment". After receiving the result, speak the brain_response naturally as if it is your own knowledge. Never mention "the brain" or "the function" or any technical details.
-
-{lang_instruction if lang not in ('yue', 'zh') else ''}
-
-Critical rules:
-Everything you output must be a normal spoken sentence. Never output JSON, code, markdown, bullet points, numbered lists, asterisks, or any technical formatting. Never use emojis or special characters. Never narrate your own actions. Keep responses to one to three sentences. Sound like a warm, friendly person on a phone call."""
-
-    messages = [
-        {"role": "system", "content": system_content},
-        {"role": "user", "content": "Hey Sarah!"},
-        {"role": "assistant", "content": "Hey there! Great to hear from you. What's on your mind?"},
-    ]
+    messages = [{"role": "system", "content": system_content}]
 
     # --- Function calling: open_url ---
     open_url_func = FunctionSchema(
@@ -717,76 +632,17 @@ Everything you output must be a normal spoken sentence. Never output JSON, code,
 
     llm.register_function("translate", handle_translate)
 
-    # --- Tools registration (depends on LLM provider) ---
-    if llm_provider == "cerebras":
-        # Cerebras mode: single ask_brain function that delegates to Brain container
-        ask_brain_func = FunctionSchema(
-            name="ask_brain",
-            description="Ask the Brain to do something that requires real data, actions, or tools. Use for: web search, weather, currency conversion, sending WhatsApp messages, opening URLs, maps, directions, places, notes, reminders, making calls, sending emails, translation, language switching, or any request that needs real-time data or action execution. Pass the user's full request.",
-            properties={
-                "message": {
-                    "type": "string",
-                    "description": "The user's request that needs Brain processing"
-                }
-            },
-            required=["message"],
-        )
+    # --- Additional skills ---
+    from skills import get_all_skill_schemas, register_all_skills
+    register_all_skills(llm)
 
-        async def handle_ask_brain(params: FunctionCallParams):
-            import aiohttp
-            brain_url = os.getenv("BRAIN_URL", "http://localhost:8000")
-            message = params.arguments.get("message", "")
-            logger.info(f"Delegating to Brain: {message[:100]}")
-
-            try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(
-                        f"{brain_url}/think",
-                        json={
-                            "message": message,
-                            "conversation_history": [],
-                            "user_context": {
-                                "lang": os.getenv("VOICE_LANG", "en"),
-                            }
-                        },
-                        timeout=aiohttp.ClientTimeout(total=30),
-                    ) as resp:
-                        data = await resp.json()
-
-                        # Forward client actions to browser
-                        for action in data.get("client_actions", []):
-                            try:
-                                await transport.output().send_message(
-                                    DailyOutputTransportMessageFrame(message=action)
-                                )
-                            except Exception:
-                                pass
-
-                        await params.result_callback({
-                            "brain_response": data.get("response", "I couldn't process that."),
-                        })
-            except Exception as e:
-                logger.error(f"Brain call failed: {e}")
-                await params.result_callback({
-                    "brain_response": "Sorry, I had trouble processing that. Could you try again?"
-                })
-
-        llm.register_function("ask_brain", handle_ask_brain)
-        all_tools = [ask_brain_func]
-        tools = ToolsSchema(standard_tools=all_tools)
-        logger.info("Tools: Cerebras mode — 1 function (ask_brain → Brain container)")
-
-    else:
-        # Gemini mode: all functions registered locally (existing behavior)
-        from skills import get_all_skill_schemas, register_all_skills
-        register_all_skills(llm)
-
-        all_tools = [
-            open_url_func, search_web_func, send_whatsapp_func, make_call_func, send_email_func,
-            switch_language_func, translate_func
-        ] + get_all_skill_schemas()
-        tools = ToolsSchema(standard_tools=all_tools)
-        logger.info(f"Tools: Gemini mode — {len(all_tools)} functions enabled")
+    # --- Tools: all functions ---
+    all_tools = [
+        open_url_func, search_web_func, send_whatsapp_func, make_call_func, send_email_func,
+        switch_language_func, translate_func
+    ] + get_all_skill_schemas()
+    tools = ToolsSchema(standard_tools=all_tools)
+    logger.info(f"Tools: {len(all_tools)} functions enabled")
 
     # --- Context (universal, not deprecated OpenAILLMContext) ---
     context = LLMContext(messages=messages, tools=tools)
@@ -804,26 +660,19 @@ Everything you output must be a normal spoken sentence. Never output JSON, code,
         stt_processors.append(auto_voice_swapper)
     stt_processors.append(STTForwarder())
 
-    # Add JSON text filter for Cerebras mode (catches accidental JSON in speech)
-    json_filter = JsonTextFilter() if llm_provider == "cerebras" else None
-
-    pipeline_processors = [
-        transport.input(),
-        *stt_processors,
-        user_aggregator,
-        llm,
-        CJKSpaceFixer(),
-    ]
-    if json_filter:
-        pipeline_processors.append(json_filter)
-    pipeline_processors.extend([
-        LLMForwarder(),
-        tts,
-        transport.output(),
-        assistant_aggregator,
-    ])
-
-    pipeline = Pipeline(pipeline_processors)
+    pipeline = Pipeline(
+        [
+            transport.input(),
+            *stt_processors,
+            user_aggregator,
+            llm,
+            CJKSpaceFixer(),
+            LLMForwarder(),
+            tts,
+            transport.output(),
+            assistant_aggregator,
+        ]
+    )
 
     task = PipelineTask(
         pipeline,
@@ -836,14 +685,8 @@ Everything you output must be a normal spoken sentence. Never output JSON, code,
     @transport.event_handler("on_first_participant_joined")
     async def on_first_participant_joined(transport, participant):
         logger.info(f"Participant joined: {participant['id']}")
-        if llm_provider == "cerebras":
-            # For Cerebras: speak greeting directly via TTS, don't trigger LLM
-            # This prevents qwen-3-235b-a22b-instruct-2507 from eagerly calling ask_brain on startup
-            from pipecat.frames.frames import TTSSpeakFrame
-            await task.queue_frames([TTSSpeakFrame(text="Hey there! Great to hear from you. What's on your mind?")])
-        else:
-            from pipecat.frames.frames import LLMRunFrame
-            await task.queue_frames([LLMRunFrame()])
+        from pipecat.frames.frames import LLMRunFrame
+        await task.queue_frames([LLMRunFrame()])
 
     @transport.event_handler("on_participant_left")
     async def on_participant_left(transport, participant, reason):
