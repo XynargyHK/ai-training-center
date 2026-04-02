@@ -9,7 +9,6 @@ Side effect: sends switch-language message to browser → call restarts
 from loguru import logger
 from pipecat.adapters.schemas.function_schema import FunctionSchema
 from pipecat.services.llm_service import FunctionCallParams
-from pipecat.transports.daily.transport import DailyOutputTransportMessageFrame
 from config.voices import LANGUAGE_CODES
 
 
@@ -33,6 +32,7 @@ def create_handler(transport):
         transport: The Daily transport (needed to send message to browser)
     """
     async def handle(params: FunctionCallParams):
+        from pipecat.transports.daily.transport import DailyOutputTransportMessageFrame
         language = params.arguments.get("language", "english").lower()
         lang_code = LANGUAGE_CODES.get(language, "en")
         logger.info(f"Switching language to {language} (code: {lang_code})")
