@@ -8,6 +8,7 @@ from tools import (
     open_url, search_web, make_call, send_email,
     search_places, get_directions,
     send_whatsapp, send_whatsapp_group, schedule_whatsapp, split_bill,
+    calendar,
 )
 
 
@@ -25,7 +26,7 @@ def get_schemas(include_vision=False):
         send_whatsapp_group.schema,
         schedule_whatsapp.schema,
         split_bill.schema,
-    ]
+    ] + calendar.schemas
     if include_vision:
         schemas.append(vision.schema)
     return schemas
@@ -47,6 +48,7 @@ def register_all(llm, tts_service, transport=None, participant_id_ref=None):
     send_whatsapp_group.register(llm)
     schedule_whatsapp.register(llm)
     split_bill.register(llm)
+    calendar.register(llm)
     # Vision (optional)
     if participant_id_ref is not None:
         vision.register(llm, participant_id_ref)
