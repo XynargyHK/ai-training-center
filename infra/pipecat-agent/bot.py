@@ -549,9 +549,16 @@ Rules:
     llm.register_function("send_email", handle_send_email)
 
     # --- Function calling: switch_language ---
-    # Only Cantonese needs a special voice — multilingual handles all others
+    # Native Azure TTS voices for each language (proper native speakers)
     LANGUAGE_VOICES = {
+        "english": "en-US-JennyMultilingualNeural",
+        "mandarin": "zh-CN-XiaoxiaoNeural",
         "cantonese": "zh-HK-WanLungNeural",
+        "japanese": "ja-JP-NanamiNeural",
+        "korean": "ko-KR-SunHiNeural",
+        "french": "fr-FR-DeniseNeural",
+        "spanish": "es-ES-ElviraNeural",
+        "german": "de-DE-KatjaNeural",
         "vietnamese": "vi-VN-HoaiMyNeural",
     }
     MULTILINGUAL_VOICE = "en-US-JennyMultilingualNeural"
