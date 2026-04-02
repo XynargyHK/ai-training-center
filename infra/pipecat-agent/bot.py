@@ -100,6 +100,10 @@ async def main():
         logger.error("DAILY_ROOM_URL not set")
         return
 
+    # --- Vision mode (camera) ---
+    vision_enabled = os.getenv("VISION_ENABLED", "false").lower() == "true"
+    participant_id_ref = [None]  # mutable ref, updated when participant joins
+
     # --- Transport: Daily WebRTC ---
     transport = DailyTransport(
         room_url,
@@ -110,6 +114,7 @@ async def main():
             audio_out_enabled=True,
             audio_out_sample_rate=24000,
             audio_in_enabled=True,
+            video_in_enabled=vision_enabled,
             vad_enabled=True,
             vad_analyzer=SileroVADAnalyzer(),
             vad_audio_passthrough=True,
@@ -368,15 +373,16 @@ Rules:
 
     llm.register_function("send_email", handle_send_email)
 
-    # --- Modular tools: translate + switch_language (Pipecat-local) ---
+    # --- Modular tools ---
     from tools import get_schemas as get_pipecat_tool_schemas, register_all as register_pipecat_tools
-    register_pipecat_tools(llm, tts)
+    register_pipecat_tools(llm, tts, participant_id_ref=participant_id_ref if vision_enabled else None)
 
     # --- Tools: all functions ---
+    pipecat_schemas = get_pipecat_tool_schemas(include_vision=vision_enabled)
     tools = ToolsSchema(standard_tools=[
         open_url_func, search_web_func, make_call_func, send_email_func,
-    ] + get_pipecat_tool_schemas())
-    logger.info(f"Tools: {4 + len(get_pipecat_tool_schemas())} functions enabled")
+    ] + pipecat_schemas)
+    logger.info(f"Tools: {4 + len(pipecat_schemas)} functions enabled (vision={vision_enabled})")
 
     # --- Context (universal, not deprecated OpenAILLMContext) ---
     context = LLMContext(messages=messages, tools=tools)
@@ -409,6 +415,15 @@ Rules:
     @transport.event_handler("on_first_participant_joined")
     async def on_first_participant_joined(transport, participant):
         logger.info(f"Participant joined: {participant['id']}")
+        participant_id_ref[0] = participant["id"]
+        if vision_enabled:
+            await transport.capture_participant_video(
+                participant["id"],
+                framerate=0,
+                video_source="camera",
+                color_format="RGB",
+            )
+            logger.info(f"Vision: capturing video from {participant['id']} (on-demand)")
         from pipecat.frames.frames import LLMRunFrame
         await task.queue_frames([LLMRunFrame()])
 
