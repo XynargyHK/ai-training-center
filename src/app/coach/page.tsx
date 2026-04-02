@@ -271,10 +271,21 @@ export default function CoachPage() {
             }
           }
 
-          // Calculate angles for selected exercise
+          // Calculate angles for selected exercise (only if landmarks are VISIBLE)
           const exercise = EXERCISES[selectedExercise];
+          const MIN_VISIBILITY = 0.65;
           if (exercise.joints.length > 0) {
-            const angles = exercise.joints.map((j) => {
+            const angles = exercise.joints
+              .filter((j) => {
+                // Only show angles where ALL 3 landmarks are clearly visible
+                const [ai, bi, ci] = j.points;
+                return (
+                  (landmarks[ai]?.visibility ?? 0) > MIN_VISIBILITY &&
+                  (landmarks[bi]?.visibility ?? 0) > MIN_VISIBILITY &&
+                  (landmarks[ci]?.visibility ?? 0) > MIN_VISIBILITY
+                );
+              })
+              .map((j) => {
               const [ai, bi, ci] = j.points;
               const angle = calcAngle(landmarks[ai], landmarks[bi], landmarks[ci]);
               const score = scoreFromAngle(angle, j.ideal, j.tolerance);
@@ -296,8 +307,12 @@ export default function CoachPage() {
             });
 
             setCurrentAngles(angles);
-            const avg = angles.reduce((s, a) => s + a.score, 0) / angles.length;
-            setFormScore(Math.round(avg * 10) / 10);
+            if (angles.length > 0) {
+              const avg = angles.reduce((s, a) => s + a.score, 0) / angles.length;
+              setFormScore(Math.round(avg * 10) / 10);
+            } else {
+              setFormScore(null); // No visible joints for this exercise
+            }
           }
         }
       }
@@ -347,6 +362,38 @@ export default function CoachPage() {
       setCoaching(data.response || "No coaching available.");
     } catch (err) {
       setCoaching("Failed to get coaching. Check connection.");
+    }
+    setLoadingCoach(false);
+  };
+
+  // Get Vision coaching — send actual camera frame to Brain /vision
+  const getVisionCoaching = async () => {
+    if (!canvasRef.current) return;
+    setLoadingCoach(true);
+    setCoaching("");
+
+    const exercise = EXERCISES[selectedExercise];
+    const angleInfo = currentAngles.length > 0
+      ? `\nVisible skeleton angles: ${currentAngles.map(a => `${a.label}: ${a.angle}°`).join(", ")}`
+      : "";
+
+    try {
+      // Capture current canvas frame as base64
+      const imageBase64 = canvasRef.current.toDataURL("image/jpeg", 0.8);
+
+      const res = await fetch("https://modest-mercy-production-efe8.up.railway.app/vision", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          image_base64: imageBase64,
+          question: `You are an expert fitness and sports coach. Analyze this person's form for: ${exercise.name}. ${angleInfo}\n\nLook at their full body posture, any equipment they're holding (rackets, weights, etc.), stance width, head position, and anything the skeleton data can't capture. Give 2-3 specific, encouraging coaching tips. If you can see equipment, comment on grip and positioning.`,
+          lang: "en",
+        }),
+      });
+      const data = await res.json();
+      setCoaching(data.description || "No coaching available.");
+    } catch (err) {
+      setCoaching("Failed to get vision coaching. Check connection.");
     }
     setLoadingCoach(false);
   };
@@ -458,6 +505,17 @@ export default function CoachPage() {
         )}
       </div>
 
+      {/* No visible joints message */}
+      {isRunning && currentAngles.length === 0 && EXERCISES[selectedExercise].joints.length > 0 && (
+        <div style={{ padding: "12px 16px", maxWidth: "800px", margin: "0 auto" }}>
+          <div style={{ background: "#1a1a1a", borderRadius: "8px", padding: "12px 16px", border: "1px solid #333", textAlign: "center" }}>
+            <span style={{ color: "#888", fontSize: "14px" }}>
+              Can&apos;t see the joints needed for {EXERCISES[selectedExercise].name}. Try stepping back or adjusting the camera so your full body is visible. Use <strong style={{ color: "#8b5cf6" }}>Vision Coach</strong> instead — it analyzes the actual image.
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Angle Details */}
       {isRunning && currentAngles.length > 0 && (
         <div style={{ padding: "12px 16px", maxWidth: "800px", margin: "0 auto" }}>
@@ -513,7 +571,24 @@ export default function CoachPage() {
               cursor: loadingCoach ? "wait" : "pointer",
             }}
           >
-            {loadingCoach ? "Analyzing..." : "Get AI Coaching"}
+            {loadingCoach ? "Analyzing..." : "Skeleton Coach"}
+          </button>
+          <button
+            onClick={getVisionCoaching}
+            disabled={loadingCoach}
+            style={{
+              flex: 1,
+              padding: "14px",
+              borderRadius: "12px",
+              border: "none",
+              background: loadingCoach ? "#333" : "#8b5cf6",
+              color: "#fff",
+              fontSize: "16px",
+              fontWeight: 700,
+              cursor: loadingCoach ? "wait" : "pointer",
+            }}
+          >
+            {loadingCoach ? "Analyzing..." : "Vision Coach"}
           </button>
           <button
             onClick={stopCamera}
