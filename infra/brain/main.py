@@ -85,6 +85,30 @@ async def health():
 
 
 # ============================================================
+# DIRECT EXECUTE — Pipecat calls specific functions without re-thinking
+# ============================================================
+class ExecuteRequest(BaseModel):
+    function_name: str
+    arguments: dict = {}
+
+
+@app.post("/execute")
+async def execute_endpoint(req: ExecuteRequest):
+    """Execute a specific function directly. No LLM involved.
+    Used by Pipecat to delegate tool execution to Brain."""
+    from functions import FUNCTION_REGISTRY
+    func = FUNCTION_REGISTRY.get(req.function_name)
+    if not func:
+        return {"error": f"Unknown function: {req.function_name}", "status": "failed"}
+    try:
+        result = await func(**req.arguments)
+        return {"status": "ok", "result": result}
+    except Exception as e:
+        logger.error(f"Execute {req.function_name} failed: {e}")
+        return {"status": "failed", "error": str(e)}
+
+
+# ============================================================
 # MEMORY ENDPOINTS
 # ============================================================
 class RememberRequest(BaseModel):

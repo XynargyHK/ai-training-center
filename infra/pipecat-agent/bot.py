@@ -303,48 +303,7 @@ Rules:
 
     llm.register_function("search_web", handle_search_web)
 
-    # --- Function calling: send_whatsapp ---
-    send_whatsapp_func = FunctionSchema(
-        name="send_whatsapp",
-        description="Send a WhatsApp message to a phone number. Use when user says 'message John on WhatsApp', 'send a WhatsApp to 852...', etc.",
-        properties={
-            "phone": {
-                "type": "string",
-                "description": "Phone number with country code, e.g. 85296099766"
-            },
-            "message": {
-                "type": "string",
-                "description": "The message text to send"
-            }
-        },
-        required=["phone", "message"],
-    )
-
-    async def handle_send_whatsapp(params: FunctionCallParams):
-        import aiohttp
-        phone = params.arguments.get("phone", "").replace("+", "").replace(" ", "").replace("-", "")
-        message = params.arguments.get("message", "")
-        whapi_token = os.getenv("WHAPI_TOKEN", "")
-        logger.info(f"Sending WhatsApp to {phone}: {message[:50]}...")
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    "https://gate.whapi.cloud/messages/text",
-                    headers={"Authorization": f"Bearer {whapi_token}", "Content-Type": "application/json"},
-                    json={"to": phone, "body": message},
-                    timeout=aiohttp.ClientTimeout(total=10),
-                ) as resp:
-                    result = await resp.json()
-                    logger.info(f"WhatsApp API response: {resp.status} {result}")
-                    if resp.status == 200 or resp.status == 201:
-                        await params.result_callback({"status": "sent", "phone": phone})
-                    else:
-                        await params.result_callback({"status": "failed", "error": str(result)})
-        except Exception as e:
-            logger.error(f"WhatsApp send error: {e}")
-            await params.result_callback({"status": "failed", "error": str(e)})
-
-    llm.register_function("send_whatsapp", handle_send_whatsapp)
+    # --- send_whatsapp: now delegated to Brain (see tools/send_whatsapp.py) ---
 
     # --- Function calling: make_call ---
     make_call_func = FunctionSchema(
@@ -415,9 +374,9 @@ Rules:
 
     # --- Tools: all functions ---
     tools = ToolsSchema(standard_tools=[
-        open_url_func, search_web_func, send_whatsapp_func, make_call_func, send_email_func,
+        open_url_func, search_web_func, make_call_func, send_email_func,
     ] + get_pipecat_tool_schemas())
-    logger.info("Tools: 7 functions enabled")
+    logger.info(f"Tools: {4 + len(get_pipecat_tool_schemas())} functions enabled")
 
     # --- Context (universal, not deprecated OpenAILLMContext) ---
     context = LLMContext(messages=messages, tools=tools)
