@@ -241,10 +241,10 @@ async def main():
         from pipecat.services.openai.llm import OpenAILLMService
         llm = OpenAILLMService(
             api_key=os.getenv("CEREBRAS_API_KEY"),
-            model=os.getenv("CEREBRAS_MODEL", "qwen-3-235b-a22b-instruct-2507"),
+            model=os.getenv("CEREBRAS_MODEL", "llama3.1-8b"),
             base_url="https://api.cerebras.ai/v1",
         )
-        logger.info(f"LLM: Cerebras ({os.getenv('CEREBRAS_MODEL', 'qwen-3-235b-a22b-instruct-2507')})")
+        logger.info(f"LLM: Cerebras ({os.getenv('CEREBRAS_MODEL', 'llama3.1-8b')})")
     else:
         # Default: Gemini Flash — all functions local
         from pipecat.services.google.llm import GoogleLLMService
@@ -391,34 +391,31 @@ Rules:
 
     # Override system prompt for Cerebras mode (fast mouth, delegates to Brain)
     if llm_provider == "cerebras":
-        system_content = f"""You are Sarah, a friendly voice AI assistant. Today is {today}, {current_time}.
+        system_content = f"""You are Sarah, a warm and friendly AI voice assistant. You are talking to a real person through a microphone and speaker. Today is {today}, {current_time}.
 
-IMPORTANT: You can handle greetings, chitchat, follow-up questions, and simple conversation DIRECTLY without calling any function. Just talk naturally.
+Your personality:
+You are cheerful, natural, and conversational, like a helpful friend. You speak in short, natural sentences, one to three sentences max. You use casual spoken English with contractions and simple words. You sound human, not robotic.
 
-ONLY call ask_brain() when the user asks for something that requires REAL DATA or ACTIONS:
-- Weather, search, currency conversion
-- Sending WhatsApp messages, emails
-- Opening URLs, maps, directions
-- Notes, reminders, phone calls
-- Translation, language switching
+What you are great at:
+Friendly conversation, small talk, jokes, opinions, advice. Answering general knowledge questions from memory. Helping people think through problems. Being encouraging and supportive.
 
-When you DO call ask_brain, say a brief filler first like "Let me check..." then call it.
-
-After getting the brain_response, speak it naturally as your own words. Never say "the brain says".
-
-NEVER call ask_brain for greetings, opinions, jokes, or general conversation. Just respond directly.
+What you cannot do, and be honest about it:
+You cannot look up real-time information like weather, news, or live prices. You cannot send messages, make calls, or open websites. If someone asks for real-time data, say something like "I wish I could check that for you, but I don't have access to live data right now. I can help with general knowledge though!"
 
 {lang_instruction if lang not in ('yue', 'zh') else ''}
 
-Rules:
-- 1-2 sentences max. Concise.
-- Natural spoken language, no markdown.
-- Warm and friendly tone."""
+Absolute rules you must always follow:
+Never output JSON, code, function calls, or any structured syntax.
+Never say words like asterisk, bracket, hash, or emoji.
+Never narrate your own actions.
+Never use markdown, bullet points, numbered lists, or formatting of any kind.
+Keep every response under three sentences.
+Sound like a real person on a phone call."""
 
     messages = [
         {"role": "system", "content": system_content},
-        {"role": "user", "content": "Hi there!"},
-        {"role": "assistant", "content": "Hey! I'm Sarah, your AI assistant. How can I help you today?"},
+        {"role": "user", "content": "Hey Sarah!"},
+        {"role": "assistant", "content": "Hey there! Great to hear from you. What's on your mind?"},
     ]
 
     # --- Function calling: open_url ---
@@ -678,62 +675,12 @@ Rules:
 
     # --- Tools registration (depends on LLM provider) ---
     if llm_provider == "cerebras":
-        # Cerebras mode: single ask_brain function that delegates to Brain container
-        ask_brain_func = FunctionSchema(
-            name="ask_brain",
-            description="Ask the Brain to do something that requires real data, actions, or tools. Use for: web search, weather, currency conversion, sending WhatsApp messages, opening URLs, maps, directions, places, notes, reminders, making calls, sending emails, translation, language switching, or any request that needs real-time data or action execution. Pass the user's full request.",
-            properties={
-                "message": {
-                    "type": "string",
-                    "description": "The user's request that needs Brain processing"
-                }
-            },
-            required=["message"],
-        )
-
-        async def handle_ask_brain(params: FunctionCallParams):
-            import aiohttp
-            brain_url = os.getenv("BRAIN_URL", "http://localhost:8000")
-            message = params.arguments.get("message", "")
-            logger.info(f"Delegating to Brain: {message[:100]}")
-
-            try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(
-                        f"{brain_url}/think",
-                        json={
-                            "message": message,
-                            "conversation_history": [],
-                            "user_context": {
-                                "lang": os.getenv("VOICE_LANG", "en"),
-                            }
-                        },
-                        timeout=aiohttp.ClientTimeout(total=30),
-                    ) as resp:
-                        data = await resp.json()
-
-                        # Forward client actions to browser
-                        for action in data.get("client_actions", []):
-                            try:
-                                await transport.output().send_message(
-                                    DailyOutputTransportMessageFrame(message=action)
-                                )
-                            except Exception:
-                                pass
-
-                        await params.result_callback({
-                            "brain_response": data.get("response", "I couldn't process that."),
-                        })
-            except Exception as e:
-                logger.error(f"Brain call failed: {e}")
-                await params.result_callback({
-                    "brain_response": "Sorry, I had trouble processing that. Could you try again?"
-                })
-
-        llm.register_function("ask_brain", handle_ask_brain)
-        all_tools = [ask_brain_func]
+        # Cerebras mode: NO function calling tools (llama3.1-8b can't handle OpenAI tool format)
+        # Pure conversational agent — fast, smooth, natural
+        # Brain integration will be added later via text-based triggers
+        all_tools = []
         tools = ToolsSchema(standard_tools=all_tools)
-        logger.info("Tools: Cerebras mode — 1 function (ask_brain → Brain container)")
+        logger.info("Tools: Cerebras mode — pure conversation (no function calling)")
 
     else:
         # Gemini mode: all functions registered locally (existing behavior)
