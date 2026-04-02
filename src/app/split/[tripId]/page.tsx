@@ -157,18 +157,29 @@ export default function TripPage() {
         )}
       </div>
 
-      {/* Add Expense Button */}
-      <button
-        onClick={() => router.push(`/split/${tripId}/add-expense`)}
-        style={{
-          width: '100%', padding: '14px', borderRadius: '10px',
-          border: 'none', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
-          color: '#fff', fontSize: '15px', fontWeight: 600,
-          cursor: 'pointer', marginBottom: '16px',
-        }}
-      >
-        + Add Expense
-      </button>
+      {/* Action Buttons */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+        <button
+          onClick={() => router.push(`/split/${tripId}/add-expense`)}
+          style={{
+            flex: 1, padding: '14px', borderRadius: '10px',
+            border: 'none', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+            color: '#fff', fontSize: '15px', fontWeight: 600, cursor: 'pointer',
+          }}
+        >
+          + Add Expense
+        </button>
+        <button
+          onClick={() => router.push(`/split/${tripId}/map`)}
+          style={{
+            padding: '14px 20px', borderRadius: '10px',
+            border: '1px solid #2a5a2a', background: '#1a3a1a',
+            color: '#4ade80', fontSize: '15px', fontWeight: 600, cursor: 'pointer',
+          }}
+        >
+          Map
+        </button>
+      </div>
 
       {/* Expenses */}
       {expenses.length > 0 && (
