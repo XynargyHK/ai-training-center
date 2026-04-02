@@ -18,6 +18,7 @@
     "@google/genai": "^1.47.0",
     "@google/generative-ai": "^0.24.1",
     "@hello-pangea/dnd": "^18.0.1",
+    "@mediapipe/tasks-vision": "^0.10.34",
     "@medusajs/cart": "^2.11.3",
     "@medusajs/customer": "^2.11.3",
     "@medusajs/medusa-js": "^6.1.10",

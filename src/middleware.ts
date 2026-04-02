@@ -20,6 +20,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/auth') ||
     pathname.startsWith('/operator') ||
     pathname.startsWith('/voice') ||
+    pathname.startsWith('/coach') ||
     pathname.includes('favicon.ico')
   ) {
     return NextResponse.next()
