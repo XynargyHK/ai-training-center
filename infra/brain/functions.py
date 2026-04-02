@@ -439,16 +439,11 @@ FUNCTION_REGISTRY = {
     "send_whatsapp_group": send_whatsapp_group,
     "schedule_whatsapp": schedule_whatsapp,
     "split_bill": split_bill,
-    "list_calendar_events": None,  # placeholder, registered below
-    "create_calendar_event": None,
-    "check_calendar_availability": None,
 }
 
 # Calendar tools
-from calendar_tool import list_events, create_event, check_availability
-FUNCTION_REGISTRY["list_calendar_events"] = list_events
-FUNCTION_REGISTRY["create_calendar_event"] = create_event
-FUNCTION_REGISTRY["check_calendar_availability"] = check_availability
+from calendar_tool import send_calendar_invite
+FUNCTION_REGISTRY["send_calendar_invite"] = send_calendar_invite
 
 # Add advanced tools (OpenClaw-inspired)
 from tools_advanced import ADVANCED_FUNCTION_REGISTRY, ADVANCED_TOOL_DECLARATIONS
