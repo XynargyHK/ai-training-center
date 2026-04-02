@@ -6,9 +6,8 @@ Google Search grounding + function calling (open_url)
 import asyncio
 import os
 import sys
-import time
 
-from pipecat.frames.frames import LLMMessagesFrame, EndFrame, TextFrame, TranscriptionFrame, UserStartedSpeakingFrame
+from pipecat.frames.frames import LLMMessagesFrame, EndFrame, TextFrame, TranscriptionFrame
 from pipecat.processors.frame_processor import FrameProcessor, FrameDirection
 from pipecat.transports.daily.transport import DailyOutputTransportMessageFrame
 from pipecat.pipeline.pipeline import Pipeline
@@ -47,40 +46,6 @@ except ValueError:
 logger.add(sys.stderr, level="DEBUG")
 
 
-class STTLatencyMonitor(FrameProcessor):
-    """Monitors STT TTFB and forces reconnection when latency exceeds threshold.
-    Detects degradation before the user notices and recycles the connection."""
-    def __init__(self, stt_service, threshold=3.0, name="STTLatencyMonitor"):
-        super().__init__(name=name)
-        self._stt = stt_service
-        self._threshold = threshold
-        self._speech_start = None
-        self._recycling = False
-
-    async def process_frame(self, frame, direction):
-        await super().process_frame(frame, direction)
-        if isinstance(frame, UserStartedSpeakingFrame):
-            # User turn started — record timestamp for TTFB measurement
-            self._speech_start = time.time()
-        elif isinstance(frame, TranscriptionFrame) and self._speech_start:
-            ttfb = time.time() - self._speech_start
-            self._speech_start = None
-            if ttfb > self._threshold and not self._recycling:
-                logger.warning(f"STT TTFB {ttfb:.1f}s exceeds {self._threshold}s — recycling connection")
-                self._recycling = True
-                asyncio.create_task(self._recycle())
-        await self.push_frame(frame, direction)
-
-    async def _recycle(self):
-        try:
-            await self._stt._update_settings(self._stt._settings)
-            logger.info("STT connection recycled successfully")
-        except Exception as e:
-            logger.error(f"STT recycle failed: {e}")
-        finally:
-            self._recycling = False
-
-
 class STTForwarder(FrameProcessor):
     """Sends user speech transcripts to browser."""
     def __init__(self, name="STTForwarder"):
@@ -91,40 +56,6 @@ class STTForwarder(FrameProcessor):
         if isinstance(frame, TranscriptionFrame):
             msg = DailyOutputTransportMessageFrame(message={"type": "stt", "text": frame.text})
             await self.push_frame(msg, FrameDirection.DOWNSTREAM)
-        await self.push_frame(frame, direction)
-
-
-class AutoTTSVoiceSwapper(FrameProcessor):
-    """Auto-swaps TTS voice based on detected language from Azure auto-detect STT.
-    Reads TranscriptionFrame.language and updates tts._settings.voice accordingly.
-    Safe mid-call — voice is read fresh per TTS synthesis call."""
-    # Native voices for languages that need them (not Jenny multilingual)
-    VOICE_MAP = {
-        "zh-HK": "zh-HK-WanLungNeural",      # Cantonese
-        "vi-VN": "vi-VN-HoaiMyNeural",         # Vietnamese
-    }
-    MULTILINGUAL_VOICE = "en-US-JennyMultilingualNeural"
-
-    def __init__(self, tts_service, name="AutoTTSVoiceSwapper"):
-        super().__init__(name=name)
-        self._tts = tts_service
-        self._current_lang = None
-
-    async def process_frame(self, frame, direction):
-        await super().process_frame(frame, direction)
-        if isinstance(frame, TranscriptionFrame):
-            lang = getattr(frame, 'language', None)
-            if lang:
-                # Convert to string for matching — could be Language enum or string
-                lang_str = str(lang)
-                if lang_str != self._current_lang:
-                    self._current_lang = lang_str
-                    logger.info(f"AutoTTSVoiceSwapper: detected language = '{lang_str}' (type: {type(lang).__name__})")
-                    new_voice = self.VOICE_MAP.get(lang_str, self.MULTILINGUAL_VOICE)
-                    old_voice = self._tts._settings.voice
-                    if new_voice != old_voice:
-                        self._tts._settings.voice = new_voice
-                        logger.info(f"Auto TTS voice swap: {old_voice} → {new_voice}")
         await self.push_frame(frame, direction)
 
 
@@ -161,9 +92,6 @@ class LLMForwarder(FrameProcessor):
         await self.push_frame(frame, direction)
 
 
-from stt_utils import AutoDetectAzureSTTService
-
-
 async def main():
     room_url = os.getenv("DAILY_ROOM_URL")
     daily_api_key = os.getenv("DAILY_API_KEY")
@@ -190,48 +118,19 @@ async def main():
 
     # --- STT ---
     lang = os.getenv("VOICE_LANG", "en")
-    # Deepgram Nova-3 languages (fast, <300ms)
-    DEEPGRAM_LANGUAGES = {
-        "en": "en",
-        "vi": "vi",
-        "zh": "zh",
-        "ja": "ja",
-        "ko": "ko",
-        "fr": "fr",
-        "es": "es",
-        "de": "de",
-    }
-    # Azure STT only for Cantonese (Deepgram doesn't support zh-HK well)
-    AZURE_STT_LANGUAGES = {
-        "yue": "zh-HK",
-    }
-    if lang == "auto":
-        # Auto-detect language using Azure continuous language ID
-        stt = AutoDetectAzureSTTService.create(
-            api_key=os.getenv("AZURE_SPEECH_KEY"),
-            region=os.getenv("AZURE_SPEECH_REGION", "eastus"),
-            candidate_languages=["en-US", "zh-HK", "zh-CN", "vi-VN", "ja-JP", "ko-KR", "fr-FR", "es-ES", "de-DE"],
-            sample_rate=24000,
-        )
-        logger.info("STT: Azure Auto-Detect (en/yue/zh/vi/ja/ko/fr/es/de)")
-    elif lang in AZURE_STT_LANGUAGES:
+    if lang == "yue":
         from pipecat.services.azure.stt import AzureSTTService
-        azure_lang = AZURE_STT_LANGUAGES[lang]
         stt = AzureSTTService(
             api_key=os.getenv("AZURE_SPEECH_KEY"),
-            region=os.getenv("AZURE_SPEECH_REGION", "eastus"),
-            language=azure_lang,
+            region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
+            language="zh-HK",
             sample_rate=24000,
         )
-        logger.info(f"STT: Azure ({azure_lang})")
     else:
-        # Deepgram Nova-3 — language MUST be set via settings, not constructor kwarg
-        dg_lang = DEEPGRAM_LANGUAGES.get(lang, "en")
         stt = DeepgramSTTService(
             api_key=os.getenv("DEEPGRAM_API_KEY"),
-            settings=DeepgramSTTService.Settings(language=dg_lang),
+            language="multi",
         )
-        logger.info(f"STT: Deepgram ({dg_lang})")
 
     # --- LLM: Gemini Flash ---
     from pipecat.services.google.llm import GoogleLLMService
@@ -239,27 +138,19 @@ async def main():
         api_key=os.getenv("GOOGLE_GEMINI_API_KEY"),
         model="gemini-2.0-flash",
     )
-    logger.info("LLM: Gemini 2.0 Flash")
 
     # --- TTS ---
     tts_provider = os.getenv("TTS_PROVIDER", "azure")
     tts_voice = os.getenv("TTS_VOICE", "")
 
-    # Languages that need native Azure voices (not Jenny multilingual)
-    NATIVE_VOICE_DEFAULTS = {
-        "yue": "zh-HK-WanLungNeural",
-        "vi": "vi-VN-HoaiMyNeural",
-    }
-    if lang in NATIVE_VOICE_DEFAULTS:
+    if lang == "yue":
         from pipecat.services.azure.tts import AzureTTSService
-        native_voice = tts_voice or NATIVE_VOICE_DEFAULTS[lang]
         tts = AzureTTSService(
             api_key=os.getenv("AZURE_SPEECH_KEY"),
-            region=os.getenv("AZURE_SPEECH_REGION", "eastus"),
-            voice=native_voice,
+            region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
+            voice=os.getenv("VOICE_NAME", "zh-HK-WanLungNeural"),
             sample_rate=24000,
         )
-        logger.info(f"TTS: Azure native ({native_voice})")
     elif tts_provider == "elevenlabs":
         from pipecat.services.elevenlabs.tts import ElevenLabsTTSService
         tts = ElevenLabsTTSService(
@@ -299,7 +190,7 @@ async def main():
         from pipecat.services.azure.tts import AzureTTSService
         tts = AzureTTSService(
             api_key=os.getenv("AZURE_SPEECH_KEY"),
-            region=os.getenv("AZURE_SPEECH_REGION", "eastus"),
+            region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
             voice=tts_voice or "en-US-JennyMultilingualNeural",
             sample_rate=24000,
         )
@@ -312,12 +203,6 @@ async def main():
     today = now.strftime("%B %d, %Y")
     current_time = now.strftime("%I:%M %p HKT")
 
-    # Map lang code to name for system prompt
-    LANG_NAMES = {
-        "en": "English", "zh": "Mandarin Chinese", "yue": "Cantonese",
-        "ja": "Japanese", "ko": "Korean", "fr": "French", "es": "Spanish", "de": "German", "vi": "Vietnamese",
-    }
-
     if lang == "yue":
         system_content = f"""你係一個語音AI助手。你講嘢要好似真人打電話咁，唔好似機械人。
 今日係{today}，而家時間係{current_time}。
@@ -328,45 +213,28 @@ async def main():
 - 自然啲回應：「嗯...」「哦！」「明白」「係喎」
 - 唔好用markdown、列表、星號。呢個係講嘢，唔係打字
 - 語氣要親切友善，好似同朋友傾計咁"""
-    elif lang == "zh":
-        system_content = f"""你是一个语音AI助手。你说话要像真人打电话一样，不要像机器人。
-今天是{today}，现在时间是{current_time}。
-
-你有这些工具：
-1. search_web(query) — 搜索网络获取最新信息。
-2. open_url(url) — 在用户屏幕上打开网站。
-3. send_whatsapp(phone, message) — 发送WhatsApp消息。
-4. make_call(phone) — 拨打电话。
-5. send_email(to, subject, body) — 打开邮件编辑。
-6. switch_language(language) — 切换语言，通话会自动重启。
-7. translate(target_language) — 实时翻译模式。
-
-规则：
-- 每次回复最多1-2句，要简洁
-- 一定要用中文普通话回应
-- 自然的回应：「嗯...」「哦！」「好的」「明白」
-- 不要用markdown、列表、星号。这是说话，不是打字
-- 语气要亲切友善，像同事聊天一样"""
-    elif lang == "auto":
-        lang_instruction = "Auto-detect the language the user speaks and ALWAYS respond in that SAME language. If they speak Cantonese, respond in Cantonese using colloquial Cantonese (用「係」唔好用「是」). If they speak English, respond in English. If they speak Mandarin, respond in Mandarin. Match their language exactly."
     else:
-        lang_name = LANG_NAMES.get(lang, "English")
-        lang_instruction = f"You MUST respond in {lang_name}. The user has selected {lang_name} as their language." if lang != "en" else "Detect what language the user speaks and respond in the same language."
-
-    if lang not in ("yue", "zh"):
-        system_content = f"""You are a voice AI assistant called Sarah. You speak like a real person in a phone call — not a chatbot.
+        system_content = f"""You are a multilingual voice AI assistant. You speak like a real person in a phone call — not a chatbot.
 Today's date is {today}. The current time is {current_time}.
 
-{lang_instruction}
+You can understand and respond in multiple languages. The user may speak English, Mandarin, Cantonese, Japanese, Korean, French, Spanish, German, or any other language. Detect what language they speak and respond in the same language by default.
 
-You have tools available — use them when the user asks for real-time information, actions, or language switching. Do NOT write out function calls as text. Just use the tools directly.
+You have these tools:
+1. search_web(query) — search the internet for current info like prices, news, weather.
+2. open_url(url) — open a website on the user's screen.
+3. send_whatsapp(phone, message) — send a real WhatsApp message.
+4. make_call(phone) — dial a phone number.
+5. send_email(to, subject, body) — open email compose.
+6. switch_language(language) — switch your speaking language when the user asks. This also changes your voice.
+7. translate(target_language) — become a real-time translator. Translate everything the user says into the target language.
 
 Rules:
 - Keep replies to 1-2 sentences max. Be concise.
-- Use natural fillers occasionally like "Let me check on that" before using a tool.
+- Use natural fillers occasionally.
 - No markdown, no lists, no asterisks. This is spoken language.
 - Sound warm and friendly, like talking to a colleague.
-- After using search_web, summarize the key finding naturally. Don't read out URLs."""
+- If the user speaks a different language, respond in that language automatically.
+- After searching, summarize the key finding naturally. Don't read out URLs."""
 
     messages = [{"role": "system", "content": system_content}]
 
@@ -542,40 +410,25 @@ Rules:
     llm.register_function("send_email", handle_send_email)
 
     # --- Modular tools: translate + switch_language (Pipecat-local) ---
-    from tools import get_pipecat_schemas, register_pipecat_tools
-    register_pipecat_tools(llm, tts, transport)
-
-    # --- Additional skills ---
-    from skills import get_all_skill_schemas, register_all_skills
-    register_all_skills(llm)
+    from tools import get_schemas as get_pipecat_tool_schemas, register_all as register_pipecat_tools
+    register_pipecat_tools(llm, tts)
 
     # --- Tools: all functions ---
-    all_tools = [
+    tools = ToolsSchema(standard_tools=[
         open_url_func, search_web_func, send_whatsapp_func, make_call_func, send_email_func,
-    ] + get_pipecat_schemas() + get_all_skill_schemas()
-    tools = ToolsSchema(standard_tools=all_tools)
-    logger.info(f"Tools: {len(all_tools)} functions enabled")
+    ] + get_pipecat_tool_schemas())
+    logger.info("Tools: 7 functions enabled")
 
     # --- Context (universal, not deprecated OpenAILLMContext) ---
     context = LLMContext(messages=messages, tools=tools)
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(context)
 
-    # --- STT Latency Monitor (auto-recycle on degradation) ---
-    stt_monitor = STTLatencyMonitor(stt_service=stt, threshold=3.0)
-
-    # --- Auto TTS Voice Swapper (only for auto-detect mode) ---
-    auto_voice_swapper = AutoTTSVoiceSwapper(tts_service=tts) if lang == "auto" else None
-
     # --- Pipeline ---
-    stt_processors = [stt, stt_monitor]
-    if auto_voice_swapper:
-        stt_processors.append(auto_voice_swapper)
-    stt_processors.append(STTForwarder())
-
     pipeline = Pipeline(
         [
             transport.input(),
-            *stt_processors,
+            stt,
+            STTForwarder(),
             user_aggregator,
             llm,
             CJKSpaceFixer(),

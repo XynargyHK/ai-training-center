@@ -1,20 +1,14 @@
 """
-Tools registry — collects all tool schemas and registers handlers.
-Pipecat-local tools: translate, switch_language (need TTS/transport access)
-Brain tools: everything else (via HTTP proxy) — TODO after demo
+Pipecat-local tools registry.
+These tools live in Pipecat (not Brain) because they need direct TTS/transport access.
 """
 from tools import translate, switch_language
 
 
-def get_pipecat_schemas():
-    """Return FunctionSchema list for tools that run in Pipecat."""
-    return [
-        translate.schema,
-        switch_language.schema,
-    ]
+def get_schemas():
+    return [translate.schema, switch_language.schema]
 
 
-def register_pipecat_tools(llm, tts_service, transport):
-    """Register Pipecat-local tools with the LLM."""
+def register_all(llm, tts_service):
     translate.register(llm, tts_service)
-    switch_language.register(llm, transport)
+    switch_language.register(llm, tts_service)

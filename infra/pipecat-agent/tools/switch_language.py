@@ -1,15 +1,15 @@
 """
-Switch Language Tool — restart call with new language settings.
-Lives in PIPECAT (not Brain) because it needs to message the browser.
+Switch Language Tool — change speaking language mid-call.
+Lives in PIPECAT because it needs direct TTS voice swap.
 
 Input: language (string)
-Output: status, instruction
-Side effect: sends switch-language message to browser → call restarts
+Output: status + instruction for LLM
+Side effect: swaps TTS voice to native speaker
 """
 from loguru import logger
 from pipecat.adapters.schemas.function_schema import FunctionSchema
 from pipecat.services.llm_service import FunctionCallParams
-from config.voices import LANGUAGE_CODES
+from config.voices import LANGUAGE_VOICES, MULTILINGUAL_VOICE
 
 
 schema = FunctionSchema(
@@ -18,41 +18,30 @@ schema = FunctionSchema(
     properties={
         "language": {
             "type": "string",
-            "description": "Target language: english, mandarin, cantonese, japanese, korean, french, spanish, german, vietnamese"
+            "description": "Target language: english, mandarin, cantonese, japanese, korean, french, spanish, german"
         }
     },
     required=["language"],
 )
 
 
-def create_handler(transport):
-    """Create the switch_language handler with access to transport.
-
-    Args:
-        transport: The Daily transport (needed to send message to browser)
-    """
+def create_handler(tts_service):
     async def handle(params: FunctionCallParams):
-        from pipecat.transports.daily.transport import DailyOutputTransportMessageFrame
         language = params.arguments.get("language", "english").lower()
-        lang_code = LANGUAGE_CODES.get(language, "en")
-        logger.info(f"Switching language to {language} (code: {lang_code})")
+        voice = LANGUAGE_VOICES.get(language, MULTILINGUAL_VOICE)
+        logger.info(f"Switching language to {language}, voice: {voice}")
         try:
-            await transport.output().send_message(
-                DailyOutputTransportMessageFrame(message={
-                    "type": "switch-language",
-                    "lang": lang_code,
-                })
-            )
+            tts_service._settings.voice = voice
+            logger.info(f"TTS voice updated to {voice}")
         except Exception as e:
-            logger.error(f"Could not send switch-language to browser: {e}")
+            logger.error(f"Could not update TTS voice: {e}")
         await params.result_callback({
-            "status": "restarting",
+            "status": "switched",
             "language": language,
-            "instruction": f"The call is restarting with {language} language settings. Say a brief goodbye in the current language.",
+            "instruction": f"From now on, respond ONLY in {language}. Do not use English unless asked to switch back."
         })
     return handle
 
 
-def register(llm, transport):
-    """Register this tool with the LLM service."""
-    llm.register_function("switch_language", create_handler(transport))
+def register(llm, tts_service):
+    llm.register_function("switch_language", create_handler(tts_service))
