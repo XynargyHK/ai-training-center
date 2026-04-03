@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Brain, Database, Plus, Edit, Trash2, Save, BarChart3, Book, Sparkles, Users, User, HelpCircle, Mail, Upload, FileText, TestTube, Settings, Calendar, Globe, X, Languages, MessageSquare } from 'lucide-react'
+import { Brain, Database, Plus, Edit, Trash2, Save, BarChart3, Book, Sparkles, Users, User, HelpCircle, Mail, Upload, FileText, TestTube, Settings, Calendar, Globe, X, Languages, MessageSquare, Clock } from 'lucide-react'
 import ProfileModal from './profile-modal'
 import RoleplayTraining from './roleplay-training'
 import KnowledgeBase from './knowledge-base'
@@ -55,7 +55,7 @@ interface TrainingData {
 }
 
 const AITrainingCenter = () => {
-  const [activeTab, setActiveTab] = useState<'knowledge' | 'training' | 'analytics' | 'roleplay' | 'faq' | 'canned' | 'aimodel' | 'booking' | 'history'>('knowledge')
+  const [activeTab, setActiveTab] = useState<'knowledge' | 'training' | 'analytics' | 'roleplay' | 'faq' | 'canned' | 'aimodel' | 'booking' | 'history' | 'scheduler'>('knowledge')
   const [knowledgeEntries, setKnowledgeEntries] = useState<KnowledgeEntry[]>([])
   const [trainingData, setTrainingData] = useState<TrainingData[]>([])
   const [faqs, setFaqs] = useState<FAQ[]>([])
@@ -228,6 +228,14 @@ const AITrainingCenter = () => {
     ollamaUrl: 'http://localhost:11434',
     temperature: 0.7
   })
+
+  const [whatsappSettings, setWhatsappSettings] = useState({
+    phone_number_id: '',
+    business_account_id: '',
+    access_token: '',
+    verify_token: ''
+  })
+  const [whatsappSaving, setWhatsappSaving] = useState(false)
 
   const categories = [ 'Product Information', 'Service Information',
     'Policies & Procedures', 'Technical Support', 'Billing & Pricing',
@@ -546,6 +554,51 @@ const AITrainingCenter = () => {
     } catch (error) {
       console.error('Error saving LLM settings:', error)
       alert(t.errorSavingSettings)
+    }
+  }
+
+  const loadWhatsappSettings = async (buId: string) => {
+    try {
+      const { createClient } = await import('@supabase/supabase-js')
+      const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+      const { data } = await supabase
+        .from('business_unit_settings')
+        .select('whatsapp_phone_number_id, whatsapp_business_account_id, whatsapp_access_token, whatsapp_verify_token')
+        .eq('business_unit_id', buId)
+        .single()
+      if (data) {
+        setWhatsappSettings({
+          phone_number_id: data.whatsapp_phone_number_id || '',
+          business_account_id: data.whatsapp_business_account_id || '',
+          access_token: data.whatsapp_access_token || '',
+          verify_token: data.whatsapp_verify_token || ''
+        })
+      } else {
+        setWhatsappSettings({ phone_number_id: '', business_account_id: '', access_token: '', verify_token: '' })
+      }
+    } catch {}
+  }
+
+  const handleSaveWhatsappSettings = async () => {
+    setWhatsappSaving(true)
+    try {
+      const { createClient } = await import('@supabase/supabase-js')
+      const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+      const { error } = await supabase
+        .from('business_unit_settings')
+        .upsert({
+          business_unit_id: selectedBusinessUnit,
+          whatsapp_phone_number_id: whatsappSettings.phone_number_id || null,
+          whatsapp_business_account_id: whatsappSettings.business_account_id || null,
+          whatsapp_access_token: whatsappSettings.access_token || null,
+          whatsapp_verify_token: whatsappSettings.verify_token || null
+        }, { onConflict: 'business_unit_id' })
+      if (error) throw error
+      alert('WhatsApp settings saved.')
+    } catch (err: any) {
+      alert('Failed to save: ' + (err.message || 'Unknown error'))
+    } finally {
+      setWhatsappSaving(false)
     }
   }
 
@@ -2081,6 +2134,7 @@ Format as JSON array:
               { id: 'training', label: t.training, icon: Brain },
               { id: 'faq', label: t.faq, icon: HelpCircle },
               { id: 'canned', label: t.cannedMessages, icon: Mail },
+              { id: 'scheduler', label: 'Scheduler', icon: Clock },
               { id: 'roleplay', label: t.roleplay, icon: Users },
               { id: 'aimodel', label: t.aiModel, icon: Settings },
               { id: 'history', label: t.history || 'History', icon: MessageSquare }
@@ -4432,6 +4486,16 @@ Format as JSON array:
                 src={`/admin/history?businessUnit=${selectedBusinessUnit}&country=${selectedCountry}`}
                 className="w-full h-full border-0"
                 title="History"
+              />
+            </div>
+          )}
+
+          {activeTab === 'scheduler' && (
+            <div className="h-[calc(100vh-200px)]">
+              <iframe
+                src="/scheduler"
+                className="w-full h-full border-0"
+                title="Message Scheduler"
               />
             </div>
           )}
