@@ -107,12 +107,21 @@ class STTLatencyMonitor(FrameProcessor):
 async def run_phone_bot(websocket_server_host, websocket_server_port, stream_sid, call_sid, from_number, to_number):
     """Run the phone bot pipeline for a Twilio call."""
 
-    # --- TTS: Azure multilingual (works great for phone) ---
+    # --- TTS: Pick voice based on language ---
     from pipecat.services.azure.tts import AzureTTSService
+    from config.voices import LANGUAGE_VOICES, MULTILINGUAL_VOICE
+
+    call_lang = os.getenv("VOICE_LANG", "en")
+    lang_map = {"en": "english", "yue": "cantonese", "zh": "mandarin", "ja": "japanese",
+                "ko": "korean", "fr": "french", "es": "spanish", "de": "german", "vi": "vietnamese"}
+    lang_key = lang_map.get(call_lang, "english")
+    tts_voice = LANGUAGE_VOICES.get(lang_key, MULTILINGUAL_VOICE)
+    logger.info(f"Phone TTS: {tts_voice} (lang={call_lang})")
+
     tts = AzureTTSService(
         api_key=os.getenv("AZURE_SPEECH_KEY"),
         region=os.getenv("AZURE_SPEECH_REGION", "eastus"),
-        voice="en-US-JennyMultilingualNeural",
+        voice=tts_voice,
         sample_rate=8000,  # Phone audio = 8kHz
     )
 
@@ -152,11 +161,32 @@ async def run_phone_bot(websocket_server_host, websocket_server_port, stream_sid
     today = now.strftime("%B %d, %Y")
     current_time = now.strftime("%I:%M %p HKT")
 
-    system_content = f"""You are a multilingual voice AI assistant making a phone call. You speak like a real person — warm, professional, concise.
+    # Language-specific greetings and system prompts
+    lang_prompts = {
+        "yue": f"""你係一個廣東話語音AI助手，而家打緊電話。你講嘢好似真人一樣——親切、專業、簡潔。
+今日係{today}。而家時間係{current_time}。
+你而家打緊電話俾{to_number}。
+
+你一定要用廣東話回應。用口語：「係」唔好用「是」，「嘅」唔好用「的」，「咗」唔好用「了」，「唔」唔好用「不」。
+
+你有呢啲工具：
+1. search_web(query) — 上網搵資料。
+2. send_whatsapp(phone, message) — 打完電話之後send WhatsApp訊息。
+3. send_email(to, subject, body) — send跟進電郵。
+
+規則：
+- 每次回應最多1-2句。電話對話要簡潔。
+- 間中用自然嘅語氣詞，例如「嗯」「哦」「好嘅」。
+- 唔好用markdown，唔好用列表。呢個係電話對話。
+- 要親切專業，好似真人打電話咁。
+- 如果要confirm預約，要清楚確認細節。
+- 對話完結嘅時候自然咁講bye bye。
+
+重要：你打呢個電話係要確認預約。一開始就用廣東話講：「你好，我係Sarah，打嚟確認你嘅預約。」""",
+
+        "en": f"""You are a multilingual voice AI assistant making a phone call. You speak like a real person — warm, professional, concise.
 Today's date is {today}. The current time is {current_time}.
 You are calling {to_number} from {from_number}.
-
-Auto-detect the language the person speaks and ALWAYS respond in that SAME language. If they speak Cantonese, respond in colloquial Cantonese (用「係」唔好用「是」). If they speak English, respond in English. If they speak Mandarin, respond in Mandarin. Match their language exactly.
 
 You have these tools:
 1. search_web(query) — search the internet for current info.
@@ -169,7 +199,14 @@ Rules:
 - No markdown, no lists. This is a phone call.
 - Sound warm and professional, like a real business call.
 - If asked to schedule/book something, confirm the details clearly.
-- Say goodbye naturally when the conversation ends."""
+- Say goodbye naturally when the conversation ends.""",
+    }
+
+    system_content = lang_prompts.get(call_lang, lang_prompts["en"])
+
+    # Fallback for unlisted languages: use the English prompt with auto-detect
+    if call_lang not in lang_prompts:
+        system_content += f"\n\nAuto-detect the language the person speaks and ALWAYS respond in that SAME language. If they speak Cantonese, respond in colloquial Cantonese. Match their language exactly."
 
     messages = [{"role": "system", "content": system_content}]
 
