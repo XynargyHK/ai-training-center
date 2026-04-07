@@ -125,15 +125,30 @@ async def run_phone_bot(websocket_server_host, websocket_server_port, stream_sid
         sample_rate=8000,  # Phone audio = 8kHz
     )
 
-    # --- STT: Azure Auto-Detect (shared utility, same as browser) ---
-    from stt_utils import AutoDetectAzureSTTService
-    stt = AutoDetectAzureSTTService.create(
-        api_key=os.getenv("AZURE_SPEECH_KEY"),
-        region=os.getenv("AZURE_SPEECH_REGION", "eastus"),
-        candidate_languages=["en-US", "zh-HK", "zh-CN", "vi-VN", "ja-JP", "ko-KR", "fr-FR", "es-ES", "de-DE"],
-        sample_rate=8000,
-    )
-    logger.info("Phone STT: Azure Auto-Detect (en/yue/zh/vi/ja/ko/fr/es/de)")
+    # --- STT: Use fixed language when known, auto-detect when not ---
+    stt_lang_map = {"en": "en-US", "yue": "zh-HK", "zh": "zh-CN", "ja": "ja-JP",
+                    "ko": "ko-KR", "fr": "fr-FR", "es": "es-ES", "de": "de-DE", "vi": "vi-VN"}
+
+    if call_lang in stt_lang_map:
+        # Known language: use fixed STT (faster, more accurate)
+        from pipecat.services.azure.stt import AzureSTTService
+        stt = AzureSTTService(
+            api_key=os.getenv("AZURE_SPEECH_KEY"),
+            region=os.getenv("AZURE_SPEECH_REGION", "eastus"),
+            language=stt_lang_map[call_lang],
+            sample_rate=8000,
+        )
+        logger.info(f"Phone STT: Azure Fixed ({stt_lang_map[call_lang]})")
+    else:
+        # Unknown language: use auto-detect
+        from stt_utils import AutoDetectAzureSTTService
+        stt = AutoDetectAzureSTTService.create(
+            api_key=os.getenv("AZURE_SPEECH_KEY"),
+            region=os.getenv("AZURE_SPEECH_REGION", "eastus"),
+            candidate_languages=["en-US", "zh-HK", "zh-CN", "vi-VN", "ja-JP", "ko-KR", "fr-FR", "es-ES", "de-DE"],
+            sample_rate=8000,
+        )
+        logger.info("Phone STT: Azure Auto-Detect")
 
     # --- LLM ---
     llm_provider = os.getenv("LLM_PROVIDER", "gemini")
@@ -182,7 +197,7 @@ async def run_phone_bot(websocket_server_host, websocket_server_port, stream_sid
 - 如果要confirm預約，要清楚確認細節。
 - 對話完結嘅時候自然咁講bye bye。
 
-重要：你打呢個電話係要確認預約。一開始就用廣東話講：「你好，我係Sarah，打嚟確認你嘅預約。」""",
+重要：你打呢個電話係要確認預約。一開始就用廣東話講：「你好，我係SPA Collection嘅助手，打嚟確認你嘅預約。請問你聽日方唔方便過嚟呢？」""",
 
         "en": f"""You are a multilingual voice AI assistant making a phone call. You speak like a real person — warm, professional, concise.
 Today's date is {today}. The current time is {current_time}.
