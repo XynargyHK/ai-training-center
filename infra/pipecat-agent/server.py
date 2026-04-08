@@ -234,11 +234,7 @@ async def handle_twiml(request: Request):
     twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Connect>
-        <Stream url="wss://{server_url}/ws">
-            <Parameter name="to_number" value="{to_number}" />
-            <Parameter name="from_number" value="{from_number}" />
-            <Parameter name="lang" value="{lang}" />
-        </Stream>
+        <Stream url="wss://{server_url}/ws?lang={lang}&amp;to={to_number}&amp;from={from_number}" />
     </Connect>
 </Response>"""
 
@@ -247,69 +243,20 @@ async def handle_twiml(request: Request):
 
 @app.websocket("/ws")
 async def handle_ws(websocket: WebSocket):
-    """WebSocket endpoint: Twilio connects directly, phone bot runs inline via FastAPIWebsocketTransport."""
+    """WebSocket endpoint: Twilio connects directly, phone bot runs inline.
+
+    No message consumption, no wrapper. Params come via URL query string.
+    AutoStreamSidTwilioSerializer handles stream_sid from the 'start' event.
+    """
     await websocket.accept()
 
-    # Read initial Twilio messages to extract stream_sid and custom parameters
-    stream_sid = ""
-    call_sid = ""
-    from_number = ""
-    to_number = ""
-    lang = "en"
+    # Get params from URL query string (set in TwiML)
+    lang = websocket.query_params.get("lang", "en")
+    to_number = websocket.query_params.get("to", "")
+    from_number = websocket.query_params.get("from", "")
+    logger.info(f"Twilio WebSocket connected: lang={lang}, to={to_number}, from={from_number}")
 
-    # Twilio sends "connected" then "start" events before media
-    # We need to peek at them to extract metadata, but the transport
-    # will also process them via the serializer.
-    # Strategy: read messages until we get "start", extract params,
-    # then hand the websocket to the phone bot (which re-reads via transport).
-    #
-    # However, FastAPIWebsocketTransport reads from the websocket directly,
-    # so we can't consume messages here. Instead, we'll parse custom params
-    # from the first few messages using a wrapper approach.
-    #
-    # Better approach: Use a message-buffering wrapper that lets us peek
-    # at messages before the transport consumes them.
-
-    # We'll read the initial messages ourselves, then use a patched websocket
-    # that replays them before reading new ones.
-    buffered_messages = []
-
-    try:
-        # Read until we get the "start" event (usually 2 messages: connected + start)
-        for _ in range(10):  # Safety limit
-            message = await asyncio.wait_for(websocket.receive(), timeout=10.0)
-            if message["type"] == "websocket.disconnect":
-                logger.warning("Twilio disconnected before start event")
-                return
-
-            text = message.get("text", "")
-            if text:
-                buffered_messages.append(text)
-                try:
-                    data = json.loads(text)
-                    event = data.get("event", "")
-
-                    if event == "start":
-                        start_data = data.get("start", {})
-                        stream_sid = start_data.get("streamSid", data.get("streamSid", ""))
-                        call_sid = start_data.get("callSid", data.get("callSid", ""))
-                        custom = start_data.get("customParameters", {})
-                        from_number = custom.get("from_number", "")
-                        to_number = custom.get("to_number", "")
-                        lang = custom.get("lang", "en")
-                        logger.info(f"Twilio stream started: streamSid={stream_sid}, callSid={call_sid}, lang={lang}, to={to_number}")
-                        break
-                except (json.JSONDecodeError, KeyError):
-                    pass
-    except asyncio.TimeoutError:
-        logger.error("Timeout waiting for Twilio start event")
-        await websocket.close()
-        return
-
-    # Create a replay websocket wrapper that feeds buffered messages first
-    replay_ws = _ReplayWebSocket(websocket, buffered_messages)
-
-    # Run the phone bot pipeline directly with FastAPIWebsocketTransport
+    # Pass the raw websocket directly to the phone bot — no wrapper, no peeking
     try:
         import importlib.util
         import sys
@@ -320,9 +267,9 @@ async def handle_ws(websocket: WebSocket):
         phone_module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(phone_module)
         await phone_module.run_phone_bot_fastapi(
-            websocket=replay_ws,
-            stream_sid=stream_sid,
-            call_sid=call_sid,
+            websocket=websocket,
+            stream_sid="",  # AutoStreamSidTwilioSerializer captures this
+            call_sid="",    # TwilioFrameSerializer gets this from start event
             from_number=from_number,
             to_number=to_number,
             lang=lang,
@@ -331,52 +278,6 @@ async def handle_ws(websocket: WebSocket):
         logger.error(f"Phone bot error: {e}")
         import traceback
         traceback.print_exc()
-
-
-class _ReplayWebSocket:
-    """Wraps a FastAPI WebSocket to replay buffered messages before live ones.
-
-    FastAPIWebsocketTransport calls websocket.receive() internally.
-    This wrapper returns buffered messages first (the connected + start events
-    we already consumed), then delegates to the real websocket.
-    """
-
-    def __init__(self, websocket: WebSocket, buffered_messages: list[str]):
-        self._websocket = websocket
-        self._buffered = list(buffered_messages)
-        # Copy all attributes from the real websocket so Pipecat's checks work
-        self.client_state = websocket.client_state
-        self.application_state = websocket.application_state
-        self.client = websocket.client
-        self.headers = websocket.headers
-        self.query_params = websocket.query_params
-        self.path_params = websocket.path_params
-        self.scope = websocket.scope
-
-    async def receive(self):
-        if self._buffered:
-            text = self._buffered.pop(0)
-            return {"type": "websocket.receive", "text": text}
-        return await self._websocket.receive()
-
-    async def send(self, message):
-        await self._websocket.send(message)
-
-    async def send_bytes(self, data: bytes):
-        await self._websocket.send_bytes(data)
-
-    async def send_text(self, data: str):
-        await self._websocket.send_text(data)
-
-    async def close(self, code: int = 1000, reason: str | None = None):
-        await self._websocket.close(code=code, reason=reason)
-
-    async def accept(self, subprotocol: str | None = None):
-        await self._websocket.accept(subprotocol=subprotocol)
-
-    def __getattr__(self, name):
-        # Delegate any other attribute access to the real websocket
-        return getattr(self._websocket, name)
 
 
 if __name__ == "__main__":
