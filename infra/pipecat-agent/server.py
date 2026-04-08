@@ -135,18 +135,11 @@ async def start_vision_bot(room_url):
 
 async def start_phone_bot(room_url, token, lang, dialout_settings, greeting=None):
     """Run the unified pipeline in phone mode as a background task."""
+    from bot import run_pipeline
 
     async def run_bot():
         try:
-            import importlib.util
-            import sys
-            if "bot" in sys.modules:
-                del sys.modules["bot"]
-            bot_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.py")
-            spec = importlib.util.spec_from_file_location("bot", bot_path)
-            bot_module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(bot_module)
-            await bot_module.run_pipeline(
+            await run_pipeline(
                 room_url=room_url,
                 token=token,
                 lang=lang,
@@ -156,7 +149,7 @@ async def start_phone_bot(room_url, token, lang, dialout_settings, greeting=None
                 greeting=greeting,
             )
         except Exception as e:
-            print(f"PHONE BOT ERROR: {e}", flush=True)
+            logger.error(f"PHONE BOT ERROR: {e}")
             import traceback
             traceback.print_exc()
 
