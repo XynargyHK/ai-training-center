@@ -59,6 +59,21 @@
         callObject = DailyIframe.createCallObject({
           audioSource: true,
           videoSource: false,
+          subscribeToTracksAutomatically: true,
+          dailyConfig: {
+            experimentalChromeVideoMuteLightOff: true,
+          },
+        });
+
+        // Ensure we can hear remote audio
+        callObject.on('track-started', (event) => {
+          if (event.track.kind === 'audio' && !event.participant.local) {
+            log('Receiving AI audio track');
+            const audio = new Audio();
+            audio.srcObject = new MediaStream([event.track]);
+            audio.autoplay = true;
+            audio.play().catch(e => log('Audio play error: ' + e.message));
+          }
         });
 
         callObject.on('joined-meeting', () => {

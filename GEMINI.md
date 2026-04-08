@@ -8,9 +8,9 @@
 **Resume work from the most recent timestamp found in the logs.**
 
 ## 🚀 Project Overview
-**AI Training Center**: A multi-tenant SaaS platform for AI-powered customer service training and live chat.
-- **Business Units**: SkinCoach, Breast Guardian.
-- **Primary Goal**: "One AI Brain" (Gemini) for both training and production.
+**AI Staffs App** (formerly AI Training Center): A multi-tenant SaaS platform for deploying autonomous AI employees.
+- **Vision**: Businesses harness AI for B2B lead generation, automated sales outreach, and expert customer support.
+- **Key Capability**: "One AI Brain" (Gemini 2.5-flash) powered by **OpenClaw** (agentic execution) and **NotebookLM-style grounding** (document-based truth).
 
 ## 🛠 Tech Stack (STRICT)
 - **Framework**: Next.js 16 (App Router), React 19, TypeScript.
@@ -20,10 +20,10 @@
 - **Styling**: Tailwind CSS + Lucide Icons.
 
 ## 📍 Current Status
-- **Migration**: Moving from `localStorage` to Supabase.
-- **Storage Layer**: `src/lib/supabase-storage.ts` is the source of truth for DB operations.
-- **Main Entry**: `src/app/page.tsx` (Onboarding/Dashboard).
-- **Core Component**: `src/components/admin/ai-training-center.tsx`.
+- **Vision Pivot**: Moving from training to active "AI Employee" engine.
+- **Agentic Integration**: Exploring OpenClaw for autonomous browser/terminal tasks.
+- **Grounding Layer**: Ensuring AI Staff strictly uses uploaded Knowledge Base PDFs to prevent hallucinations.
+- **Master Domain**: Project branding centered at `aistaffs.app`.
 
 ## ⚠️ Critical Rules & Knowledge
 1. **No Fallbacks**: Do not use OpenAI or Anthropic for core chat features; use Gemini.

@@ -5,8 +5,8 @@ const accountSid = process.env.TWILIO_ACCOUNT_SID
 const authToken = process.env.TWILIO_AUTH_TOKEN
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ai-training-center-production.up.railway.app'
 
-const FROM = '+85294740952' // verified caller ID
-const TO = '+85296099766'   // number to call
+const FROM = '+14782888766' // Twilio US number
+const TO = '+85294740952'   // verified HK number for trial testing
 
 async function makeCall() {
   console.log(`Calling ${TO} from ${FROM}...`)
@@ -22,7 +22,7 @@ async function makeCall() {
       body: new URLSearchParams({
         To: TO,
         From: FROM, // verified caller ID
-        Url: `${appUrl}/api/voice/inbound`,
+        Url: `${appUrl}/api/voice/inbound?businessUnitId=77313e61-2a19-4f3e-823b-80390dde8bd2`,
         Method: 'POST'
       })
     }

@@ -1,0 +1,23 @@
+services:
+  # THE STAFF NODE: This is the OpenClaw OS kernel
+  openclaw:
+    image: ghcr.io/openclaw/openclaw:latest
+    container_name: openclaw-local-node
+    restart: always
+    ports:
+      - "18789:18789"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    env_file:
+      - ../private/.env
+    volumes:
+      - ../projects:/app/projects
+      - ../skills:/app/skills
+      - ../private:/app/private
+      - ../core/logs:/app/logs
+      - ../core/config:/root/.openclaw

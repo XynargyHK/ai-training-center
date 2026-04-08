@@ -55,7 +55,7 @@ interface TrainingData {
 }
 
 const AITrainingCenter = () => {
-  const [activeTab, setActiveTab] = useState<'knowledge' | 'training' | 'analytics' | 'roleplay' | 'faq' | 'canned' | 'aimodel' | 'booking' | 'history' | 'scheduler'>('knowledge')
+  const [activeTab, setActiveTab] = useState<'knowledge' | 'training' | 'analytics' | 'roleplay' | 'faq' | 'canned' | 'aimodel' | 'booking' | 'history' | 'scheduler' | 'content'>('knowledge')
   const [knowledgeEntries, setKnowledgeEntries] = useState<KnowledgeEntry[]>([])
   const [trainingData, setTrainingData] = useState<TrainingData[]>([])
   const [faqs, setFaqs] = useState<FAQ[]>([])
@@ -2135,6 +2135,7 @@ Format as JSON array:
               { id: 'faq', label: t.faq, icon: HelpCircle },
               { id: 'canned', label: t.cannedMessages, icon: Mail },
               { id: 'scheduler', label: 'Scheduler', icon: Clock },
+              { id: 'content', label: 'Content', icon: FileText },
               { id: 'roleplay', label: t.roleplay, icon: Users },
               { id: 'aimodel', label: t.aiModel, icon: Settings },
               { id: 'history', label: t.history || 'History', icon: MessageSquare }
@@ -4496,6 +4497,16 @@ Format as JSON array:
                 src="/scheduler"
                 className="w-full h-full border-0"
                 title="Message Scheduler"
+              />
+            </div>
+          )}
+
+          {activeTab === 'content' && (
+            <div className="h-[calc(100vh-200px)]">
+              <iframe
+                src="/content-library"
+                className="w-full h-full border-0"
+                title="Content Library"
               />
             </div>
           )}

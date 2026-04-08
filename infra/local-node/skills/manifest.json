@@ -1,0 +1,28 @@
+{
+  "skills": [
+    {
+      "name": "WebSurfer",
+      "description": "High-stability browser automation tool for LinkedIn, TikTok, and research.",
+      "config": {
+        "headless": false,
+        "stealth": true,
+        "persistent_profile": true
+      }
+    },
+    {
+      "name": "FileLibrarian",
+      "description": "Access to local Workspace PDFs and spreadsheets for BrezCode and SkinCoach data.",
+      "config": {
+        "read_only": false,
+        "workspace_root": "/app/workspace"
+      }
+    },
+    {
+      "name": "SocialOutreach",
+      "description": "Authenticated access to social platforms for posting and lead engagement.",
+      "config": {
+        "platforms": ["LinkedIn", "TikTok", "Instagram"]
+      }
+    }
+  ]
+}

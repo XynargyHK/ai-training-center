@@ -1,0 +1,11 @@
+{
+  "gateway": {
+    "auth": {
+      "mode": "token",
+      "token": "mytoken123"
+    },
+    "controlUi": {
+      "dangerouslyAllowHostHeaderOriginFallback": true
+    }
+  }
+}
