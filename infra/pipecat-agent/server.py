@@ -2,10 +2,10 @@
 HTTP server for Voice AI (FastAPI + uvicorn):
 - POST /start → creates Daily room + spawns browser voice bot
 - POST /start-vision → creates Daily room + spawns vision bot
-- POST /dialout → makes outbound phone call via Twilio + phone bot on /ws
-- POST /twiml → returns TwiML XML for Twilio to connect WebSocket
-- GET /ws → Twilio WebSocket (FastAPIWebsocketTransport, no proxy)
+- POST /dialout → creates Daily room with SIP dialout + spawns phone bot via run_pipeline
 - GET /health, GET /proxy
+- GET /ws → legacy Twilio WebSocket (phone_bot.py fallback)
+- POST /twiml → legacy TwiML for Twilio WebSocket fallback
 """
 import os
 import asyncio
@@ -25,6 +25,7 @@ DAILY_API_URL = "https://api.daily.co/v1"
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
 TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER", "")
+TWILIO_SIP_DOMAIN = os.getenv("TWILIO_SIP_DOMAIN", "")
 
 app = FastAPI()
 
@@ -36,27 +37,52 @@ app.add_middleware(
 )
 
 
-async def create_daily_room():
+async def create_daily_room(enable_dialout=False):
     """Create a temporary Daily room for the voice session."""
     headers = {"Authorization": f"Bearer {DAILY_API_KEY}", "Content-Type": "application/json"}
+    properties = {
+        "exp": int(time.time()) + 3600,
+        "enable_chat": False,
+        "enable_screenshare": False,
+        "max_participants": 2,
+    }
+    if enable_dialout:
+        properties["enable_dialout"] = True
     async with aiohttp.ClientSession() as session:
         async with session.post(
             f"{DAILY_API_URL}/rooms",
             headers=headers,
-            json={
-                "properties": {
-                    "exp": int(time.time()) + 3600,
-                    "enable_chat": False,
-                    "enable_screenshare": False,
-                    "max_participants": 2,
-                }
-            },
+            json={"properties": properties},
         ) as resp:
             data = await resp.json()
             print(f"Daily API response: {resp.status} {data}")
             if resp.status != 200:
                 return None, None
             return data.get("url"), data.get("name")
+
+
+async def create_daily_token(room_name, owner=False):
+    """Create a Daily meeting token for the given room."""
+    headers = {"Authorization": f"Bearer {DAILY_API_KEY}", "Content-Type": "application/json"}
+    payload = {
+        "properties": {
+            "room_name": room_name,
+            "exp": int(time.time()) + 3600,
+        }
+    }
+    if owner:
+        payload["properties"]["is_owner"] = True
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            f"{DAILY_API_URL}/meeting-tokens",
+            headers=headers,
+            json=payload,
+        ) as resp:
+            data = await resp.json()
+            if resp.status != 200:
+                logger.error(f"Failed to create token: {resp.status} {data}")
+                return None
+            return data.get("token")
 
 
 async def start_bot(room_url):
@@ -107,6 +133,37 @@ async def start_vision_bot(room_url):
     return os.getpid()
 
 
+async def start_phone_bot(room_url, token, lang, dialout_settings, greeting=None):
+    """Run the unified pipeline in phone mode as a background task."""
+
+    async def run_bot():
+        try:
+            import importlib.util
+            import sys
+            if "bot" in sys.modules:
+                del sys.modules["bot"]
+            bot_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.py")
+            spec = importlib.util.spec_from_file_location("bot", bot_path)
+            bot_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(bot_module)
+            await bot_module.run_pipeline(
+                room_url=room_url,
+                token=token,
+                lang=lang,
+                mode="phone",
+                dialout_settings=dialout_settings,
+                vision_enabled=False,
+                greeting=greeting,
+            )
+        except Exception as e:
+            print(f"PHONE BOT ERROR: {e}", flush=True)
+            import traceback
+            traceback.print_exc()
+
+    asyncio.ensure_future(run_bot())
+    return os.getpid()
+
+
 @app.post("/start")
 async def handle_start(request: Request):
     """POST /start — create room, spawn bot, return room URL to browser."""
@@ -146,6 +203,79 @@ async def handle_start_vision(request: Request):
     return JSONResponse({"room_url": room_url, "room_name": room_name, "bot_pid": pid, "mode": "vision"})
 
 
+@app.post("/dialout")
+async def handle_dialout(request: Request):
+    """POST /dialout — make an outbound phone call via Daily SIP dialout.
+
+    Body: {to, from, lang, greeting}
+    Flow: create Daily room (dialout-enabled) -> get owner token -> launch run_pipeline(phone) -> Daily dials out via SIP
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    to_number = body.get("to", "")
+    from_number = body.get("from", TWILIO_PHONE_NUMBER)
+    lang = body.get("lang", "en")
+    greeting = body.get("greeting", None)
+
+    if not to_number:
+        return JSONResponse({"error": "Missing 'to' phone number"}, status_code=400)
+
+    # Set env vars for bot module (STT/TTS config reads these)
+    os.environ["VOICE_LANG"] = lang
+
+    # 1. Create Daily room with dialout enabled
+    room_url, room_name = await create_daily_room(enable_dialout=True)
+    if not room_url:
+        return JSONResponse({"error": "Failed to create Daily room"}, status_code=500)
+
+    # 2. Create owner meeting token (required for dialout)
+    token = await create_daily_token(room_name, owner=True)
+    if not token:
+        return JSONResponse({"error": "Failed to create meeting token"}, status_code=500)
+
+    # 3. Construct dialout settings
+    # If TWILIO_SIP_DOMAIN is set, use SIP URI for Twilio routing
+    # Otherwise, use the phone number directly (Daily PSTN dial-out for US numbers)
+    clean_number = to_number.lstrip("+")
+    if TWILIO_SIP_DOMAIN:
+        sip_uri = f"sip:+{clean_number}@{TWILIO_SIP_DOMAIN}"
+        dialout_settings = {
+            "sipUri": sip_uri,
+            "displayName": from_number or "AI Assistant",
+        }
+        logger.info(f"Dialout via SIP: {sip_uri}")
+    else:
+        # Direct PSTN dialout (Daily handles routing, US numbers only)
+        dialout_settings = {
+            "phoneNumber": f"+{clean_number}",
+            "displayName": from_number or "AI Assistant",
+        }
+        logger.info(f"Dialout via PSTN: +{clean_number}")
+
+    # 4. Launch run_pipeline in phone mode
+    pid = await start_phone_bot(
+        room_url=room_url,
+        token=token,
+        lang=lang,
+        dialout_settings=dialout_settings,
+        greeting=greeting,
+    )
+
+    return JSONResponse({
+        "status": "calling",
+        "room_url": room_url,
+        "room_name": room_name,
+        "to": to_number,
+        "from": from_number,
+        "lang": lang,
+        "mode": "daily_sip" if TWILIO_SIP_DOMAIN else "daily_pstn",
+        "bot_pid": pid,
+    })
+
+
 @app.get("/health")
 async def handle_health():
     return JSONResponse({"status": "ok"})
@@ -172,62 +302,9 @@ async def handle_proxy(url: str = ""):
         return PlainTextResponse(f"Proxy error: {str(e)}", status_code=502)
 
 
-@app.post("/dialout")
-async def handle_dialout(request: Request):
-    """POST /dialout — make an outbound phone call via Twilio."""
-    try:
-        body = await request.json()
-    except Exception:
-        body = {}
-
-    to_number = body.get("to", "")
-    from_number = body.get("from", TWILIO_PHONE_NUMBER)
-    lang = body.get("lang", "en")
-
-    if not to_number:
-        return JSONResponse({"error": "Missing 'to' phone number"}, status_code=400)
-    if not TWILIO_ACCOUNT_SID or not TWILIO_AUTH_TOKEN:
-        return JSONResponse({"error": "Twilio credentials not configured"}, status_code=500)
-
-    server_url = os.getenv("RAILWAY_PUBLIC_DOMAIN", "")
-    if not server_url:
-        server_url = request.headers.get("host", "localhost")
-
-    # Set env vars so /ws handler can read them (Twilio strips query params from WebSocket)
-    os.environ["VOICE_LANG"] = lang
-    os.environ["VOICE_TO"] = to_number
-    os.environ["VOICE_FROM"] = from_number
-    os.environ["LLM_PROVIDER"] = "gemini"  # Gemini follows Cantonese instructions better than Cerebras/Qwen
-
-    # Use inline TwiML with custom parameters
-    inline_twiml = f"""<Response><Connect><Stream url="wss://{server_url}/ws"><Parameter name="lang" value="{lang}" /><Parameter name="to_number" value="{to_number}" /><Parameter name="from_number" value="{from_number}" /></Stream></Connect></Response>"""
-
-    auth = base64.b64encode(f"{TWILIO_ACCOUNT_SID}:{TWILIO_AUTH_TOKEN}".encode()).decode()
-
-    async with aiohttp.ClientSession() as session:
-        async with session.post(
-            f"https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Calls.json",
-            headers={"Authorization": f"Basic {auth}"},
-            data={
-                "To": to_number,
-                "From": from_number,
-                "Twiml": inline_twiml,
-            },
-            timeout=aiohttp.ClientTimeout(total=15),
-        ) as resp:
-            result = await resp.json()
-            logger.info(f"Twilio call response: {resp.status}")
-            if resp.status in (200, 201):
-                call_sid = result.get("sid", "")
-                return JSONResponse({
-                    "status": "calling",
-                    "call_sid": call_sid,
-                    "to": to_number,
-                    "from": from_number,
-                })
-            else:
-                return JSONResponse({"error": result}, status_code=500)
-
+# ============================================================
+# Legacy Twilio WebSocket endpoints (phone_bot.py fallback)
+# ============================================================
 
 @app.api_route("/twiml", methods=["GET", "POST"])
 async def handle_twiml(request: Request):
@@ -253,27 +330,19 @@ async def handle_twiml(request: Request):
 
 @app.websocket("/ws")
 async def handle_ws(websocket: WebSocket):
-    """WebSocket endpoint: Twilio connects directly, phone bot runs inline.
+    """WebSocket endpoint: legacy Twilio phone_bot.py fallback.
 
     Twilio strips URL query params from WebSocket connections.
     Custom params come via <Parameter> tags in the Twilio 'start' event.
-    We use parse_twilio_start to extract them without corrupting the WebSocket.
     """
     logger.info(f">>> /ws WebSocket connection attempt from {websocket.client}")
     await websocket.accept()
     logger.info(">>> /ws WebSocket ACCEPTED")
 
-    # Twilio sends params via the 'start' event customParameters.
-    # We need to use Pipecat's built-in telephony parsing which handles this properly.
-    # But since that may not be available in v0.0.108, we'll extract params
-    # from the serializer after it processes the start event.
-    #
-    # Strategy: pass the websocket directly and let the serializer handle start.
-    # Pass lang/to/from as env vars (set in dialout before call is made).
     lang = os.environ.get("VOICE_LANG", "en")
     to_number = os.environ.get("VOICE_TO", "")
     from_number = os.environ.get("VOICE_FROM", "")
-    logger.info(f"Phone bot starting: lang={lang}, to={to_number}, from={from_number}")
+    logger.info(f"Phone bot starting (legacy): lang={lang}, to={to_number}, from={from_number}")
 
     try:
         import importlib.util

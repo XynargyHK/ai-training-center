@@ -1,5 +1,6 @@
 """
 Pipecat Voice AI Agent — Full-duplex conversation
+Supports both browser and phone calls through the same pipeline.
 All tools are modular (tools/*.py). bot.py is just pipeline wiring.
 """
 import asyncio
@@ -84,22 +85,42 @@ class LLMForwarder(FrameProcessor):
         await self.push_frame(frame, direction)
 
 
-async def main():
-    room_url = os.getenv("DAILY_ROOM_URL")
+async def run_pipeline(
+    room_url,
+    token=None,
+    lang="en",
+    mode="browser",
+    dialout_settings=None,
+    vision_enabled=False,
+    greeting=None,
+):
+    """Run the voice AI pipeline.
+
+    Args:
+        room_url: Daily room URL
+        token: Daily meeting token (owner token needed for dialout)
+        lang: language code (en, yue, zh, etc.)
+        mode: "browser" or "phone"
+        dialout_settings: dict with {"sipUri": "...", "displayName": "..."} or None
+        vision_enabled: whether to capture video (browser only)
+        greeting: optional greeting text to speak first (for phone calls)
+    """
     daily_api_key = os.getenv("DAILY_API_KEY")
 
     if not room_url:
-        logger.error("DAILY_ROOM_URL not set")
+        logger.error("room_url is required")
         return
 
-    # --- Vision mode (camera) ---
-    vision_enabled = os.getenv("VISION_ENABLED", "false").lower() == "true"
-    participant_id_ref = [None]  # mutable ref, updated when participant joins
+    # Phone mode never uses vision
+    if mode == "phone":
+        vision_enabled = False
+
+    participant_id_ref = [None]
 
     # --- Transport: Daily WebRTC ---
     transport = DailyTransport(
         room_url,
-        None,
+        token,
         "AI Assistant",
         DailyParams(
             api_key=daily_api_key,
@@ -114,7 +135,6 @@ async def main():
     )
 
     # --- STT ---
-    lang = os.getenv("VOICE_LANG", "en")
     if lang == "yue":
         from pipecat.services.azure.stt import AzureSTTService
         stt = AzureSTTService(
@@ -252,8 +272,21 @@ Rules:
     reasoning_logger = ReasoningLogger()
 
     # --- Pipeline ---
-    pipeline = Pipeline(
-        [
+    # In phone mode, skip STTForwarder and LLMForwarder (no browser to send messages to)
+    if mode == "phone":
+        pipeline_stages = [
+            transport.input(),
+            stt,
+            user_aggregator,
+            llm,
+            reasoning_logger,
+            CJKSpaceFixer(),
+            tts,
+            transport.output(),
+            assistant_aggregator,
+        ]
+    else:
+        pipeline_stages = [
             transport.input(),
             stt,
             STTForwarder(),
@@ -266,7 +299,8 @@ Rules:
             transport.output(),
             assistant_aggregator,
         ]
-    )
+
+    pipeline = Pipeline(pipeline_stages)
 
     task = PipelineTask(
         pipeline,
@@ -276,36 +310,86 @@ Rules:
         ),
     )
 
-    @transport.event_handler("on_first_participant_joined")
-    async def on_first_participant_joined(transport, participant):
-        logger.info(f"Participant joined: {participant['id']}")
-        participant_id_ref[0] = participant["id"]
-        if vision_enabled:
-            await transport.capture_participant_video(
-                participant["id"],
-                framerate=0,
-                video_source="camera",
-                color_format="RGB",
-            )
-            logger.info(f"Vision: capturing video from {participant['id']} (on-demand)")
-        from pipecat.frames.frames import LLMRunFrame
-        await task.queue_frames([LLMRunFrame()])
+    if mode == "phone":
+        # --- Phone mode event handlers ---
+        @transport.event_handler("on_joined")
+        async def on_joined(transport_obj, data):
+            logger.info(f"Phone mode: bot joined room, initiating dialout")
+            if dialout_settings:
+                try:
+                    await transport_obj.start_dialout(dialout_settings)
+                    logger.info(f"Dialout started: {dialout_settings}")
+                except Exception as e:
+                    logger.error(f"Dialout failed: {e}")
 
-    @transport.event_handler("on_participant_left")
-    async def on_participant_left(transport, participant, reason):
-        logger.info(f"Participant left: {participant['id']}")
-        # Session logger: send conversation to Brain (fire-and-forget)
-        import asyncio as _asyncio
-        from parts.session_logger import log_session
-        try:
-            msgs = [{"role": m.get("role", ""), "content": m.get("content", "")} for m in context.messages] if hasattr(context, 'messages') else []
-            _asyncio.create_task(log_session(msgs, lang=lang))
-        except Exception as e:
-            logger.warning(f"Session log failed (non-fatal): {e}")
-        await task.queue_frame(EndFrame())
+        @transport.event_handler("on_dialout_answered")
+        async def on_dialout_answered(transport_obj, data):
+            logger.info(f"Dialout answered: {data}")
+            if greeting:
+                # Speak the greeting text directly via TTS
+                await task.queue_frames([TextFrame(text=greeting)])
+            else:
+                # Run LLM for a natural greeting
+                from pipecat.frames.frames import LLMRunFrame
+                await task.queue_frames([LLMRunFrame()])
 
+        @transport.event_handler("on_dialout_error")
+        async def on_dialout_error(transport_obj, data):
+            logger.error(f"Dialout error: {data}")
+            await task.queue_frame(EndFrame())
+
+        @transport.event_handler("on_participant_left")
+        async def on_participant_left(transport_obj, participant, reason):
+            logger.info(f"Phone participant left: {participant['id']}, reason: {reason}")
+            import asyncio as _asyncio
+            from parts.session_logger import log_session
+            try:
+                msgs = [{"role": m.get("role", ""), "content": m.get("content", "")} for m in context.messages] if hasattr(context, 'messages') else []
+                _asyncio.create_task(log_session(msgs, lang=lang))
+            except Exception as e:
+                logger.warning(f"Session log failed (non-fatal): {e}")
+            await task.queue_frame(EndFrame())
+
+    else:
+        # --- Browser mode event handlers ---
+        @transport.event_handler("on_first_participant_joined")
+        async def on_first_participant_joined(transport_obj, participant):
+            logger.info(f"Participant joined: {participant['id']}")
+            participant_id_ref[0] = participant["id"]
+            if vision_enabled:
+                await transport_obj.capture_participant_video(
+                    participant["id"],
+                    framerate=0,
+                    video_source="camera",
+                    color_format="RGB",
+                )
+                logger.info(f"Vision: capturing video from {participant['id']} (on-demand)")
+            from pipecat.frames.frames import LLMRunFrame
+            await task.queue_frames([LLMRunFrame()])
+
+        @transport.event_handler("on_participant_left")
+        async def on_participant_left(transport_obj, participant, reason):
+            logger.info(f"Participant left: {participant['id']}")
+            import asyncio as _asyncio
+            from parts.session_logger import log_session
+            try:
+                msgs = [{"role": m.get("role", ""), "content": m.get("content", "")} for m in context.messages] if hasattr(context, 'messages') else []
+                _asyncio.create_task(log_session(msgs, lang=lang))
+            except Exception as e:
+                logger.warning(f"Session log failed (non-fatal): {e}")
+            await task.queue_frame(EndFrame())
+
+    logger.info(f"Pipeline ready: mode={mode}, lang={lang}, vision={vision_enabled}")
     runner = PipelineRunner()
     await runner.run(task)
+
+
+async def main():
+    """Thin wrapper for standalone/browser mode (backward compatible)."""
+    room_url = os.getenv("DAILY_ROOM_URL")
+    lang = os.getenv("VOICE_LANG", "en")
+    vision = os.getenv("VISION_ENABLED", "false").lower() == "true"
+    await run_pipeline(room_url=room_url, lang=lang, mode="browser", vision_enabled=vision)
 
 
 if __name__ == "__main__":
