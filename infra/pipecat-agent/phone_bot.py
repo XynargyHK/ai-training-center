@@ -188,6 +188,7 @@ async def run_phone_bot(websocket_server_host, websocket_server_port, stream_sid
 你而家打緊電話俾{to_number}。
 
 你一定要用廣東話回應。用口語：「係」唔好用「是」，「嘅」唔好用「的」，「咗」唔好用「了」，「唔」唔好用「不」。
+盡量唔好用英文字，全部用中文講。例如：appointment=預約，confirm=確認，tomorrow=聽日，booking=訂位，collection=系列。品牌名都盡量用中文讀音。
 
 你有呢啲工具：
 1. search_web(query) — 上網搵資料。
@@ -412,7 +413,7 @@ Rules:
         logger.info(f"Phone call connected: {to_number}")
         # Speak greeting directly via TTS (not LLM) so it can't be interrupted
         greetings = {
-            "yue": "你好，我係SPA Collection嘅助手，打嚟確認你嘅預約。請問你聽日方唔方便過嚟呢？",
+            "yue": "你好，我係水療中心嘅助手，打嚟確認你嘅預約。請問你聽日方唔方便過嚟呢？",
             "en": "Hi, this is a call from SPA Collection. I'm calling to confirm your appointment. Is tomorrow still good for you?",
         }
         greeting = greetings.get(call_lang, greetings["en"])
@@ -512,6 +513,7 @@ async def run_phone_bot_fastapi(websocket, stream_sid, call_sid, from_number, to
 你而家打緊電話俾{to_number}。
 
 你一定要用廣東話回應。用口語：「係」唔好用「是」，「嘅」唔好用「的」，「咗」唔好用「了」，「唔」唔好用「不」。
+盡量唔好用英文字，全部用中文講。例如：appointment=預約，confirm=確認，tomorrow=聽日，booking=訂位，collection=系列。品牌名都盡量用中文讀音。
 
 你有呢啲工具：
 1. search_web(query) — 上網搵資料。
@@ -726,7 +728,7 @@ Rules:
     async def on_client_connected(transport, ws):
         logger.info(f"Phone call connected (FastAPI): {to_number}")
         greetings = {
-            "yue": "你好，我係SPA Collection嘅助手，打嚟確認你嘅預約。請問你聽日方唔方便過嚟呢？",
+            "yue": "你好，我係水療中心嘅助手，打嚟確認你嘅預約。請問你聽日方唔方便過嚟呢？",
             "en": "Hi, this is a call from SPA Collection. I'm calling to confirm your appointment. Is tomorrow still good for you?",
         }
         greeting = greetings.get(call_lang, greetings["en"])
