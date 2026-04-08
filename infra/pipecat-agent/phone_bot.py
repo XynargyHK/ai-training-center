@@ -26,17 +26,21 @@ import json
 
 
 class AutoStreamSidTwilioSerializer(TwilioFrameSerializer):
-    """TwilioFrameSerializer that auto-captures stream_sid from the 'start' event.
-    Pipecat's default serializer doesn't update stream_sid from incoming messages."""
+    """TwilioFrameSerializer that auto-captures stream_sid AND call_sid from the 'start' event."""
     def deserialize(self, data):
         if isinstance(data, str):
             try:
                 msg = json.loads(data)
                 if msg.get("event") == "start":
-                    sid = msg.get("start", {}).get("streamSid", "") or msg.get("streamSid", "")
+                    start = msg.get("start", {})
+                    sid = start.get("streamSid", "") or msg.get("streamSid", "")
                     if sid:
                         self._stream_sid = sid
                         logger.info(f"Captured Twilio streamSid: {sid}")
+                    csid = start.get("callSid", "") or msg.get("callSid", "")
+                    if csid:
+                        self._call_sid = csid
+                        logger.info(f"Captured Twilio callSid: {csid}")
             except (json.JSONDecodeError, KeyError):
                 pass
         return super().deserialize(data)
@@ -672,7 +676,7 @@ Rules:
     # --- Transport: FastAPI WebSocket (direct Twilio connection, no proxy) ---
     serializer = AutoStreamSidTwilioSerializer(
         stream_sid=stream_sid or "pending",
-        call_sid=call_sid,
+        call_sid=call_sid or "pending",  # Auto-captured from 'start' event
         account_sid=os.getenv("TWILIO_ACCOUNT_SID"),
         auth_token=os.getenv("TWILIO_AUTH_TOKEN"),
     )

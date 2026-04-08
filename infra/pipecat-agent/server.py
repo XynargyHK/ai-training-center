@@ -193,7 +193,12 @@ async def handle_dialout(request: Request):
     if not server_url:
         server_url = request.headers.get("host", "localhost")
 
-    twiml_url = f"https://{server_url}/twiml?to={to_number}&from={from_number}&lang={lang}"
+    from urllib.parse import quote
+    encoded_to = quote(to_number, safe='')
+    encoded_from = quote(from_number, safe='')
+
+    # Use inline TwiML — no need for /twiml endpoint for dialout
+    inline_twiml = f"""<Response><Connect><Stream url="wss://{server_url}/ws?lang={lang}&amp;to={encoded_to}&amp;from={encoded_from}" /></Connect></Response>"""
 
     auth = base64.b64encode(f"{TWILIO_ACCOUNT_SID}:{TWILIO_AUTH_TOKEN}".encode()).decode()
 
@@ -204,12 +209,12 @@ async def handle_dialout(request: Request):
             data={
                 "To": to_number,
                 "From": from_number,
-                "Url": twiml_url,
+                "Twiml": inline_twiml,
             },
             timeout=aiohttp.ClientTimeout(total=15),
         ) as resp:
             result = await resp.json()
-            print(f"Twilio call response: {resp.status} {result}")
+            logger.info(f"Twilio call response: {resp.status}")
             if resp.status in (200, 201):
                 call_sid = result.get("sid", "")
                 return JSONResponse({
