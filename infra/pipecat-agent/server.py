@@ -231,10 +231,13 @@ async def handle_twiml(request: Request):
 
     server_url = os.getenv("RAILWAY_PUBLIC_DOMAIN", request.headers.get("host", "localhost"))
 
+    from urllib.parse import quote
+    encoded_to = quote(to_number, safe='')
+    encoded_from = quote(from_number, safe='')
     twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Connect>
-        <Stream url="wss://{server_url}/ws?lang={lang}&amp;to={to_number}&amp;from={from_number}" />
+        <Stream url="wss://{server_url}/ws?lang={lang}&amp;to={encoded_to}&amp;from={encoded_from}" />
     </Connect>
 </Response>"""
 
@@ -243,12 +246,10 @@ async def handle_twiml(request: Request):
 
 @app.websocket("/ws")
 async def handle_ws(websocket: WebSocket):
-    """WebSocket endpoint: Twilio connects directly, phone bot runs inline.
-
-    No message consumption, no wrapper. Params come via URL query string.
-    AutoStreamSidTwilioSerializer handles stream_sid from the 'start' event.
-    """
+    """WebSocket endpoint: Twilio connects directly, phone bot runs inline."""
+    logger.info(f">>> /ws WebSocket connection attempt from {websocket.client}")
     await websocket.accept()
+    logger.info(">>> /ws WebSocket ACCEPTED")
 
     # Get params from URL query string (set in TwiML)
     lang = websocket.query_params.get("lang", "en")
