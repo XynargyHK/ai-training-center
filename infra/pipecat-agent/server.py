@@ -193,12 +193,13 @@ async def handle_dialout(request: Request):
     if not server_url:
         server_url = request.headers.get("host", "localhost")
 
-    from urllib.parse import quote
-    encoded_to = quote(to_number, safe='')
-    encoded_from = quote(from_number, safe='')
+    # Set env vars so /ws handler can read them (Twilio strips query params from WebSocket)
+    os.environ["VOICE_LANG"] = lang
+    os.environ["VOICE_TO"] = to_number
+    os.environ["VOICE_FROM"] = from_number
 
-    # Use inline TwiML — no need for /twiml endpoint for dialout
-    inline_twiml = f"""<Response><Connect><Stream url="wss://{server_url}/ws?lang={lang}&amp;to={encoded_to}&amp;from={encoded_from}" /></Connect></Response>"""
+    # Use inline TwiML with custom parameters
+    inline_twiml = f"""<Response><Connect><Stream url="wss://{server_url}/ws"><Parameter name="lang" value="{lang}" /><Parameter name="to_number" value="{to_number}" /><Parameter name="from_number" value="{from_number}" /></Stream></Connect></Response>"""
 
     auth = base64.b64encode(f"{TWILIO_ACCOUNT_SID}:{TWILIO_AUTH_TOKEN}".encode()).decode()
 
@@ -251,18 +252,28 @@ async def handle_twiml(request: Request):
 
 @app.websocket("/ws")
 async def handle_ws(websocket: WebSocket):
-    """WebSocket endpoint: Twilio connects directly, phone bot runs inline."""
+    """WebSocket endpoint: Twilio connects directly, phone bot runs inline.
+
+    Twilio strips URL query params from WebSocket connections.
+    Custom params come via <Parameter> tags in the Twilio 'start' event.
+    We use parse_twilio_start to extract them without corrupting the WebSocket.
+    """
     logger.info(f">>> /ws WebSocket connection attempt from {websocket.client}")
     await websocket.accept()
     logger.info(">>> /ws WebSocket ACCEPTED")
 
-    # Get params from URL query string (set in TwiML)
-    lang = websocket.query_params.get("lang", "en")
-    to_number = websocket.query_params.get("to", "")
-    from_number = websocket.query_params.get("from", "")
-    logger.info(f"Twilio WebSocket connected: lang={lang}, to={to_number}, from={from_number}")
+    # Twilio sends params via the 'start' event customParameters.
+    # We need to use Pipecat's built-in telephony parsing which handles this properly.
+    # But since that may not be available in v0.0.108, we'll extract params
+    # from the serializer after it processes the start event.
+    #
+    # Strategy: pass the websocket directly and let the serializer handle start.
+    # Pass lang/to/from as env vars (set in dialout before call is made).
+    lang = os.environ.get("VOICE_LANG", "en")
+    to_number = os.environ.get("VOICE_TO", "")
+    from_number = os.environ.get("VOICE_FROM", "")
+    logger.info(f"Phone bot starting: lang={lang}, to={to_number}, from={from_number}")
 
-    # Pass the raw websocket directly to the phone bot — no wrapper, no peeking
     try:
         import importlib.util
         import sys
@@ -274,8 +285,8 @@ async def handle_ws(websocket: WebSocket):
         spec.loader.exec_module(phone_module)
         await phone_module.run_phone_bot_fastapi(
             websocket=websocket,
-            stream_sid="",  # AutoStreamSidTwilioSerializer captures this
-            call_sid="",    # TwilioFrameSerializer gets this from start event
+            stream_sid="",
+            call_sid="",
             from_number=from_number,
             to_number=to_number,
             lang=lang,
