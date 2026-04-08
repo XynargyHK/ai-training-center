@@ -1,21 +1,39 @@
 """
-HTTP server for Voice AI:
+HTTP server for Voice AI (FastAPI + uvicorn):
 - POST /start → creates Daily room + spawns browser voice bot
-- POST /dialout → makes outbound phone call via Twilio + spawns phone bot
+- POST /start-vision → creates Daily room + spawns vision bot
+- POST /dialout → makes outbound phone call via Twilio + phone bot on /ws
 - POST /twiml → returns TwiML XML for Twilio to connect WebSocket
+- GET /ws → Twilio WebSocket (FastAPIWebsocketTransport, no proxy)
 - GET /health, GET /proxy
 """
 import os
-import subprocess
 import asyncio
 import time
+import json
+import base64
 
 import aiohttp
-from aiohttp import web
+from fastapi import FastAPI, WebSocket, Request
+from fastapi.responses import JSONResponse, Response, PlainTextResponse
+from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
 DAILY_API_KEY = os.getenv("DAILY_API_KEY")
 DAILY_API_URL = "https://api.daily.co/v1"
+
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
+TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
+TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER", "")
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 async def create_daily_room():
@@ -27,7 +45,7 @@ async def create_daily_room():
             headers=headers,
             json={
                 "properties": {
-                    "exp": int(time.time()) + 3600,  # 1 hour from now (Unix timestamp)
+                    "exp": int(time.time()) + 3600,
                     "enable_chat": False,
                     "enable_screenshare": False,
                     "max_participants": 2,
@@ -49,7 +67,6 @@ async def start_bot(room_url):
         try:
             import importlib.util
             import sys
-            # Force fresh import each time (different lang per call)
             if "bot" in sys.modules:
                 del sys.modules["bot"]
             bot_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.py")
@@ -64,28 +81,6 @@ async def start_bot(room_url):
 
     asyncio.ensure_future(run_bot())
     return os.getpid()
-
-
-async def handle_start(request):
-    """POST /start — create room, spawn bot, return room URL to browser."""
-    try:
-        body = await request.json()
-    except:
-        body = {}
-    lang = body.get("lang", "en")
-    voice = body.get("voice", "")
-    tts_provider = body.get("tts_provider", "azure")
-    tts_voice = body.get("tts_voice", "")
-    os.environ["VOICE_LANG"] = lang
-    os.environ["VOICE_NAME"] = voice
-    os.environ["TTS_PROVIDER"] = tts_provider
-    os.environ["TTS_VOICE"] = tts_voice
-    room_url, room_name = await create_daily_room()
-    if not room_url:
-        return web.json_response({"error": "Failed to create Daily room"}, status=500)
-
-    pid = await start_bot(room_url)
-    return web.json_response({"room_url": room_url, "room_name": room_name, "bot_pid": pid})
 
 
 async def start_vision_bot(room_url):
@@ -112,30 +107,55 @@ async def start_vision_bot(room_url):
     return os.getpid()
 
 
-async def handle_start_vision(request):
+@app.post("/start")
+async def handle_start(request: Request):
+    """POST /start — create room, spawn bot, return room URL to browser."""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    lang = body.get("lang", "en")
+    voice = body.get("voice", "")
+    tts_provider = body.get("tts_provider", "azure")
+    tts_voice = body.get("tts_voice", "")
+    os.environ["VOICE_LANG"] = lang
+    os.environ["VOICE_NAME"] = voice
+    os.environ["TTS_PROVIDER"] = tts_provider
+    os.environ["TTS_VOICE"] = tts_voice
+    room_url, room_name = await create_daily_room()
+    if not room_url:
+        return JSONResponse({"error": "Failed to create Daily room"}, status_code=500)
+
+    pid = await start_bot(room_url)
+    return JSONResponse({"room_url": room_url, "room_name": room_name, "bot_pid": pid})
+
+
+@app.post("/start-vision")
+async def handle_start_vision(request: Request):
     """POST /start-vision — create room, spawn vision bot with camera support."""
     try:
         body = await request.json()
-    except:
+    except Exception:
         body = {}
 
     room_url, room_name = await create_daily_room()
     if not room_url:
-        return web.json_response({"error": "Failed to create Daily room"}, status=500)
+        return JSONResponse({"error": "Failed to create Daily room"}, status_code=500)
 
     pid = await start_vision_bot(room_url)
-    return web.json_response({"room_url": room_url, "room_name": room_name, "bot_pid": pid, "mode": "vision"})
+    return JSONResponse({"room_url": room_url, "room_name": room_name, "bot_pid": pid, "mode": "vision"})
 
 
-async def handle_health(request):
-    return web.json_response({"status": "ok"})
+@app.get("/health")
+async def handle_health():
+    return JSONResponse({"status": "ok"})
 
 
-async def handle_proxy(request):
+@app.get("/proxy")
+async def handle_proxy(url: str = ""):
     """GET /proxy?url=https://... — fetch a page and serve it without iframe-blocking headers."""
-    url = request.query.get("url", "")
     if not url:
-        return web.Response(text="Missing url parameter", status=400)
+        return PlainTextResponse("Missing url parameter", status_code=400)
     try:
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
         async with aiohttp.ClientSession() as session:
@@ -143,31 +163,21 @@ async def handle_proxy(request):
                 body = await resp.read()
                 raw_ct = resp.headers.get("Content-Type", "text/html")
                 ct = raw_ct.split(";")[0].strip()
-                return web.Response(
-                    body=body,
-                    content_type=ct,
-                    headers={
-                        "Access-Control-Allow-Origin": "*",
-                    },
+                return Response(
+                    content=body,
+                    media_type=ct,
+                    headers={"Access-Control-Allow-Origin": "*"},
                 )
     except Exception as e:
-        return web.Response(text=f"Proxy error: {str(e)}", status=502)
+        return PlainTextResponse(f"Proxy error: {str(e)}", status_code=502)
 
 
-TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
-TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
-TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER", "")
-
-# Track active phone bot ports
-_next_phone_port = 8770
-
-
-async def handle_dialout(request):
+@app.post("/dialout")
+async def handle_dialout(request: Request):
     """POST /dialout — make an outbound phone call via Twilio."""
-    global _next_phone_port
     try:
         body = await request.json()
-    except:
+    except Exception:
         body = {}
 
     to_number = body.get("to", "")
@@ -175,27 +185,17 @@ async def handle_dialout(request):
     lang = body.get("lang", "en")
 
     if not to_number:
-        return web.json_response({"error": "Missing 'to' phone number"}, status=400)
+        return JSONResponse({"error": "Missing 'to' phone number"}, status_code=400)
     if not TWILIO_ACCOUNT_SID or not TWILIO_AUTH_TOKEN:
-        return web.json_response({"error": "Twilio credentials not configured"}, status=500)
+        return JSONResponse({"error": "Twilio credentials not configured"}, status_code=500)
 
-    # Assign a port for this phone bot's WebSocket
-    phone_port = _next_phone_port
-    _next_phone_port += 1
-    if _next_phone_port > 8799:
-        _next_phone_port = 8770
-
-    # Get the public URL for this server (Railway provides it)
     server_url = os.getenv("RAILWAY_PUBLIC_DOMAIN", "")
     if not server_url:
-        # Fallback: construct from request
-        server_url = request.host
+        server_url = request.headers.get("host", "localhost")
 
-    # Create outbound call via Twilio REST API
-    import base64
+    twiml_url = f"https://{server_url}/twiml?to={to_number}&from={from_number}&lang={lang}"
+
     auth = base64.b64encode(f"{TWILIO_ACCOUNT_SID}:{TWILIO_AUTH_TOKEN}".encode()).decode()
-
-    twiml_url = f"https://{server_url}/twiml?port={phone_port}&to={to_number}&from={from_number}"
 
     async with aiohttp.ClientSession() as session:
         async with session.post(
@@ -212,50 +212,104 @@ async def handle_dialout(request):
             print(f"Twilio call response: {resp.status} {result}")
             if resp.status in (200, 201):
                 call_sid = result.get("sid", "")
-
-                # Spawn phone bot in background
-                os.environ["VOICE_LANG"] = lang
-                asyncio.ensure_future(_run_phone_bot(
-                    phone_port=phone_port,
-                    call_sid=call_sid,
-                    from_number=from_number,
-                    to_number=to_number,
-                ))
-
-                return web.json_response({
+                return JSONResponse({
                     "status": "calling",
                     "call_sid": call_sid,
                     "to": to_number,
                     "from": from_number,
                 })
             else:
-                return web.json_response({"error": result}, status=500)
+                return JSONResponse({"error": result}, status_code=500)
 
 
-async def handle_twiml(request):
-    """POST /twiml — Twilio hits this when call connects, returns TwiML to stream audio."""
-    phone_port = request.query.get("port", "8770")
-    to_number = request.query.get("to", "")
-    from_number = request.query.get("from", "")
+@app.api_route("/twiml", methods=["GET", "POST"])
+async def handle_twiml(request: Request):
+    """GET/POST /twiml — Twilio hits this when call connects, returns TwiML to stream audio to /ws."""
+    to_number = request.query_params.get("to", "")
+    from_number = request.query_params.get("from", "")
+    lang = request.query_params.get("lang", "en")
 
-    server_url = os.getenv("RAILWAY_PUBLIC_DOMAIN", request.host)
+    server_url = os.getenv("RAILWAY_PUBLIC_DOMAIN", request.headers.get("host", "localhost"))
 
     twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Connect>
-        <Stream url="wss://{server_url}/ws-phone">
-            <Parameter name="phone_port" value="{phone_port}" />
+        <Stream url="wss://{server_url}/ws">
             <Parameter name="to_number" value="{to_number}" />
             <Parameter name="from_number" value="{from_number}" />
+            <Parameter name="lang" value="{lang}" />
         </Stream>
     </Connect>
 </Response>"""
 
-    return web.Response(text=twiml, content_type="application/xml")
+    return Response(content=twiml, media_type="application/xml")
 
 
-async def _run_phone_bot(phone_port, call_sid, from_number, to_number):
-    """Run the phone bot pipeline."""
+@app.websocket("/ws")
+async def handle_ws(websocket: WebSocket):
+    """WebSocket endpoint: Twilio connects directly, phone bot runs inline via FastAPIWebsocketTransport."""
+    await websocket.accept()
+
+    # Read initial Twilio messages to extract stream_sid and custom parameters
+    stream_sid = ""
+    call_sid = ""
+    from_number = ""
+    to_number = ""
+    lang = "en"
+
+    # Twilio sends "connected" then "start" events before media
+    # We need to peek at them to extract metadata, but the transport
+    # will also process them via the serializer.
+    # Strategy: read messages until we get "start", extract params,
+    # then hand the websocket to the phone bot (which re-reads via transport).
+    #
+    # However, FastAPIWebsocketTransport reads from the websocket directly,
+    # so we can't consume messages here. Instead, we'll parse custom params
+    # from the first few messages using a wrapper approach.
+    #
+    # Better approach: Use a message-buffering wrapper that lets us peek
+    # at messages before the transport consumes them.
+
+    # We'll read the initial messages ourselves, then use a patched websocket
+    # that replays them before reading new ones.
+    buffered_messages = []
+
+    try:
+        # Read until we get the "start" event (usually 2 messages: connected + start)
+        for _ in range(10):  # Safety limit
+            message = await asyncio.wait_for(websocket.receive(), timeout=10.0)
+            if message["type"] == "websocket.disconnect":
+                logger.warning("Twilio disconnected before start event")
+                return
+
+            text = message.get("text", "")
+            if text:
+                buffered_messages.append(text)
+                try:
+                    data = json.loads(text)
+                    event = data.get("event", "")
+
+                    if event == "start":
+                        start_data = data.get("start", {})
+                        stream_sid = start_data.get("streamSid", data.get("streamSid", ""))
+                        call_sid = start_data.get("callSid", data.get("callSid", ""))
+                        custom = start_data.get("customParameters", {})
+                        from_number = custom.get("from_number", "")
+                        to_number = custom.get("to_number", "")
+                        lang = custom.get("lang", "en")
+                        logger.info(f"Twilio stream started: streamSid={stream_sid}, callSid={call_sid}, lang={lang}, to={to_number}")
+                        break
+                except (json.JSONDecodeError, KeyError):
+                    pass
+    except asyncio.TimeoutError:
+        logger.error("Timeout waiting for Twilio start event")
+        await websocket.close()
+        return
+
+    # Create a replay websocket wrapper that feeds buffered messages first
+    replay_ws = _ReplayWebSocket(websocket, buffered_messages)
+
+    # Run the phone bot pipeline directly with FastAPIWebsocketTransport
     try:
         import importlib.util
         import sys
@@ -265,133 +319,68 @@ async def _run_phone_bot(phone_port, call_sid, from_number, to_number):
         spec = importlib.util.spec_from_file_location("phone_bot", bot_path)
         phone_module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(phone_module)
-        await phone_module.run_phone_bot(
-            websocket_server_host="0.0.0.0",
-            websocket_server_port=phone_port,
-            stream_sid="",  # Will be set when Twilio connects
+        await phone_module.run_phone_bot_fastapi(
+            websocket=replay_ws,
+            stream_sid=stream_sid,
             call_sid=call_sid,
             from_number=from_number,
             to_number=to_number,
+            lang=lang,
         )
     except Exception as e:
-        print(f"PHONE BOT ERROR: {e}", flush=True)
+        logger.error(f"Phone bot error: {e}")
         import traceback
         traceback.print_exc()
 
 
-async def handle_ws_phone(request):
-    """WebSocket proxy: Twilio connects here (port 8765), we forward to internal phone bot (port 877x)."""
-    import aiohttp as aiohttp_client
+class _ReplayWebSocket:
+    """Wraps a FastAPI WebSocket to replay buffered messages before live ones.
 
-    ws_external = web.WebSocketResponse()
-    await ws_external.prepare(request)
+    FastAPIWebsocketTransport calls websocket.receive() internally.
+    This wrapper returns buffered messages first (the connected + start events
+    we already consumed), then delegates to the real websocket.
+    """
 
-    # First message from Twilio is "connected", second is "start" with streamSid
-    # We need to read the start message to get the phone_port from custom parameters
-    phone_port = None
-    buffered = []
+    def __init__(self, websocket: WebSocket, buffered_messages: list[str]):
+        self._websocket = websocket
+        self._buffered = list(buffered_messages)
+        # Copy all attributes from the real websocket so Pipecat's checks work
+        self.client_state = websocket.client_state
+        self.application_state = websocket.application_state
+        self.client = websocket.client
+        self.headers = websocket.headers
+        self.query_params = websocket.query_params
+        self.path_params = websocket.path_params
+        self.scope = websocket.scope
 
-    async for msg in ws_external:
-        if msg.type == aiohttp_client.WSMsgType.TEXT:
-            import json
-            data = json.loads(msg.data)
+    async def receive(self):
+        if self._buffered:
+            text = self._buffered.pop(0)
+            return {"type": "websocket.receive", "text": text}
+        return await self._websocket.receive()
 
-            if data.get("event") == "start":
-                # Extract custom parameters and stream_sid
-                custom = data.get("start", {}).get("customParameters", {})
-                phone_port = int(custom.get("phone_port", 8770))
-                stream_sid = data.get("start", {}).get("streamSid", data.get("streamSid", ""))
-                logger.info(f"Twilio stream started, streamSid={stream_sid}, proxying to port {phone_port}")
+    async def send(self, message):
+        await self._websocket.send(message)
 
-                # Pass stream_sid to internal bot via query parameter
-                try:
-                    async with aiohttp_client.ClientSession() as session:
-                        async with session.ws_connect(f"ws://localhost:{phone_port}/ws?stream_sid={stream_sid}") as ws_internal:
-                            # Forward the buffered messages
-                            for buf_msg in buffered:
-                                await ws_internal.send_str(buf_msg)
-                            await ws_internal.send_str(msg.data)
+    async def send_bytes(self, data: bytes):
+        await self._websocket.send_bytes(data)
 
-                            # Bidirectional proxy with logging
-                            ext_to_int_count = [0]
-                            int_to_ext_count = [0]
+    async def send_text(self, data: str):
+        await self._websocket.send_text(data)
 
-                            async def forward_to_internal():
-                                async for ext_msg in ws_external:
-                                    if ext_msg.type == aiohttp_client.WSMsgType.TEXT:
-                                        ext_to_int_count[0] += 1
-                                        if ext_to_int_count[0] <= 3:
-                                            print(f"[PROXY] Twilio→Bot msg #{ext_to_int_count[0]}: {ext_msg.data[:100]}", flush=True)
-                                        await ws_internal.send_str(ext_msg.data)
-                                    elif ext_msg.type in (aiohttp_client.WSMsgType.CLOSE, aiohttp_client.WSMsgType.CLOSING, aiohttp_client.WSMsgType.CLOSED):
-                                        print(f"[PROXY] Twilio WS closed after {ext_to_int_count[0]} messages", flush=True)
-                                        await ws_internal.close()
-                                        break
-                                    elif ext_msg.type == aiohttp_client.WSMsgType.ERROR:
-                                        print(f"[PROXY] Twilio WS error: {ws_external.exception()}", flush=True)
-                                        break
+    async def close(self, code: int = 1000, reason: str | None = None):
+        await self._websocket.close(code=code, reason=reason)
 
-                            async def forward_to_external():
-                                async for int_msg in ws_internal:
-                                    if int_msg.type == aiohttp_client.WSMsgType.TEXT:
-                                        int_to_ext_count[0] += 1
-                                        if int_to_ext_count[0] <= 3:
-                                            print(f"[PROXY] Bot→Twilio msg #{int_to_ext_count[0]}: {int_msg.data[:100]}", flush=True)
-                                        await ws_external.send_str(int_msg.data)
-                                    elif int_msg.type == aiohttp_client.WSMsgType.BINARY:
-                                        int_to_ext_count[0] += 1
-                                        if int_to_ext_count[0] <= 3:
-                                            print(f"[PROXY] Bot→Twilio binary #{int_to_ext_count[0]}: {len(int_msg.data)} bytes", flush=True)
-                                        await ws_external.send_bytes(int_msg.data)
-                                    elif int_msg.type in (aiohttp_client.WSMsgType.CLOSE, aiohttp_client.WSMsgType.CLOSING, aiohttp_client.WSMsgType.CLOSED):
-                                        print(f"[PROXY] Bot WS closed after sending {int_to_ext_count[0]} messages", flush=True)
-                                        await ws_external.close()
-                                        break
+    async def accept(self, subprotocol: str | None = None):
+        await self._websocket.accept(subprotocol=subprotocol)
 
-                            await asyncio.gather(
-                                forward_to_internal(),
-                                forward_to_external(),
-                                return_exceptions=True,
-                            )
-                except Exception as e:
-                    print(f"WS proxy error: {e}", flush=True)
-                break
-            else:
-                # Buffer messages until we get the "start" event
-                buffered.append(msg.data)
-        elif msg.type == aiohttp_client.WSMsgType.ERROR:
-            break
+    def __getattr__(self, name):
+        # Delegate any other attribute access to the real websocket
+        return getattr(self._websocket, name)
 
-    return ws_external
-
-
-app = web.Application()
-app.router.add_post("/start", handle_start)
-app.router.add_post("/start-vision", handle_start_vision)
-app.router.add_post("/dialout", handle_dialout)
-app.router.add_post("/twiml", handle_twiml)
-app.router.add_get("/twiml", handle_twiml)
-app.router.add_get("/ws-phone", handle_ws_phone)
-app.router.add_get("/health", handle_health)
-app.router.add_get("/proxy", handle_proxy)
-# CORS for browser requests
-for route in ["/start", "/start-vision", "/dialout"]:
-    app.router.add_options(route, lambda r: web.Response(headers={
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST",
-        "Access-Control-Allow-Headers": "Content-Type",
-    }))
-
-
-@web.middleware
-async def cors_middleware(request, handler):
-    resp = await handler(request)
-    resp.headers["Access-Control-Allow-Origin"] = "*"
-    return resp
-
-app.middlewares.append(cors_middleware)
 
 if __name__ == "__main__":
+    import uvicorn
     port = int(os.getenv("PORT", 8765))
     print(f"Pipecat server starting on port {port}")
-    web.run_app(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port)
