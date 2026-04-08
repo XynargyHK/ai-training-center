@@ -1,17 +1,18 @@
 """
 HTTP server for Voice AI (FastAPI + uvicorn):
-- POST /start → creates Daily room + spawns browser voice bot
-- POST /start-vision → creates Daily room + spawns vision bot
-- POST /dialout → creates Daily room with SIP dialout + spawns phone bot via run_pipeline
+- POST /start -> creates LiveKit room + generates token + spawns browser voice bot
+- POST /start-vision -> creates LiveKit room + spawns vision bot
+- POST /dialout -> creates LiveKit room + SIP participant for phone call
 - GET /health, GET /proxy
-- GET /ws → legacy Twilio WebSocket (phone_bot.py fallback)
-- POST /twiml → legacy TwiML for Twilio WebSocket fallback
+- GET /ws -> legacy Twilio WebSocket (phone_bot.py fallback)
+- POST /twiml -> legacy TwiML for Twilio WebSocket fallback
+
+Transport: LiveKit (migrated from Daily)
 """
 import os
 import asyncio
 import time
 import json
-import base64
 
 import aiohttp
 from fastapi import FastAPI, WebSocket, Request
@@ -19,8 +20,11 @@ from fastapi.responses import JSONResponse, Response, PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
-DAILY_API_KEY = os.getenv("DAILY_API_KEY")
-DAILY_API_URL = "https://api.daily.co/v1"
+from livekit.api import LiveKitAPI, AccessToken, VideoGrants
+
+LIVEKIT_URL = os.getenv("LIVEKIT_URL", "wss://xynargyhk-ya1ihi9m.livekit.cloud")
+LIVEKIT_API_KEY = os.getenv("LIVEKIT_API_KEY", "")
+LIVEKIT_API_SECRET = os.getenv("LIVEKIT_API_SECRET", "")
 
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
@@ -37,71 +41,61 @@ app.add_middleware(
 )
 
 
-async def create_daily_room(enable_dialout=False):
-    """Create a temporary Daily room for the voice session."""
-    headers = {"Authorization": f"Bearer {DAILY_API_KEY}", "Content-Type": "application/json"}
-    properties = {
-        "exp": int(time.time()) + 3600,
-        "enable_chat": False,
-        "enable_screenshare": False,
-        "max_participants": 2,
-    }
-    if enable_dialout:
-        properties["enable_dialout"] = True
-    async with aiohttp.ClientSession() as session:
-        async with session.post(
-            f"{DAILY_API_URL}/rooms",
-            headers=headers,
-            json={"properties": properties},
-        ) as resp:
-            data = await resp.json()
-            print(f"Daily API response: {resp.status} {data}")
-            if resp.status != 200:
-                return None, None
-            return data.get("url"), data.get("name")
+async def create_livekit_room(room_name=None):
+    """Create a LiveKit room. Returns room name."""
+    if not room_name:
+        import uuid
+        room_name = f"voice-{uuid.uuid4().hex[:8]}"
+
+    try:
+        async with LiveKitAPI(
+            url=LIVEKIT_URL,
+            api_key=LIVEKIT_API_KEY,
+            api_secret=LIVEKIT_API_SECRET,
+        ) as api:
+            from livekit.api import CreateRoomRequest
+            room = await api.room.create_room(
+                CreateRoomRequest(
+                    name=room_name,
+                    empty_timeout=300,  # 5 min empty timeout
+                    max_participants=4,
+                )
+            )
+            logger.info(f"LiveKit room created: {room.name}")
+            return room.name
+    except Exception as e:
+        logger.error(f"Failed to create LiveKit room: {e}")
+        return None
 
 
-async def create_daily_token(room_name, owner=False):
-    """Create a Daily meeting token for the given room."""
-    headers = {"Authorization": f"Bearer {DAILY_API_KEY}", "Content-Type": "application/json"}
-    payload = {
-        "properties": {
-            "room_name": room_name,
-            "exp": int(time.time()) + 3600,
-        }
-    }
-    if owner:
-        payload["properties"]["is_owner"] = True
-    async with aiohttp.ClientSession() as session:
-        async with session.post(
-            f"{DAILY_API_URL}/meeting-tokens",
-            headers=headers,
-            json=payload,
-        ) as resp:
-            data = await resp.json()
-            if resp.status != 200:
-                logger.error(f"Failed to create token: {resp.status} {data}")
-                return None
-            return data.get("token")
+def create_livekit_token(room_name, identity, name=None, grants=None):
+    """Create a LiveKit access token (JWT) for joining a room."""
+    at = AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET)
+    at.with_identity(identity)
+    at.with_name(name or identity)
+    at.with_grants(grants or VideoGrants(
+        room_join=True,
+        room=room_name,
+    ))
+    at.with_ttl(3600)
+    return at.to_jwt()
 
 
-async def start_bot(room_url):
-    """Run the Pipecat bot in a background task (same process, errors visible in logs)."""
-    os.environ["DAILY_ROOM_URL"] = room_url
+async def start_bot(room_name, token, lang="en", vision_enabled=False):
+    """Run the Pipecat bot in a background task (same process)."""
+    from bot import run_pipeline
 
     async def run_bot():
         try:
-            import importlib.util
-            import sys
-            if "bot" in sys.modules:
-                del sys.modules["bot"]
-            bot_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bot.py")
-            spec = importlib.util.spec_from_file_location("bot", bot_path)
-            bot_module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(bot_module)
-            await bot_module.main()
+            await run_pipeline(
+                room_name=room_name,
+                token=token,
+                lang=lang,
+                mode="browser",
+                vision_enabled=vision_enabled,
+            )
         except Exception as e:
-            print(f"BOT ERROR: {e}", flush=True)
+            logger.error(f"BOT ERROR: {e}")
             import traceback
             traceback.print_exc()
 
@@ -109,10 +103,8 @@ async def start_bot(room_url):
     return os.getpid()
 
 
-async def start_vision_bot(room_url):
+async def start_vision_bot(room_name, token):
     """Run the vision bot (Gemini multimodal live) in a background task."""
-    os.environ["DAILY_ROOM_URL"] = room_url
-
     async def run_bot():
         try:
             import importlib.util
@@ -122,10 +114,13 @@ async def start_vision_bot(room_url):
             bot_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "vision_bot.py")
             spec = importlib.util.spec_from_file_location("vision_bot", bot_path)
             bot_module = importlib.util.module_from_spec(spec)
+            # Pass LiveKit config via env vars for vision_bot
+            os.environ["LIVEKIT_ROOM_NAME"] = room_name
+            os.environ["LIVEKIT_TOKEN"] = token
             spec.loader.exec_module(bot_module)
             await bot_module.main()
         except Exception as e:
-            print(f"VISION BOT ERROR: {e}", flush=True)
+            logger.error(f"VISION BOT ERROR: {e}")
             import traceback
             traceback.print_exc()
 
@@ -133,14 +128,14 @@ async def start_vision_bot(room_url):
     return os.getpid()
 
 
-async def start_phone_bot(room_url, token, lang, dialout_settings, greeting=None):
+async def start_phone_bot(room_name, token, lang, dialout_settings=None, greeting=None):
     """Run the unified pipeline in phone mode as a background task."""
     from bot import run_pipeline
 
     async def run_bot():
         try:
             await run_pipeline(
-                room_url=room_url,
+                room_name=room_name,
                 token=token,
                 lang=lang,
                 mode="phone",
@@ -159,7 +154,7 @@ async def start_phone_bot(room_url, token, lang, dialout_settings, greeting=None
 
 @app.post("/start")
 async def handle_start(request: Request):
-    """POST /start — create room, spawn bot, return room URL to browser."""
+    """POST /start -- create LiveKit room, generate tokens, spawn bot, return connection info."""
     try:
         body = await request.json()
     except Exception:
@@ -172,36 +167,63 @@ async def handle_start(request: Request):
     os.environ["VOICE_NAME"] = voice
     os.environ["TTS_PROVIDER"] = tts_provider
     os.environ["TTS_VOICE"] = tts_voice
-    room_url, room_name = await create_daily_room()
-    if not room_url:
-        return JSONResponse({"error": "Failed to create Daily room"}, status_code=500)
 
-    pid = await start_bot(room_url)
-    return JSONResponse({"room_url": room_url, "room_name": room_name, "bot_pid": pid})
+    # 1. Create LiveKit room
+    room_name = await create_livekit_room()
+    if not room_name:
+        return JSONResponse({"error": "Failed to create LiveKit room"}, status_code=500)
+
+    # 2. Generate bot token (the bot joins the room)
+    bot_token = create_livekit_token(room_name, identity="ai-assistant", name="AI Assistant")
+
+    # 3. Generate user token (the browser client joins the room)
+    user_token = create_livekit_token(room_name, identity="user", name="User")
+
+    # 4. Spawn bot
+    pid = await start_bot(room_name, bot_token, lang=lang)
+
+    return JSONResponse({
+        "room_name": room_name,
+        "token": user_token,
+        "livekit_url": LIVEKIT_URL,
+        "bot_pid": pid,
+    })
 
 
 @app.post("/start-vision")
 async def handle_start_vision(request: Request):
-    """POST /start-vision — create room, spawn vision bot with camera support."""
+    """POST /start-vision -- create room, spawn vision bot with camera support."""
     try:
         body = await request.json()
     except Exception:
         body = {}
 
-    room_url, room_name = await create_daily_room()
-    if not room_url:
-        return JSONResponse({"error": "Failed to create Daily room"}, status_code=500)
+    room_name = await create_livekit_room()
+    if not room_name:
+        return JSONResponse({"error": "Failed to create LiveKit room"}, status_code=500)
 
-    pid = await start_vision_bot(room_url)
-    return JSONResponse({"room_url": room_url, "room_name": room_name, "bot_pid": pid, "mode": "vision"})
+    bot_token = create_livekit_token(room_name, identity="ai-assistant", name="AI Assistant")
+    user_token = create_livekit_token(room_name, identity="user", name="User")
+
+    pid = await start_vision_bot(room_name, bot_token)
+
+    return JSONResponse({
+        "room_name": room_name,
+        "token": user_token,
+        "livekit_url": LIVEKIT_URL,
+        "bot_pid": pid,
+        "mode": "vision",
+    })
 
 
 @app.post("/dialout")
 async def handle_dialout(request: Request):
-    """POST /dialout — make an outbound phone call via Daily SIP dialout.
+    """POST /dialout -- make an outbound phone call via LiveKit SIP or Twilio fallback.
 
     Body: {to, from, lang, greeting}
-    Flow: create Daily room (dialout-enabled) -> get owner token -> launch run_pipeline(phone) -> Daily dials out via SIP
+    Flow: create LiveKit room -> generate bot token -> launch run_pipeline(phone)
+    LiveKit SIP trunk handles the PSTN dialout if configured.
+    Falls back to Twilio SIP domain routing if TWILIO_SIP_DOMAIN is set.
     """
     try:
         body = await request.json()
@@ -219,39 +241,63 @@ async def handle_dialout(request: Request):
     # Set env vars for bot module (STT/TTS config reads these)
     os.environ["VOICE_LANG"] = lang
 
-    # 1. Create Daily room with dialout enabled
-    room_url, room_name = await create_daily_room(enable_dialout=True)
-    if not room_url:
-        return JSONResponse({"error": "Failed to create Daily room"}, status_code=500)
+    # 1. Create LiveKit room
+    room_name = await create_livekit_room()
+    if not room_name:
+        return JSONResponse({"error": "Failed to create LiveKit room"}, status_code=500)
 
-    # 2. Create owner meeting token (required for dialout)
-    token = await create_daily_token(room_name, owner=True)
-    if not token:
-        return JSONResponse({"error": "Failed to create meeting token"}, status_code=500)
+    # 2. Create bot token
+    bot_token = create_livekit_token(room_name, identity="ai-assistant", name="AI Assistant")
 
     # 3. Construct dialout settings
-    # If TWILIO_SIP_DOMAIN is set, use SIP URI for Twilio routing
-    # Otherwise, use the phone number directly (Daily PSTN dial-out for US numbers)
     clean_number = to_number.lstrip("+")
+    dialout_mode = "livekit_sip"
+
     if TWILIO_SIP_DOMAIN:
+        # Use Twilio SIP domain for routing (same as before)
         sip_uri = f"sip:+{clean_number}@{TWILIO_SIP_DOMAIN}"
         dialout_settings = {
             "sipUri": sip_uri,
             "displayName": from_number or "AI Assistant",
         }
-        logger.info(f"Dialout via SIP: {sip_uri}")
+        dialout_mode = "twilio_sip"
+        logger.info(f"Dialout via Twilio SIP: {sip_uri}")
     else:
-        # Direct PSTN dialout (Daily handles routing, US numbers only)
+        # LiveKit SIP trunk dialout (requires LiveKit SIP trunk configured)
         dialout_settings = {
             "phoneNumber": f"+{clean_number}",
             "displayName": from_number or "AI Assistant",
         }
-        logger.info(f"Dialout via PSTN: +{clean_number}")
+        logger.info(f"Dialout via LiveKit SIP: +{clean_number}")
 
-    # 4. Launch run_pipeline in phone mode
+    # 4. Try LiveKit SIP participant creation if no Twilio SIP domain
+    sip_call_id = None
+    if not TWILIO_SIP_DOMAIN:
+        try:
+            async with LiveKitAPI(
+                url=LIVEKIT_URL,
+                api_key=LIVEKIT_API_KEY,
+                api_secret=LIVEKIT_API_SECRET,
+            ) as api:
+                from livekit.api import CreateSIPParticipantRequest
+                sip_participant = await api.sip.create_sip_participant(
+                    CreateSIPParticipantRequest(
+                        room_name=room_name,
+                        sip_trunk_id=os.getenv("LIVEKIT_SIP_TRUNK_ID", ""),
+                        sip_call_to=f"+{clean_number}",
+                        participant_identity="phone-user",
+                        participant_name=to_number,
+                    )
+                )
+                sip_call_id = sip_participant.sip_call_id if hasattr(sip_participant, 'sip_call_id') else None
+                logger.info(f"LiveKit SIP participant created: {sip_call_id}")
+        except Exception as e:
+            logger.warning(f"LiveKit SIP dialout failed (will rely on bot dialout): {e}")
+
+    # 5. Launch run_pipeline in phone mode
     pid = await start_phone_bot(
-        room_url=room_url,
-        token=token,
+        room_name=room_name,
+        token=bot_token,
         lang=lang,
         dialout_settings=dialout_settings,
         greeting=greeting,
@@ -259,12 +305,12 @@ async def handle_dialout(request: Request):
 
     return JSONResponse({
         "status": "calling",
-        "room_url": room_url,
         "room_name": room_name,
         "to": to_number,
         "from": from_number,
         "lang": lang,
-        "mode": "daily_sip" if TWILIO_SIP_DOMAIN else "daily_pstn",
+        "mode": dialout_mode,
+        "sip_call_id": sip_call_id,
         "bot_pid": pid,
     })
 
@@ -276,18 +322,17 @@ async def handle_health():
 
 @app.api_route("/twiml-sip", methods=["GET", "POST"])
 async def handle_twiml_sip(request: Request):
-    """Twilio SIP Domain Voice URL — routes SIP call to actual phone number.
+    """Twilio SIP Domain Voice URL -- routes SIP call to actual phone number.
 
-    When Daily dials sip:+85296099766@aistaffs-voice.sip.twilio.com,
+    When LiveKit/Daily dials sip:+85296099766@aistaffs-voice.sip.twilio.com,
     Twilio hits this endpoint. We return TwiML to dial the real number.
     """
-    # Parse params from body or query string (avoid form parsing which needs python-multipart)
+    # Parse params from body or query string
     sip_to = ""
     sip_from = ""
     try:
         body = await request.body()
         body_str = body.decode("utf-8", errors="ignore")
-        # Twilio sends URL-encoded form data: To=sip%3A...&From=sip%3A...
         from urllib.parse import parse_qs, unquote
         params = parse_qs(body_str)
         sip_to = unquote(params.get("To", [""])[0])
@@ -297,12 +342,12 @@ async def handle_twiml_sip(request: Request):
     if not sip_to:
         sip_to = request.query_params.get("To", "")
 
-    # Extract phone number from SIP URI: sip:+85296099766@... → +85296099766
+    # Extract phone number from SIP URI: sip:+85296099766@... -> +85296099766
     import re
     match = re.search(r'sip:(\+?\d+)@', sip_to)
     phone_number = match.group(1) if match else sip_to
 
-    logger.info(f"SIP→PSTN: routing {sip_to} → {phone_number}, from={sip_from}")
+    logger.info(f"SIP->PSTN: routing {sip_to} -> {phone_number}, from={sip_from}")
 
     twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
@@ -316,7 +361,7 @@ async def handle_twiml_sip(request: Request):
 
 @app.get("/proxy")
 async def handle_proxy(url: str = ""):
-    """GET /proxy?url=https://... — fetch a page and serve it without iframe-blocking headers."""
+    """GET /proxy?url=https://... -- fetch a page and serve it without iframe-blocking headers."""
     if not url:
         return PlainTextResponse("Missing url parameter", status_code=400)
     try:
@@ -341,7 +386,7 @@ async def handle_proxy(url: str = ""):
 
 @app.api_route("/twiml", methods=["GET", "POST"])
 async def handle_twiml(request: Request):
-    """GET/POST /twiml — Twilio hits this when call connects, returns TwiML to stream audio to /ws."""
+    """GET/POST /twiml -- Twilio hits this when call connects, returns TwiML to stream audio to /ws."""
     to_number = request.query_params.get("to", "")
     from_number = request.query_params.get("from", "")
     lang = request.query_params.get("lang", "en")

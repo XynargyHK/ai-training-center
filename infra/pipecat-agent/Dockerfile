@@ -13,7 +13,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Runtime env vars (set in Railway)
-ENV DAILY_API_KEY=""
+ENV LIVEKIT_URL=""
+ENV LIVEKIT_API_KEY=""
+ENV LIVEKIT_API_SECRET=""
+ENV LIVEKIT_SIP_TRUNK_ID=""
 ENV DEEPGRAM_API_KEY=""
 ENV CEREBRAS_API_KEY=""
 ENV CARTESIA_API_KEY=""

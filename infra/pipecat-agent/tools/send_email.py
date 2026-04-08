@@ -21,14 +21,14 @@ schema = FunctionSchema(
 
 def create_handler(transport):
     async def handle(params: FunctionCallParams):
-        from pipecat.transports.daily.transport import DailyOutputTransportMessageFrame
+        from pipecat.transports.livekit.transport import LiveKitOutputTransportMessageFrame
         to = params.arguments.get("to", "")
         subject = urllib.parse.quote(params.arguments.get("subject", ""))
         body = urllib.parse.quote(params.arguments.get("body", ""))
         url = f"mailto:{to}?subject={subject}&body={body}"
         logger.info(f"Sending email: {url[:100]}")
         try:
-            await transport.output().send_message(DailyOutputTransportMessageFrame(message={"type": "open-url", "url": url}))
+            await transport.output().send_message(LiveKitOutputTransportMessageFrame(message={"type": "open-url", "url": url}))
         except Exception as e:
             logger.error(f"Could not trigger email: {e}")
         await params.result_callback({"status": "opened", "to": to})

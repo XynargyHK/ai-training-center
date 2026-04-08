@@ -18,13 +18,13 @@ schema = FunctionSchema(
 
 def create_handler(transport):
     async def handle(params: FunctionCallParams):
-        from pipecat.transports.daily.transport import DailyOutputTransportMessageFrame
+        from pipecat.transports.livekit.transport import LiveKitOutputTransportMessageFrame
         url = params.arguments.get("url", "")
         if not url.startswith(("http", "tel:", "mailto:", "geo:")):
             url = "https://" + url
         logger.info(f"Opening URL: {url}")
         try:
-            await transport.output().send_message(DailyOutputTransportMessageFrame(message={"type": "open-url", "url": url}))
+            await transport.output().send_message(LiveKitOutputTransportMessageFrame(message={"type": "open-url", "url": url}))
         except Exception as e:
             logger.error(f"Could not send URL to browser: {e}")
         await params.result_callback({"status": "opened", "url": url})

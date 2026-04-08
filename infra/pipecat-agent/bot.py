@@ -2,6 +2,8 @@
 Pipecat Voice AI Agent — Full-duplex conversation
 Supports both browser and phone calls through the same pipeline.
 All tools are modular (tools/*.py). bot.py is just pipeline wiring.
+
+Transport: LiveKit (migrated from Daily)
 """
 import asyncio
 import os
@@ -9,7 +11,6 @@ import sys
 
 from pipecat.frames.frames import EndFrame, TextFrame, TranscriptionFrame
 from pipecat.processors.frame_processor import FrameProcessor, FrameDirection
-from pipecat.transports.daily.transport import DailyOutputTransportMessageFrame
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
@@ -17,10 +18,12 @@ from pipecat.processors.aggregators.llm_context import LLMContext
 from pipecat.processors.aggregators.llm_response_universal import LLMContextAggregatorPair
 from pipecat.adapters.schemas.tools_schema import ToolsSchema
 from pipecat.services.deepgram.stt import DeepgramSTTService
-try:
-    from pipecat.transports.daily.transport import DailyParams, DailyTransport
-except ImportError:
-    from pipecat.transports.services.daily import DailyParams, DailyTransport
+
+from pipecat.transports.livekit.transport import (
+    LiveKitTransport,
+    LiveKitParams,
+    LiveKitOutputTransportMessageFrame,
+)
 
 try:
     from pipecat.audio.vad.silero import SileroVADAnalyzer
@@ -40,14 +43,14 @@ logger.add(sys.stderr, level="DEBUG")
 
 
 class STTForwarder(FrameProcessor):
-    """Sends user speech transcripts to browser."""
+    """Sends user speech transcripts to browser via LiveKit data channel."""
     def __init__(self, name="STTForwarder"):
         super().__init__(name=name)
 
     async def process_frame(self, frame, direction):
         await super().process_frame(frame, direction)
         if isinstance(frame, TranscriptionFrame):
-            msg = DailyOutputTransportMessageFrame(message={"type": "stt", "text": frame.text})
+            msg = LiveKitOutputTransportMessageFrame(message={"type": "stt", "text": frame.text})
             await self.push_frame(msg, FrameDirection.DOWNSTREAM)
         await self.push_frame(frame, direction)
 
@@ -68,7 +71,7 @@ class CJKSpaceFixer(FrameProcessor):
 
 
 class LLMForwarder(FrameProcessor):
-    """Sends AI response text to browser."""
+    """Sends AI response text to browser via LiveKit data channel."""
     def __init__(self, name="LLMForwarder"):
         super().__init__(name=name)
         self._text = ""
@@ -80,13 +83,13 @@ class LLMForwarder(FrameProcessor):
             self._text = ""
         if isinstance(frame, TextFrame):
             self._text += frame.text
-            msg = DailyOutputTransportMessageFrame(message={"type": "llm", "text": self._text})
+            msg = LiveKitOutputTransportMessageFrame(message={"type": "llm", "text": self._text})
             await self.push_frame(msg, FrameDirection.DOWNSTREAM)
         await self.push_frame(frame, direction)
 
 
 async def run_pipeline(
-    room_url,
+    room_name,
     token=None,
     lang="en",
     mode="browser",
@@ -97,18 +100,22 @@ async def run_pipeline(
     """Run the voice AI pipeline.
 
     Args:
-        room_url: Daily room URL
-        token: Daily meeting token (owner token needed for dialout)
+        room_name: LiveKit room name
+        token: LiveKit access token (JWT)
         lang: language code (en, yue, zh, etc.)
         mode: "browser" or "phone"
-        dialout_settings: dict with {"sipUri": "...", "displayName": "..."} or None
+        dialout_settings: dict with SIP dialout config or None
         vision_enabled: whether to capture video (browser only)
         greeting: optional greeting text to speak first (for phone calls)
     """
-    daily_api_key = os.getenv("DAILY_API_KEY")
+    livekit_url = os.getenv("LIVEKIT_URL")
 
-    if not room_url:
-        logger.error("room_url is required")
+    if not room_name:
+        logger.error("room_name is required")
+        return
+
+    if not token:
+        logger.error("token is required")
         return
 
     # Phone mode never uses vision
@@ -117,13 +124,12 @@ async def run_pipeline(
 
     participant_id_ref = [None]
 
-    # --- Transport: Daily WebRTC ---
-    transport = DailyTransport(
-        room_url,
-        token,
-        "AI Assistant",
-        DailyParams(
-            api_key=daily_api_key,
+    # --- Transport: LiveKit WebRTC ---
+    transport = LiveKitTransport(
+        url=livekit_url,
+        token=token,
+        room_name=room_name,
+        params=LiveKitParams(
             audio_out_enabled=True,
             audio_out_sample_rate=24000,
             audio_in_enabled=True,
@@ -311,39 +317,18 @@ Rules:
 
     if mode == "phone":
         # --- Phone mode event handlers ---
-        @transport.event_handler("on_joined")
-        async def on_joined(transport_obj, data):
-            logger.info(f"Phone mode: bot joined room, initiating dialout")
-            if dialout_settings:
-                try:
-                    await transport_obj.start_dialout(dialout_settings)
-                    logger.info(f"Dialout started: {dialout_settings}")
-                except Exception as e:
-                    logger.error(f"Dialout failed: {e}")
-
-        @transport.event_handler("on_dialout_answered")
-        async def on_dialout_answered(transport_obj, data):
-            logger.info(f"Dialout answered: {data}")
-            # Use language-specific greeting (hardcoded to avoid UTF-8 encoding issues from API)
-            greetings = {
-                "yue": "\u4f60\u597d\uff0c\u6211\u4fc2\u6c34\u7642\u4e2d\u5fc3\u5614\u52a9\u624b\uff0c\u6253\u5617\u78ba\u8a8d\u4f60\u5614\u9810\u7d04\uff0c\u8acb\u554f\u4f60\u807d\u65e5\u65b9\u5514\u65b9\u4fbf\u904e\u5617\u5462\uff1f",
-                "en": "Hi, this is a call from the spa center. I'm calling to confirm your appointment. Is tomorrow still good for you?",
-                "zh": "\u4f60\u597d\uff0c\u6211\u662f\u6c34\u7597\u4e2d\u5fc3\u7684\u52a9\u624b\uff0c\u6253\u6765\u786e\u8ba4\u60a8\u7684\u9884\u7ea6\u3002\u8bf7\u95ee\u60a8\u660e\u5929\u65b9\u4fbf\u8fc7\u6765\u5417\uff1f",
-            }
-            # Use LLMRunFrame — let LLM generate greeting from system prompt
-            # TextFrame doesn't reliably trigger TTS in phone mode
+        @transport.event_handler("on_first_participant_joined")
+        async def on_first_participant_joined(transport_obj, participant_id):
+            logger.info(f"Phone mode: first participant joined: {participant_id}")
+            # In phone mode with LiveKit SIP, the SIP participant connects as a regular participant.
+            # Trigger LLM greeting when the callee joins.
             from pipecat.frames.frames import LLMRunFrame
-            logger.info(f"Dialout answered — triggering LLM greeting ({lang})")
+            logger.info(f"Phone participant joined — triggering LLM greeting ({lang})")
             await task.queue_frames([LLMRunFrame()])
 
-        @transport.event_handler("on_dialout_error")
-        async def on_dialout_error(transport_obj, data):
-            logger.error(f"Dialout error: {data}")
-            await task.queue_frame(EndFrame())
-
         @transport.event_handler("on_participant_left")
-        async def on_participant_left(transport_obj, participant, reason):
-            logger.info(f"Phone participant left: {participant['id']}, reason: {reason}")
+        async def on_participant_left(transport_obj, participant_id, reason):
+            logger.info(f"Phone participant left: {participant_id}, reason: {reason}")
             import asyncio as _asyncio
             from parts.session_logger import log_session
             try:
@@ -356,23 +341,23 @@ Rules:
     else:
         # --- Browser mode event handlers ---
         @transport.event_handler("on_first_participant_joined")
-        async def on_first_participant_joined(transport_obj, participant):
-            logger.info(f"Participant joined: {participant['id']}")
-            participant_id_ref[0] = participant["id"]
+        async def on_first_participant_joined(transport_obj, participant_id):
+            logger.info(f"Participant joined: {participant_id}")
+            participant_id_ref[0] = participant_id
             if vision_enabled:
                 await transport_obj.capture_participant_video(
-                    participant["id"],
+                    participant_id,
                     framerate=0,
                     video_source="camera",
                     color_format="RGB",
                 )
-                logger.info(f"Vision: capturing video from {participant['id']} (on-demand)")
+                logger.info(f"Vision: capturing video from {participant_id} (on-demand)")
             from pipecat.frames.frames import LLMRunFrame
             await task.queue_frames([LLMRunFrame()])
 
         @transport.event_handler("on_participant_left")
-        async def on_participant_left(transport_obj, participant, reason):
-            logger.info(f"Participant left: {participant['id']}")
+        async def on_participant_left(transport_obj, participant_id, reason):
+            logger.info(f"Participant left: {participant_id}")
             import asyncio as _asyncio
             from parts.session_logger import log_session
             try:
@@ -389,10 +374,30 @@ Rules:
 
 async def main():
     """Thin wrapper for standalone/browser mode (backward compatible)."""
-    room_url = os.getenv("DAILY_ROOM_URL")
+    room_name = os.getenv("LIVEKIT_ROOM_NAME", "test-room")
+    token = os.getenv("LIVEKIT_TOKEN", "")
+
+    # If no pre-generated token, generate one
+    if not token:
+        from livekit.api import AccessToken, VideoGrants
+        api_key = os.getenv("LIVEKIT_API_KEY")
+        api_secret = os.getenv("LIVEKIT_API_SECRET")
+        if api_key and api_secret:
+            at = AccessToken(api_key, api_secret)
+            at.with_identity("ai-assistant")
+            at.with_name("AI Assistant")
+            at.with_grants(VideoGrants(
+                room_join=True,
+                room=room_name,
+            ))
+            token = at.to_jwt()
+        else:
+            logger.error("LIVEKIT_API_KEY and LIVEKIT_API_SECRET required to generate token")
+            return
+
     lang = os.getenv("VOICE_LANG", "en")
     vision = os.getenv("VISION_ENABLED", "false").lower() == "true"
-    await run_pipeline(room_url=room_url, lang=lang, mode="browser", vision_enabled=vision)
+    await run_pipeline(room_name=room_name, token=token, lang=lang, mode="browser", vision_enabled=vision)
 
 
 if __name__ == "__main__":

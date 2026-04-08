@@ -20,12 +20,12 @@ schema = FunctionSchema(
 
 def create_handler(transport):
     async def handle(params: FunctionCallParams):
-        from pipecat.transports.daily.transport import DailyOutputTransportMessageFrame
+        from pipecat.transports.livekit.transport import LiveKitOutputTransportMessageFrame
         query = params.arguments.get("query", "")
         result = search_url(query)
         logger.info(f"Search places ({result['provider']}): {query} -> {result['url']}")
         try:
-            await transport.output().send_message(DailyOutputTransportMessageFrame(message={"type": "open-url", "url": result["url"]}))
+            await transport.output().send_message(LiveKitOutputTransportMessageFrame(message={"type": "open-url", "url": result["url"]}))
         except Exception as e:
             logger.error(f"Could not open maps: {e}")
         await params.result_callback({"status": "opened", "maps_url": result["url"], "provider": result["provider"], "query": query})

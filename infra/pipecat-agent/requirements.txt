@@ -1,4 +1,5 @@
-pipecat-ai[daily,deepgram,cartesia,openai,silero,azure,google,elevenlabs,websocket]
+pipecat-ai[livekit,deepgram,cartesia,openai,silero,azure,google,elevenlabs,websocket]
+livekit-api
 fastapi
 python-multipart
 uvicorn[standard]
