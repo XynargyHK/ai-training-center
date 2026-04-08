@@ -281,6 +281,34 @@ async def handle_health():
     return JSONResponse({"status": "ok"})
 
 
+@app.api_route("/twiml-sip", methods=["GET", "POST"])
+async def handle_twiml_sip(request: Request):
+    """Twilio SIP Domain Voice URL — routes SIP call to actual phone number.
+
+    When Daily dials sip:+85296099766@aistaffs-voice.sip.twilio.com,
+    Twilio hits this endpoint. We return TwiML to dial the real number.
+    """
+    form = await request.form() if request.method == "POST" else {}
+    sip_to = form.get("To", "") or request.query_params.get("To", "")
+    sip_from = form.get("From", "") or request.query_params.get("From", "")
+
+    # Extract phone number from SIP URI: sip:+85296099766@... → +85296099766
+    import re
+    match = re.search(r'sip:(\+?\d+)@', sip_to)
+    phone_number = match.group(1) if match else sip_to
+
+    logger.info(f"SIP→PSTN: routing {sip_to} → {phone_number}, from={sip_from}")
+
+    twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Dial callerId="{TWILIO_PHONE_NUMBER or '+14782888766'}">
+        <Number>{phone_number}</Number>
+    </Dial>
+</Response>"""
+
+    return Response(content=twiml, media_type="application/xml")
+
+
 @app.get("/proxy")
 async def handle_proxy(url: str = ""):
     """GET /proxy?url=https://... — fetch a page and serve it without iframe-blocking headers."""
