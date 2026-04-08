@@ -77,7 +77,8 @@ def create_livekit_token(room_name, identity, name=None, grants=None):
         room_join=True,
         room=room_name,
     ))
-    at.with_ttl(3600)
+    from datetime import timedelta
+    at.with_ttl(timedelta(hours=1))
     return at.to_jwt()
 
 
