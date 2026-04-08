@@ -134,20 +134,12 @@ async def run_pipeline(
         ),
     )
 
-    # --- STT ---
-    if lang == "yue":
-        from pipecat.services.azure.stt import AzureSTTService
-        stt = AzureSTTService(
-            api_key=os.getenv("AZURE_SPEECH_KEY"),
-            region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
-            language="zh-HK",
-            sample_rate=24000,
-        )
-    else:
-        stt = DeepgramSTTService(
-            api_key=os.getenv("DEEPGRAM_API_KEY"),
-            language="multi",
-        )
+    # --- STT: Deepgram for all languages (same for browser + phone via Daily SIP) ---
+    # Daily SIP uses WebRTC audio (not 8kHz phone), so Deepgram works for Cantonese too
+    stt = DeepgramSTTService(
+        api_key=os.getenv("DEEPGRAM_API_KEY"),
+        language="multi",
+    )
 
     # --- LLM: Gemini Flash ---
     from pipecat.services.google.llm import GoogleLLMService
