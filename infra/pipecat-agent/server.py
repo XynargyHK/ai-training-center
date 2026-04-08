@@ -288,9 +288,21 @@ async def handle_twiml_sip(request: Request):
     When Daily dials sip:+85296099766@aistaffs-voice.sip.twilio.com,
     Twilio hits this endpoint. We return TwiML to dial the real number.
     """
-    form = await request.form() if request.method == "POST" else {}
-    sip_to = form.get("To", "") or request.query_params.get("To", "")
-    sip_from = form.get("From", "") or request.query_params.get("From", "")
+    # Parse params from body or query string (avoid form parsing which needs python-multipart)
+    sip_to = ""
+    sip_from = ""
+    try:
+        body = await request.body()
+        body_str = body.decode("utf-8", errors="ignore")
+        # Twilio sends URL-encoded form data: To=sip%3A...&From=sip%3A...
+        from urllib.parse import parse_qs, unquote
+        params = parse_qs(body_str)
+        sip_to = unquote(params.get("To", [""])[0])
+        sip_from = unquote(params.get("From", [""])[0])
+    except Exception:
+        pass
+    if not sip_to:
+        sip_to = request.query_params.get("To", "")
 
     # Extract phone number from SIP URI: sip:+85296099766@... → +85296099766
     import re
