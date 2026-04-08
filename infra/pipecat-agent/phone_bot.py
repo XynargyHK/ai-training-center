@@ -130,30 +130,16 @@ async def run_phone_bot(websocket_server_host, websocket_server_port, stream_sid
         sample_rate=8000,  # Phone audio = 8kHz
     )
 
-    # --- STT: Use fixed language when known, auto-detect when not ---
-    stt_lang_map = {"en": "en-US", "yue": "zh-HK", "zh": "zh-CN", "ja": "ja-JP",
-                    "ko": "ko-KR", "fr": "fr-FR", "es": "es-ES", "de": "de-DE", "vi": "vi-VN"}
-
-    if call_lang in stt_lang_map:
-        # Known language: use fixed STT (faster, more accurate)
-        from pipecat.services.azure.stt import AzureSTTService
-        stt = AzureSTTService(
-            api_key=os.getenv("AZURE_SPEECH_KEY"),
-            region=os.getenv("AZURE_SPEECH_REGION", "eastus"),
-            language=stt_lang_map[call_lang],
-            sample_rate=8000,
-        )
-        logger.info(f"Phone STT: Azure Fixed ({stt_lang_map[call_lang]})")
-    else:
-        # Unknown language: use auto-detect
-        from stt_utils import AutoDetectAzureSTTService
-        stt = AutoDetectAzureSTTService.create(
-            api_key=os.getenv("AZURE_SPEECH_KEY"),
-            region=os.getenv("AZURE_SPEECH_REGION", "eastus"),
-            candidate_languages=["en-US", "zh-HK", "zh-CN", "vi-VN", "ja-JP", "ko-KR", "fr-FR", "es-ES", "de-DE"],
-            sample_rate=8000,
-        )
-        logger.info("Phone STT: Azure Auto-Detect")
+    # --- STT: Deepgram with specific language (faster than Azure) ---
+    from pipecat.services.deepgram.stt import DeepgramSTTService
+    deepgram_lang = {"yue": "zh-HK", "zh": "zh", "ja": "ja", "ko": "ko", "en": "en"}
+    stt_lang = deepgram_lang.get(call_lang, "multi")
+    stt = DeepgramSTTService(
+        api_key=os.getenv("DEEPGRAM_API_KEY"),
+        language=stt_lang,
+        sample_rate=8000,
+    )
+    logger.info(f"Phone STT: Deepgram ({stt_lang})")
 
     # --- LLM ---
     llm_provider = os.getenv("LLM_PROVIDER", "gemini")
@@ -471,28 +457,16 @@ async def run_phone_bot_fastapi(websocket, stream_sid, call_sid, from_number, to
         sample_rate=8000,
     )
 
-    # --- STT: Azure for Cantonese (Deepgram can't do zh-HK over 8kHz phone) ---
-    # Deepgram was tested: transcribes Cantonese as English garbage ("Hello?" instead of "喂")
-    # Azure zh-HK is slower (~1s) but accurate for Cantonese
-    stt_lang_map = {"en": "en-US", "yue": "zh-HK", "zh": "zh-CN", "ja": "ja-JP",
-                    "ko": "ko-KR", "fr": "fr-FR", "es": "es-ES", "de": "de-DE", "vi": "vi-VN"}
-    if call_lang in stt_lang_map:
-        from pipecat.services.azure.stt import AzureSTTService
-        stt = AzureSTTService(
-            api_key=os.getenv("AZURE_SPEECH_KEY"),
-            region=os.getenv("AZURE_SPEECH_REGION", "eastus"),
-            language=stt_lang_map[call_lang],
-            sample_rate=8000,
-        )
-        logger.info(f"Phone STT: Azure Fixed ({stt_lang_map[call_lang]})")
-    else:
-        # English and others can use Deepgram (faster)
-        stt = DeepgramSTTService(
-            api_key=os.getenv("DEEPGRAM_API_KEY"),
-            language="en",
-            sample_rate=8000,
-        )
-        logger.info("Phone STT: Deepgram (en)")
+    # --- STT: Deepgram with specific language (testing zh-HK on phone) ---
+    from pipecat.services.deepgram.stt import DeepgramSTTService
+    deepgram_lang = {"yue": "zh-HK", "zh": "zh", "ja": "ja", "ko": "ko", "en": "en"}
+    stt_lang = deepgram_lang.get(call_lang, "multi")
+    stt = DeepgramSTTService(
+        api_key=os.getenv("DEEPGRAM_API_KEY"),
+        language=stt_lang,
+        sample_rate=8000,
+    )
+    logger.info(f"Phone STT: Deepgram ({stt_lang})")
 
     # --- LLM ---
     llm_provider = os.getenv("LLM_PROVIDER", "gemini")
