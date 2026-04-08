@@ -426,7 +426,7 @@ Rules:
         logger.info(f"Phone call connected: {to_number}")
         # Speak greeting directly via TTS (not LLM) so it can't be interrupted
         greetings = {
-            "yue": "你好，我係水療中心嘅助手，打嚟確認你嘅預約。請問你聽日方唔方便過嚟呢？",
+            "yue": "你好，我係水療中心嘅助手，打嚟確認你嘅預約，請問你聽日方唔方便過嚟呢？",
             "en": "Hi, this is a call from SPA Collection. I'm calling to confirm your appointment. Is tomorrow still good for you?",
         }
         greeting = greetings.get(call_lang, greetings["en"])
@@ -471,28 +471,16 @@ async def run_phone_bot_fastapi(websocket, stream_sid, call_sid, from_number, to
         sample_rate=8000,
     )
 
-    # --- STT: Use fixed language when known, auto-detect when not ---
-    stt_lang_map = {"en": "en-US", "yue": "zh-HK", "zh": "zh-CN", "ja": "ja-JP",
-                    "ko": "ko-KR", "fr": "fr-FR", "es": "es-ES", "de": "de-DE", "vi": "vi-VN"}
-
-    if call_lang in stt_lang_map:
-        from pipecat.services.azure.stt import AzureSTTService
-        stt = AzureSTTService(
-            api_key=os.getenv("AZURE_SPEECH_KEY"),
-            region=os.getenv("AZURE_SPEECH_REGION", "eastus"),
-            language=stt_lang_map[call_lang],
-            sample_rate=8000,
-        )
-        logger.info(f"Phone STT: Azure Fixed ({stt_lang_map[call_lang]})")
-    else:
-        from stt_utils import AutoDetectAzureSTTService
-        stt = AutoDetectAzureSTTService.create(
-            api_key=os.getenv("AZURE_SPEECH_KEY"),
-            region=os.getenv("AZURE_SPEECH_REGION", "eastus"),
-            candidate_languages=["en-US", "zh-HK", "zh-CN", "vi-VN", "ja-JP", "ko-KR", "fr-FR", "es-ES", "de-DE"],
-            sample_rate=8000,
-        )
-        logger.info("Phone STT: Azure Auto-Detect")
+    # --- STT: Deepgram (same as browser bot — faster streaming than Azure) ---
+    deepgram_stt_lang = {"en": "en", "yue": "zh", "zh": "zh", "ja": "ja", "ko": "ko",
+                         "fr": "fr", "es": "es", "de": "de", "vi": "vi"}
+    stt_language = deepgram_stt_lang.get(call_lang, "multi")
+    stt = DeepgramSTTService(
+        api_key=os.getenv("DEEPGRAM_API_KEY"),
+        language=stt_language,
+        sample_rate=8000,
+    )
+    logger.info(f"Phone STT: Deepgram ({stt_language})")
 
     # --- LLM ---
     llm_provider = os.getenv("LLM_PROVIDER", "gemini")
@@ -725,12 +713,11 @@ Rules:
     # --- STT Monitor ---
     stt_monitor = STTLatencyMonitor(stt_service=stt, threshold=3.0)
 
-    # --- Pipeline ---
+    # --- Pipeline (same order as browser bot.py) ---
     pipeline = Pipeline(
         [
             transport.input(),
             stt,
-            stt_monitor,
             user_aggregator,
             llm,
             CJKSpaceFixer(),
@@ -754,7 +741,7 @@ Rules:
     async def on_client_connected(transport, ws):
         logger.info(f"Phone call connected (FastAPI): {to_number}")
         greetings = {
-            "yue": "你好，我係水療中心嘅助手，打嚟確認你嘅預約。請問你聽日方唔方便過嚟呢？",
+            "yue": "你好，我係水療中心嘅助手，打嚟確認你嘅預約，請問你聽日方唔方便過嚟呢？",
             "en": "Hi, this is a call from SPA Collection. I'm calling to confirm your appointment. Is tomorrow still good for you?",
         }
         greeting = greetings.get(call_lang, greetings["en"])
