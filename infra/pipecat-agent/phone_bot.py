@@ -197,7 +197,7 @@ async def run_phone_bot(websocket_server_host, websocket_server_port, stream_sid
 - 如果要confirm預約，要清楚確認細節。
 - 對話完結嘅時候自然咁講bye bye。
 
-重要：你打呢個電話係要確認預約。一開始就用廣東話講：「你好，我係SPA Collection嘅助手，打嚟確認你嘅預約。請問你聽日方唔方便過嚟呢？」""",
+重要：你打呢個電話係要確認預約。開場白已經講咗，而家等對方回應。根據佢嘅回應繼續對話。""",
 
         "en": f"""You are a multilingual voice AI assistant making a phone call. You speak like a real person — warm, professional, concise.
 Today's date is {today}. The current time is {current_time}.
@@ -405,8 +405,13 @@ Rules:
     @transport.event_handler("on_client_connected")
     async def on_client_connected(transport, client):
         logger.info(f"Phone call connected: {to_number}")
-        from pipecat.frames.frames import LLMRunFrame
-        await task.queue_frames([LLMRunFrame()])
+        # Speak greeting directly via TTS (not LLM) so it can't be interrupted
+        greetings = {
+            "yue": "你好，我係SPA Collection嘅助手，打嚟確認你嘅預約。請問你聽日方唔方便過嚟呢？",
+            "en": "Hi, this is a call from SPA Collection. I'm calling to confirm your appointment. Is tomorrow still good for you?",
+        }
+        greeting = greetings.get(call_lang, greetings["en"])
+        await task.queue_frames([TextFrame(text=greeting)])
 
     @transport.event_handler("on_client_disconnected")
     async def on_client_disconnected(transport, client):
