@@ -331,13 +331,11 @@ Rules:
                 "en": "Hi, this is a call from the spa center. I'm calling to confirm your appointment. Is tomorrow still good for you?",
                 "zh": "\u4f60\u597d\uff0c\u6211\u662f\u6c34\u7597\u4e2d\u5fc3\u7684\u52a9\u624b\uff0c\u6253\u6765\u786e\u8ba4\u60a8\u7684\u9884\u7ea6\u3002\u8bf7\u95ee\u60a8\u660e\u5929\u65b9\u4fbf\u8fc7\u6765\u5417\uff1f",
             }
-            phone_greeting = greeting or greetings.get(lang, greetings.get("en", ""))
-            if phone_greeting:
-                logger.info(f"Speaking greeting ({lang}): {phone_greeting[:30]}...")
-                await task.queue_frames([TextFrame(text=phone_greeting)])
-            else:
-                from pipecat.frames.frames import LLMRunFrame
-                await task.queue_frames([LLMRunFrame()])
+            # Use LLMRunFrame — let LLM generate greeting from system prompt
+            # TextFrame doesn't reliably trigger TTS in phone mode
+            from pipecat.frames.frames import LLMRunFrame
+            logger.info(f"Dialout answered — triggering LLM greeting ({lang})")
+            await task.queue_frames([LLMRunFrame()])
 
         @transport.event_handler("on_dialout_error")
         async def on_dialout_error(transport_obj, data):
