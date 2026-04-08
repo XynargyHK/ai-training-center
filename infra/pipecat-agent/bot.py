@@ -325,11 +325,17 @@ Rules:
         @transport.event_handler("on_dialout_answered")
         async def on_dialout_answered(transport_obj, data):
             logger.info(f"Dialout answered: {data}")
-            if greeting:
-                # Speak the greeting text directly via TTS
-                await task.queue_frames([TextFrame(text=greeting)])
+            # Use language-specific greeting (hardcoded to avoid UTF-8 encoding issues from API)
+            greetings = {
+                "yue": "\u4f60\u597d\uff0c\u6211\u4fc2\u6c34\u7642\u4e2d\u5fc3\u5614\u52a9\u624b\uff0c\u6253\u5617\u78ba\u8a8d\u4f60\u5614\u9810\u7d04\uff0c\u8acb\u554f\u4f60\u807d\u65e5\u65b9\u5514\u65b9\u4fbf\u904e\u5617\u5462\uff1f",
+                "en": "Hi, this is a call from the spa center. I'm calling to confirm your appointment. Is tomorrow still good for you?",
+                "zh": "\u4f60\u597d\uff0c\u6211\u662f\u6c34\u7597\u4e2d\u5fc3\u7684\u52a9\u624b\uff0c\u6253\u6765\u786e\u8ba4\u60a8\u7684\u9884\u7ea6\u3002\u8bf7\u95ee\u60a8\u660e\u5929\u65b9\u4fbf\u8fc7\u6765\u5417\uff1f",
+            }
+            phone_greeting = greeting or greetings.get(lang, greetings.get("en", ""))
+            if phone_greeting:
+                logger.info(f"Speaking greeting ({lang}): {phone_greeting[:30]}...")
+                await task.queue_frames([TextFrame(text=phone_greeting)])
             else:
-                # Run LLM for a natural greeting
                 from pipecat.frames.frames import LLMRunFrame
                 await task.queue_frames([LLMRunFrame()])
 
