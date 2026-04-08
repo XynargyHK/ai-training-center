@@ -197,6 +197,7 @@ async def handle_dialout(request: Request):
     os.environ["VOICE_LANG"] = lang
     os.environ["VOICE_TO"] = to_number
     os.environ["VOICE_FROM"] = from_number
+    os.environ["LLM_PROVIDER"] = "cerebras"  # Cerebras is faster than Gemini for phone
 
     # Use inline TwiML with custom parameters
     inline_twiml = f"""<Response><Connect><Stream url="wss://{server_url}/ws"><Parameter name="lang" value="{lang}" /><Parameter name="to_number" value="{to_number}" /><Parameter name="from_number" value="{from_number}" /></Stream></Connect></Response>"""

@@ -188,7 +188,9 @@ async def run_phone_bot(websocket_server_host, websocket_server_port, stream_sid
 你而家打緊電話俾{to_number}。
 
 你一定要用廣東話回應。用口語：「係」唔好用「是」，「嘅」唔好用「的」，「咗」唔好用「了」，「唔」唔好用「不」。
-嚴禁使用任何英文字！全部用中文講。check=睇下，OK=好，sorry=唔好意思，appointment=預約，confirm=確認，tomorrow=聽日，booking=訂位，time=時間，morning=朝早，afternoon=下晝，evening=夜晚，thank you=多謝，please=唔該，yes=係，no=唔係。就算品牌名都要用中文讀。
+絕對唔可以用英文！一個英文字都唔好講！全部用廣東話：
+check=睇吓，OK=好嘅，sorry=唔好意思，appointment=預約，confirm=確認，tomorrow=聽日，today=今日，booking=訂位，book=預約，time=時間，morning=朝早，afternoon=下晝，evening=夜晚，thank you=多謝你，thanks=多謝，please=唔該，yes=係呀，no=唔係，sure=冇問題，wait=等陣，hello=你好，bye=拜拜，information=資料，available=得閒，convenient=方便，schedule=安排，cancel=取消，change=改，right=啱，understand=明白，need=要，want=想，can=可以，cannot=唔得，know=知道，good=好，great=好好。
+記住：一個英文字都唔好出現！用最地道嘅廣東話口語。
 
 你有呢啲工具：
 1. search_web(query) — 上網搵資料。
@@ -513,7 +515,9 @@ async def run_phone_bot_fastapi(websocket, stream_sid, call_sid, from_number, to
 你而家打緊電話俾{to_number}。
 
 你一定要用廣東話回應。用口語：「係」唔好用「是」，「嘅」唔好用「的」，「咗」唔好用「了」，「唔」唔好用「不」。
-嚴禁使用任何英文字！全部用中文講。check=睇下，OK=好，sorry=唔好意思，appointment=預約，confirm=確認，tomorrow=聽日，booking=訂位，time=時間，morning=朝早，afternoon=下晝，evening=夜晚，thank you=多謝，please=唔該，yes=係，no=唔係。就算品牌名都要用中文讀。
+絕對唔可以用英文！一個英文字都唔好講！全部用廣東話：
+check=睇吓，OK=好嘅，sorry=唔好意思，appointment=預約，confirm=確認，tomorrow=聽日，today=今日，booking=訂位，book=預約，time=時間，morning=朝早，afternoon=下晝，evening=夜晚，thank you=多謝你，thanks=多謝，please=唔該，yes=係呀，no=唔係，sure=冇問題，wait=等陣，hello=你好，bye=拜拜，information=資料，available=得閒，convenient=方便，schedule=安排，cancel=取消，change=改，right=啱，understand=明白，need=要，want=想，can=可以，cannot=唔得，know=知道，good=好，great=好好。
+記住：一個英文字都唔好出現！用最地道嘅廣東話口語。
 
 你有呢啲工具：
 1. search_web(query) — 上網搵資料。
