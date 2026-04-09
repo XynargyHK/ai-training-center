@@ -171,27 +171,15 @@ async def run_pipeline(
         ),
     )
 
-    # --- STT ---
-    # Cantonese phone: Deepgram can't recognize Cantonese on LiveKit SIP audio
-    # (double transcode G.711→Opus→PCM degrades audio, no phonecall model for zh-HK)
-    # Solution: Azure STT for Cantonese (robust to phone audio), Deepgram for everything else
-    if lang == "yue" and mode == "phone":
-        from pipecat.services.azure.stt import AzureSTTService
-        stt = AzureSTTService(
-            api_key=os.getenv("AZURE_SPEECH_KEY"),
-            region=os.getenv("AZURE_SPEECH_REGION", "eastus"),
-            language="zh-HK",
-            sample_rate=16000,
-        )
-        logger.info("STT: Azure zh-HK (phone mode)")
-    else:
-        # Deepgram multi for browser (handles all languages well on clean WebRTC audio)
-        stt = DeepgramSTTService(
-            api_key=os.getenv("DEEPGRAM_API_KEY"),
-            language="multi",
-            sample_rate=16000,
-        )
-        logger.info("STT: Deepgram multi")
+    # --- STT: Deepgram multi for all modes ---
+    # Outbound calls = unknown language, must auto-detect
+    # Deepgram multi: 0.15s TTFB, auto-detects language, works on LiveKit SIP audio
+    stt = DeepgramSTTService(
+        api_key=os.getenv("DEEPGRAM_API_KEY"),
+        language="multi",
+        sample_rate=16000,
+    )
+    logger.info("STT: Deepgram multi (auto-detect)")
 
     # --- LLM: Gemini Flash ---
     from pipecat.services.google.llm import GoogleLLMService
@@ -307,9 +295,24 @@ Rules:
     tools = ToolsSchema(standard_tools=all_schemas)
     logger.info(f"Tools: {len(all_schemas)} functions enabled (vision={vision_enabled})")
 
-    # --- Context (universal, not deprecated OpenAILLMContext) ---
+    # --- Context ---
     context = LLMContext(messages=messages, tools=tools)
-    user_aggregator, assistant_aggregator = LLMContextAggregatorPair(context)
+    # Reduce turn detection silence timeout: default 3s is too long for phone calls
+    from pipecat.audio.turn.smart_turn.base_smart_turn import SmartTurnParams
+    from pipecat.audio.turn.smart_turn.local_smart_turn_v3 import LocalSmartTurnAnalyzerV3
+    from pipecat.turns.user_stop import TurnAnalyzerUserTurnStopStrategy
+    from pipecat.turns.user_turn_strategies import UserTurnStrategies
+    from pipecat.processors.aggregators.llm_response_universal import LLMUserAggregatorParams
+
+    smart_turn = LocalSmartTurnAnalyzerV3(params=SmartTurnParams(stop_secs=1.5))
+    user_aggregator, assistant_aggregator = LLMContextAggregatorPair(
+        context,
+        user_params=LLMUserAggregatorParams(
+            user_turn_strategies=UserTurnStrategies(
+                stop=[TurnAnalyzerUserTurnStopStrategy(turn_analyzer=smart_turn)],
+            ),
+        ),
+    )
 
     # --- Reasoning Logger (Level 2 observability) ---
     from parts.reasoning_logger import ReasoningLogger
