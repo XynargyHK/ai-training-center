@@ -251,7 +251,7 @@ export default function VoicePage() {
               {status === 'connected' && <div className="pulse-ring" />}
               <button
                 onClick={status === 'idle' ? startCall : endCall}
-                disabled={status === 'connecting' || !dailyLoaded}
+                disabled={status === 'connecting'}
                 className={`mic-btn ${status}`}
               >
                 {status === 'idle' ? 'Start' : status === 'connecting' ? '...' : 'End'}
