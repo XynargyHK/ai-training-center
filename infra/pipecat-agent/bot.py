@@ -140,21 +140,17 @@ async def run_pipeline(
         ),
     )
 
-    # --- STT: Deepgram multi for browser (works great), Azure zh-HK for Cantonese phone ---
-    # Deepgram zh-HK breaks on LiveKit SIP audio (6-11s TTFB). Azure works at 1.2s.
-    # For best phone Cantonese: use phone_bot.py (Twilio WS + Deepgram zh-HK = 0.2s)
-    if lang == "yue" and mode == "phone":
-        from pipecat.services.azure.stt import AzureSTTService
-        stt = AzureSTTService(
-            api_key=os.getenv("AZURE_SPEECH_KEY"),
-            region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
-            language="zh-HK",
-        )
-    else:
-        stt = DeepgramSTTService(
-            api_key=os.getenv("DEEPGRAM_API_KEY"),
-            language="multi",
-        )
+    # --- STT: Deepgram for all (zh-HK for Cantonese, multi for others) ---
+    # Key: sample_rate=16000 for phone mode (LiveKit SIP sends different rate than browser)
+    deepgram_lang = {"yue": "zh-HK", "zh": "zh", "ja": "ja", "ko": "ko"}
+    stt_language = deepgram_lang.get(lang, "multi")
+    stt_kwargs = {
+        "api_key": os.getenv("DEEPGRAM_API_KEY"),
+        "language": stt_language,
+    }
+    if mode == "phone":
+        stt_kwargs["sample_rate"] = 16000
+    stt = DeepgramSTTService(**stt_kwargs)
 
     # --- LLM: Gemini Flash ---
     from pipecat.services.google.llm import GoogleLLMService
