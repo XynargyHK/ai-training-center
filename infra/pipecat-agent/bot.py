@@ -9,7 +9,7 @@ import asyncio
 import os
 import sys
 
-from pipecat.frames.frames import EndFrame, TextFrame, TranscriptionFrame
+from pipecat.frames.frames import EndFrame, TextFrame, TranscriptionFrame, UserStoppedSpeakingFrame, TTSSpeakFrame
 from pipecat.processors.frame_processor import FrameProcessor, FrameDirection
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
@@ -40,6 +40,33 @@ try:
 except ValueError:
     pass
 logger.add(sys.stderr, level="DEBUG")
+
+
+class FillerSpeech(FrameProcessor):
+    """Plays a short filler sound when user stops speaking to mask LLM latency.
+    Inserts a TTSSpeakFrame with '嗯' or 'hmm' that TTS renders in ~0.3s,
+    filling the dead air while the LLM generates its response.
+    """
+    def __init__(self, lang="en", name="FillerSpeech"):
+        super().__init__(name=name)
+        self._lang = lang
+        self._turn_count = 0
+        # Cantonese fillers that sound natural
+        self._fillers_yue = ["嗯...", "哦...", "嗯嗯...", "好..."]
+        self._fillers_en = ["hmm...", "uh huh...", "right...", "okay..."]
+
+    async def process_frame(self, frame, direction):
+        await super().process_frame(frame, direction)
+        if isinstance(frame, UserStoppedSpeakingFrame):
+            self._turn_count += 1
+            # Skip filler on first turn (greeting) and every other turn to avoid monotony
+            if self._turn_count > 1 and self._turn_count % 2 == 0:
+                import random
+                fillers = self._fillers_yue if self._lang == "yue" else self._fillers_en
+                filler = random.choice(fillers)
+                logger.debug(f"FillerSpeech: injecting '{filler}'")
+                await self.push_frame(TTSSpeakFrame(text=filler), FrameDirection.DOWNSTREAM)
+        await self.push_frame(frame, direction)
 
 
 class STTForwarder(FrameProcessor):
@@ -288,12 +315,16 @@ Rules:
     from parts.reasoning_logger import ReasoningLogger
     reasoning_logger = ReasoningLogger()
 
+    # --- Filler Speech (masks LLM latency with "嗯..." sounds) ---
+    filler = FillerSpeech(lang=lang)
+
     # --- Pipeline ---
     # In phone mode, skip STTForwarder and LLMForwarder (no browser to send messages to)
     if mode == "phone":
         pipeline_stages = [
             transport.input(),
             stt,
+            filler,
             user_aggregator,
             llm,
             reasoning_logger,
