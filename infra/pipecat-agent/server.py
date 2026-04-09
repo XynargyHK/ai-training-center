@@ -219,12 +219,11 @@ async def handle_start_vision(request: Request):
 
 @app.post("/dialout")
 async def handle_dialout(request: Request):
-    """POST /dialout -- make an outbound phone call via LiveKit SIP or Twilio fallback.
+    """POST /dialout -- make an outbound phone call via Twilio PSTN.
 
-    Body: {to, from, lang, greeting}
-    Flow: create LiveKit room -> generate bot token -> launch run_pipeline(phone)
-    LiveKit SIP trunk handles the PSTN dialout if configured.
-    Falls back to Twilio SIP domain routing if TWILIO_SIP_DOMAIN is set.
+    Body: {to, from, lang}
+    Flow: Twilio REST API dials number → /twiml returns <Stream> → /ws → phone_bot.py
+    This is the proven path: clean 8kHz mulaw audio, no transcoding, no noise.
     """
     try:
         body = await request.json()
@@ -234,68 +233,44 @@ async def handle_dialout(request: Request):
     to_number = body.get("to", "")
     from_number = body.get("from", TWILIO_PHONE_NUMBER)
     lang = body.get("lang", "en")
-    greeting = body.get("greeting", None)
 
     if not to_number:
         return JSONResponse({"error": "Missing 'to' phone number"}, status_code=400)
 
-    # Set env vars for bot module (STT/TTS config reads these)
+    # Set env vars for phone_bot.py (reads these on /ws connect)
     os.environ["VOICE_LANG"] = lang
+    os.environ["VOICE_TO"] = to_number
+    os.environ["VOICE_FROM"] = from_number
 
-    # 1. Create LiveKit room
-    room_name = await create_livekit_room()
-    if not room_name:
-        return JSONResponse({"error": "Failed to create LiveKit room"}, status_code=500)
-
-    # 2. Create bot token
-    bot_token = create_livekit_token(room_name, identity="ai-assistant", name="AI Assistant")
-
-    # 3. Create LiveKit SIP participant to dial out
-    # The LiveKit SIP trunk (ST_o8KnVKmSW74n) routes via Twilio SIP domain
-    clean_number = to_number.lstrip("+")
-    dialout_settings = None
-    sip_call_id = None
-
+    # Use Twilio REST API to make outbound call → /twiml → /ws → phone_bot.py
     try:
-        async with LiveKitAPI(
-            url=LIVEKIT_URL,
-            api_key=LIVEKIT_API_KEY,
-            api_secret=LIVEKIT_API_SECRET,
-        ) as api:
-            from livekit.api import CreateSIPParticipantRequest
-            sip_participant = await api.sip.create_sip_participant(
-                CreateSIPParticipantRequest(
-                    room_name=room_name,
-                    sip_trunk_id=os.getenv("LIVEKIT_SIP_TRUNK_ID", ""),
-                    sip_call_to=f"+{clean_number}",
-                    participant_identity="phone-caller",
-                    participant_name=to_number,
-                )
-            )
-            sip_call_id = sip_participant.sip_call_id if hasattr(sip_participant, 'sip_call_id') else None
-            logger.info(f"LiveKit SIP participant created: {sip_call_id}")
+        from twilio.rest import Client as TwilioClient
+        client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+
+        server_url = os.getenv("RAILWAY_PUBLIC_DOMAIN", "pretty-alignment-production-891e.up.railway.app")
+        from urllib.parse import quote
+        twiml_url = f"https://{server_url}/twiml?lang={quote(lang)}&to={quote(to_number)}&from={quote(from_number)}"
+
+        call = client.calls.create(
+            to=to_number,
+            from_=from_number,
+            url=twiml_url,
+        )
+        logger.info(f"Twilio call created: {call.sid} to {to_number}")
+
+        return JSONResponse({
+            "status": "calling",
+            "call_sid": call.sid,
+            "to": to_number,
+            "from": from_number,
+            "lang": lang,
+            "mode": "twilio_media_streams",
+        })
     except Exception as e:
-        logger.error(f"LiveKit SIP dialout failed: {e}")
-
-    # 5. Launch run_pipeline in phone mode
-    pid = await start_phone_bot(
-        room_name=room_name,
-        token=bot_token,
-        lang=lang,
-        dialout_settings=dialout_settings,
-        greeting=greeting,
-    )
-
-    return JSONResponse({
-        "status": "calling",
-        "room_name": room_name,
-        "to": to_number,
-        "from": from_number,
-        "lang": lang,
-        "mode": "livekit_sip",
-        "sip_call_id": sip_call_id,
-        "bot_pid": pid,
-    })
+        logger.error(f"Twilio dialout failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 @app.get("/health")
