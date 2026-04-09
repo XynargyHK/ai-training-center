@@ -292,7 +292,7 @@ async def handle_dialout(request: Request):
         "to": to_number,
         "from": from_number,
         "lang": lang,
-        "mode": dialout_mode,
+        "mode": "livekit_sip",
         "sip_call_id": sip_call_id,
         "bot_pid": pid,
     })
