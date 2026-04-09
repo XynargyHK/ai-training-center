@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import Script from 'next/script'
 
 const PIPECAT_URL = 'https://pretty-alignment-production-891e.up.railway.app'
 
@@ -55,8 +54,6 @@ const LANGUAGES = [
   { value: 'de', label: 'Deutsch' },
 ]
 
-declare const DailyIframe: any
-
 export default function VoicePage() {
   const [status, setStatus] = useState<'idle' | 'connecting' | 'connected'>('idle')
   const [sttText, setSttText] = useState('')
@@ -65,43 +62,20 @@ export default function VoicePage() {
   const [lang, setLang] = useState('en')
   const [visionMode, setVisionMode] = useState(false)
   const [cameraFacing, setCameraFacing] = useState<'user' | 'environment'>('environment')
-  const [dailyLoaded, setDailyLoaded] = useState(false)
-  const callRef = useRef<any>(null)
+  const roomRef = useRef<any>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
 
   const startCall = useCallback(async () => {
-    if (!dailyLoaded) return
     setStatus('connecting')
     setSttText('')
     setLlmText('')
     try {
-      if (visionMode) {
-        try {
-          const permStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: cameraFacing },
-            audio: true
-          })
-          permStream.getTracks().forEach(t => t.stop())
-        } catch (permErr) {
-          console.error('Camera permission denied:', permErr)
-          alert('Camera permission required for Vision mode')
-          setStatus('idle')
-          return
-        }
-      }
+      const { Room, RoomEvent, Track } = await import('livekit-client')
 
-      if (callRef.current) {
-        try { await callRef.current.leave() } catch(e) {}
-        try { callRef.current.destroy() } catch(e) {}
-        callRef.current = null
+      if (roomRef.current) {
+        try { await roomRef.current.disconnect() } catch(e) {}
+        roomRef.current = null
       }
-      try {
-        const existing = DailyIframe.getCallInstance()
-        if (existing) {
-          try { await existing.leave() } catch(e) {}
-          try { existing.destroy() } catch(e) {}
-        }
-      } catch(e) {}
 
       const endpoint = visionMode ? '/start-vision' : '/start'
       const res = await fetch(`${PIPECAT_URL}${endpoint}`, {
@@ -110,62 +84,67 @@ export default function VoicePage() {
         body: JSON.stringify({ lang, tts_provider: 'azure', tts_voice: '' }),
       })
       const data = await res.json()
-      if (data.error) { setStatus('idle'); return }
+      if (data.error) { setStatus('idle'); alert('Error: ' + data.error); return }
 
-      const co = DailyIframe.createCallObject({
-        audioSource: true,
-        videoSource: visionMode ? true : false,
-        subscribeToTracksAutomatically: true,
-      })
-      co.on('track-started', (e: any) => {
-        if (e.track.kind === 'audio' && !e.participant.local) {
-          const a = new Audio(); a.srcObject = new MediaStream([e.track]); a.autoplay = true; a.play().catch(() => {})
-        }
-        if (e.track.kind === 'video' && e.participant.local && videoRef.current) {
-          videoRef.current.srcObject = new MediaStream([e.track])
-          videoRef.current.play().catch(() => {})
+      const room = new Room()
+
+      // Handle remote audio (AI voice)
+      room.on(RoomEvent.TrackSubscribed, (track: any, publication: any, participant: any) => {
+        if (track.kind === Track.Kind.Audio) {
+          const el = track.attach()
+          el.autoplay = true
+          document.body.appendChild(el)
         }
       })
-      co.on('app-message', (e: any) => {
-        const d = e.data; if (!d?.type) return
-        if (d.type === 'stt') setSttText(d.text)
-        else if (d.type === 'llm') setLlmText(d.text)
-        else if (d.type === 'switch-language' && d.lang) {
-          setLang(d.lang); endCall(); setTimeout(() => startCall(), 500)
-        }
+
+      // Handle data messages (STT/LLM transcripts from bot)
+      room.on(RoomEvent.DataReceived, (payload: Uint8Array) => {
+        try {
+          const d = JSON.parse(new TextDecoder().decode(payload))
+          if (d.type === 'stt') setSttText(d.text)
+          else if (d.type === 'llm') setLlmText(d.text)
+          else if (d.type === 'switch-language' && d.lang) {
+            setLang(d.lang); endCall(); setTimeout(() => startCall(), 500)
+          }
+        } catch(e) {}
       })
-      co.on('joined-meeting', () => setStatus('connected'))
-      co.on('left-meeting', () => {
+
+      room.on(RoomEvent.Connected, () => setStatus('connected'))
+      room.on(RoomEvent.Disconnected, () => {
         setStatus('idle')
-        try { co.destroy() } catch(e) {}
-        callRef.current = null
+        roomRef.current = null
       })
-      await co.join({ url: data.room_url })
-      callRef.current = co
+
+      // Connect to LiveKit room
+      await room.connect(data.livekit_url, data.token)
+
+      // Publish microphone
+      await room.localParticipant.setMicrophoneEnabled(true)
+
+      // Publish camera if vision mode
+      if (visionMode) {
+        await room.localParticipant.setCameraEnabled(true)
+      }
+
+      roomRef.current = room
     } catch (err: any) {
       console.error('Call failed:', err)
       alert('Call failed: ' + (err?.message || err))
       setStatus('idle')
     }
-  }, [dailyLoaded, lang, visionMode, cameraFacing])
+  }, [lang, visionMode, cameraFacing])
 
   const toggleCamera = useCallback(async () => {
     const newFacing = cameraFacing === 'user' ? 'environment' : 'user'
     setCameraFacing(newFacing)
-    if (callRef.current && visionMode) {
-      await callRef.current.setInputDevicesAsync({ videoSource: { facingMode: newFacing } })
-    }
   }, [cameraFacing, visionMode])
 
   const endCall = useCallback(async () => {
     try {
-      if (callRef.current) {
-        await callRef.current.leave()
-        callRef.current.destroy()
-        callRef.current = null
+      if (roomRef.current) {
+        await roomRef.current.disconnect()
+        roomRef.current = null
       }
-      const existing = DailyIframe.getCallInstance?.()
-      if (existing) { existing.destroy() }
     } catch(e) {}
     setStatus('idle')
   }, [])
@@ -194,7 +173,7 @@ export default function VoicePage() {
 
   return (
     <>
-      <Script src="https://unpkg.com/@daily-co/daily-js" onLoad={() => setDailyLoaded(true)} />
+      {/* LiveKit client loaded dynamically via import() */}
       <div className="voice-root">
         <div className="voice-layout">
           {/* Left / Top: Controls + Skills */}
