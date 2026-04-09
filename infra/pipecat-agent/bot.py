@@ -125,6 +125,9 @@ async def run_pipeline(
     participant_id_ref = [None]
 
     # --- Transport: LiveKit WebRTC ---
+    # Phone audio path: G.711 8kHz → Opus 48kHz (LiveKit SIP) → PCM16 → resample
+    # Must set audio_in_sample_rate=16000 for phone — Deepgram Nova expects 16kHz
+    # Browser WebRTC natively sends 48kHz Opus, resampled to 16kHz is fine too
     transport = LiveKitTransport(
         url=livekit_url,
         token=token,
@@ -133,6 +136,7 @@ async def run_pipeline(
             audio_out_enabled=True,
             audio_out_sample_rate=24000,
             audio_in_enabled=True,
+            audio_in_sample_rate=16000,
             video_in_enabled=vision_enabled,
             vad_enabled=True,
             vad_analyzer=SileroVADAnalyzer(),
@@ -140,12 +144,21 @@ async def run_pipeline(
         ),
     )
 
-    # --- STT: Deepgram multi for everything ---
-    # zh-HK model breaks on LiveKit SIP audio (6-11s TTFB). multi works on browser.
-    # Testing multi on LiveKit SIP phone.
+    # --- STT: Deepgram ---
+    # Language-specific STT for known languages, multi for auto-detect
+    # Deepgram multi on phone misrecognizes Cantonese as English
+    # zh-HK was 6-11s TTFB without audio_in_sample_rate=16000 — now fixed
+    if lang == "yue":
+        stt_lang = "zh-HK"
+    elif lang == "zh":
+        stt_lang = "zh"
+    else:
+        stt_lang = "multi"
+
     stt = DeepgramSTTService(
         api_key=os.getenv("DEEPGRAM_API_KEY"),
-        language="multi",
+        language=stt_lang,
+        sample_rate=16000,
     )
 
     # --- LLM: Gemini Flash ---
