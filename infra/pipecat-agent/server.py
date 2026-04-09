@@ -250,50 +250,32 @@ async def handle_dialout(request: Request):
     # 2. Create bot token
     bot_token = create_livekit_token(room_name, identity="ai-assistant", name="AI Assistant")
 
-    # 3. Construct dialout settings
+    # 3. Create LiveKit SIP participant to dial out
+    # The LiveKit SIP trunk (ST_o8KnVKmSW74n) routes via Twilio SIP domain
     clean_number = to_number.lstrip("+")
-    dialout_mode = "livekit_sip"
-
-    if TWILIO_SIP_DOMAIN:
-        # Use Twilio SIP domain for routing (same as before)
-        sip_uri = f"sip:+{clean_number}@{TWILIO_SIP_DOMAIN}"
-        dialout_settings = {
-            "sipUri": sip_uri,
-            "displayName": from_number or "AI Assistant",
-        }
-        dialout_mode = "twilio_sip"
-        logger.info(f"Dialout via Twilio SIP: {sip_uri}")
-    else:
-        # LiveKit SIP trunk dialout (requires LiveKit SIP trunk configured)
-        dialout_settings = {
-            "phoneNumber": f"+{clean_number}",
-            "displayName": from_number or "AI Assistant",
-        }
-        logger.info(f"Dialout via LiveKit SIP: +{clean_number}")
-
-    # 4. Try LiveKit SIP participant creation if no Twilio SIP domain
+    dialout_settings = None
     sip_call_id = None
-    if not TWILIO_SIP_DOMAIN:
-        try:
-            async with LiveKitAPI(
-                url=LIVEKIT_URL,
-                api_key=LIVEKIT_API_KEY,
-                api_secret=LIVEKIT_API_SECRET,
-            ) as api:
-                from livekit.api import CreateSIPParticipantRequest
-                sip_participant = await api.sip.create_sip_participant(
-                    CreateSIPParticipantRequest(
-                        room_name=room_name,
-                        sip_trunk_id=os.getenv("LIVEKIT_SIP_TRUNK_ID", ""),
-                        sip_call_to=f"+{clean_number}",
-                        participant_identity="phone-user",
-                        participant_name=to_number,
-                    )
+
+    try:
+        async with LiveKitAPI(
+            url=LIVEKIT_URL,
+            api_key=LIVEKIT_API_KEY,
+            api_secret=LIVEKIT_API_SECRET,
+        ) as api:
+            from livekit.api import CreateSIPParticipantRequest
+            sip_participant = await api.sip.create_sip_participant(
+                CreateSIPParticipantRequest(
+                    room_name=room_name,
+                    sip_trunk_id=os.getenv("LIVEKIT_SIP_TRUNK_ID", ""),
+                    sip_call_to=f"+{clean_number}",
+                    participant_identity="phone-caller",
+                    participant_name=to_number,
                 )
-                sip_call_id = sip_participant.sip_call_id if hasattr(sip_participant, 'sip_call_id') else None
-                logger.info(f"LiveKit SIP participant created: {sip_call_id}")
-        except Exception as e:
-            logger.warning(f"LiveKit SIP dialout failed (will rely on bot dialout): {e}")
+            )
+            sip_call_id = sip_participant.sip_call_id if hasattr(sip_participant, 'sip_call_id') else None
+            logger.info(f"LiveKit SIP participant created: {sip_call_id}")
+    except Exception as e:
+        logger.error(f"LiveKit SIP dialout failed: {e}")
 
     # 5. Launch run_pipeline in phone mode
     pid = await start_phone_bot(
