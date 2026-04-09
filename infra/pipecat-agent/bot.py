@@ -140,19 +140,13 @@ async def run_pipeline(
         ),
     )
 
-    # --- STT: Azure for Cantonese (accurate), Deepgram for everything else (fast) ---
-    if lang == "yue":
-        from pipecat.services.azure.stt import AzureSTTService
-        stt = AzureSTTService(
-            api_key=os.getenv("AZURE_SPEECH_KEY"),
-            region=os.getenv("AZURE_SPEECH_REGION", "eastasia"),
-            language="zh-HK",
-        )
-    else:
-        stt = DeepgramSTTService(
-            api_key=os.getenv("DEEPGRAM_API_KEY"),
-            language="multi",
-        )
+    # --- STT: Deepgram for all languages (zh-HK for Cantonese, multi for others) ---
+    deepgram_lang = {"yue": "zh-HK", "zh": "zh", "ja": "ja", "ko": "ko"}
+    stt_language = deepgram_lang.get(lang, "multi")
+    stt = DeepgramSTTService(
+        api_key=os.getenv("DEEPGRAM_API_KEY"),
+        language=stt_language,
+    )
 
     # --- LLM: Gemini Flash ---
     from pipecat.services.google.llm import GoogleLLMService
