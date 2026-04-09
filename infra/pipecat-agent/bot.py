@@ -144,22 +144,27 @@ async def run_pipeline(
         ),
     )
 
-    # --- STT: Deepgram ---
-    # Language-specific STT for known languages, multi for auto-detect
-    # Deepgram multi on phone misrecognizes Cantonese as English
-    # zh-HK was 6-11s TTFB without audio_in_sample_rate=16000 — now fixed
-    if lang == "yue":
-        stt_lang = "zh-HK"
-    elif lang == "zh":
-        stt_lang = "zh"
+    # --- STT ---
+    # Cantonese phone: Deepgram can't recognize Cantonese on LiveKit SIP audio
+    # (double transcode G.711→Opus→PCM degrades audio, no phonecall model for zh-HK)
+    # Solution: Azure STT for Cantonese (robust to phone audio), Deepgram for everything else
+    if lang == "yue" and mode == "phone":
+        from pipecat.services.azure.stt import AzureSTTService
+        stt = AzureSTTService(
+            api_key=os.getenv("AZURE_SPEECH_KEY"),
+            region=os.getenv("AZURE_SPEECH_REGION", "eastus"),
+            language="zh-HK",
+            sample_rate=16000,
+        )
+        logger.info("STT: Azure zh-HK (phone mode)")
     else:
-        stt_lang = "multi"
-
-    stt = DeepgramSTTService(
-        api_key=os.getenv("DEEPGRAM_API_KEY"),
-        language=stt_lang,
-        sample_rate=16000,
-    )
+        # Deepgram multi for browser (handles all languages well on clean WebRTC audio)
+        stt = DeepgramSTTService(
+            api_key=os.getenv("DEEPGRAM_API_KEY"),
+            language="multi",
+            sample_rate=16000,
+        )
+        logger.info("STT: Deepgram multi")
 
     # --- LLM: Gemini Flash ---
     from pipecat.services.google.llm import GoogleLLMService
