@@ -140,17 +140,13 @@ async def run_pipeline(
         ),
     )
 
-    # --- STT: Deepgram for all (zh-HK for Cantonese, multi for others) ---
-    # Key: sample_rate=16000 for phone mode (LiveKit SIP sends different rate than browser)
-    deepgram_lang = {"yue": "zh-HK", "zh": "zh", "ja": "ja", "ko": "ko"}
-    stt_language = deepgram_lang.get(lang, "multi")
-    stt_kwargs = {
-        "api_key": os.getenv("DEEPGRAM_API_KEY"),
-        "language": stt_language,
-    }
-    if mode == "phone":
-        stt_kwargs["sample_rate"] = 16000
-    stt = DeepgramSTTService(**stt_kwargs)
+    # --- STT: Deepgram multi for everything ---
+    # zh-HK model breaks on LiveKit SIP audio (6-11s TTFB). multi works on browser.
+    # Testing multi on LiveKit SIP phone.
+    stt = DeepgramSTTService(
+        api_key=os.getenv("DEEPGRAM_API_KEY"),
+        language="multi",
+    )
 
     # --- LLM: Gemini Flash ---
     from pipecat.services.google.llm import GoogleLLMService
