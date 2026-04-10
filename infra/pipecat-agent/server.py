@@ -594,6 +594,155 @@ async def handle_dialout_a68206f(request: Request):
 
 
 # ============================================================================
+# Apr 9 WEB PROTOTYPE — bot_web_apr9_0639.py (file-history v19, Apr 9 06:39 HKT)
+# User quote at 09:58 HKT: "now it can use multi lingual much better"
+# STT: Azure zh-HK for Cantonese, Deepgram multi for everything else
+# ============================================================================
+
+async def start_bot_apr9_web(room_name, token, lang="en"):
+    """Browser bot using bot_web_apr9_0639.py (Apr 9 06:39 HKT snapshot)."""
+    from bot_web_apr9_0639 import run_pipeline
+
+    async def run_bot():
+        try:
+            await run_pipeline(
+                room_name=room_name,
+                token=token,
+                lang=lang,
+                mode="browser",
+                vision_enabled=False,
+            )
+        except Exception as e:
+            logger.error(f"APR9 WEB BOT ERROR: {e}")
+            import traceback
+            traceback.print_exc()
+
+    asyncio.ensure_future(run_bot())
+    return os.getpid()
+
+
+@app.post("/startapr9web")
+async def handle_start_apr9_web(request: Request):
+    """POST /startapr9web -- Apr 9 06:39 HKT browser prototype.
+    User tested this at 09:58 HKT and said 'now it can use multi lingual much better'."""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    lang = body.get("lang", "en")
+
+    room_name = await create_livekit_room()
+    if not room_name:
+        return JSONResponse({"error": "Failed to create LiveKit room"}, status_code=500)
+
+    bot_token = create_livekit_token(room_name, identity="ai-assistant", name="AI Assistant")
+    user_token = create_livekit_token(room_name, identity="user", name="User")
+
+    pid = await start_bot_apr9_web(room_name, bot_token, lang=lang)
+
+    return JSONResponse({
+        "room_name": room_name,
+        "token": user_token,
+        "livekit_url": LIVEKIT_URL,
+        "bot_pid": pid,
+        "mode": "apr9_web_0639",
+    })
+
+
+# ============================================================================
+# Apr 9 PHONE PROTOTYPE — bot_phone_apr9_1435.py (file-history v25, Apr 9 14:35 HKT)
+# User quote at 14:26 HKT: "the first one deepgram multi was good, but you left out so much"
+# This is the version I made ~9 min later in direct response to that message.
+# STT: Deepgram multi for ALL modes (unconditional auto-detect, no Cantonese split)
+# ============================================================================
+
+async def start_bot_apr9_phone(room_name, token, lang="en"):
+    """Phone bot using bot_phone_apr9_1435.py (Apr 9 14:35 HKT snapshot)."""
+    from bot_phone_apr9_1435 import run_pipeline
+
+    async def run_bot():
+        try:
+            await run_pipeline(
+                room_name=room_name,
+                token=token,
+                lang=lang,
+                mode="phone",
+                vision_enabled=False,
+            )
+        except Exception as e:
+            logger.error(f"APR9 PHONE BOT ERROR: {e}")
+            import traceback
+            traceback.print_exc()
+
+    asyncio.ensure_future(run_bot())
+    return os.getpid()
+
+
+@app.post("/dialapr9phone")
+async def handle_dial_apr9_phone(request: Request):
+    """POST /dialapr9phone -- Apr 9 14:35 HKT phone prototype via LiveKit SIP.
+    Deepgram multi unconditional auto-detect.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    to_number = body.get("to", "")
+    from_number = body.get("from", TWILIO_PHONE_NUMBER)
+    lang = body.get("lang", "en")
+
+    if not to_number:
+        return JSONResponse({"error": "Missing 'to' phone number"}, status_code=400)
+
+    os.environ["VOICE_LANG"] = lang
+
+    room_name = await create_livekit_room()
+    if not room_name:
+        return JSONResponse({"error": "Failed to create LiveKit room"}, status_code=500)
+
+    bot_token = create_livekit_token(room_name, identity="ai-assistant", name="AI Assistant")
+
+    clean_number = to_number.lstrip("+")
+    sip_call_id = None
+
+    try:
+        async with LiveKitAPI(
+            url=LIVEKIT_URL,
+            api_key=LIVEKIT_API_KEY,
+            api_secret=LIVEKIT_API_SECRET,
+        ) as api:
+            from livekit.api import CreateSIPParticipantRequest
+            sip_participant = await api.sip.create_sip_participant(
+                CreateSIPParticipantRequest(
+                    room_name=room_name,
+                    sip_trunk_id=os.getenv("LIVEKIT_SIP_TRUNK_ID", ""),
+                    sip_call_to=f"+{clean_number}",
+                    participant_identity="phone-caller",
+                    participant_name=to_number,
+                )
+            )
+            sip_call_id = sip_participant.sip_call_id if hasattr(sip_participant, 'sip_call_id') else None
+            logger.info(f"apr9phone dialout: SIP participant {sip_call_id}")
+    except Exception as e:
+        logger.error(f"apr9phone LiveKit SIP dialout failed: {e}")
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+    pid = await start_bot_apr9_phone(room_name=room_name, token=bot_token, lang=lang)
+
+    return JSONResponse({
+        "status": "calling",
+        "room_name": room_name,
+        "sip_call_id": sip_call_id,
+        "to": to_number,
+        "from": from_number,
+        "lang": lang,
+        "mode": "apr9_phone_1435_deepgram_multi",
+        "bot_pid": pid,
+    })
+
+
+# ============================================================================
 # v17 PROTOTYPE — file-history snapshot 2c8f54782a175fb3@v17 (Apr 9 15:22 HKT)
 # Twilio Media Streams + phone_bot_v17.py + Deepgram multi + AutoTTSVoiceSwapper
 # ============================================================================
