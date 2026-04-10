@@ -512,6 +512,87 @@ async def handle_dialout_5922922_autoswap(request: Request):
     })
 
 
+async def start_phone_bot_a68206f(room_name, token):
+    """Phone bot using bot_a68206f.py - the user-approved multilingual version."""
+    from bot_a68206f import run_pipeline
+
+    async def run_bot():
+        try:
+            await run_pipeline(
+                room_name=room_name,
+                token=token,
+                lang="en",
+                mode="phone",
+                vision_enabled=False,
+            )
+        except Exception as e:
+            logger.error(f"A68206F BOT ERROR: {e}")
+            import traceback
+            traceback.print_exc()
+
+    asyncio.ensure_future(run_bot())
+    return os.getpid()
+
+
+@app.post("/dialouta68206f")
+async def handle_dialout_a68206f(request: Request):
+    """commit a68206f - Deepgram multi for ALL languages. User said this one let them change languages on the phone."""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    to_number = body.get("to", "")
+    from_number = body.get("from", TWILIO_PHONE_NUMBER)
+
+    if not to_number:
+        return JSONResponse({"error": "Missing 'to' phone number"}, status_code=400)
+
+    os.environ["VOICE_LANG"] = "en"
+
+    room_name = await create_livekit_room()
+    if not room_name:
+        return JSONResponse({"error": "Failed to create LiveKit room"}, status_code=500)
+
+    bot_token = create_livekit_token(room_name, identity="ai-assistant", name="AI Assistant")
+
+    clean_number = to_number.lstrip("+")
+    sip_call_id = None
+    try:
+        async with LiveKitAPI(
+            url=LIVEKIT_URL,
+            api_key=LIVEKIT_API_KEY,
+            api_secret=LIVEKIT_API_SECRET,
+        ) as api:
+            from livekit.api import CreateSIPParticipantRequest
+            sip_participant = await api.sip.create_sip_participant(
+                CreateSIPParticipantRequest(
+                    room_name=room_name,
+                    sip_trunk_id=os.getenv("LIVEKIT_SIP_TRUNK_ID", ""),
+                    sip_call_to=f"+{clean_number}",
+                    participant_identity="phone-caller",
+                    participant_name=to_number,
+                )
+            )
+            sip_call_id = sip_participant.sip_call_id if hasattr(sip_participant, 'sip_call_id') else None
+    except Exception as e:
+        logger.error(f"a68206f dialout failed: {e}")
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+    pid = await start_phone_bot_a68206f(room_name=room_name, token=bot_token)
+
+    return JSONResponse({
+        "status": "calling",
+        "room_name": room_name,
+        "sip_call_id": sip_call_id,
+        "to": to_number,
+        "from": from_number,
+        "lang": "en",
+        "mode": "a68206f_livekit_sip",
+        "bot_pid": pid,
+    })
+
+
 @app.get("/health")
 async def handle_health():
     return JSONResponse({"status": "ok"})
