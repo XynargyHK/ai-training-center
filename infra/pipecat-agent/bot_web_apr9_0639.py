@@ -42,6 +42,45 @@ except ValueError:
 logger.add(sys.stderr, level="DEBUG")
 
 
+class AutoTTSVoiceSwapper(FrameProcessor):
+    """Auto-swaps Azure TTS voice based on detected language from Azure auto-detect STT.
+    Reads TranscriptionFrame.language and updates tts._settings.voice using the
+    native voice list from config/voices.py (Cantonese = HiuMaan, Vietnamese = HoaiMy, etc.).
+    """
+    VOICE_MAP = {
+        "en-US": "en-US-JennyMultilingualNeural",
+        "zh-HK": "zh-HK-HiuMaanNeural",    # Cantonese
+        "zh-CN": "zh-CN-XiaoxiaoNeural",   # Mandarin
+        "ja-JP": "ja-JP-NanamiNeural",     # Japanese
+        "ko-KR": "ko-KR-SunHiNeural",      # Korean
+        "fr-FR": "fr-FR-DeniseNeural",     # French
+        "es-ES": "es-ES-ElviraNeural",     # Spanish
+        "de-DE": "de-DE-KatjaNeural",      # German
+        "vi-VN": "vi-VN-HoaiMyNeural",     # Vietnamese
+    }
+    DEFAULT_VOICE = "en-US-JennyMultilingualNeural"
+
+    def __init__(self, tts_service, name="AutoTTSVoiceSwapper"):
+        super().__init__(name=name)
+        self._tts = tts_service
+        self._current_lang = None
+
+    async def process_frame(self, frame, direction):
+        await super().process_frame(frame, direction)
+        if isinstance(frame, TranscriptionFrame):
+            lang = getattr(frame, 'language', None)
+            if lang:
+                lang_str = str(lang)
+                if lang_str != self._current_lang:
+                    self._current_lang = lang_str
+                    new_voice = self.VOICE_MAP.get(lang_str, self.DEFAULT_VOICE)
+                    old_voice = getattr(self._tts._settings, 'voice', None)
+                    if new_voice != old_voice:
+                        self._tts._settings.voice = new_voice
+                        logger.info(f"TTS voice swap: {old_voice} → {new_voice} (lang: {lang_str})")
+        await self.push_frame(frame, direction)
+
+
 class STTForwarder(FrameProcessor):
     """Sends user speech transcripts to browser via LiveKit data channel."""
     def __init__(self, name="STTForwarder"):
@@ -271,12 +310,16 @@ Rules:
     from parts.reasoning_logger import ReasoningLogger
     reasoning_logger = ReasoningLogger()
 
+    # --- Auto TTS voice swapper (reads TranscriptionFrame.language from Azure auto-detect) ---
+    auto_tts_swapper = AutoTTSVoiceSwapper(tts)
+
     # --- Pipeline ---
     # In phone mode, skip STTForwarder and LLMForwarder (no browser to send messages to)
     if mode == "phone":
         pipeline_stages = [
             transport.input(),
             stt,
+            auto_tts_swapper,
             user_aggregator,
             llm,
             reasoning_logger,
@@ -289,6 +332,7 @@ Rules:
         pipeline_stages = [
             transport.input(),
             stt,
+            auto_tts_swapper,
             STTForwarder(),
             user_aggregator,
             llm,
