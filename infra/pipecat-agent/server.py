@@ -642,6 +642,7 @@ async def handle_dial_cantonese(request: Request):
     voice_map = {
         "HiuMaan": "zh-HK-HiuMaanNeural",
         "HiuGaai": "zh-HK-HiuGaaiNeural",
+        "WanLung": "zh-HK-WanLungNeural",
     }
     female_voice = voice_map.get(voice_name, "zh-HK-HiuMaanNeural")
 

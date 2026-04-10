@@ -6,7 +6,7 @@ const PIPECAT_URL = 'https://pretty-alignment-production-891e.up.railway.app'
 
 export default function VoiceCantonesePage() {
   const [phoneNumber, setPhoneNumber] = useState('+85294740952')
-  const [voice, setVoice] = useState<'HiuMaan' | 'HiuGaai'>('HiuMaan')
+  const [voice, setVoice] = useState<'HiuMaan' | 'HiuGaai' | 'WanLung'>('HiuMaan')
   const [callStatus, setCallStatus] = useState<string>('')
 
   async function makePhoneCall() {
@@ -54,14 +54,15 @@ export default function VoiceCantonesePage() {
           style={{ width: '100%', padding: 12, fontSize: 16, marginBottom: 12, border: '1px solid #ccc', borderRadius: 4 }}
         />
 
-        <label style={{ display: 'block', fontSize: 13, color: '#666', marginBottom: 4 }}>Cantonese female voice</label>
+        <label style={{ display: 'block', fontSize: 13, color: '#666', marginBottom: 4 }}>Cantonese voice</label>
         <select
           value={voice}
-          onChange={e => setVoice(e.target.value as 'HiuMaan' | 'HiuGaai')}
+          onChange={e => setVoice(e.target.value as 'HiuMaan' | 'HiuGaai' | 'WanLung')}
           style={{ width: '100%', padding: 12, fontSize: 16, marginBottom: 12, border: '1px solid #ccc', borderRadius: 4 }}
         >
           <option value="HiuMaan">HiuMaan (zh-HK-HiuMaanNeural) — female, warm</option>
           <option value="HiuGaai">HiuGaai (zh-HK-HiuGaaiNeural) — female, bright</option>
+          <option value="WanLung">WanLung (zh-HK-WanLungNeural) — male</option>
         </select>
 
         <button
@@ -108,10 +109,11 @@ export default function VoiceCantonesePage() {
           <li><strong>Gemini 2.0 Flash</strong> (<code>gemini-2.0-flash</code>)</li>
         </ul>
 
-        <h4>TTS — selectable female voice</h4>
+        <h4>TTS — selectable voice (3 options)</h4>
         <ul>
           <li><code>zh-HK-HiuMaanNeural</code> — female, warm tone</li>
           <li><code>zh-HK-HiuGaaiNeural</code> — female, bright tone</li>
+          <li><code>zh-HK-WanLungNeural</code> — male</li>
           <li>Selection passed via <code>VOICE_CANTONESE_FEMALE</code> env var set by the dial endpoint</li>
           <li>Fallback to HiuMaan if invalid</li>
           <li>Region <code>eastus</code>, sample rate 24 kHz</li>

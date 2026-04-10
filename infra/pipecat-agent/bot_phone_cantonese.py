@@ -167,9 +167,9 @@ async def run_pipeline(
 
     if lang == "yue":
         # Voice selectable via VOICE_CANTONESE_FEMALE env var (set by /dialcantonese).
-        # Options: zh-HK-HiuMaanNeural (default) or zh-HK-HiuGaaiNeural — both female.
+        # Options: HiuMaan / HiuGaai (both female) or WanLung (male).
         selected_yue_voice = os.getenv("VOICE_CANTONESE_FEMALE", "zh-HK-HiuMaanNeural")
-        if selected_yue_voice not in ("zh-HK-HiuMaanNeural", "zh-HK-HiuGaaiNeural"):
+        if selected_yue_voice not in ("zh-HK-HiuMaanNeural", "zh-HK-HiuGaaiNeural", "zh-HK-WanLungNeural"):
             selected_yue_voice = "zh-HK-HiuMaanNeural"
         from pipecat.services.azure.tts import AzureTTSService
         tts = AzureTTSService(
