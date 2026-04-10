@@ -594,6 +594,121 @@ async def handle_dialout_a68206f(request: Request):
 
 
 # ============================================================================
+# Apr 8 UPSELL PROTOTYPE — phone_bot_apr8_upsell.py (file-history v11, Apr 8 11:17 HKT)
+# Pre-LiveKit. Twilio Media Streams. Cantonese HiuMaan female. Upsell flow.
+# Git commit ref: 664b338 "feat: add upsell capability to phone bot"
+# ============================================================================
+
+@app.post("/dialapr8upsell")
+async def handle_dial_apr8_upsell(request: Request):
+    """POST /dialapr8upsell -- Apr 8 11:17 HKT phone prototype (pre-LiveKit).
+    Twilio REST → /twiml-apr8upsell → /ws-apr8upsell → phone_bot_apr8_upsell.run_phone_bot_fastapi
+    Cantonese HiuMaan female TTS + Azure zh-HK STT + Gemini Flash + upsell prompt.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    to_number = body.get("to", "")
+    from_number = body.get("from", TWILIO_PHONE_NUMBER)
+    lang = body.get("lang", "yue")
+
+    if not to_number:
+        return JSONResponse({"error": "Missing 'to' phone number"}, status_code=400)
+
+    os.environ["VOICE_LANG_APR8"] = lang
+    os.environ["VOICE_TO_APR8"] = to_number
+    os.environ["VOICE_FROM_APR8"] = from_number
+
+    try:
+        from twilio.rest import Client as TwilioClient
+        client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+
+        server_url = os.getenv("RAILWAY_PUBLIC_DOMAIN", "pretty-alignment-production-891e.up.railway.app")
+        from urllib.parse import quote
+        twiml_url = f"https://{server_url}/twiml-apr8upsell?lang={quote(lang)}&to={quote(to_number)}&from={quote(from_number)}"
+
+        call = client.calls.create(
+            to=to_number,
+            from_=from_number,
+            url=twiml_url,
+        )
+        logger.info(f"apr8upsell Twilio call created: {call.sid} to {to_number}")
+
+        return JSONResponse({
+            "status": "calling",
+            "call_sid": call.sid,
+            "to": to_number,
+            "from": from_number,
+            "lang": lang,
+            "mode": "apr8_upsell_twilio_media_streams_hiumaan",
+        })
+    except Exception as e:
+        logger.error(f"apr8upsell dialout failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.api_route("/twiml-apr8upsell", methods=["GET", "POST"])
+async def handle_twiml_apr8upsell(request: Request):
+    """Apr 8 upsell TwiML — points Twilio at /ws-apr8upsell."""
+    to_number = request.query_params.get("to", "")
+    from_number = request.query_params.get("from", "")
+    lang = request.query_params.get("lang", "yue")
+
+    server_url = os.getenv("RAILWAY_PUBLIC_DOMAIN", request.headers.get("host", "localhost"))
+
+    from urllib.parse import quote
+    encoded_to = quote(to_number, safe='')
+    encoded_from = quote(from_number, safe='')
+    twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Connect>
+        <Stream url="wss://{server_url}/ws-apr8upsell?lang={lang}&amp;to={encoded_to}&amp;from={encoded_from}" />
+    </Connect>
+</Response>"""
+
+    return Response(content=twiml, media_type="application/xml")
+
+
+@app.websocket("/ws-apr8upsell")
+async def handle_ws_apr8upsell(websocket: WebSocket):
+    """Apr 8 upsell WebSocket — routes to phone_bot_apr8_upsell.run_phone_bot_fastapi."""
+    logger.info(f">>> /ws-apr8upsell connection attempt from {websocket.client}")
+    await websocket.accept()
+    logger.info(">>> /ws-apr8upsell ACCEPTED")
+
+    lang = os.environ.get("VOICE_LANG_APR8", "yue")
+    to_number = os.environ.get("VOICE_TO_APR8", "")
+    from_number = os.environ.get("VOICE_FROM_APR8", "")
+    logger.info(f"apr8upsell phone bot starting: lang={lang}, to={to_number}, from={from_number}")
+
+    try:
+        import importlib.util
+        import sys
+        if "phone_bot_apr8_upsell" in sys.modules:
+            del sys.modules["phone_bot_apr8_upsell"]
+        bot_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "phone_bot_apr8_upsell.py")
+        spec = importlib.util.spec_from_file_location("phone_bot_apr8_upsell", bot_path)
+        phone_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(phone_module)
+        await phone_module.run_phone_bot_fastapi(
+            websocket=websocket,
+            stream_sid="",
+            call_sid="",
+            from_number=from_number,
+            to_number=to_number,
+            lang=lang,
+        )
+    except Exception as e:
+        logger.error(f"apr8upsell phone bot error: {e}")
+        import traceback
+        traceback.print_exc()
+
+
+# ============================================================================
 # Apr 9 WEB PROTOTYPE — bot_web_apr9_0639.py (file-history v19, Apr 9 06:39 HKT)
 # User quote at 09:58 HKT: "now it can use multi lingual much better"
 # STT: Azure zh-HK for Cantonese, Deepgram multi for everything else
