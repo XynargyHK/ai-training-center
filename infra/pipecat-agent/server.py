@@ -133,8 +133,8 @@ async def start_vision_bot(room_name, token):
 
 
 async def start_phone_bot(room_name, token, lang, dialout_settings=None, greeting=None):
-    """Run the unified pipeline in phone mode as a background task."""
-    from bot import run_pipeline
+    """Run the 5922922 pipeline in phone mode (LiveKit SIP) - the proven working version."""
+    from bot_web_livekit_20260409_0643 import run_pipeline
 
     async def run_bot():
         try:
@@ -274,6 +274,80 @@ async def handle_dialout(request: Request):
         import traceback
         traceback.print_exc()
         return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/dialout5922922")
+async def handle_dialout_5922922(request: Request):
+    """POST /dialout5922922 -- the EXACT version user approved on Apr 9 09:58 HKT.
+
+    Uses commit 5922922 bot_web_livekit_20260409_0643.py in mode='phone' via LiveKit SIP.
+    User comment: "now it can use multi lingual much better"
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    to_number = body.get("to", "")
+    from_number = body.get("from", TWILIO_PHONE_NUMBER)
+    lang = body.get("lang", "en")
+
+    if not to_number:
+        return JSONResponse({"error": "Missing 'to' phone number"}, status_code=400)
+
+    os.environ["VOICE_LANG"] = lang
+
+    # 1. Create LiveKit room
+    room_name = await create_livekit_room()
+    if not room_name:
+        return JSONResponse({"error": "Failed to create LiveKit room"}, status_code=500)
+
+    # 2. Create bot token
+    bot_token = create_livekit_token(room_name, identity="ai-assistant", name="AI Assistant")
+
+    # 3. Create LiveKit SIP participant (dials via Twilio SIP Domain)
+    clean_number = to_number.lstrip("+")
+    sip_call_id = None
+
+    try:
+        async with LiveKitAPI(
+            url=LIVEKIT_URL,
+            api_key=LIVEKIT_API_KEY,
+            api_secret=LIVEKIT_API_SECRET,
+        ) as api:
+            from livekit.api import CreateSIPParticipantRequest
+            sip_participant = await api.sip.create_sip_participant(
+                CreateSIPParticipantRequest(
+                    room_name=room_name,
+                    sip_trunk_id=os.getenv("LIVEKIT_SIP_TRUNK_ID", ""),
+                    sip_call_to=f"+{clean_number}",
+                    participant_identity="phone-caller",
+                    participant_name=to_number,
+                )
+            )
+            sip_call_id = sip_participant.sip_call_id if hasattr(sip_participant, 'sip_call_id') else None
+            logger.info(f"5922922 dialout: SIP participant {sip_call_id}")
+    except Exception as e:
+        logger.error(f"LiveKit SIP dialout failed: {e}")
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+    # 4. Launch bot in phone mode using bot_web_livekit_20260409_0643.py
+    pid = await start_phone_bot(
+        room_name=room_name,
+        token=bot_token,
+        lang=lang,
+    )
+
+    return JSONResponse({
+        "status": "calling",
+        "room_name": room_name,
+        "sip_call_id": sip_call_id,
+        "to": to_number,
+        "from": from_number,
+        "lang": lang,
+        "mode": "5922922_livekit_sip",
+        "bot_pid": pid,
+    })
 
 
 @app.get("/health")
