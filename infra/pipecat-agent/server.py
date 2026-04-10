@@ -14,6 +14,9 @@ import asyncio
 import time
 import json
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import aiohttp
 from fastapi import FastAPI, WebSocket, Request
 from fastapi.responses import JSONResponse, Response, PlainTextResponse
@@ -83,8 +86,8 @@ def create_livekit_token(room_name, identity, name=None, grants=None):
 
 
 async def start_bot(room_name, token, lang="en", vision_enabled=False):
-    """Run the Pipecat bot in a background task (same process)."""
-    from bot import run_pipeline
+    """Run the browser voice bot in a background task (same process)."""
+    from bot_web_livekit_20260409_0643 import run_pipeline
 
     async def run_bot():
         try:
