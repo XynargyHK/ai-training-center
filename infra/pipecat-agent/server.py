@@ -37,6 +37,11 @@ TWILIO_SIP_DOMAIN = os.getenv("TWILIO_SIP_DOMAIN", "")
 DAILY_API_KEY = os.getenv("DAILY_API_KEY")
 DAILY_API_URL = "https://api.daily.co/v1"
 
+TELNYX_API_KEY = os.getenv("TELNYX_API_KEY", "")
+TELNYX_PHONE_NUMBER = os.getenv("TELNYX_PHONE_NUMBER", "")
+TELNYX_CONNECTION_ID = os.getenv("TELNYX_CONNECTION_ID", "")
+TELNYX_API_URL = "https://api.telnyx.com/v2"
+
 app = FastAPI()
 
 app.add_middleware(
@@ -851,6 +856,121 @@ async def handle_dial_cantonese(request: Request):
         "mode": "cantonese_livekit_sip_female",
         "bot_pid": pid,
     })
+
+
+# ============================================================================
+# Telnyx Call Control + Media Streams phone prototype — phone_bot_telnyx.py
+# Telnyx /v2/calls dials the number, opens bidirectional WebSocket to /ws-telnyx,
+# Pipecat handles audio via TelnyxFrameSerializer (mulaw 8kHz, raw, no transcode).
+# Required env vars: TELNYX_API_KEY, TELNYX_PHONE_NUMBER, TELNYX_CONNECTION_ID
+# ============================================================================
+
+@app.post("/dialtelnyx")
+async def handle_dial_telnyx(request: Request):
+    """POST /dialtelnyx -- Telnyx Call Control + Media Streams.
+    Body: {to, lang}
+    Flow: POST /v2/calls to Telnyx → Telnyx dials → opens WSS to /ws-telnyx → bot.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    to_number = body.get("to", "")
+    from_number = body.get("from", TELNYX_PHONE_NUMBER)
+    lang = body.get("lang", "yue")
+
+    if not to_number:
+        return JSONResponse({"error": "Missing 'to' phone number"}, status_code=400)
+    if not TELNYX_API_KEY:
+        return JSONResponse({"error": "TELNYX_API_KEY not set on Railway"}, status_code=500)
+    if not TELNYX_CONNECTION_ID:
+        return JSONResponse({"error": "TELNYX_CONNECTION_ID not set on Railway"}, status_code=500)
+    if not from_number:
+        return JSONResponse({"error": "TELNYX_PHONE_NUMBER not set on Railway"}, status_code=500)
+
+    os.environ["VOICE_LANG_TELNYX"] = lang
+    os.environ["VOICE_TO_TELNYX"] = to_number
+    os.environ["VOICE_FROM_TELNYX"] = from_number
+
+    server_url = os.getenv("RAILWAY_PUBLIC_DOMAIN", "pretty-alignment-production-891e.up.railway.app")
+    stream_url = f"wss://{server_url}/ws-telnyx"
+
+    payload = {
+        "to": to_number,
+        "from": from_number,
+        "connection_id": TELNYX_CONNECTION_ID,
+        "stream_url": stream_url,
+        "stream_track": "both_tracks",
+        "stream_bidirectional_mode": "rtp",
+        "stream_bidirectional_codec": "PCMU",
+    }
+    headers = {
+        "Authorization": f"Bearer {TELNYX_API_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(f"{TELNYX_API_URL}/calls", headers=headers, json=payload) as resp:
+                data = await resp.json()
+                if resp.status not in (200, 201):
+                    logger.error(f"Telnyx call creation failed: {resp.status} {data}")
+                    return JSONResponse({"error": data}, status_code=resp.status)
+                call_data = data.get("data", {})
+                call_control_id = call_data.get("call_control_id")
+                logger.info(f"Telnyx call created: {call_control_id} to {to_number}")
+                os.environ["TELNYX_CALL_CONTROL_ID"] = call_control_id or ""
+    except Exception as e:
+        logger.error(f"Telnyx dialout failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+    return JSONResponse({
+        "status": "calling",
+        "call_control_id": call_control_id,
+        "to": to_number,
+        "from": from_number,
+        "lang": lang,
+        "mode": "telnyx_call_control_media_streams",
+    })
+
+
+@app.websocket("/ws-telnyx")
+async def handle_ws_telnyx(websocket: WebSocket):
+    """Telnyx Media Streams WebSocket — routes to phone_bot_telnyx.run_phone_bot_fastapi."""
+    logger.info(f">>> /ws-telnyx connection attempt from {websocket.client}")
+    await websocket.accept()
+    logger.info(">>> /ws-telnyx ACCEPTED")
+
+    lang = os.environ.get("VOICE_LANG_TELNYX", "yue")
+    to_number = os.environ.get("VOICE_TO_TELNYX", "")
+    from_number = os.environ.get("VOICE_FROM_TELNYX", "")
+    call_control_id = os.environ.get("TELNYX_CALL_CONTROL_ID", "")
+    logger.info(f"Telnyx phone bot starting: lang={lang}, to={to_number}, call_control_id={call_control_id}")
+
+    try:
+        import importlib.util
+        import sys
+        if "phone_bot_telnyx" in sys.modules:
+            del sys.modules["phone_bot_telnyx"]
+        bot_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "phone_bot_telnyx.py")
+        spec = importlib.util.spec_from_file_location("phone_bot_telnyx", bot_path)
+        phone_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(phone_module)
+        await phone_module.run_phone_bot_fastapi(
+            websocket=websocket,
+            stream_sid="",
+            call_sid=call_control_id,
+            from_number=from_number,
+            to_number=to_number,
+            lang=lang,
+        )
+    except Exception as e:
+        logger.error(f"Telnyx phone bot error: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 # ============================================================================
