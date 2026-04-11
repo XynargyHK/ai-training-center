@@ -600,10 +600,11 @@ async def handle_dialout_a68206f(request: Request):
 #       upgraded colloquial Cantonese guardrail prompt.
 # ============================================================================
 
-async def start_bot_cantonese(room_name, token, female_voice):
-    """Phone bot using bot_phone_cantonese.py with selected female voice."""
-    # Set voice selection via env var (read by bot at pipeline init)
+async def start_bot_cantonese(room_name, token, female_voice, rate="1.2"):
+    """Phone bot using bot_phone_cantonese.py with selected voice + rate."""
+    # Set voice + rate via env vars (read by bot at pipeline init)
     os.environ["VOICE_CANTONESE_FEMALE"] = female_voice
+    os.environ["VOICE_CANTONESE_RATE"] = rate
     from bot_phone_cantonese import run_pipeline
 
     async def run_bot():
@@ -638,6 +639,7 @@ async def handle_dial_cantonese(request: Request):
     to_number = body.get("to", "")
     from_number = body.get("from", TWILIO_PHONE_NUMBER)
     voice_name = body.get("voice", "HiuMaan")
+    rate = body.get("rate", "1.2")
 
     voice_map = {
         "HiuMaan": "zh-HK-HiuMaanNeural",
@@ -645,6 +647,10 @@ async def handle_dial_cantonese(request: Request):
         "WanLung": "zh-HK-WanLungNeural",
     }
     female_voice = voice_map.get(voice_name, "zh-HK-HiuMaanNeural")
+    # Validate rate
+    allowed_rates = ("1.0", "1.1", "1.2", "1.3", "1.4", "1.5")
+    if rate not in allowed_rates:
+        rate = "1.2"
 
     if not to_number:
         return JSONResponse({"error": "Missing 'to' phone number"}, status_code=400)
@@ -685,8 +691,8 @@ async def handle_dial_cantonese(request: Request):
         logger.error(f"cantonese LiveKit SIP dialout failed: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
-    # 4. Launch bot with selected voice
-    pid = await start_bot_cantonese(room_name=room_name, token=bot_token, female_voice=female_voice)
+    # 4. Launch bot with selected voice + rate
+    pid = await start_bot_cantonese(room_name=room_name, token=bot_token, female_voice=female_voice, rate=rate)
 
     return JSONResponse({
         "status": "calling",
@@ -695,6 +701,7 @@ async def handle_dial_cantonese(request: Request):
         "to": to_number,
         "from": from_number,
         "voice": female_voice,
+        "rate": rate,
         "mode": "cantonese_livekit_sip_female",
         "bot_pid": pid,
     })

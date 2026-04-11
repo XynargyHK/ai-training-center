@@ -7,6 +7,7 @@ const PIPECAT_URL = 'https://pretty-alignment-production-891e.up.railway.app'
 export default function VoiceCantonesePage() {
   const [phoneNumber, setPhoneNumber] = useState('+85294740952')
   const [voice, setVoice] = useState<'HiuMaan' | 'HiuGaai' | 'WanLung'>('HiuMaan')
+  const [rate, setRate] = useState<string>('1.2')
   const [callStatus, setCallStatus] = useState<string>('')
 
   async function makePhoneCall() {
@@ -19,11 +20,11 @@ export default function VoiceCantonesePage() {
       const res = await fetch(`${PIPECAT_URL}/dialcantonese`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to: phoneNumber, voice }),
+        body: JSON.stringify({ to: phoneNumber, voice, rate }),
       })
       const data = await res.json()
       if (data.status === 'calling') {
-        setCallStatus(`Calling ${phoneNumber}... (voice: ${data.voice}, room: ${data.room_name})`)
+        setCallStatus(`Calling ${phoneNumber}... (voice: ${data.voice}, rate: ${data.rate}, room: ${data.room_name})`)
       } else {
         setCallStatus(`Failed: ${JSON.stringify(data)}`)
       }
@@ -63,6 +64,20 @@ export default function VoiceCantonesePage() {
           <option value="HiuMaan">HiuMaan (zh-HK-HiuMaanNeural) — female, warm</option>
           <option value="HiuGaai">HiuGaai (zh-HK-HiuGaaiNeural) — female, bright</option>
           <option value="WanLung">WanLung (zh-HK-WanLungNeural) — male</option>
+        </select>
+
+        <label style={{ display: 'block', fontSize: 13, color: '#666', marginBottom: 4 }}>Speech speed</label>
+        <select
+          value={rate}
+          onChange={e => setRate(e.target.value)}
+          style={{ width: '100%', padding: 12, fontSize: 16, marginBottom: 12, border: '1px solid #ccc', borderRadius: 4 }}
+        >
+          <option value="1.0">1.0× — Normal</option>
+          <option value="1.1">1.1× — Slightly faster</option>
+          <option value="1.2">1.2× — Faster (default)</option>
+          <option value="1.3">1.3× — Fast</option>
+          <option value="1.4">1.4× — Very fast</option>
+          <option value="1.5">1.5× — Maximum</option>
         </select>
 
         <button

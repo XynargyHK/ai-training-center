@@ -171,14 +171,18 @@ async def run_pipeline(
         selected_yue_voice = os.getenv("VOICE_CANTONESE_FEMALE", "zh-HK-HiuMaanNeural")
         if selected_yue_voice not in ("zh-HK-HiuMaanNeural", "zh-HK-HiuGaaiNeural", "zh-HK-WanLungNeural"):
             selected_yue_voice = "zh-HK-HiuMaanNeural"
+        # Speech rate selectable via VOICE_CANTONESE_RATE env var.
+        # Azure SSML rate: numeric (1.0=normal, 1.25=25% faster) or keyword (slow/fast/x-fast).
+        selected_rate = os.getenv("VOICE_CANTONESE_RATE", "1.2")
         from pipecat.services.azure.tts import AzureTTSService
         tts = AzureTTSService(
             api_key=os.getenv("AZURE_SPEECH_KEY"),
             region=os.getenv("AZURE_SPEECH_REGION", "eastus"),
             voice=selected_yue_voice,
             sample_rate=24000,
+            params=AzureTTSService.InputParams(rate=selected_rate),
         )
-        logger.info(f"Cantonese TTS voice: {selected_yue_voice}")
+        logger.info(f"Cantonese TTS voice: {selected_yue_voice}, rate: {selected_rate}")
     elif tts_provider == "elevenlabs":
         from pipecat.services.elevenlabs.tts import ElevenLabsTTSService
         tts = ElevenLabsTTSService(
