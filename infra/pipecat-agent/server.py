@@ -34,6 +34,9 @@ TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
 TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER", "")
 TWILIO_SIP_DOMAIN = os.getenv("TWILIO_SIP_DOMAIN", "")
 
+DAILY_API_KEY = os.getenv("DAILY_API_KEY")
+DAILY_API_URL = "https://api.daily.co/v1"
+
 app = FastAPI()
 
 app.add_middleware(
@@ -589,6 +592,149 @@ async def handle_dialout_a68206f(request: Request):
         "from": from_number,
         "lang": "en",
         "mode": "a68206f_livekit_sip",
+        "bot_pid": pid,
+    })
+
+
+# ============================================================================
+# Daily SIP phone prototype — bot_phone_daily.py
+# Restored from file-history v18 (Apr 9 05:31 HKT, last bot.py before LiveKit migration).
+# Uses Daily room + SIP dialout via Twilio SIP Domain. Pre-LiveKit Cantonese setup.
+# ============================================================================
+
+async def create_daily_room(enable_dialout=False):
+    """Create a temporary Daily room for the voice session."""
+    headers = {"Authorization": f"Bearer {DAILY_API_KEY}", "Content-Type": "application/json"}
+    properties = {
+        "exp": int(time.time()) + 3600,
+        "enable_chat": False,
+        "enable_screenshare": False,
+        "max_participants": 2,
+    }
+    if enable_dialout:
+        properties["enable_dialout"] = True
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            f"{DAILY_API_URL}/rooms",
+            headers=headers,
+            json={"properties": properties},
+        ) as resp:
+            data = await resp.json()
+            logger.info(f"Daily API response: {resp.status} {data}")
+            if resp.status != 200:
+                return None, None
+            return data.get("url"), data.get("name")
+
+
+async def create_daily_token(room_name, owner=False):
+    """Create a Daily meeting token for the given room."""
+    headers = {"Authorization": f"Bearer {DAILY_API_KEY}", "Content-Type": "application/json"}
+    payload = {
+        "properties": {
+            "room_name": room_name,
+            "exp": int(time.time()) + 3600,
+        }
+    }
+    if owner:
+        payload["properties"]["is_owner"] = True
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            f"{DAILY_API_URL}/meeting-tokens",
+            headers=headers,
+            json=payload,
+        ) as resp:
+            data = await resp.json()
+            if resp.status != 200:
+                logger.error(f"Failed to create Daily token: {resp.status} {data}")
+                return None
+            return data.get("token")
+
+
+async def start_bot_daily(room_url, token, lang, dialout_settings):
+    """Phone bot using bot_phone_daily.py via Daily SIP dialout."""
+    from bot_phone_daily import run_pipeline
+
+    async def run_bot():
+        try:
+            await run_pipeline(
+                room_url=room_url,
+                token=token,
+                lang=lang,
+                mode="phone",
+                dialout_settings=dialout_settings,
+                vision_enabled=False,
+            )
+        except Exception as e:
+            logger.error(f"DAILY PHONE BOT ERROR: {e}")
+            import traceback
+            traceback.print_exc()
+
+    asyncio.ensure_future(run_bot())
+    return os.getpid()
+
+
+@app.post("/dialdaily")
+async def handle_dial_daily(request: Request):
+    """POST /dialdaily -- Daily SIP phone prototype (pre-LiveKit).
+    Body: {to, lang} where lang defaults to 'yue' for Cantonese.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    to_number = body.get("to", "")
+    from_number = body.get("from", TWILIO_PHONE_NUMBER)
+    lang = body.get("lang", "yue")
+
+    if not to_number:
+        return JSONResponse({"error": "Missing 'to' phone number"}, status_code=400)
+
+    if not DAILY_API_KEY:
+        return JSONResponse({"error": "DAILY_API_KEY not set"}, status_code=500)
+
+    # 1. Create Daily room with dialout enabled
+    room_url, room_name = await create_daily_room(enable_dialout=True)
+    if not room_url:
+        return JSONResponse({"error": "Failed to create Daily room"}, status_code=500)
+
+    # 2. Create owner meeting token (required for dialout)
+    token = await create_daily_token(room_name, owner=True)
+    if not token:
+        return JSONResponse({"error": "Failed to create Daily token"}, status_code=500)
+
+    # 3. Construct dialout settings — use Twilio SIP Domain if available, else PSTN
+    clean_number = to_number.lstrip("+")
+    if TWILIO_SIP_DOMAIN:
+        sip_uri = f"sip:+{clean_number}@{TWILIO_SIP_DOMAIN}"
+        dialout_settings = {
+            "sipUri": sip_uri,
+            "displayName": from_number or "AI Assistant",
+        }
+        logger.info(f"Daily dialout via SIP: {sip_uri}")
+    else:
+        dialout_settings = {
+            "phoneNumber": f"+{clean_number}",
+            "displayName": from_number or "AI Assistant",
+        }
+        logger.info(f"Daily dialout via PSTN: +{clean_number}")
+
+    # 4. Launch bot in phone mode
+    pid = await start_bot_daily(
+        room_url=room_url,
+        token=token,
+        lang=lang,
+        dialout_settings=dialout_settings,
+    )
+
+    return JSONResponse({
+        "status": "calling",
+        "room_url": room_url,
+        "room_name": room_name,
+        "to": to_number,
+        "from": from_number,
+        "lang": lang,
+        "mode": "daily_sip" if TWILIO_SIP_DOMAIN else "daily_pstn",
         "bot_pid": pid,
     })
 
