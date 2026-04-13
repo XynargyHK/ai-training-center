@@ -37,29 +37,112 @@ export async function POST(request: NextRequest) {
     const hasTrigger = text.toLowerCase().includes('sarah') || text.toLowerCase().includes('#ai')
     const shouldRespond = !isGroup || hasTrigger
 
-    // 2. IDENTIFY BUSINESS UNIT DYNAMICALLY
-    let businessUnitId = process.env.WHATSAPP_TEST_BU_ID
+    // 2. IDENTIFY BUSINESS UNIT — check if customer already selected one, or show selector
+    let businessUnitId: string | undefined = undefined
     let settings = null
+    let businessUnitName = ''
 
-    if (incomingPhoneId) {
-      const { data, error } = await supabase
-        .from('business_unit_settings')
-        .select('*')
-        .eq('whatsapp_phone_number_id', incomingPhoneId)
-        .single()
-      
-      if (data) {
-        businessUnitId = data.business_unit_id
-        settings = data
-        console.log(`✅ Found BU matching WhatsApp ID: ${businessUnitId}`)
-      } else if (error) {
-        console.warn(`⚠️ No BU found for WhatsApp ID ${incomingPhoneId}:`, error.message)
+    // 2.0 "switch" or "menu" resets BU selection
+    const isSwitchCommand = /^(switch|menu|0|reset|change|換|切換)$/i.test(cleanText.trim())
+
+    // 2.1 Check if this customer already has an active BU selection (from previous conversation)
+    const { data: lastBuSelection } = await supabase
+      .from('whatsapp_conversations')
+      .select('metadata')
+      .eq('wa_chat_id', sender)
+      .not('metadata->selectedBuId', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+
+    if (!isSwitchCommand && lastBuSelection?.[0]?.metadata?.selectedBuId) {
+      businessUnitId = lastBuSelection[0].metadata.selectedBuId
+      console.log(`🔁 Returning customer, previously selected BU: ${businessUnitId}`)
+    }
+
+    // 2.2 Check if customer is selecting a BU now (typed a number like "1", "2", etc.)
+    if (!businessUnitId) {
+      // Fetch all business units to show as options
+      const { data: allBUs } = await supabase
+        .from('business_units')
+        .select('id, name')
+        .order('name')
+
+      if (allBUs && allBUs.length > 0) {
+        const selectedIndex = parseInt(cleanText) - 1
+        if (selectedIndex >= 0 && selectedIndex < allBUs.length) {
+          // Customer typed a valid number — select that BU
+          businessUnitId = allBUs[selectedIndex].id
+          businessUnitName = allBUs[selectedIndex].name
+          console.log(`✅ Customer selected BU #${selectedIndex + 1}: ${businessUnitName} (${businessUnitId})`)
+
+          // Save the selection
+          await supabase.from('whatsapp_conversations').insert({
+            business_unit_id: businessUnitId,
+            wa_chat_id: sender,
+            role: 'system',
+            content: `Customer selected: ${businessUnitName}`,
+            metadata: { pushName, isGroup, selectedBuId: businessUnitId }
+          })
+        } else {
+          // No valid selection — show the business selector menu
+          const menuLines = allBUs.map((bu: any, i: number) => `${i + 1}️⃣ ${bu.name}`).join('\n')
+          const selectorMessage = `Welcome to AIStaffs! Which business would you like to connect with?\n\n${menuLines}\n\nJust type the number.`
+
+          // Send selector via gateway
+          const GATEWAY_URL = process.env.WHATSAPP_GATEWAY_URL
+          if (GATEWAY_URL) {
+            await fetch(`${GATEWAY_URL}/messages/text`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ to: sender, body: selectorMessage })
+            })
+          }
+
+          // Store the user message with no BU yet
+          await supabase.from('whatsapp_conversations').insert({
+            business_unit_id: process.env.WHATSAPP_TEST_BU_ID || '',
+            wa_chat_id: sender,
+            role: 'user',
+            content: cleanText,
+            metadata: { pushName, isGroup, awaitingBuSelection: true }
+          })
+
+          return NextResponse.json({ success: true, ai_responded: true, action: 'bu_selector_shown' })
+        }
+      } else {
+        // Fallback: no BUs found, use test BU
+        businessUnitId = process.env.WHATSAPP_TEST_BU_ID
       }
     }
 
     if (!businessUnitId) {
       console.error('❌ Could not identify Business Unit for this message')
       return NextResponse.json({ error: 'Unknown Business Unit' }, { status: 404 })
+    }
+
+    // 2.3 Load BU name if not set yet
+    if (!businessUnitName) {
+      const { data: buData } = await supabase
+        .from('business_units')
+        .select('name')
+        .eq('id', businessUnitId)
+        .single()
+      businessUnitName = buData?.name || 'Business'
+    }
+
+    // 2.4 Check for phone_id-based routing (Meta API path)
+    if (incomingPhoneId) {
+      const { data, error } = await supabase
+        .from('business_unit_settings')
+        .select('*')
+        .eq('whatsapp_phone_number_id', incomingPhoneId)
+        .single()
+
+      if (data) {
+        businessUnitId = data.business_unit_id
+        settings = data
+        console.log(`✅ Found BU matching WhatsApp ID: ${businessUnitId}`)
+      }
     }
 
     // 2.5. FETCH CONVERSATION HISTORY (Sarah's Memory)
@@ -69,12 +152,12 @@ export async function POST(request: NextRequest) {
       .eq('wa_chat_id', sender)
       .eq('business_unit_id', businessUnitId)
       .order('created_at', { ascending: false })
-      .limit(15) // Slightly more history for groups
+      .limit(15)
 
     const conversationHistory = (historyData || []).reverse().map((msg: any) => ({
       role: msg.role,
-      content: isGroup && msg.role === 'user' && msg.metadata?.pushName 
-        ? `${msg.metadata.pushName}: ${msg.content}` 
+      content: isGroup && msg.role === 'user' && msg.metadata?.pushName
+        ? `${msg.metadata.pushName}: ${msg.content}`
         : msg.content
     }))
 
@@ -84,7 +167,7 @@ export async function POST(request: NextRequest) {
       wa_chat_id: sender,
       role: 'user',
       content: cleanText,
-      metadata: { pushName, isGroup }
+      metadata: { pushName, isGroup, selectedBuId: businessUnitId }
     })
     
     if (!shouldRespond) {

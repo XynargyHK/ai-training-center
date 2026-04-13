@@ -1,3 +1,9 @@
+# NEVER commit files that may contain API keys / user chat logs
+USER_PROMPTS_*.md
+PHONE_VOICE_AI_SETUPS.md
+**/secrets.*
+**/credentials.*
+
 # dependencies
 /node_modules
 /.pnp
