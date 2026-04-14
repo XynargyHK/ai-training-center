@@ -444,6 +444,21 @@ app.get('/qr-page', async (req, res) => {
   }
 })
 
+// QR as PNG image (no HTML, just the image)
+app.get('/qr-image', async (req, res) => {
+  if (!qrCode || connectionStatus === 'connected') {
+    return res.status(404).send('No QR')
+  }
+  try {
+    const QRCode = require('qrcode')
+    const buffer = await QRCode.toBuffer(qrCode, { width: 256, margin: 2 })
+    res.set('Content-Type', 'image/png')
+    res.send(buffer)
+  } catch (e) {
+    res.status(500).send('QR generation failed')
+  }
+})
+
 // Health check
 // POST /reset — force clear auth and generate new QR (for re-linking WhatsApp)
 app.post('/reset', (req, res) => {
