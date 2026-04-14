@@ -178,9 +178,12 @@ export async function POST(request: NextRequest) {
     console.log(`🧠 Routing WhatsApp message to AI Brain for BU: ${businessUnitId} (History: ${conversationHistory.length} msgs)`)
 
     // 2.7 DEMO MODE — SPA Collection hardcoded context (remove after demo)
-    const DEMO_BU_ID = '77313e61-2a19-4f3e-823b-80390dde8bd2'
+    const DEMO_BU_IDS = [
+      '77313e61-2a19-4f3e-823b-80390dde8bd2', // test BU
+      'e133fbe6-69a8-45c8-8736-a15b24010621', // SPA collection (real)
+    ]
     let demoPrefix = ''
-    if (businessUnitId === DEMO_BU_ID) {
+    if (DEMO_BU_IDS.includes(businessUnitId || '')) {
       demoPrefix = `[IMPORTANT CONTEXT — You are Sarah, the AI receptionist for SPA Collection (水療中心), a luxury spa in Causeway Bay, Hong Kong.
 
 WELCOME MENU — When someone says "hi", "hello", "hey", or messages you for the first time, respond with:
