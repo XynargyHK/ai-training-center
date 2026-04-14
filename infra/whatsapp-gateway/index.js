@@ -33,22 +33,37 @@ let qrCode = null
 let connectionStatus = 'disconnected'
 let lastAlertTime = 0
 
+// Clear auth FILES inside the volume dir (don't rmdir the mount point itself)
+function clearAuthFiles() {
+  try {
+    if (fs.existsSync(AUTH_DIR)) {
+      const files = fs.readdirSync(AUTH_DIR)
+      for (const file of files) {
+        const filePath = path.join(AUTH_DIR, file)
+        fs.rmSync(filePath, { recursive: true, force: true })
+      }
+      console.log(`✅ Cleared ${files.length} auth files from ${AUTH_DIR}`)
+    }
+  } catch (e) {
+    console.error('⚠️ Error clearing auth files:', e.message)
+  }
+}
+
 // ============================================================
 // BAILEYS CONNECTION
 // ============================================================
 async function connectToWhatsApp() {
-  // If auth dir exists but is corrupted, clear it
+  // If auth dir exists but is empty, log it (fresh start expected)
   try {
     if (fs.existsSync(AUTH_DIR)) {
       const files = fs.readdirSync(AUTH_DIR)
-      if (files.length === 0) {
-        console.log('⚠️ Empty auth dir — clearing for fresh start')
-        fs.rmSync(AUTH_DIR, { recursive: true })
-      }
+      console.log(`📂 Auth dir has ${files.length} files`)
+    } else {
+      fs.mkdirSync(AUTH_DIR, { recursive: true })
+      console.log('📂 Created fresh auth dir')
     }
   } catch (e) {
-    console.log('⚠️ Error checking auth dir, clearing:', e.message)
-    try { fs.rmSync(AUTH_DIR, { recursive: true }) } catch (e2) {}
+    console.log('⚠️ Auth dir check error:', e.message)
   }
 
   const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR)
@@ -97,10 +112,8 @@ async function connectToWhatsApp() {
         setTimeout(() => connectToWhatsApp(), 3000)
       } else {
         // Logged out — clear auth and require new QR scan
-        console.log('🚨 LOGGED OUT — clearing auth. Need new QR scan.')
-        if (fs.existsSync(AUTH_DIR)) {
-          fs.rmSync(AUTH_DIR, { recursive: true })
-        }
+        console.log('🚨 LOGGED OUT — clearing auth files. Need new QR scan.')
+        clearAuthFiles()
         setTimeout(() => connectToWhatsApp(), 3000)
       }
     }
@@ -440,10 +453,8 @@ app.post('/reset', (req, res) => {
       sock.end(undefined)
       sock = null
     }
-    if (fs.existsSync(AUTH_DIR)) {
-      fs.rmSync(AUTH_DIR, { recursive: true })
-      console.log('✅ Auth cleared')
-    }
+    clearAuthFiles()
+    console.log('✅ Auth cleared')
     connectionStatus = 'disconnected'
     qrCode = null
     setTimeout(() => connectToWhatsApp(), 2000)
