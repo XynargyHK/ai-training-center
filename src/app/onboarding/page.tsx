@@ -1,6 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+
+const GATEWAY_URL = 'https://vigilant-magic-production.up.railway.app'
 
 const STEPS = [
   { id: 1, label: 'Business Info' },
@@ -23,6 +25,44 @@ export default function OnboardingPage() {
   })
   const [files, setFiles] = useState<File[]>([])
   const [waScanComplete, setWaScanComplete] = useState(false)
+  const [qrCountdown, setQrCountdown] = useState(20)
+  const [qrKey, setQrKey] = useState(0) // force img reload
+  const [waStatus, setWaStatus] = useState<'loading' | 'waiting_qr' | 'connected' | 'error'>('loading')
+
+  // Poll gateway status when on step 2
+  useEffect(() => {
+    if (step !== 2 || waScanComplete) return
+    const poll = setInterval(async () => {
+      try {
+        const res = await fetch(`${GATEWAY_URL}/qr`)
+        const data = await res.json()
+        if (data.status === 'connected') {
+          setWaScanComplete(true)
+          setWaStatus('connected')
+        } else if (data.qr) {
+          setWaStatus('waiting_qr')
+        } else {
+          setWaStatus('loading')
+        }
+      } catch { setWaStatus('error') }
+    }, 3000)
+    return () => clearInterval(poll)
+  }, [step, waScanComplete])
+
+  // QR countdown timer — refresh image every 15s
+  useEffect(() => {
+    if (step !== 2 || waScanComplete) return
+    const timer = setInterval(() => {
+      setQrCountdown(c => {
+        if (c <= 1) {
+          setQrKey(k => k + 1) // force reload QR image
+          return 15
+        }
+        return c - 1
+      })
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [step, waScanComplete])
   const [phoneNumber, setPhoneNumber] = useState('')
   const [wantPhone, setWantPhone] = useState(false)
 
@@ -144,31 +184,37 @@ export default function OnboardingPage() {
           </p>
 
           <div style={{ background: '#f9f9f9', borderRadius: 12, padding: 24, textAlign: 'center', marginBottom: 24 }}>
-            {!waScanComplete ? (
-              <>
-                <div style={{ fontSize: 120, lineHeight: 1 }}>📱</div>
-                <h3 style={{ marginTop: 16 }}>Scan QR Code</h3>
-                <p style={{ color: '#666', fontSize: 14, maxWidth: 300, margin: '0 auto 16px' }}>
-                  Open WhatsApp on your business phone → Settings → Linked Devices → Link a Device → Scan the QR code below
-                </p>
-                <img
-                  src="https://vigilant-magic-production.up.railway.app/qr-image"
-                  alt="Scan this QR code with WhatsApp"
-                  style={{ width: 220, height: 220, margin: '0 auto 16px', borderRadius: 8, display: 'block' }}
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                />
-                <button onClick={() => setWaScanComplete(true)}
-                  style={{...btnStyle, background: '#28a745', marginTop: 8}}>
-                  I've scanned the QR code
-                </button>
-              </>
-            ) : (
+            {waScanComplete ? (
               <>
                 <div style={{ fontSize: 64, lineHeight: 1 }}>✅</div>
                 <h3 style={{ color: '#28a745' }}>WhatsApp Connected!</h3>
                 <p style={{ color: '#666', fontSize: 14 }}>
                   Your AI is now linked to your WhatsApp Business number. Customers who message you will get instant AI responses.
                 </p>
+              </>
+            ) : (
+              <>
+                <h3 style={{ marginTop: 0 }}>Scan QR Code with WhatsApp</h3>
+                <p style={{ color: '#666', fontSize: 13, maxWidth: 320, margin: '0 auto 16px' }}>
+                  On your business phone: <strong>WhatsApp → Settings → Linked Devices → Link a Device</strong> → point camera at this QR
+                </p>
+                {waStatus === 'waiting_qr' ? (
+                  <>
+                    <img
+                      key={qrKey}
+                      src={`${GATEWAY_URL}/qr-image?t=${qrKey}`}
+                      alt="WhatsApp QR Code"
+                      style={{ width: 220, height: 220, margin: '0 auto 12px', borderRadius: 8, display: 'block' }}
+                    />
+                    <div style={{ fontSize: 13, color: '#888' }}>
+                      Refreshing in <strong>{qrCountdown}s</strong> — QR expires every ~20 seconds
+                    </div>
+                  </>
+                ) : waStatus === 'loading' ? (
+                  <div style={{ padding: 40, color: '#888' }}>Connecting to WhatsApp gateway...</div>
+                ) : (
+                  <div style={{ padding: 40, color: '#dc3545' }}>Gateway not available. Check Railway.</div>
+                )}
               </>
             )}
           </div>
