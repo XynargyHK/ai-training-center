@@ -210,10 +210,19 @@ export default function OnboardingPage() {
                       Refreshing in <strong>{qrCountdown}s</strong> — QR expires every ~20 seconds
                     </div>
                   </>
-                ) : waStatus === 'loading' ? (
-                  <div style={{ padding: 40, color: '#888' }}>Connecting to WhatsApp gateway...</div>
                 ) : (
-                  <div style={{ padding: 40, color: '#dc3545' }}>Gateway not available. Check Railway.</div>
+                  <>
+                    <img
+                      key={qrKey}
+                      src={`${GATEWAY_URL}/qr-image?t=${qrKey}`}
+                      alt="WhatsApp QR Code"
+                      style={{ width: 220, height: 220, margin: '0 auto 12px', borderRadius: 8, display: 'block' }}
+                      onError={(e) => { (e.target as HTMLImageElement).alt = 'QR loading...' }}
+                    />
+                    <div style={{ fontSize: 13, color: '#888' }}>
+                      {waStatus === 'loading' ? 'Connecting...' : 'Refreshing...'} ({qrCountdown}s)
+                    </div>
+                  </>
                 )}
               </>
             )}
