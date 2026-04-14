@@ -37,6 +37,20 @@ let lastAlertTime = 0
 // BAILEYS CONNECTION
 // ============================================================
 async function connectToWhatsApp() {
+  // If auth dir exists but is corrupted, clear it
+  try {
+    if (fs.existsSync(AUTH_DIR)) {
+      const files = fs.readdirSync(AUTH_DIR)
+      if (files.length === 0) {
+        console.log('⚠️ Empty auth dir — clearing for fresh start')
+        fs.rmSync(AUTH_DIR, { recursive: true })
+      }
+    }
+  } catch (e) {
+    console.log('⚠️ Error checking auth dir, clearing:', e.message)
+    try { fs.rmSync(AUTH_DIR, { recursive: true }) } catch (e2) {}
+  }
+
   const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR)
   const { version } = await fetchLatestBaileysVersion()
 
@@ -418,6 +432,27 @@ app.get('/qr-page', async (req, res) => {
 })
 
 // Health check
+// POST /reset — force clear auth and generate new QR (for re-linking WhatsApp)
+app.post('/reset', (req, res) => {
+  console.log('🔄 Manual reset requested — clearing auth...')
+  try {
+    if (sock) {
+      sock.end(undefined)
+      sock = null
+    }
+    if (fs.existsSync(AUTH_DIR)) {
+      fs.rmSync(AUTH_DIR, { recursive: true })
+      console.log('✅ Auth cleared')
+    }
+    connectionStatus = 'disconnected'
+    qrCode = null
+    setTimeout(() => connectToWhatsApp(), 2000)
+    res.json({ status: 'resetting', message: 'Auth cleared. Check /qr in 5 seconds for new QR code.' })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', whatsapp: connectionStatus })
 })
