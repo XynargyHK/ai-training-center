@@ -151,14 +151,13 @@ export default function OnboardingPage() {
                 <p style={{ color: '#666', fontSize: 14, maxWidth: 300, margin: '0 auto 16px' }}>
                   Open WhatsApp on your business phone → Settings → Linked Devices → Link a Device → Scan the QR code below
                 </p>
-                <div style={{
-                  width: 200, height: 200, margin: '0 auto 16px', background: '#fff',
-                  border: '2px solid #ddd', borderRadius: 8,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 14, color: '#999'
-                }}>
-                  [QR Code loads here]
-                </div>
+                <iframe
+                  src="https://vigilant-magic-production.up.railway.app/qr-page"
+                  style={{
+                    width: 320, height: 400, margin: '0 auto 16px', border: 'none', borderRadius: 8,
+                    display: 'block',
+                  }}
+                />
                 <button onClick={() => setWaScanComplete(true)}
                   style={{...btnStyle, background: '#28a745', marginTop: 8}}>
                   I've scanned the QR code
