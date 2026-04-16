@@ -1,27 +1,26 @@
-import { fetchLandingPageData } from '@/lib/landing-page-service'
-import LandingPageSSR from '@/components/landing-page/LandingPageSSR'
+import { Suspense } from 'react'
+import { LandingPageContent } from '@/app/livechat/page'
 
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 export default async function HKPage({
   searchParams,
 }: {
-  searchParams: Promise<{ lang?: string; _bu?: string; businessUnit?: string }>
+  searchParams: Promise<{ lang?: string; _bu?: string; businessUnit?: string; page?: string }>
 }) {
   const params = await searchParams
   const lang = params.lang || 'tw'
   const bu = params.businessUnit || params._bu || 'skincoach'
-  const { landingPage, businessUnit, availableLocales, aiStaffList, pageSlug } = await fetchLandingPageData(bu, 'HK', lang)
+  const pageSlug = params.page
 
   return (
-    <LandingPageSSR
-      landingPage={landingPage}
-      businessUnit={businessUnit}
-      country="HK"
-      lang={lang}
-      availableLocales={availableLocales}
-      aiStaffList={aiStaffList}
-      pageSlug={pageSlug}
-    />
+    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center">Loading...</div>}>
+      <LandingPageContent
+        businessUnitOverride={bu}
+        countryOverride="HK"
+        languageOverride={lang}
+        pageSlug={pageSlug}
+      />
+    </Suspense>
   )
 }
