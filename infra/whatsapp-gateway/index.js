@@ -185,8 +185,8 @@ async function connectToWhatsApp() {
       // For DMs: sender = remoteJid (the person)
       // For groups: sender = remoteJid (the group), participant = who sent it
       // For self-messages (fromMe && !group): WhatsApp reports remoteJid as
-      // the user's LID (privacy-safe ID like 175...@lid), NOT the phone number.
-      // Override with the gateway's own phone so the webhook can match owner phone.
+      // the user's LID (privacy-safe ID). Override with the gateway's own
+      // phone so the webhook can match owner phone.
       let sender = remoteJid
       if (msg.key.fromMe && !isGroup) {
         const ownId = sock.user?.id || ''
@@ -232,17 +232,22 @@ async function connectToWhatsApp() {
 // Send text message
 app.post('/messages/text', async (req, res) => {
   const { to, body } = req.body
+  console.log(`📤 /messages/text IN: to=${to} body_len=${body?.length || 0}`)
   if (!to || !body) return res.status(400).json({ error: 'Missing to or body' })
   if (!sock || connectionStatus !== 'connected') {
+    console.log(`📤 REJECTED: WA not connected (${connectionStatus})`)
     return res.status(503).json({ error: 'WhatsApp not connected' })
   }
 
   try {
     const jid = formatJid(to)
+    console.log(`📤 Sending to jid=${jid}`)
     const result = await sock.sendMessage(jid, { text: body })
     markSent(result.key.id)
+    console.log(`📤 SENT OK: id=${result.key.id}`)
     res.json({ sent: true, message: { id: result.key.id, from: to } })
   } catch (err) {
+    console.error(`📤 SEND FAILED: ${err.message}`)
     res.status(500).json({ error: err.message })
   }
 })

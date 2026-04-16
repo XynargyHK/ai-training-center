@@ -44,7 +44,16 @@ export async function POST(request: NextRequest) {
       const ownerBuId = process.env.WHATSAPP_OWNER_BU_ID || process.env.WHATSAPP_TEST_BU_ID
       if (ownerBuId) {
         console.log(`👑 Owner detected (${sender}) — routing to admin command handler, BU=${ownerBuId}`)
-        const adminReply = await handleOwnerCommand(cleanText, ownerBuId)
+        console.log(`👑 Admin flow: sender=${sender} cleanText="${cleanText}"`)
+
+        let adminReply: string
+        try {
+          adminReply = await handleOwnerCommand(cleanText, ownerBuId)
+          console.log(`👑 Admin reply generated (${adminReply.length} chars): ${adminReply.substring(0, 80)}`)
+        } catch (adminErr: any) {
+          console.error('👑 Admin handler threw:', adminErr.message, adminErr.stack)
+          adminReply = `Admin error: ${adminErr.message}`
+        }
 
         await supabase.from('whatsapp_conversations').insert({
           business_unit_id: ownerBuId,
@@ -55,12 +64,19 @@ export async function POST(request: NextRequest) {
         })
 
         const GATEWAY_URL = process.env.WHATSAPP_GATEWAY_URL
+        console.log(`👑 Sending reply via gateway: URL=${GATEWAY_URL} to=${sender}`)
         if (GATEWAY_URL) {
-          await fetch(`${GATEWAY_URL}/messages/text`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ to: sender, body: adminReply })
-          })
+          try {
+            const gwRes = await fetch(`${GATEWAY_URL}/messages/text`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ to: sender, body: adminReply })
+            })
+            const gwText = await gwRes.text()
+            console.log(`👑 Gateway response: ${gwRes.status} ${gwText}`)
+          } catch (gwErr: any) {
+            console.error('👑 Gateway POST failed:', gwErr.message)
+          }
         }
         return NextResponse.json({ success: true, ai_responded: true, mode: 'owner_admin' })
       }
