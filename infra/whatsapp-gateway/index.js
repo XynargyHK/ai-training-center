@@ -35,6 +35,19 @@ let qrCode = null
 let connectionStatus = 'disconnected'
 let lastAlertTime = 0
 
+// Track message IDs this gateway sent. Lets us distinguish AI replies (skip)
+// from human-typed self-messages on the primary phone (forward to webhook).
+const SENT_IDS_MAX = 500
+const sentByGateway = new Set()
+function markSent(id) {
+  if (!id) return
+  sentByGateway.add(id)
+  if (sentByGateway.size > SENT_IDS_MAX) {
+    const first = sentByGateway.values().next().value
+    sentByGateway.delete(first)
+  }
+}
+
 // Clear auth FILES inside the volume dir (don't rmdir the mount point itself)
 function clearAuthFiles() {
   try {
@@ -149,8 +162,14 @@ async function connectToWhatsApp() {
     if (type !== 'notify') return
 
     for (const msg of messages) {
-      // Skip own messages
-      if (msg.key.fromMe) continue
+      // If the message is fromMe, check who actually sent it:
+      //   - If we (the gateway) sent it via sendMessage -> skip (it's an AI reply)
+      //   - Otherwise -> human typed it on the primary phone. Forward to webhook
+      //     so the owner can chat with their own AI on their own number.
+      if (msg.key.fromMe) {
+        if (sentByGateway.has(msg.key.id)) continue
+        console.log(`🪞 Self-message from primary phone: ${msg.key.id}`)
+      }
 
       const remoteJid = msg.key.remoteJid
       const isGroup = remoteJid.endsWith('@g.us')
@@ -213,6 +232,7 @@ app.post('/messages/text', async (req, res) => {
   try {
     const jid = formatJid(to)
     const result = await sock.sendMessage(jid, { text: body })
+    markSent(result.key.id)
     res.json({ sent: true, message: { id: result.key.id, from: to } })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -236,6 +256,7 @@ app.post('/messages/document', async (req, res) => {
       caption: caption || '',
       mimetype: 'application/pdf',
     })
+    markSent(result.key.id)
     res.json({ sent: true, message: { id: result.key.id } })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -257,6 +278,7 @@ app.post('/messages/image', async (req, res) => {
       image: buffer,
       caption: caption || '',
     })
+    markSent(result.key.id)
     res.json({ sent: true, message: { id: result.key.id } })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -278,6 +300,7 @@ app.post('/messages/video', async (req, res) => {
       video: buffer,
       caption: caption || '',
     })
+    markSent(result.key.id)
     res.json({ sent: true, message: { id: result.key.id } })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -299,6 +322,7 @@ app.post('/groups/text', async (req, res) => {
   try {
     const jid = group_id.includes('@') ? group_id : group_id + '@g.us'
     const result = await sock.sendMessage(jid, { text: body })
+    markSent(result.key.id)
     res.json({ sent: true, message: { id: result.key.id, group: jid } })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -317,6 +341,7 @@ app.post('/groups/image', async (req, res) => {
     const jid = group_id.includes('@') ? group_id : group_id + '@g.us'
     const buffer = await downloadMedia(media)
     const result = await sock.sendMessage(jid, { image: buffer, caption: caption || '' })
+    markSent(result.key.id)
     res.json({ sent: true, message: { id: result.key.id, group: jid } })
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -335,6 +360,7 @@ app.post('/groups/video', async (req, res) => {
     const jid = group_id.includes('@') ? group_id : group_id + '@g.us'
     const buffer = await downloadMedia(media)
     const result = await sock.sendMessage(jid, { video: buffer, caption: caption || '' })
+    markSent(result.key.id)
     res.json({ sent: true, message: { id: result.key.id, group: jid } })
   } catch (err) {
     res.status(500).json({ error: err.message })
