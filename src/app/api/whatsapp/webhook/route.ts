@@ -38,6 +38,34 @@ export async function POST(request: NextRequest) {
     const hasTrigger = text.toLowerCase().includes('sarah') || text.toLowerCase().includes('#ai')
     const shouldRespond = !isGroup || hasTrigger
 
+    // 1.4 OWNER ADMIN MODE — check FIRST, before BU-selector flow, so the owner
+    // can run admin commands on their own number without seeing the customer menu.
+    if (!isGroup && isOwnerSender(sender)) {
+      const ownerBuId = process.env.WHATSAPP_OWNER_BU_ID || process.env.WHATSAPP_TEST_BU_ID
+      if (ownerBuId) {
+        console.log(`👑 Owner detected (${sender}) — routing to admin command handler, BU=${ownerBuId}`)
+        const adminReply = await handleOwnerCommand(cleanText, ownerBuId)
+
+        await supabase.from('whatsapp_conversations').insert({
+          business_unit_id: ownerBuId,
+          wa_chat_id: sender,
+          role: 'assistant',
+          content: adminReply,
+          metadata: { mode: 'owner_admin' }
+        })
+
+        const GATEWAY_URL = process.env.WHATSAPP_GATEWAY_URL
+        if (GATEWAY_URL) {
+          await fetch(`${GATEWAY_URL}/messages/text`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ to: sender, body: adminReply })
+          })
+        }
+        return NextResponse.json({ success: true, ai_responded: true, mode: 'owner_admin' })
+      }
+    }
+
     // 2. IDENTIFY BUSINESS UNIT — check if customer already selected one, or show selector
     let businessUnitId: string | undefined = undefined
     let settings = null
@@ -174,30 +202,6 @@ export async function POST(request: NextRequest) {
     if (!shouldRespond) {
       console.log('🔇 Group message without trigger, skipping AI response.')
       return NextResponse.json({ success: true, ai_responded: false, reason: 'no_trigger' })
-    }
-
-    // 2.8 OWNER ADMIN MODE — if sender is the business owner, route to admin handler
-    if (!isGroup && isOwnerSender(sender)) {
-      console.log(`👑 Owner detected (${sender}) — routing to admin command handler`)
-      const adminReply = await handleOwnerCommand(cleanText, businessUnitId)
-
-      await supabase.from('whatsapp_conversations').insert({
-        business_unit_id: businessUnitId,
-        wa_chat_id: sender,
-        role: 'assistant',
-        content: adminReply,
-        metadata: { mode: 'owner_admin' }
-      })
-
-      const GATEWAY_URL = process.env.WHATSAPP_GATEWAY_URL
-      if (GATEWAY_URL) {
-        await fetch(`${GATEWAY_URL}/messages/text`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ to: sender, body: adminReply })
-        })
-      }
-      return NextResponse.json({ success: true, ai_responded: true, mode: 'owner_admin' })
     }
 
     console.log(`🧠 Routing WhatsApp message to AI Brain for BU: ${businessUnitId} (History: ${conversationHistory.length} msgs)`)
