@@ -46,6 +46,9 @@ export interface AIChatOptions {
   // Roleplay specific
   scenario?: any
   isTraining?: boolean
+  // WhatsApp/Social specific
+  isGroup?: boolean
+  senderName?: string
 }
 
 /**
@@ -231,15 +234,17 @@ export async function generateSiloedResponse(opts: AIChatOptions) {
       }
     }
 
-    // 2. "OPEN THE DRAWER" - Fetch ONLY relevant data for this Business Unit
-    const { hybridSearchKnowledge, vectorSearchTrainingData, loadGuidelines, hybridSearchImages } = await import('./supabase-storage')
-    
+    // 2. "OPEN THE DRAWER" — Fetch ALL relevant data for this BU.
+    // loadKnowledge combines uploaded docs + products + services + landing pages
+    // into one unified list. We also run vector-ranked image search separately
+    // for multimodal citations.
+    const { loadKnowledge, vectorSearchTrainingData, loadGuidelines, hybridSearchImages } = await import('./supabase-storage')
+
     const [knowledgeBase, guidelines, trainingExamples, relevantImages] = await Promise.all([
-      // Use hybrid search (Vector + Keyword) which is more robust
-      hybridSearchKnowledge(message, resolvedBUId, 10), 
+      loadKnowledge(resolvedBUId, country, language),
       loadGuidelines(resolvedBUId, language),
       vectorSearchTrainingData(message, resolvedBUId, 3),
-      hybridSearchImages(message, resolvedBUId, 2) // Fetch top 2 relevant images
+      hybridSearchImages(message, resolvedBUId, 2)
     ])
 
     console.log(`✅ Retrieved context: ${knowledgeBase.length} KB entries, ${guidelines.length} guidelines, ${relevantImages.length} images`)
@@ -266,7 +271,9 @@ export async function generateSiloedResponse(opts: AIChatOptions) {
       image,
       userName,
       userProfile,
-      userOrders
+      userOrders,
+      isGroup,
+      senderName
     })
 
     // Add training examples as a special block if found
