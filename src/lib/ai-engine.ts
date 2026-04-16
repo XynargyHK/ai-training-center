@@ -178,10 +178,10 @@ function getImageDimensions(buffer: Buffer, mimeType: string): { width: number; 
  * Fetches context server-side and generates a siloed response.
  */
 export async function generateSiloedResponse(opts: AIChatOptions) {
-  const { 
-    businessUnitId, 
+  const {
+    businessUnitId,
     aiStaffId,
-    message, 
+    message,
     conversationHistory,
     language = 'en',
     country = 'HK',
@@ -190,7 +190,9 @@ export async function generateSiloedResponse(opts: AIChatOptions) {
     userProfile = null,
     userOrders = null,
     scenario = null,
-    isTraining = false
+    isTraining = false,
+    isGroup = false,
+    senderName
   } = opts
 
   let { staffName = 'AI Assistant', staffRole = 'representative' } = opts
