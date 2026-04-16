@@ -287,9 +287,10 @@ export async function POST(request: NextRequest) {
 
     console.log(`🧠 Routing WhatsApp message to AI Brain for BU: ${businessUnitId} (History: ${conversationHistory.length} msgs)`)
 
-    // 2.7 DEMO MODE — SPA Collection hardcoded context (remove after demo)
+    // 2.7 DEMO MODE — SPA Collection hardcoded context (remove after demo).
+    // Only the real SPA Collection BU gets this override. SkinCoach and other
+    // BUs use their own DB-loaded knowledge via loadKnowledge().
     const DEMO_BU_IDS = [
-      '77313e61-2a19-4f3e-823b-80390dde8bd2', // test BU
       'e133fbe6-69a8-45c8-8736-a15b24010621', // SPA collection (real)
     ]
     let demoPrefix = ''
