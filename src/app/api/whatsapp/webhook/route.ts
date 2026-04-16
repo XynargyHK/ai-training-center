@@ -104,6 +104,14 @@ export async function POST(request: NextRequest) {
       console.log(`🔁 Returning customer, previously selected BU: ${businessUnitId}`)
     }
 
+    // 2.1b DEFAULT BU — if Railway has WHATSAPP_DEFAULT_BU_ID set, skip the
+    // AIStaffs selector entirely and route new conversations directly to that BU.
+    // For the multi-BU SaaS flow, leave this env var unset to restore the menu.
+    if (!businessUnitId && !isSwitchCommand && process.env.WHATSAPP_DEFAULT_BU_ID) {
+      businessUnitId = process.env.WHATSAPP_DEFAULT_BU_ID
+      console.log(`🎯 No prior selection — using WHATSAPP_DEFAULT_BU_ID: ${businessUnitId}`)
+    }
+
     // 2.2 Check if customer is selecting a BU now (typed a number like "1", "2", etc.)
     if (!businessUnitId) {
       // Fetch all business units to show as options
@@ -221,6 +229,62 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, ai_responded: false, reason: 'no_trigger' })
     }
 
+    // 2.8 PHONE-CALL INTENT — detect "call me" / "phone me" / 打電話 etc and
+    // trigger an outbound Twilio call from Sarah to the customer's WhatsApp number.
+    const phoneCallIntent = /^(call\s*me|phone\s*me|ring\s*me|give\s*me\s*a\s*call|打電話|打俾我|call\s*back)\b/i.test(cleanText.trim())
+    if (!isGroup && phoneCallIntent) {
+      const customerPhone = sender.replace(/@.*/, '').replace(/\D/g, '')
+      const twilioFrom = process.env.TWILIO_PHONE_NUMBER
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ai-training-center-production.up.railway.app'
+      if (customerPhone && twilioFrom) {
+        try {
+          console.log(`📞 Phone call intent detected — triggering outbound call to +${customerPhone}`)
+          await fetch(`${appUrl}/api/voice/outbound`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              toNumber: `+${customerPhone}`,
+              fromNumber: twilioFrom,
+              businessUnitId,
+              greeting: 'Hi, this is Sarah. You asked me to call you back.'
+            })
+          })
+          const confirm = `📞 Calling you now at +${customerPhone}. Pick up in a few seconds.`
+          await supabase.from('whatsapp_conversations').insert({
+            business_unit_id: businessUnitId, wa_chat_id: sender, role: 'assistant', content: confirm
+          })
+          const GATEWAY_URL = process.env.WHATSAPP_GATEWAY_URL
+          if (GATEWAY_URL) {
+            await fetch(`${GATEWAY_URL}/messages/text`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ to: sender, body: confirm })
+            })
+          }
+          return NextResponse.json({ success: true, ai_responded: true, action: 'phone_call_triggered' })
+        } catch (callErr: any) {
+          console.error('❌ Phone call trigger failed:', callErr.message)
+        }
+      } else {
+        console.warn(`⚠️ Phone call intent but missing customerPhone=${customerPhone} or TWILIO_PHONE_NUMBER=${twilioFrom}`)
+      }
+    }
+
+    // 2.9 RESOLVE SARAH — find the BU's primary active AI staff so the engine
+    // uses the real staff profile (name, role, training memory) instead of defaults.
+    let resolvedStaffId: string | undefined
+    const { data: primaryStaff } = await supabase
+      .from('ai_staff')
+      .select('id, name')
+      .eq('business_unit_id', businessUnitId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+    if (primaryStaff) {
+      resolvedStaffId = primaryStaff.id
+      console.log(`👤 Using AI staff: ${primaryStaff.name} (${resolvedStaffId})`)
+    }
+
     console.log(`🧠 Routing WhatsApp message to AI Brain for BU: ${businessUnitId} (History: ${conversationHistory.length} msgs)`)
 
     // 2.7 DEMO MODE — SPA Collection hardcoded context (remove after demo)
@@ -286,11 +350,13 @@ PERSONALITY: Warm, friendly, professional. Like a real receptionist who genuinel
     // 3. GENERATE AI RESPONSE
     const aiResult = await generateSiloedResponse({
       businessUnitId: businessUnitId,
+      aiStaffId: resolvedStaffId,
       message: demoPrefix + cleanText,
       conversationHistory: conversationHistory,
       staffRole: 'coach',
       staffName: 'Sarah',
       language: 'en',
+      country: 'HK',
       isGroup,
       senderName: pushName
     })
