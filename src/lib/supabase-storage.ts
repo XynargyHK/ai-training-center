@@ -109,9 +109,9 @@ export async function loadKnowledge(businessUnitSlugOrId?: string | null, countr
     console.error('Error loading products for knowledge:', productsError)
   }
 
-  // Load services
+  // Load services (table is kb_services; plain 'services' doesn't exist)
   const { data: servicesData, error: servicesError} = await supabase
-    .from('services')
+    .from('kb_services')
     .select('*')
     .eq('business_unit_id', businessUnitId)
     .eq('is_active', true)
@@ -257,6 +257,7 @@ ${policiesText ? `\nPolicies:${policiesText}` : ''}`,
   }
 
   // Combine all knowledge sources
+  console.log(`📚 loadKnowledge [bu=${businessUnitId} country=${country} lang=${language}]: docs=${knowledgeEntries.length} products=${productEntries.length} services=${serviceEntries.length} landingPages=${landingPageEntries.length}`)
   return [
     ...knowledgeEntries,
     ...productEntries,
