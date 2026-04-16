@@ -184,7 +184,15 @@ async function connectToWhatsApp() {
 
       // For DMs: sender = remoteJid (the person)
       // For groups: sender = remoteJid (the group), participant = who sent it
-      const sender = remoteJid
+      // For self-messages (fromMe && !group): WhatsApp reports remoteJid as
+      // the user's LID (privacy-safe ID like 175...@lid), NOT the phone number.
+      // Override with the gateway's own phone so the webhook can match owner phone.
+      let sender = remoteJid
+      if (msg.key.fromMe && !isGroup) {
+        const ownId = sock.user?.id || ''
+        const ownPhone = ownId.split(':')[0].split('@')[0]
+        if (ownPhone) sender = ownPhone + '@s.whatsapp.net'
+      }
 
       if (isGroup) {
         console.log(`👥 Group ${sender} | ${participant}: ${text.substring(0, 50)}...`)
