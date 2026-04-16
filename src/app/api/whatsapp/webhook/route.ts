@@ -9,6 +9,57 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+// Per-BU welcome menus shown after the customer picks a business from the main selector.
+// Hardcoded for demo speed; move to a business_units.welcome_menu column for SaaS later.
+function getBuWelcomeMenu(businessUnitName: string): string | null {
+  const name = (businessUnitName || '').toLowerCase()
+  const voiceUrl = 'https://www.aistaffs.app/voiceapr9web'
+
+  if (name.includes('skincoach') || name.includes('skin coach')) {
+    return `Welcome to SkinCoach! I'm Sarah, your AI skin coach. How can I help today?
+
+1️⃣ 🛍️ Shop products
+2️⃣ 📅 Book a consultation
+3️⃣ 📦 Track my order
+4️⃣ 💬 Coaching — ask Sarah anything
+5️⃣ 🎤 Voice call with Sarah
+
+Type a number, or just tell me what you need.`
+  }
+
+  if (name.includes('breast guardian') || name.includes('breastguardian')) {
+    return `Welcome to Breast Guardian. I'm Sarah, your AI health coach.
+
+1️⃣ 📋 Take self-check quiz
+2️⃣ 📅 Book a screening
+3️⃣ 💬 Coaching — ask Sarah anything
+4️⃣ 🎤 Voice call with Sarah
+
+Type a number, or just ask me anything.`
+  }
+
+  if (name.includes('brezcode')) {
+    return `Welcome to BrezCode! I'm Sarah.
+
+1️⃣ 🛍️ Browse products
+2️⃣ 📅 Book consultation
+3️⃣ 💬 Chat with Sarah
+4️⃣ 🎤 Voice call
+
+Type a number or tell me what you need.`
+  }
+
+  // Generic fallback for other BUs (uses Sarah as default staff name)
+  return `Welcome to ${businessUnitName}! I'm Sarah.
+
+1️⃣ 🛍️ Shop
+2️⃣ 📅 Book
+3️⃣ 💬 Chat with me
+4️⃣ 🎤 Voice call (${voiceUrl})
+
+Type a number or just tell me what you need.`
+}
+
 /**
  * UNIVERSAL WHATSAPP WEBHOOK
  * Handles incoming messages from Gateway (Whapi/Maytapi) or Meta API
@@ -128,6 +179,28 @@ export async function POST(request: NextRequest) {
             content: `Customer selected: ${businessUnitName}`,
             metadata: { pushName, isGroup, selectedBuId: businessUnitId }
           })
+
+          // 2.2b Send BU-specific welcome menu and return — don't pass "4" to AI
+          const welcomeMenu = getBuWelcomeMenu(businessUnitName)
+          if (welcomeMenu) {
+            await supabase.from('whatsapp_conversations').insert({
+              business_unit_id: businessUnitId,
+              wa_chat_id: sender,
+              role: 'assistant',
+              content: welcomeMenu,
+              metadata: { mode: 'bu_welcome_menu' }
+            })
+
+            const GATEWAY_URL = process.env.WHATSAPP_GATEWAY_URL
+            if (GATEWAY_URL) {
+              await fetch(`${GATEWAY_URL}/messages/text`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ to: sender, body: welcomeMenu })
+              })
+            }
+            return NextResponse.json({ success: true, ai_responded: true, action: 'bu_welcome_shown' })
+          }
         } else {
           // No valid selection — show the business selector menu
           const menuLines = allBUs.map((bu: any, i: number) => `${i + 1}️⃣ ${bu.name}`).join('\n')
