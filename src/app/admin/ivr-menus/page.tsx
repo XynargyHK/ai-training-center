@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Plus, Trash2, ChevronRight, ChevronDown, Save, Phone, MessageCircle, Eye, GripVertical } from 'lucide-react'
 
 const ACTION_TYPES = [
@@ -40,40 +40,183 @@ function buildTree(flat: IvrNode[]): IvrNode[] {
   return roots
 }
 
-function WhatsAppPreview({ tree }: { tree: IvrNode[] }) {
-  const root = tree[0]
-  if (!root) return <p className="text-sm text-gray-400">No menu yet</p>
-  const children = root.children || []
-  const greeting = root.payload?.greeting || `Welcome! I'm your AI assistant.`
+const DIGITS = ['', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣']
+
+const ACTION_RESULTS: Record<string, (node: IvrNode) => string> = {
+  ai_chat: (n) => `💬 ${n.payload?.prompt || 'Connecting you with AI...'}\n\n[AI conversation starts here]`,
+  transfer_human: (n) => `👤 ${n.payload?.message || 'Connecting you with a team member. Please wait.'}`,
+  send_link: (n) => `🔗 Here you go: ${n.payload?.url || '(no URL set)'}`,
+  voice_ai: (n) => `🎤 Tap to start voice: ${n.payload?.url || '(no URL set)'}`,
+  phone_call: () => `📞 Calling you now... pick up in a few seconds.`,
+  play_message: (n) => `📢 ${n.payload?.message || '(no message set)'}`,
+}
+
+function WhatsAppSimulator({ tree, allNodes }: { tree: IvrNode[]; allNodes: IvrNode[] }) {
+  const [messages, setMessages] = useState<{ role: 'system' | 'user'; text: string }[]>([])
+  const [currentParentId, setCurrentParentId] = useState<string | null>(null)
+  const [input, setInput] = useState('')
+  const [ended, setEnded] = useState(false)
+  const chatRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => { restart() }, [tree])
+  useEffect(() => { chatRef.current?.scrollTo(0, chatRef.current.scrollHeight) }, [messages])
+
+  const restart = () => {
+    const root = tree[0]
+    if (!root) { setMessages([]); return }
+    setCurrentParentId(root.id)
+    setEnded(false)
+    const children = (root.children || []).sort((a, b) => a.sort_order - b.sort_order)
+    const greeting = root.payload?.greeting || 'Welcome!'
+    const menu = children.map((c, i) => `${DIGITS[i + 1]} ${c.label}`).join('\n')
+    setMessages([{ role: 'system', text: `${greeting}\n\n${menu}\n\nType a number or tell me what you need.` }])
+  }
+
+  const handleSend = () => {
+    if (!input.trim() || ended) return
+    const userText = input.trim()
+    setInput('')
+    setMessages(prev => [...prev, { role: 'user', text: userText }])
+
+    const digit = parseInt(userText)
+    if (!currentParentId || isNaN(digit) || digit < 1) {
+      setMessages(prev => [...prev, { role: 'system', text: '💬 [AI would respond here based on your message]' }])
+      return
+    }
+
+    const children = allNodes.filter(n => n.parent_id === currentParentId).sort((a, b) => a.sort_order - b.sort_order)
+    const matched = children[digit - 1]
+    if (!matched) {
+      setMessages(prev => [...prev, { role: 'system', text: `Invalid option. Please type 1-${children.length}.` }])
+      return
+    }
+
+    if (matched.action === 'sub_menu') {
+      const subChildren = allNodes.filter(n => n.parent_id === matched.id).sort((a, b) => a.sort_order - b.sort_order)
+      const subGreeting = matched.payload?.greeting || matched.label
+      const menu = subChildren.map((c, i) => `${DIGITS[i + 1]} ${c.label}`).join('\n')
+      setCurrentParentId(matched.id)
+      setMessages(prev => [...prev, { role: 'system', text: `${subGreeting}\n\n${menu}\n\nType a number.` }])
+    } else {
+      const resultFn = ACTION_RESULTS[matched.action]
+      const result = resultFn ? resultFn(matched) : `[${matched.action}]`
+      setMessages(prev => [...prev, { role: 'system', text: result }])
+      setEnded(true)
+    }
+  }
+
   return (
-    <div className="bg-[#0b141a] text-white rounded-2xl p-4 max-w-xs font-sans text-sm">
-      <div className="bg-[#005c4b] rounded-lg p-3 mb-1">
-        <p className="mb-2">{greeting}</p>
-        {children.map((c, i) => (
-          <p key={c.id}>{['', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'][i + 1]} {c.label}</p>
+    <div className="bg-[#0b141a] rounded-2xl overflow-hidden flex flex-col" style={{ height: 480 }}>
+      <div className="bg-[#1f2c34] px-3 py-2 flex items-center gap-2">
+        <div className="w-8 h-8 bg-[#00a884] rounded-full flex items-center justify-center text-white text-xs font-bold">AI</div>
+        <div><div className="text-white text-sm font-medium">AI Assistant</div><div className="text-[#8696a0] text-xs">online</div></div>
+        <button onClick={restart} className="ml-auto text-[#8696a0] text-xs hover:text-white">↻ Reset</button>
+      </div>
+      <div ref={chatRef} className="flex-1 overflow-y-auto p-3 space-y-2" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'100\' height=\'100\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cdefs%3E%3Cpattern id=\'p\' width=\'20\' height=\'20\' patternUnits=\'userSpaceOnUse\'%3E%3Ccircle cx=\'10\' cy=\'10\' r=\'1\' fill=\'%23182229\'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width=\'100\' height=\'100\' fill=\'%23111b21\'/%3E%3Crect width=\'100\' height=\'100\' fill=\'url(%23p)\'/%3E%3C/svg%3E")' }}>
+        {messages.map((m, i) => (
+          <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${m.role === 'user' ? 'bg-[#005c4b] text-white' : 'bg-[#1f2c34] text-[#e9edef]'}`}>
+              {m.text}
+            </div>
+          </div>
         ))}
-        <p className="mt-2 text-gray-300">Type a number or tell me what you need.</p>
+      </div>
+      <div className="bg-[#1f2c34] p-2 flex items-center gap-2">
+        <input
+          type="text"
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleSend()}
+          placeholder={ended ? 'Conversation ended. Reset ↻' : 'Type a message...'}
+          disabled={ended}
+          className="flex-1 bg-[#2a3942] text-white text-sm rounded-full px-4 py-2 outline-none placeholder-[#8696a0] disabled:opacity-50"
+        />
+        <button onClick={handleSend} disabled={ended} className="bg-[#00a884] text-white w-8 h-8 rounded-full flex items-center justify-center text-sm disabled:opacity-50">→</button>
       </div>
     </div>
   )
 }
 
-function PhonePreview({ tree }: { tree: IvrNode[] }) {
-  const root = tree[0]
-  if (!root) return <p className="text-sm text-gray-400">No menu yet</p>
-  const children = root.children || []
-  const greeting = root.payload?.greeting || 'Welcome.'
+function PhoneSimulator({ tree, allNodes }: { tree: IvrNode[]; allNodes: IvrNode[] }) {
+  const [log, setLog] = useState<string[]>([])
+  const [currentParentId, setCurrentParentId] = useState<string | null>(null)
+  const [ended, setEnded] = useState(false)
+  const logRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => { restart() }, [tree])
+  useEffect(() => { logRef.current?.scrollTo(0, logRef.current.scrollHeight) }, [log])
+
+  const restart = () => {
+    const root = tree[0]
+    if (!root) { setLog([]); return }
+    setCurrentParentId(root.id)
+    setEnded(false)
+    const children = (root.children || []).sort((a, b) => a.sort_order - b.sort_order)
+    const greeting = root.payload?.greeting || 'Welcome.'
+    const options = children.map((c, i) => `Press ${i + 1} for ${c.label.replace(/[^\w\s]/g, '')}.`).join(' ')
+    setLog([`🔔 Incoming call...`, `🗣️ "${greeting} ${options}"`])
+  }
+
+  const pressDigit = (digit: number) => {
+    if (ended || !currentParentId) return
+    setLog(prev => [...prev, `👆 Pressed ${digit}`])
+    const children = allNodes.filter(n => n.parent_id === currentParentId).sort((a, b) => a.sort_order - b.sort_order)
+    const matched = children[digit - 1]
+    if (!matched) {
+      setLog(prev => [...prev, `🗣️ "Invalid option. Please try again."`])
+      return
+    }
+    if (matched.action === 'sub_menu') {
+      const subChildren = allNodes.filter(n => n.parent_id === matched.id).sort((a, b) => a.sort_order - b.sort_order)
+      const subGreeting = matched.payload?.greeting || matched.label.replace(/[^\w\s]/g, '')
+      const options = subChildren.map((c, i) => `Press ${i + 1} for ${c.label.replace(/[^\w\s]/g, '')}.`).join(' ')
+      setCurrentParentId(matched.id)
+      setLog(prev => [...prev, `🗣️ "${subGreeting}. ${options}"`])
+    } else {
+      const actionLabels: Record<string, string> = {
+        ai_chat: '🗣️ "How can I help you?" [Speech recognition active]',
+        transfer_human: `🗣️ "${matched.payload?.message || 'Transferring you now.'}" [Call transferred]`,
+        send_link: '🗣️ "I\'ve sent you a link via WhatsApp." [Hangup]',
+        voice_ai: '🗣️ "Connecting you with AI voice assistant..." [WebRTC handoff]',
+        phone_call: '🗣️ "You\'re already on the phone." [Continue]',
+        play_message: `🗣️ "${matched.payload?.message || 'Thank you.'}" [Hangup]`,
+      }
+      setLog(prev => [...prev, actionLabels[matched.action] || `[${matched.action}]`])
+      setEnded(true)
+    }
+  }
+
+  const dialPad = [1,2,3,4,5,6,7,8,9,'*',0,'#']
   return (
-    <div className="bg-gray-900 text-green-400 rounded-lg p-4 max-w-xs font-mono text-xs">
-      <p className="text-green-300 mb-2">📞 Phone IVR Script:</p>
-      <p className="mb-1">&quot;{greeting}</p>
-      {children.map((c, i) => (
-        <p key={c.id} className="ml-2">Press {i + 1} for {c.label.replace(/[^\w\s]/g, '')}.</p>
-      ))}
-      <p>&quot;</p>
+    <div className="bg-gray-900 rounded-2xl overflow-hidden flex flex-col" style={{ height: 480 }}>
+      <div className="bg-gray-800 px-3 py-2 flex items-center justify-between">
+        <span className="text-white text-sm font-medium">📞 Phone Simulator</span>
+        <button onClick={restart} className="text-gray-400 text-xs hover:text-white">↻ Reset</button>
+      </div>
+      <div ref={logRef} className="flex-1 overflow-y-auto p-3 space-y-1">
+        {log.map((l, i) => (
+          <p key={i} className={`text-xs ${l.startsWith('👆') ? 'text-blue-400' : l.startsWith('🔔') ? 'text-yellow-400' : 'text-green-400'}`}>{l}</p>
+        ))}
+        {ended && <p className="text-xs text-red-400 mt-2">📵 Call ended. Reset to try again.</p>}
+      </div>
+      <div className="bg-gray-800 p-3">
+        <div className="grid grid-cols-3 gap-2">
+          {dialPad.map(d => (
+            <button
+              key={d}
+              onClick={() => typeof d === 'number' && d >= 1 && d <= 9 && pressDigit(d)}
+              disabled={ended || typeof d !== 'number' || d < 1 || d > 9}
+              className="bg-gray-700 hover:bg-gray-600 disabled:opacity-30 text-white text-lg font-medium rounded-lg py-2 transition-colors"
+            >
+              {d}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
+
 
 function NodeEditor({
   node, depth, onUpdate, onDelete, onAddChild, allNodes
@@ -434,9 +577,9 @@ export default function IvrMenuPage() {
                   </button>
                 </div>
                 {previewTab === 'whatsapp' ? (
-                  <WhatsAppPreview tree={tree} />
+                  <WhatsAppSimulator tree={tree} allNodes={nodes} />
                 ) : (
-                  <PhonePreview tree={tree} />
+                  <PhoneSimulator tree={tree} allNodes={nodes} />
                 )}
               </div>
             </div>
