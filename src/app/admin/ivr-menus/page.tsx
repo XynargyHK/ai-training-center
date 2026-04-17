@@ -369,6 +369,8 @@ export default function IvrMenuPage() {
   const [simTab, setSimTab] = useState<'whatsapp' | 'phone'>('whatsapp')
   const [templates, setTemplates] = useState<any[]>([])
   const [showTemplates, setShowTemplates] = useState(false)
+  const [optionSuggestions, setOptionSuggestions] = useState<string[]>([])
+  const [suggestingOptions, setSuggestingOptions] = useState(false)
 
   useEffect(() => {
     fetch('/api/business-units').then(r => r.json()).then(d => setBusinessUnits(d.business_units || []))
@@ -539,10 +541,75 @@ export default function IvrMenuPage() {
                       businessName={businessUnits.find(b => b.id === selectedBU)?.name || ''}
                     />
                   ))}
-                  <button onClick={() => addChild(root.id)}
-                    className="mt-3 flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800">
-                    <Plus className="w-4 h-4" /> Add option
-                  </button>
+                  {/* Add option: blank, quick-pick, or AI suggest */}
+                  <div className="mt-4 space-y-3 border-t border-gray-100 pt-4">
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => addChild(root.id)}
+                        className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800">
+                        <Plus className="w-4 h-4" /> Add blank option
+                      </button>
+                      <span className="text-gray-300">|</span>
+                      <button onClick={async () => {
+                        setSuggestingOptions(true)
+                        try {
+                          const existing = rootChildren.map(c => c.label)
+                          const buName = businessUnits.find(b => b.id === selectedBU)?.name || ''
+                          const res = await fetch('/api/ivr-menus/generate-response', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ mode: 'suggest_options', businessName: buName, existingOptions: existing, count: 4 })
+                          })
+                          const data = await res.json()
+                          setOptionSuggestions(data.options || [])
+                        } catch (e) { console.error(e) }
+                        setSuggestingOptions(false)
+                      }} disabled={suggestingOptions}
+                        className="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-800 disabled:opacity-50">
+                        {suggestingOptions ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                        {suggestingOptions ? 'Thinking...' : 'Suggest with AI'}
+                      </button>
+                    </div>
+
+                    {/* Quick-add common options */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {['📅 Book', '🛍️ Shop', '💬 Chat with AI', '🎤 Voice call', '📞 Phone call', '❓ FAQ', '📍 Location', '💰 Pricing', '👤 Our team', '📦 Track order'].map(label => (
+                        <button key={label} onClick={async () => {
+                          const siblings = nodes.filter(n => n.parent_id === root.id)
+                          await fetch('/api/ivr-menus', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ businessUnitId: selectedBU, parentId: root.id, label, action: 'sub_menu', sortOrder: siblings.length + 1 }),
+                          })
+                          loadMenu()
+                        }}
+                          className="px-2 py-1 text-xs border border-gray-200 rounded-full hover:border-blue-400 hover:bg-blue-50 transition-colors text-gray-600">
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* AI-suggested options */}
+                    {optionSuggestions.length > 0 && (
+                      <div className="space-y-1">
+                        <p className="text-xs text-purple-600 font-medium">AI suggestions:</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {optionSuggestions.map((s, i) => (
+                            <button key={i} onClick={async () => {
+                              const siblings = nodes.filter(n => n.parent_id === root.id)
+                              await fetch('/api/ivr-menus', {
+                                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ businessUnitId: selectedBU, parentId: root.id, label: s, action: 'sub_menu', sortOrder: siblings.length + 1 }),
+                              })
+                              setOptionSuggestions(prev => prev.filter((_, j) => j !== i))
+                              loadMenu()
+                            }}
+                              className="px-2.5 py-1 text-xs border border-purple-200 bg-purple-50 rounded-full hover:bg-purple-100 transition-colors text-purple-700">
+                              + {s}
+                            </button>
+                          ))}
+                          <button onClick={() => setOptionSuggestions([])} className="text-xs text-gray-400 hover:text-gray-600 px-1">✕</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

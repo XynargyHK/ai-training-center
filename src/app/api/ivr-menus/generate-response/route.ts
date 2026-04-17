@@ -7,16 +7,30 @@ function getGemini() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { menuPath, businessName, count = 3 } = await request.json()
-
-    if (!menuPath) {
-      return NextResponse.json({ error: 'menuPath required' }, { status: 400 })
-    }
+    const { menuPath, businessName, count = 3, mode = 'response', existingOptions = [] } = await request.json()
 
     const genAI = getGemini()
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
 
-    const prompt = `You are writing response messages for an automated phone/WhatsApp menu system.
+    let prompt: string
+
+    if (mode === 'suggest_options') {
+      prompt = `You are helping a business owner set up their phone/WhatsApp menu.
+
+Business: ${businessName || 'a business'}
+Existing menu options already created: ${existingOptions.length > 0 ? existingOptions.join(', ') : 'None yet'}
+
+Suggest ${count} NEW menu options they should add. These should be common things customers ask about for this type of business. Do NOT suggest options that already exist.
+
+Each suggestion should be a short label with an emoji prefix (e.g. "📅 Book appointment", "🛍️ Shop products").
+
+Return ONLY a JSON array of strings. No markdown, no explanation.`
+    } else {
+      if (!menuPath) {
+        return NextResponse.json({ error: 'menuPath required' }, { status: 400 })
+      }
+
+      prompt = `You are writing response messages for an automated phone/WhatsApp menu system.
 
 Business: ${businessName || 'a business'}
 Menu path the customer navigated: ${menuPath}
@@ -29,6 +43,7 @@ Generate ${count} different response options that the system would send when the
 
 Return ONLY a JSON array of strings. No markdown, no explanation.
 Example: ["Response option 1", "Response option 2", "Response option 3"]`
+    }
 
     const result = await model.generateContent(prompt)
     const text = result.response.text().trim()
