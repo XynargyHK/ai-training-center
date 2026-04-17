@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Plus, Trash2, ChevronRight, ChevronDown, Save, Phone, MessageCircle, Image, Link2, Mic, Users, RotateCcw } from 'lucide-react'
+import { Plus, Trash2, ChevronRight, ChevronDown, Save, Phone, MessageCircle, Image, Link2, Mic, Users, RotateCcw, Sparkles, Loader2 } from 'lucide-react'
 
 interface IvrNode {
   id: string
@@ -34,16 +34,34 @@ function buildTree(flat: IvrNode[]): IvrNode[] {
 const DIGITS = ['', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣']
 
 // ─── Option Editor (recursive) ──────────────────────────────
-function OptionEditor({ node, depth, number, allNodes, onUpdate, onDelete, onAddChild }: {
+function OptionEditor({ node, depth, number, allNodes, onUpdate, onDelete, onAddChild, menuPath, businessName }: {
   node: IvrNode; depth: number; number: string; allNodes: IvrNode[]
   onUpdate: (id: string, field: string, value: any) => void
   onDelete: (id: string) => void
   onAddChild: (parentId: string) => void
+  menuPath: string; businessName: string
 }) {
   const [expanded, setExpanded] = useState(true)
+  const [generating, setGenerating] = useState(false)
+  const [suggestions, setSuggestions] = useState<string[]>([])
   const children = (node.children || []).sort((a, b) => a.sort_order - b.sort_order)
   const hasChildren = children.length > 0
   const isEnd = !hasChildren
+  const fullPath = menuPath ? `${menuPath} → ${node.label}` : node.label
+
+  const generateOptions = async () => {
+    setGenerating(true)
+    setSuggestions([])
+    try {
+      const res = await fetch('/api/ivr-menus/generate-response', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ menuPath: fullPath, businessName, count: 3 })
+      })
+      const data = await res.json()
+      if (data.options) setSuggestions(data.options)
+    } catch (e) { console.error(e) }
+    setGenerating(false)
+  }
 
   return (
     <div className={depth > 0 ? 'ml-8 border-l-2 border-gray-200 pl-4 mt-2' : 'mt-2'}>
@@ -71,13 +89,31 @@ function OptionEditor({ node, depth, number, allNodes, onUpdate, onDelete, onAdd
         {/* End node = THE ANSWER */}
         {isEnd && (
           <div className="mt-3 space-y-2">
-            <p className="text-xs text-green-700 font-medium">↳ When customer picks this, respond with:</p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-green-700 font-medium">↳ When customer picks this, respond with:</p>
+              <button onClick={generateOptions} disabled={generating}
+                className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 disabled:opacity-50">
+                {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                {generating ? 'Generating...' : 'Generate with AI'}
+              </button>
+            </div>
+            {suggestions.length > 0 && (
+              <div className="space-y-1">
+                {suggestions.map((s, i) => (
+                  <button key={i} onClick={() => { onUpdate(node.id, 'payload', { ...node.payload, response: s }); setSuggestions([]) }}
+                    className="w-full text-left px-2 py-1.5 text-xs border border-purple-200 bg-purple-50 rounded hover:bg-purple-100 transition-colors">
+                    {s}
+                  </button>
+                ))}
+                <button onClick={() => setSuggestions([])} className="text-xs text-gray-400 hover:text-gray-600">Dismiss</button>
+              </div>
+            )}
             <textarea
               value={node.payload?.response || ''}
               onChange={e => onUpdate(node.id, 'payload', { ...node.payload, response: e.target.value })}
               className="w-full px-2 py-1.5 text-sm border border-green-200 rounded bg-white resize-none focus:outline-none focus:ring-1 focus:ring-green-400"
               rows={2}
-              placeholder="Type the answer... e.g. AB Facial: 60min, HK$580. Our therapist will take care of you."
+              placeholder="Type the answer... or click 'Generate with AI' above"
             />
             <div className="flex items-center gap-3 text-xs">
               <label className="flex items-center gap-1 text-gray-500 cursor-pointer hover:text-gray-700">
@@ -140,6 +176,8 @@ function OptionEditor({ node, depth, number, allNodes, onUpdate, onDelete, onAdd
           onUpdate={onUpdate}
           onDelete={onDelete}
           onAddChild={onAddChild}
+          menuPath={fullPath}
+          businessName={businessName}
         />
       ))}
     </div>
@@ -497,6 +535,8 @@ export default function IvrMenuPage() {
                       onUpdate={updateNode}
                       onDelete={deleteNode}
                       onAddChild={addChild}
+                      menuPath={root?.payload?.greeting || 'Main Menu'}
+                      businessName={businessUnits.find(b => b.id === selectedBU)?.name || ''}
                     />
                   ))}
                   <button onClick={() => addChild(root.id)}
