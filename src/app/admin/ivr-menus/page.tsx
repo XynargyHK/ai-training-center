@@ -213,10 +213,15 @@ export default function IvrMenuPage() {
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)
   const [previewTab, setPreviewTab] = useState<'whatsapp' | 'phone'>('whatsapp')
+  const [templates, setTemplates] = useState<any[]>([])
+  const [importing, setImporting] = useState(false)
 
   useEffect(() => {
     fetch('/api/business-units').then(r => r.json()).then(d => {
       setBusinessUnits(d.business_units || d.businessUnits || [])
+    })
+    fetch('/api/ivr-menus/import-template').then(r => r.json()).then(d => {
+      setTemplates(d.templates || [])
     })
   }, [])
 
@@ -343,10 +348,42 @@ export default function IvrMenuPage() {
                       onClick={createRoot}
                       className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
                     >
-                      <Plus className="w-4 h-4" /> Create Root Menu
+                      <Plus className="w-4 h-4" /> Create Blank Menu
                     </button>
                   )}
                 </div>
+
+                {/* Template Picker — show when no menu exists */}
+                {tree.length === 0 && templates.length > 0 && (
+                  <div className="mb-6">
+                    <p className="text-sm text-gray-500 mb-3">Or start from an industry template:</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {templates.map(t => (
+                        <button
+                          key={t.id}
+                          disabled={importing}
+                          onClick={async () => {
+                            setImporting(true)
+                            await fetch('/api/ivr-menus/import-template', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ templateId: t.id, businessUnitId: selectedBU })
+                            })
+                            await loadMenu()
+                            setImporting(false)
+                          }}
+                          className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors text-left disabled:opacity-50"
+                        >
+                          <span className="text-2xl">{t.icon}</span>
+                          <div>
+                            <div className="text-sm font-medium text-gray-800">{t.name}</div>
+                            <div className="text-xs text-gray-400">{t.optionCount} options</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {tree.map(root => (
                   <NodeEditor
                     key={root.id}
