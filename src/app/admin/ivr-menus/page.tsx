@@ -343,18 +343,36 @@ export default function IvrMenuPage() {
               <div className="bg-white rounded-xl border border-gray-200 p-4">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-semibold text-gray-700">Menu Tree</h2>
-                  {tree.length === 0 && (
-                    <button
-                      onClick={createRoot}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
-                    >
-                      <Plus className="w-4 h-4" /> Create Blank Menu
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {tree.length === 0 && (
+                      <button
+                        onClick={createRoot}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                      >
+                        <Plus className="w-4 h-4" /> Create Blank Menu
+                      </button>
+                    )}
+                    {tree.length > 0 && !importing && (
+                      <button
+                        onClick={() => setImporting(true)}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-sm hover:bg-gray-200"
+                      >
+                        Replace with Template
+                      </button>
+                    )}
+                    {importing && (
+                      <button
+                        onClick={() => setImporting(false)}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-sm hover:bg-gray-200"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                {/* Template Picker — show when no menu exists */}
-                {tree.length === 0 && templates.length > 0 && (
+                {/* Template Picker — show when no menu exists, or via button */}
+                {templates.length > 0 && (tree.length === 0 || importing) && (
                   <div className="mb-6">
                     <p className="text-sm text-gray-500 mb-3">Or start from an industry template:</p>
                     <div className="grid grid-cols-2 gap-2">
@@ -370,7 +388,7 @@ export default function IvrMenuPage() {
                               body: JSON.stringify({ templateId: t.id, businessUnitId: selectedBU })
                             })
                             await loadMenu()
-                            setImporting(false)
+                            setImporting(false)  // hide template grid after import
                           }}
                           className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors text-left disabled:opacity-50"
                         >
