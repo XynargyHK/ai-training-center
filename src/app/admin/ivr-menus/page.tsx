@@ -216,7 +216,7 @@ export default function IvrMenuPage() {
 
   useEffect(() => {
     fetch('/api/business-units').then(r => r.json()).then(d => {
-      setBusinessUnits(d.businessUnits || d || [])
+      setBusinessUnits(d.business_units || d.businessUnits || [])
     })
   }, [])
 
