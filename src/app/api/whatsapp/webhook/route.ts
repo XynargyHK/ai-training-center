@@ -3,6 +3,7 @@ import { generateSiloedResponse } from '@/lib/ai-engine'
 import { createClient } from '@supabase/supabase-js'
 import { sendWhatsAppMessage } from '@/lib/whatsapp'
 import { isOwnerSender, handleOwnerCommand } from '@/lib/whatsapp-admin'
+import { loadIvrTree, getRootNode, getChildren, renderWhatsAppMenu, resolveDigitInput } from '@/lib/ivr-renderer'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -227,6 +228,130 @@ export async function POST(request: NextRequest) {
     if (!shouldRespond) {
       console.log('🔇 Group message without trigger, skipping AI response.')
       return NextResponse.json({ success: true, ai_responded: false, reason: 'no_trigger' })
+    }
+
+    // 2.7b IVR MENU — check if this BU has an IVR tree. If so, handle menu
+    // navigation (show root on first contact, resolve digit inputs into actions).
+    // Falls through to AI if no IVR menu exists for this BU.
+    try {
+      const ivrNodes = await loadIvrTree(businessUnitId!)
+      const root = getRootNode(ivrNodes)
+      if (root && ivrNodes.length > 1) {
+        const lastAssistant = conversationHistory.findLast((m: any) => m.role === 'assistant')
+        const lastMeta = historyData?.find((m: any) => m.role === 'assistant' && m.metadata?.ivrParentId)
+
+        // Determine current menu level (root by default, or last shown parent)
+        const currentParentId = lastMeta?.metadata?.ivrParentId || root.id
+        const digit = parseInt(cleanText)
+
+        if (digit >= 1 && digit <= 9) {
+          const matched = resolveDigitInput(ivrNodes, currentParentId, digit)
+          if (matched) {
+            console.log(`📋 IVR: digit ${digit} → action=${matched.action} label="${matched.label}"`)
+
+            const GATEWAY_URL = process.env.WHATSAPP_GATEWAY_URL
+
+            if (matched.action === 'sub_menu') {
+              const sub = renderWhatsAppMenu(ivrNodes, matched.id)
+              if (sub.text) {
+                await supabase.from('whatsapp_conversations').insert({
+                  business_unit_id: businessUnitId, wa_chat_id: sender, role: 'assistant',
+                  content: sub.text, metadata: { ivrParentId: matched.id }
+                })
+                if (GATEWAY_URL) {
+                  await fetch(`${GATEWAY_URL}/messages/text`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ to: sender, body: sub.text })
+                  })
+                }
+                return NextResponse.json({ success: true, action: 'ivr_sub_menu' })
+              }
+            }
+
+            if (matched.action === 'send_link' && matched.payload?.url) {
+              const msg = `Here you go: ${matched.payload.url}`
+              await supabase.from('whatsapp_conversations').insert({
+                business_unit_id: businessUnitId, wa_chat_id: sender, role: 'assistant', content: msg
+              })
+              if (GATEWAY_URL) {
+                await fetch(`${GATEWAY_URL}/messages/text`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to: sender, body: msg }) })
+              }
+              return NextResponse.json({ success: true, action: 'ivr_send_link' })
+            }
+
+            if (matched.action === 'voice_ai' && matched.payload?.url) {
+              const msg = `Tap to start a voice conversation: ${matched.payload.url}`
+              await supabase.from('whatsapp_conversations').insert({
+                business_unit_id: businessUnitId, wa_chat_id: sender, role: 'assistant', content: msg
+              })
+              if (GATEWAY_URL) {
+                await fetch(`${GATEWAY_URL}/messages/text`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to: sender, body: msg }) })
+              }
+              return NextResponse.json({ success: true, action: 'ivr_voice_ai' })
+            }
+
+            if (matched.action === 'phone_call') {
+              const customerPhone = sender.replace(/@.*/, '').replace(/\D/g, '')
+              const twilioFrom = process.env.TWILIO_PHONE_NUMBER
+              const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ai-training-center-production.up.railway.app'
+              if (customerPhone && twilioFrom) {
+                await fetch(`${appUrl}/api/voice/outbound`, {
+                  method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ toNumber: `+${customerPhone}`, fromNumber: twilioFrom, businessUnitId })
+                })
+                const msg = `📞 Calling you now at +${customerPhone}. Pick up in a few seconds.`
+                await supabase.from('whatsapp_conversations').insert({
+                  business_unit_id: businessUnitId, wa_chat_id: sender, role: 'assistant', content: msg
+                })
+                if (GATEWAY_URL) {
+                  await fetch(`${GATEWAY_URL}/messages/text`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to: sender, body: msg }) })
+                }
+                return NextResponse.json({ success: true, action: 'ivr_phone_call' })
+              }
+            }
+
+            if (matched.action === 'ai_chat') {
+              // Fall through to AI with optional initial prompt
+              if (matched.payload?.prompt) {
+                cleanText = matched.payload.prompt
+              }
+            }
+
+            if (matched.action === 'transfer_human') {
+              const msg = matched.payload?.message || 'Connecting you with a team member. Please wait.'
+              await supabase.from('whatsapp_conversations').insert({
+                business_unit_id: businessUnitId, wa_chat_id: sender, role: 'assistant', content: msg
+              })
+              if (GATEWAY_URL) {
+                await fetch(`${GATEWAY_URL}/messages/text`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to: sender, body: msg }) })
+              }
+              return NextResponse.json({ success: true, action: 'ivr_transfer_human' })
+            }
+          }
+        }
+
+        // First contact or non-numeric message with no history — show root menu
+        const hasSeenMenu = conversationHistory.some((m: any) => m.role === 'assistant')
+        if (!hasSeenMenu) {
+          const menu = renderWhatsAppMenu(ivrNodes, root.id)
+          if (menu.text) {
+            await supabase.from('whatsapp_conversations').insert({
+              business_unit_id: businessUnitId, wa_chat_id: sender, role: 'assistant',
+              content: menu.text, metadata: { ivrParentId: root.id }
+            })
+            const GATEWAY_URL = process.env.WHATSAPP_GATEWAY_URL
+            if (GATEWAY_URL) {
+              await fetch(`${GATEWAY_URL}/messages/text`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ to: sender, body: menu.text })
+              })
+            }
+            return NextResponse.json({ success: true, action: 'ivr_root_menu' })
+          }
+        }
+      }
+    } catch (ivrErr: any) {
+      console.warn('IVR menu check failed (non-critical, falling through to AI):', ivrErr.message)
     }
 
     // 2.8 PHONE-CALL INTENT — detect "call me" / "phone me" / 打電話 etc and
