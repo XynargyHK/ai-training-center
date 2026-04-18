@@ -23,6 +23,8 @@ interface HeaderSSRProps {
   headingFont?: string
   accountUrl?: string
   country?: string
+  navBgColor?: string      // NEW: nav bar background (overrides default white)
+  navTextColor?: string    // NEW: nav link text color
 }
 
 const langName: Record<string, string> = {
@@ -51,6 +53,8 @@ export default function HeaderSSR({
   headingFont,
   accountUrl = '/account',
   country = 'US',
+  navBgColor,
+  navTextColor,
 }: HeaderSSRProps) {
   const { cartItemCount, openCart } = useCart()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -98,7 +102,10 @@ export default function HeaderSSR({
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+    <header
+      className={`sticky top-0 z-50 border-b shadow-sm ${navBgColor ? '' : 'bg-white border-gray-100'}`}
+      style={navBgColor ? { backgroundColor: navBgColor, borderColor: 'rgba(255,255,255,0.1)', color: navTextColor || '#ffffff' } : undefined}
+    >
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Left side */}
@@ -131,7 +138,8 @@ export default function HeaderSSR({
                 <a
                   key={item.label}
                   href={item.href}
-                  className={`text-black hover:opacity-80 transition-colors text-sm font-bold tracking-[0.15em] uppercase ${headlineFont.className}`}
+                  className={`hover:opacity-80 transition-colors text-sm font-bold tracking-[0.15em] uppercase ${headlineFont.className}`}
+                  style={{ color: navTextColor || '#000000' }}
                 >
                   {item.label}
                 </a>

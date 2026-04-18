@@ -371,6 +371,7 @@ export default function IvrMenuPage() {
   const [showTemplates, setShowTemplates] = useState(false)
   const [optionSuggestions, setOptionSuggestions] = useState<string[]>([])
   const [suggestingOptions, setSuggestingOptions] = useState(false)
+  const [loadingMenu, setLoadingMenu] = useState(false)
 
   useEffect(() => {
     fetch('/api/business-units').then(r => r.json()).then(d => setBusinessUnits(d.business_units || []))
@@ -380,12 +381,19 @@ export default function IvrMenuPage() {
   useEffect(() => { if (selectedBU) loadMenu() }, [selectedBU])
 
   const loadMenu = async () => {
-    const res = await fetch(`/api/ivr-menus?businessUnit=${selectedBU}`)
-    const data = await res.json()
-    setNodes(data.nodes || [])
-    setTree(buildTree(data.nodes || []))
-    setDirty(false)
-    setShowTemplates(false)
+    setLoadingMenu(true)
+    setNodes([])
+    setTree([])
+    try {
+      const res = await fetch(`/api/ivr-menus?businessUnit=${selectedBU}`)
+      const data = await res.json()
+      setNodes(data.nodes || [])
+      setTree(buildTree(data.nodes || []))
+      setDirty(false)
+      setShowTemplates(false)
+    } finally {
+      setLoadingMenu(false)
+    }
   }
 
   const createRoot = async () => {
@@ -464,6 +472,10 @@ export default function IvrMenuPage() {
 
         {!selectedBU ? (
           <div className="text-center py-20 text-gray-400">Select a business to start.</div>
+        ) : loadingMenu ? (
+          <div className="flex items-center justify-center py-20 text-gray-400">
+            <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading menu...
+          </div>
         ) : (
           <div className="grid grid-cols-5 gap-6">
             {/* Editor (3 cols) */}

@@ -336,6 +336,8 @@ export default function LandingPageSSR({
           headingFont={headingFontFamily}
           accountUrl={globalNav?.account_url || landingPage.account_url || '/account'}
           country={country}
+          navBgColor={globalNav?.nav_bg_color || landingPage.nav_bg_color}
+          navTextColor={globalNav?.nav_text_color || landingPage.nav_text_color}
         />
 
         {/* Hero Section — custom hero for brezcode, standard carousel for others */}

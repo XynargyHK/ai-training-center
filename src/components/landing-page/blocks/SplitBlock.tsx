@@ -5,15 +5,28 @@ import { getFontClass } from '@/lib/fonts'
 import { stripHtml } from '@/lib/utils'
 
 interface SplitBlockProps {
-  data: SplitBlockData
+  data: SplitBlockData & {
+    background_color?: string
+    bg_color?: string
+    headline_color?: string
+    headline_font_family?: string
+    content_color?: string
+    content_font_family?: string
+  }
   anchorId?: string
 }
 
 export default function SplitBlock({ data, anchorId }: SplitBlockProps) {
   const isImageLeft = data.layout === 'image-left'
+  // Respect block color fields; fall back to light defaults (was hardcoded dark slate)
+  const bgColor = data.background_color || data.bg_color || '#ffffff'
+  const headlineColor = data.headline_color || '#111111'
+  const contentColor = data.content_color || '#4b5563'
+  const headlineFont = data.headline_font_family || 'Josefin Sans'
+  const contentFont = data.content_font_family || 'Cormorant Garamond'
 
   return (
-    <div id={anchorId} className="w-full py-16 px-4 bg-gradient-to-b from-slate-900 to-slate-800">
+    <div id={anchorId} className="w-full py-16 px-4" style={{ backgroundColor: bgColor }}>
       <div className="max-w-6xl mx-auto">
         <div className={`grid md:grid-cols-2 gap-8 items-center ${isImageLeft ? '' : 'md:grid-flow-dense'}`}>
           {/* Image Column */}
@@ -25,8 +38,8 @@ export default function SplitBlock({ data, anchorId }: SplitBlockProps) {
                 className="w-full h-auto rounded-lg shadow-2xl"
               />
             ) : (
-              <div className="w-full aspect-video bg-slate-700 rounded-lg flex items-center justify-center">
-                <span className="text-slate-500 text-sm">No image</span>
+              <div className="w-full aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
+                <span className="text-gray-400 text-sm">No image</span>
               </div>
             )}
           </div>
@@ -34,13 +47,19 @@ export default function SplitBlock({ data, anchorId }: SplitBlockProps) {
           {/* Text Column */}
           <div className={isImageLeft ? '' : 'md:col-start-1 md:row-start-1'}>
             {data.headline && (
-              <h2 className={`text-3xl md:text-4xl font-light tracking-[0.2em] uppercase leading-tight text-white mb-4 ${getFontClass('Josefin Sans')}`}>
+              <h2
+                className={`text-3xl md:text-4xl font-light leading-tight mb-4 ${getFontClass(headlineFont)}`}
+                style={{ color: headlineColor }}
+              >
                 {stripHtml(data.headline)}
               </h2>
             )}
 
             {data.content && (
-              <p className={`text-lg font-light text-slate-300 leading-relaxed mb-6 whitespace-pre-wrap ${getFontClass('Cormorant Garamond')}`}>
+              <p
+                className={`text-lg font-light leading-relaxed mb-6 whitespace-pre-wrap ${getFontClass(contentFont)}`}
+                style={{ color: contentColor }}
+              >
                 {data.content}
               </p>
             )}
@@ -54,14 +73,16 @@ export default function SplitBlock({ data, anchorId }: SplitBlockProps) {
                       element.scrollIntoView({ behavior: 'smooth', block: 'start' })
                     }
                   }}
-                  className={`inline-block px-8 py-3 bg-white text-black text-sm font-bold tracking-[0.15em] uppercase hover:bg-black hover:text-white transition-colors ${getFontClass('Josefin Sans')}`}
+                  className={`inline-block px-8 py-3 text-sm font-bold tracking-[0.15em] uppercase transition-colors ${getFontClass(headlineFont)}`}
+                  style={{ backgroundColor: headlineColor, color: bgColor }}
                 >
                   {data.cta_text}
                 </button>
               ) : (
                 <a
                   href={data.cta_url}
-                  className={`inline-block px-8 py-3 bg-white text-black text-sm font-bold tracking-[0.15em] uppercase hover:bg-black hover:text-white transition-colors ${getFontClass('Josefin Sans')}`}
+                  className={`inline-block px-8 py-3 text-sm font-bold tracking-[0.15em] uppercase transition-colors ${getFontClass(headlineFont)}`}
+                  style={{ backgroundColor: headlineColor, color: bgColor }}
                 >
                   {data.cta_text}
                 </a>

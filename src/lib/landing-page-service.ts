@@ -67,16 +67,21 @@ export const fetchLandingPageData = cache(async (
   }
 
   // Step 2: Run remaining queries in parallel
+  // Postgres treats .eq(col, null) differently from IS NULL — use .is() for null slug
+  const pageQuery = supabase
+    .from('landing_pages')
+    .select('*')
+    .eq('business_unit_id', businessUnitId)
+    .eq('country', country)
+    .eq('language_code', languageCode)
+    .eq('is_active', true)
+  if (resolvedSlug === null || resolvedSlug === undefined) {
+    pageQuery.is('slug', null)
+  } else {
+    pageQuery.eq('slug', resolvedSlug)
+  }
   const [landingPageResult, availableLocalesResult, aiStaffResult] = await Promise.all([
-    supabase
-      .from('landing_pages')
-      .select('*')
-      .eq('business_unit_id', businessUnitId)
-      .eq('country', country)
-      .eq('language_code', languageCode)
-      .eq('slug', resolvedSlug)
-      .eq('is_active', true)
-      .maybeSingle(),
+    pageQuery.maybeSingle(),
     supabase
       .from('landing_pages')
       .select('country, language_code')

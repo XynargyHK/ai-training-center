@@ -4,6 +4,7 @@ import { getFontClass } from '@/lib/fonts'
 interface SplitBlockSSRProps {
   data: SplitBlockData & {
     bg_color?: string
+    background_color?: string
     headline_font_size?: string
     headline_font_family?: string
     headline_color?: string
@@ -17,9 +18,10 @@ interface SplitBlockSSRProps {
 
 export default function SplitBlockSSR({ data, anchorId }: SplitBlockSSRProps) {
   const isImageLeft = data.layout === 'image-left'
-  const bgColor = data.bg_color || '#0f172a'
-  const headlineColor = data.headline_color || '#ffffff'
-  const contentColor = data.content_color || '#cbd5e1'
+  // Accept both `background_color` (current API/editor field) and legacy `bg_color`
+  const bgColor = data.background_color || data.bg_color || '#ffffff'
+  const headlineColor = data.headline_color || '#111111'
+  const contentColor = data.content_color || '#4b5563'
 
   return (
     <div id={anchorId} className="w-full py-16 px-4" style={{ backgroundColor: bgColor }}>

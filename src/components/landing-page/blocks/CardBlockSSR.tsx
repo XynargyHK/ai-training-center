@@ -5,8 +5,12 @@ interface CardItem {
   title?: string
   content?: string
   badge?: string
+  badge_color?: string
   rating?: number
   author?: string
+  cta_text?: string
+  cta_url?: string
+  cta_color?: string
 }
 
 interface CardBlockData {
@@ -23,6 +27,7 @@ interface CardBlockData {
   subheading_color?: string
   layout?: 'grid-2' | 'grid-3' | 'grid-4' | 'carousel'
   bg_color?: string
+  card_direction?: 'vertical' | 'horizontal'  // NEW: horizontal = image-left text-right
   cards?: CardItem[]
 }
 
@@ -83,62 +88,79 @@ export default function CardBlockSSR({ data, anchorId, heading }: CardBlockSSRPr
 
         {/* Cards Grid */}
         <div className={`grid ${gridClass} gap-6`}>
-          {cards.map((card, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow overflow-hidden border border-gray-100"
-            >
-              {/* Card Image */}
-              {card.image_url && (
-                <div className="w-full aspect-video overflow-hidden">
-                  <img
-                    src={card.image_url}
-                    alt={card.title || ''}
-                    loading="lazy"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
-
-              {/* Card Content */}
-              <div className="p-5">
-                {/* Badge */}
-                {card.badge && (
-                  <span className="inline-block bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full mb-3">
-                    {card.badge}
-                  </span>
-                )}
-
-                {/* Title */}
-                {card.title && (
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">
-                    {card.title}
-                  </h3>
-                )}
-
-                {/* Content */}
-                {card.content && (
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    {card.content}
-                  </p>
-                )}
-
-                {/* Rating */}
-                {card.rating && card.rating > 0 && (
-                  <div className="flex items-center mt-3">
-                    {Array.from({ length: card.rating }, (_, i) => (
-                      <span key={i} className="text-yellow-400 text-sm">&#9733;</span>
-                    ))}
+          {cards.map((card, index) => {
+            const horizontal = data.card_direction === 'horizontal'
+            return (
+              <div
+                key={index}
+                className={`bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden border border-gray-100 ${horizontal ? 'flex items-center' : ''}`}
+              >
+                {/* Card Image */}
+                {card.image_url && (
+                  <div className={horizontal ? 'w-1/3 flex-shrink-0 p-3' : 'w-full aspect-video overflow-hidden'}>
+                    <img
+                      src={card.image_url}
+                      alt={card.title || ''}
+                      loading="lazy"
+                      className={horizontal ? 'w-full h-auto object-contain' : 'w-full h-full object-cover'}
+                    />
                   </div>
                 )}
 
-                {/* Author */}
-                {card.author && (
-                  <p className="text-gray-500 text-xs mt-2">{card.author}</p>
-                )}
+                {/* Card Content */}
+                <div className={horizontal ? 'flex-1 p-4' : 'p-5'}>
+                  {/* Badge */}
+                  {card.badge && !card.cta_text && (
+                    <span
+                      className="inline-block text-white text-xs font-bold px-3 py-1 rounded-full mb-3"
+                      style={{ backgroundColor: card.badge_color || '#3b82f6' }}
+                    >
+                      {card.badge}
+                    </span>
+                  )}
+
+                  {/* Title */}
+                  {card.title && (
+                    <h3 className="text-base md:text-lg font-bold text-gray-900 mb-2">
+                      {card.title}
+                    </h3>
+                  )}
+
+                  {/* Content */}
+                  {card.content && (
+                    <p className="text-gray-600 text-sm leading-relaxed mb-3">
+                      {card.content}
+                    </p>
+                  )}
+
+                  {/* CTA Button */}
+                  {card.cta_text && (
+                    <a
+                      href={card.cta_url || '#'}
+                      className="inline-block text-white text-sm font-medium px-5 py-2 rounded hover:opacity-90 transition"
+                      style={{ backgroundColor: card.cta_color || card.badge_color || '#3b82f6' }}
+                    >
+                      {card.cta_text}
+                    </a>
+                  )}
+
+                  {/* Rating */}
+                  {card.rating && card.rating > 0 && (
+                    <div className="flex items-center mt-3">
+                      {Array.from({ length: card.rating }, (_, i) => (
+                        <span key={i} className="text-yellow-400 text-sm">&#9733;</span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Author */}
+                  {card.author && (
+                    <p className="text-gray-500 text-xs mt-2">{card.author}</p>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </section>

@@ -64,17 +64,21 @@ export async function GET(request: NextRequest) {
     }
 
     // Step 2: Run remaining queries in parallel
+    const pageQuery = supabase
+      .from('landing_pages')
+      .select('*')
+      .eq('business_unit_id', businessUnitId)
+      .eq('country', country)
+      .eq('language_code', languageCode)
+      .eq('is_active', true)
+    // Postgres: IS NULL vs = NULL — use .is() for null slugs
+    if (resolvedSlug === null || resolvedSlug === undefined) {
+      pageQuery.is('slug', null)
+    } else {
+      pageQuery.eq('slug', resolvedSlug)
+    }
     const [landingPageResult, availableLocalesResult, allPagesResult] = await Promise.all([
-      // Fetch the landing page for this business unit + country + language + slug
-      supabase
-        .from('landing_pages')
-        .select('*')
-        .eq('business_unit_id', businessUnitId)
-        .eq('country', country)
-        .eq('language_code', languageCode)
-        .eq('slug', resolvedSlug)
-        .eq('is_active', true)
-        .maybeSingle(),
+      pageQuery.maybeSingle(),
       // Fetch all available locales for this business unit
       supabase
         .from('landing_pages')
@@ -164,14 +168,18 @@ export async function POST(request: NextRequest) {
 
     // Check if landing page exists for this business unit + country + language + slug
     // Use maybeSingle() to avoid error when no rows found
-    const { data: existing, error: existingError } = await supabase
+    const existingQuery = supabase
       .from('landing_pages')
       .select('id')
       .eq('business_unit_id', resolvedBusinessUnitId)
       .eq('country', country)
       .eq('language_code', languageCode)
-      .eq('slug', landingPageData.slug)
-      .maybeSingle()
+    if (landingPageData.slug === null || landingPageData.slug === undefined) {
+      existingQuery.is('slug', null)
+    } else {
+      existingQuery.eq('slug', landingPageData.slug)
+    }
+    const { data: existing, error: existingError } = await existingQuery.maybeSingle()
 
     if (existingError) {
       console.error('[LandingPage API] Error checking existing page:', existingError)

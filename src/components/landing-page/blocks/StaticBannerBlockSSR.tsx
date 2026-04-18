@@ -36,8 +36,14 @@ interface StaticBannerBlockSSRProps {
 }
 
 export default function StaticBannerBlockSSR({ data, anchorId }: StaticBannerBlockSSRProps) {
+  const hasText = !!(data.headline || data.subheadline || data.content || data.cta_text)
+  const minH = (data as any).min_height || (data.background_url && !hasText ? '500px' : undefined)
   return (
-    <section id={anchorId} className="relative w-full min-h-[200px] md:min-h-[300px] pt-8 pb-4 md:pt-12 md:pb-6 overflow-hidden">
+    <section
+      id={anchorId}
+      className="relative w-full pt-8 pb-4 md:pt-12 md:pb-6 overflow-hidden"
+      style={{ minHeight: minH || '200px' }}
+    >
       {data.background_url ? (
         data.background_type === 'video' ? (
           <video
@@ -65,7 +71,7 @@ export default function StaticBannerBlockSSR({ data, anchorId }: StaticBannerBlo
         />
       )}
 
-      {data.background_url && <div className="absolute inset-0 bg-black/30" />}
+      {data.background_url && hasText && <div className="absolute inset-0 bg-black/30" />}
 
       <div className="relative z-10 h-full flex items-center justify-center">
         <div className="px-4 md:px-12 max-w-4xl w-full">
