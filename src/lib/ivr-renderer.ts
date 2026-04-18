@@ -99,9 +99,12 @@ export function renderTwimlMenu(nodes: IvrNode[], parentId: string, actionUrl: s
     `Press ${i + 1} for ${child.label.replace(/[^\w\s]/g, '')}.`
   ).join(' ')
 
+  const sep = actionUrl.includes('?') ? '&' : '?'
+  const fullAction = `${actionUrl}${sep}parentId=${parentId}`
+
   return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Gather numDigits="1" action="${actionUrl}?parentId=${parentId}" method="POST" timeout="10">
+  <Gather numDigits="1" action="${fullAction}" method="POST" timeout="10">
     <Say voice="Polly.Joanna">${greeting} ${optionsList}</Say>
   </Gather>
   <Say voice="Polly.Joanna">I didn't hear a response. Goodbye.</Say>
